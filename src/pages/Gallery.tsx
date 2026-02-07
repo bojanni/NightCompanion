@@ -2,11 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { GalleryItem, Collection } from '../lib/types';
 import Modal from '../components/Modal';
 import StarRating from '../components/StarRating';
+
+const PAGE_SIZE = 24;
 
 interface GalleryProps {
   userId: string;
@@ -19,6 +22,8 @@ export default function Gallery({ userId }: GalleryProps) {
   const [search, setSearch] = useState('');
   const [filterCollection, setFilterCollection] = useState<string | null>(null);
   const [filterRating, setFilterRating] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [showItemEditor, setShowItemEditor] = useState(false);
   const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
@@ -39,15 +44,34 @@ export default function Gallery({ userId }: GalleryProps) {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentPage, filterCollection, filterRating]);
 
   async function loadData() {
-    const [itemsRes, collRes] = await Promise.all([
-      supabase.from('gallery_items').select('*').order('created_at', { ascending: false }),
+    setLoading(true);
+
+    let query = supabase
+      .from('gallery_items')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    if (filterCollection) {
+      query = query.eq('collection_id', filterCollection);
+    }
+
+    if (filterRating > 0) {
+      query = query.gte('rating', filterRating);
+    }
+
+    const { data: itemsData, count } = await query
+      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+    const [collRes] = await Promise.all([
       supabase.from('collections').select('*').order('name'),
     ]);
-    setItems(itemsRes.data ?? []);
+
+    setItems(itemsData ?? []);
     setCollections(collRes.data ?? []);
+    setTotalCount(count ?? 0);
     setLoading(false);
   }
 
@@ -145,6 +169,18 @@ export default function Gallery({ userId }: GalleryProps) {
     return collections.find((c) => c.id === id)?.name ?? '';
   }
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  function handleFilterCollectionChange(collectionId: string | null) {
+    setFilterCollection(collectionId);
+    setCurrentPage(0);
+  }
+
+  function handleFilterRatingChange(rating: number) {
+    setFilterRating(rating);
+    setCurrentPage(0);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -158,7 +194,7 @@ export default function Gallery({ userId }: GalleryProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Gallery</h1>
-          <p className="text-slate-400 mt-1">{items.length} items in your collection</p>
+          <p className="text-slate-400 mt-1">{totalCount} items in your collection</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -190,14 +226,14 @@ export default function Gallery({ userId }: GalleryProps) {
         </div>
         <div className="flex items-center gap-2">
           <Star size={14} className="text-slate-400" />
-          <StarRating rating={filterRating} onChange={setFilterRating} size={16} />
+          <StarRating rating={filterRating} onChange={handleFilterRatingChange} size={16} />
         </div>
       </div>
 
       {collections.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setFilterCollection(null)}
+            onClick={() => handleFilterCollectionChange(null)}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
               !filterCollection
                 ? 'bg-white/10 border-white/20 text-white'
@@ -209,7 +245,7 @@ export default function Gallery({ userId }: GalleryProps) {
           {collections.map((coll) => (
             <div key={coll.id} className="flex items-center gap-0.5">
               <button
-                onClick={() => setFilterCollection(filterCollection === coll.id ? null : coll.id)}
+                onClick={() => handleFilterCollectionChange(filterCollection === coll.id ? null : coll.id)}
                 className={`px-3 py-1.5 rounded-l-xl text-xs font-medium transition-all border ${
                   filterCollection === coll.id
                     ? 'border-amber-500/30 text-amber-400'
@@ -300,6 +336,53 @@ export default function Gallery({ userId }: GalleryProps) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={16} />
+            Previous
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
+              if (
+                page === 0 ||
+                page === totalPages - 1 ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {page + 1}
+                  </button>
+                );
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                return <span key={page} className="text-slate-600 px-2">...</span>;
+              }
+              return null;
+            })}
+          </div>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 

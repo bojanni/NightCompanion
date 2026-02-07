@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
-  SlidersHorizontal, BookTemplate, Filter,
+  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Prompt, Tag } from '../lib/types';
@@ -10,6 +10,8 @@ import PromptEditor from '../components/PromptEditor';
 import VariationGenerator from '../components/VariationGenerator';
 import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
+
+const PAGE_SIZE = 20;
 
 interface PromptsProps {
   userId: string;
@@ -29,20 +31,38 @@ export default function Prompts({ userId }: PromptsProps) {
   const [variationBase, setVariationBase] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [currentPage, filterType, filterTag]);
 
   async function loadData() {
-    const [promptsRes, tagsRes, ptRes] = await Promise.all([
-      supabase.from('prompts').select('*').order('created_at', { ascending: false }),
+    setLoading(true);
+
+    let query = supabase
+      .from('prompts')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    if (filterType === 'templates') {
+      query = query.eq('is_template', true);
+    } else if (filterType === 'favorites') {
+      query = query.eq('is_favorite', true);
+    }
+
+    const { data: promptsData, count } = await query
+      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+    const [tagsRes, ptRes] = await Promise.all([
       supabase.from('tags').select('*').order('name'),
-      supabase.from('prompt_tags').select('*'),
+      promptsData ? supabase.from('prompt_tags').select('*').in('prompt_id', promptsData.map(p => p.id)) : Promise.resolve({ data: [] }),
     ]);
 
-    setPrompts(promptsRes.data ?? []);
+    setPrompts(promptsData ?? []);
     setTags(tagsRes.data ?? []);
+    setTotalCount(count ?? 0);
 
     const map: Record<string, string[]> = {};
     (ptRes.data ?? []).forEach((pt) => {
@@ -106,12 +126,24 @@ export default function Prompts({ userId }: PromptsProps) {
     );
   }
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  function handleFilterChange(type: 'all' | 'templates' | 'favorites') {
+    setFilterType(type);
+    setCurrentPage(0);
+  }
+
+  function handleTagFilterChange(tagId: string | null) {
+    setFilterTag(tagId);
+    setCurrentPage(0);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Prompts</h1>
-          <p className="text-slate-400 mt-1">{prompts.length} prompts in your library</p>
+          <p className="text-slate-400 mt-1">{totalCount} prompts in your library</p>
         </div>
         <button
           onClick={() => {
@@ -150,7 +182,7 @@ export default function Prompts({ userId }: PromptsProps) {
           {(['all', 'templates', 'favorites'] as const).map((type) => (
             <button
               key={type}
-              onClick={() => setFilterType(type)}
+              onClick={() => handleFilterChange(type)}
               className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 filterType === type
                   ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
@@ -169,7 +201,7 @@ export default function Prompts({ userId }: PromptsProps) {
       {showFilters && tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 p-4 bg-slate-900 border border-slate-800 rounded-xl">
           <button
-            onClick={() => setFilterTag(null)}
+            onClick={() => handleTagFilterChange(null)}
             className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
               !filterTag
                 ? 'bg-white/10 text-white'
@@ -182,7 +214,7 @@ export default function Prompts({ userId }: PromptsProps) {
             <TagBadge
               key={tag.id}
               tag={tag}
-              onClick={() => setFilterTag(filterTag === tag.id ? null : tag.id)}
+              onClick={() => handleTagFilterChange(filterTag === tag.id ? null : tag.id)}
               selected={filterTag === tag.id}
             />
           ))}
@@ -288,6 +320,53 @@ export default function Prompts({ userId }: PromptsProps) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={16} />
+            Previous
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
+              if (
+                page === 0 ||
+                page === totalPages - 1 ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {page + 1}
+                  </button>
+                );
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                return <span key={page} className="text-slate-600 px-2">...</span>;
+              }
+              return null;
+            })}
+          </div>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 

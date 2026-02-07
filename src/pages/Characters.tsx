@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import {
   Plus, Search, Trash2, Edit3, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown, X, Save, Loader2, Users,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Character, CharacterDetail } from '../lib/types';
 import { DETAIL_CATEGORIES } from '../lib/types';
 import Modal from '../components/Modal';
+
+const PAGE_SIZE = 12;
 
 interface CharactersProps {
   userId: string;
@@ -16,6 +19,8 @@ export default function Characters({ userId }: CharactersProps) {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
   const [editingChar, setEditingChar] = useState<Character | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -33,14 +38,18 @@ export default function Characters({ userId }: CharactersProps) {
 
   useEffect(() => {
     loadCharacters();
-  }, []);
+  }, [currentPage]);
 
   async function loadCharacters() {
-    const { data } = await supabase
+    setLoading(true);
+    const { data, count } = await supabase
       .from('characters')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
     setCharacters(data ?? []);
+    setTotalCount(count ?? 0);
     setLoading(false);
   }
 
@@ -136,6 +145,8 @@ export default function Characters({ userId }: CharactersProps) {
       )
     : characters;
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -149,7 +160,7 @@ export default function Characters({ userId }: CharactersProps) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Characters</h1>
-          <p className="text-slate-400 mt-1">Track consistency across your characters</p>
+          <p className="text-slate-400 mt-1">{totalCount} characters tracked</p>
         </div>
         <button
           onClick={() => openEditor(null)}
@@ -369,6 +380,53 @@ export default function Characters({ userId }: CharactersProps) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={16} />
+            Previous
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
+              if (
+                page === 0 ||
+                page === totalPages - 1 ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    {page + 1}
+                  </button>
+                );
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                return <span key={page} className="text-slate-600 px-2">...</span>;
+              }
+              return null;
+            })}
+          </div>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage === totalPages - 1}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 
