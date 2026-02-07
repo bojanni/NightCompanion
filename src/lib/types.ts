@@ -26,6 +26,16 @@ export interface PromptTag {
   tag_id: string;
 }
 
+export interface PromptVersion {
+  id: string;
+  prompt_id: string;
+  user_id: string;
+  content: string;
+  version_number: number;
+  change_description: string | null;
+  created_at: string;
+}
+
 export interface Character {
   id: string;
   user_id: string;

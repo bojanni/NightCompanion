@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
-  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight,
+  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Prompt, Tag } from '../lib/types';
 import Modal from '../components/Modal';
 import PromptEditor from '../components/PromptEditor';
 import VariationGenerator from '../components/VariationGenerator';
+import { PromptHistory } from '../components/PromptHistory';
 import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
 
@@ -33,6 +34,8 @@ export default function Prompts({ userId }: PromptsProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyPrompt, setHistoryPrompt] = useState<Prompt | null>(null);
 
   useEffect(() => {
     loadData();
@@ -116,6 +119,18 @@ export default function Prompts({ userId }: PromptsProps) {
   function getTagsForPrompt(promptId: string): Tag[] {
     const tagIds = promptTagMap[promptId] ?? [];
     return tags.filter((t) => tagIds.includes(t.id));
+  }
+
+  async function handleRestoreVersion(content: string) {
+    if (historyPrompt) {
+      await supabase
+        .from('prompts')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', historyPrompt.id);
+
+      setShowHistory(false);
+      loadData();
+    }
   }
 
   if (loading) {
@@ -290,6 +305,16 @@ export default function Prompts({ userId }: PromptsProps) {
                     </button>
                     <button
                       onClick={() => {
+                        setHistoryPrompt(prompt);
+                        setShowHistory(true);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-colors"
+                      title="Version history"
+                    >
+                      <Clock size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
                         setVariationBase(prompt.content);
                         setShowVariations(true);
                       }}
@@ -398,6 +423,21 @@ export default function Prompts({ userId }: PromptsProps) {
           userId={userId}
           onSaved={loadData}
         />
+      </Modal>
+
+      <Modal
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        title={`Version History: ${historyPrompt?.title || 'Untitled'}`}
+        wide
+      >
+        {historyPrompt && (
+          <PromptHistory
+            promptId={historyPrompt.id}
+            currentContent={historyPrompt.content}
+            onRestore={handleRestoreVersion}
+          />
+        )}
       </Modal>
     </div>
   );
