@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { z } from "npm:zod@3.22.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +8,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "Content-Type, Authorization, X-Client-Info, Apikey",
 };
+
+const SaveKeySchema = z.object({
+  action: z.literal("save"),
+  provider: z.enum(["openai", "gemini", "anthropic", "openrouter"]),
+  apiKey: z.string().min(8, "API key too short").max(500, "API key too long"),
+});
+
+const DeleteKeySchema = z.object({
+  action: z.literal("delete"),
+  provider: z.enum(["openai", "gemini", "anthropic", "openrouter"]),
+});
+
+const SetActiveSchema = z.object({
+  action: z.literal("set-active"),
+  provider: z.enum(["openai", "gemini", "anthropic", "openrouter"]),
+});
+
+const ListKeysSchema = z.object({
+  action: z.literal("list"),
+});
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -95,10 +116,15 @@ Deno.serve(async (req: Request) => {
     );
 
     const body = await req.json();
-    const { action, provider, apiKey } = body;
+    const { action } = body;
 
     switch (action) {
       case "list": {
+        const validated = ListKeysSchema.safeParse(body);
+        if (!validated.success) {
+          return errorResponse(validated.error.errors[0].message);
+        }
+
         const { data, error } = await adminClient
           .from("user_api_keys")
           .select("provider, key_hint, is_active, updated_at")
@@ -110,13 +136,12 @@ Deno.serve(async (req: Request) => {
       }
 
       case "save": {
-        if (!provider || !VALID_PROVIDERS.includes(provider)) {
-          return errorResponse("Invalid provider");
-        }
-        if (!apiKey || typeof apiKey !== "string" || apiKey.trim().length < 8) {
-          return errorResponse("Invalid API key");
+        const validated = SaveKeySchema.safeParse(body);
+        if (!validated.success) {
+          return errorResponse(validated.error.errors[0].message);
         }
 
+        const { provider, apiKey } = validated.data;
         const trimmed = apiKey.trim();
         const encrypted = await encrypt(trimmed, serviceRoleKey);
         const hint = maskKey(trimmed);
@@ -148,10 +173,12 @@ Deno.serve(async (req: Request) => {
       }
 
       case "delete": {
-        if (!provider || !VALID_PROVIDERS.includes(provider)) {
-          return errorResponse("Invalid provider");
+        const validated = DeleteKeySchema.safeParse(body);
+        if (!validated.success) {
+          return errorResponse(validated.error.errors[0].message);
         }
 
+        const { provider } = validated.data;
         const { data: toDelete } = await adminClient
           .from("user_api_keys")
           .select("is_active")
@@ -187,10 +214,12 @@ Deno.serve(async (req: Request) => {
       }
 
       case "set-active": {
-        if (!provider || !VALID_PROVIDERS.includes(provider)) {
-          return errorResponse("Invalid provider");
+        const validated = SetActiveSchema.safeParse(body);
+        if (!validated.success) {
+          return errorResponse(validated.error.errors[0].message);
         }
 
+        const { provider } = validated.data;
         const { data: exists } = await adminClient
           .from("user_api_keys")
           .select("id")

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider } from '../lib/api-keys-service';
 import type { ApiKeyInfo } from '../lib/api-keys-service';
 import { testConnection } from '../lib/ai-service';
+import { ApiKeySchema, LocalEndpointSchema } from '../lib/validation-schemas';
 
 interface SettingsProps {
   userId: string;
@@ -281,8 +282,14 @@ export default function Settings({ userId }: SettingsProps) {
                     setActionLoading(provider.id);
                     setError('');
                     try {
+                      const validated = ApiKeySchema.parse({
+                        provider: provider.id,
+                        api_key: apiKey,
+                        is_active: true,
+                      });
+
                       const token = await getToken();
-                      await saveApiKey(provider.id, apiKey, token);
+                      await saveApiKey(validated.provider, validated.api_key, token);
                       await loadKeys();
                       showSuccess(`${provider.name} key saved successfully`);
                     } catch (e) {

@@ -4,6 +4,7 @@ import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
+import { PromptSchema } from '../lib/validation-schemas';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
 
@@ -78,41 +79,55 @@ export default function PromptEditor({ prompt, userId, onSave, onCancel }: Promp
 
   async function handleSave() {
     setSaving(true);
-    const payload = {
-      user_id: userId,
-      title: title.trim() || 'Untitled',
-      content,
-      notes,
-      rating,
-      is_template: isTemplate,
-      is_favorite: isFavorite,
-      updated_at: new Date().toISOString(),
-    };
 
-    let promptId = prompt?.id;
+    try {
+      const validated = PromptSchema.parse({
+        content,
+        title: title.trim() || 'Untitled',
+        is_template: isTemplate,
+        rating: rating || null,
+        tags: []
+      });
 
-    if (prompt) {
-      await supabase.from('prompts').update(payload).eq('id', prompt.id);
-    } else {
-      const { data } = await supabase.from('prompts').insert(payload).select().maybeSingle();
-      promptId = data?.id;
-    }
+      const payload = {
+        user_id: userId,
+        title: validated.title,
+        content: validated.content,
+        notes,
+        rating: validated.rating,
+        is_template: validated.is_template,
+        is_favorite: isFavorite,
+        updated_at: new Date().toISOString(),
+      };
 
-    if (promptId) {
-      await supabase.from('prompt_tags').delete().eq('prompt_id', promptId);
-      if (selectedTagIds.length > 0) {
-        await supabase
-          .from('prompt_tags')
-          .insert(selectedTagIds.map((tag_id) => ({ prompt_id: promptId!, tag_id })));
+      let promptId = prompt?.id;
+
+      if (prompt) {
+        await supabase.from('prompts').update(payload).eq('id', prompt.id);
+      } else {
+        const { data } = await supabase.from('prompts').insert(payload).select().maybeSingle();
+        promptId = data?.id;
       }
-    }
 
-    if (content.trim()) {
-      trackKeywordsFromPrompt(content).catch(() => {});
-    }
+      if (promptId) {
+        await supabase.from('prompt_tags').delete().eq('prompt_id', promptId);
+        if (selectedTagIds.length > 0) {
+          await supabase
+            .from('prompt_tags')
+            .insert(selectedTagIds.map((tag_id) => ({ prompt_id: promptId!, tag_id })));
+        }
+      }
 
-    setSaving(false);
-    onSave();
+      if (validated.content.trim()) {
+        trackKeywordsFromPrompt(validated.content).catch(() => {});
+      }
+
+      setSaving(false);
+      onSave();
+    } catch (error) {
+      console.error('Validation error:', error);
+      setSaving(false);
+    }
   }
 
   return (
