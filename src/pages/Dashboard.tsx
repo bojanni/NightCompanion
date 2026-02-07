@@ -1,0 +1,205 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Sparkles, Users, Image, Star, TrendingUp, Clock, Heart } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import type { Prompt, Character, GalleryItem } from '../lib/types';
+import StarRating from '../components/StarRating';
+
+interface Stats {
+  promptCount: number;
+  templateCount: number;
+  characterCount: number;
+  galleryCount: number;
+}
+
+export default function Dashboard() {
+  const [stats, setStats] = useState<Stats>({ promptCount: 0, templateCount: 0, characterCount: 0, galleryCount: 0 });
+  const [recentPrompts, setRecentPrompts] = useState<Prompt[]>([]);
+  const [recentGallery, setRecentGallery] = useState<GalleryItem[]>([]);
+  const [topCharacters, setTopCharacters] = useState<Character[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  async function loadDashboard() {
+    const [promptsRes, templatesRes, charsRes, galleryRes, recentPromptsRes, recentGalleryRes, topCharsRes] =
+      await Promise.all([
+        supabase.from('prompts').select('id', { count: 'exact', head: true }),
+        supabase.from('prompts').select('id', { count: 'exact', head: true }).eq('is_template', true),
+        supabase.from('characters').select('id', { count: 'exact', head: true }),
+        supabase.from('gallery_items').select('id', { count: 'exact', head: true }),
+        supabase.from('prompts').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('gallery_items').select('*').order('created_at', { ascending: false }).limit(6),
+        supabase.from('characters').select('*').order('created_at', { ascending: false }).limit(3),
+      ]);
+
+    setStats({
+      promptCount: promptsRes.count ?? 0,
+      templateCount: templatesRes.count ?? 0,
+      characterCount: charsRes.count ?? 0,
+      galleryCount: galleryRes.count ?? 0,
+    });
+    setRecentPrompts(recentPromptsRes.data ?? []);
+    setRecentGallery(recentGalleryRes.data ?? []);
+    setTopCharacters(topCharsRes.data ?? []);
+    setLoading(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const statCards = [
+    { label: 'Prompts', value: stats.promptCount, icon: Sparkles, color: 'from-amber-500 to-orange-600', link: '/prompts' },
+    { label: 'Templates', value: stats.templateCount, icon: TrendingUp, color: 'from-teal-500 to-emerald-600', link: '/prompts' },
+    { label: 'Characters', value: stats.characterCount, icon: Users, color: 'from-blue-500 to-cyan-600', link: '/characters' },
+    { label: 'Gallery Items', value: stats.galleryCount, icon: Image, color: 'from-rose-500 to-pink-600', link: '/gallery' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <p className="text-slate-400 mt-1">Overview of your creative workspace</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map(({ label, value, icon: Icon, color, link }) => (
+          <Link
+            key={label}
+            to={link}
+            className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all group"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-10 h-10 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shadow-lg`}>
+                <Icon size={18} className="text-white" />
+              </div>
+              <span className="text-3xl font-bold text-white">{value}</span>
+            </div>
+            <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">{label}</p>
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Clock size={18} className="text-amber-400" />
+              Recent Prompts
+            </h2>
+            <Link to="/prompts" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
+              View all
+            </Link>
+          </div>
+          {recentPrompts.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <Sparkles size={32} className="mx-auto mb-2 opacity-50" />
+              <p>No prompts yet. Create your first one!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentPrompts.map((prompt) => (
+                <div
+                  key={prompt.id}
+                  className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-medium text-white truncate">{prompt.title || 'Untitled'}</h3>
+                      {prompt.is_favorite && <Heart size={12} className="text-rose-400 fill-rose-400 flex-shrink-0" />}
+                      {prompt.is_template && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
+                          Template
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">{prompt.content}</p>
+                  </div>
+                  <StarRating rating={prompt.rating} size={12} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Star size={18} className="text-amber-400" />
+              Characters
+            </h2>
+            <Link to="/characters" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
+              View all
+            </Link>
+          </div>
+          {topCharacters.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">
+              <Users size={32} className="mx-auto mb-2 opacity-50" />
+              <p>No characters yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {topCharacters.map((char) => (
+                <div key={char.id} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl">
+                  {char.reference_image_url ? (
+                    <img
+                      src={char.reference_image_url}
+                      alt={char.name}
+                      className="w-10 h-10 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
+                      <Users size={16} className="text-slate-500" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-medium text-white truncate">{char.name}</h3>
+                    <p className="text-xs text-slate-400 truncate">{char.description || 'No description'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {recentGallery.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Image size={18} className="text-amber-400" />
+              Recent Gallery
+            </h2>
+            <Link to="/gallery" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
+              View all
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {recentGallery.map((item) => (
+              <div key={item.id} className="aspect-square rounded-xl overflow-hidden bg-slate-800 group">
+                {item.image_url ? (
+                  <img
+                    src={item.image_url}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Image size={24} className="text-slate-600" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

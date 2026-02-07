@@ -1,0 +1,201 @@
+const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-prompt-assistant`;
+
+async function callAI(action: string, payload: Record<string, unknown>, token: string) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify({ action, payload }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || 'AI request failed');
+  }
+
+  return data.result;
+}
+
+export async function improvePrompt(prompt: string, token: string): Promise<string> {
+  return callAI('improve', { prompt }, token);
+}
+
+export interface StyleAnalysis {
+  profile: string;
+  themes: string[];
+  techniques: string[];
+  suggestions: string[];
+  signature: string;
+}
+
+export async function analyzeStyle(prompts: string[], token: string): Promise<StyleAnalysis> {
+  return callAI('analyze-style', { prompts }, token);
+}
+
+export interface GeneratePreferences {
+  style?: string;
+  mood?: string;
+  subject?: string;
+}
+
+export async function generateFromDescription(
+  description: string,
+  options: {
+    context?: string;
+    preferences?: GeneratePreferences;
+    successfulPrompts?: string[];
+  },
+  token: string
+): Promise<string> {
+  return callAI('generate', {
+    description,
+    context: options.context,
+    preferences: options.preferences,
+    successfulPrompts: options.successfulPrompts,
+  }, token);
+}
+
+export interface Diagnosis {
+  cause: string;
+  fixes: string[];
+  improvedPrompt: string;
+}
+
+export async function diagnosePrompt(prompt: string, issue: string, token: string): Promise<Diagnosis> {
+  return callAI('diagnose', { prompt, issue }, token);
+}
+
+export interface ModelRecommendation {
+  modelId: string;
+  modelName: string;
+  matchScore: number;
+  reasoning: string;
+  tips: string[];
+}
+
+export interface RecommendModelsResult {
+  recommendations: ModelRecommendation[];
+}
+
+export async function recommendModels(
+  prompt: string,
+  options?: { budget?: string; style?: string },
+  token?: string
+): Promise<RecommendModelsResult> {
+  return callAI('recommend-models', {
+    prompt,
+    budget: options?.budget,
+    style: options?.style,
+  }, token ?? '');
+}
+
+export interface ImageAnalysisResult {
+  composition: string;
+  lighting: string;
+  colors: string;
+  technicalQuality: string;
+  overallScore: number;
+  promptMatch: number;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  improvedPrompt: string;
+}
+
+export async function analyzeImage(
+  image: { imageUrl?: string; imageBase64?: string; imageMimeType?: string },
+  promptUsed: string | undefined,
+  token: string
+): Promise<ImageAnalysisResult> {
+  return callAI('analyze-image', {
+    imageUrl: image.imageUrl,
+    imageBase64: image.imageBase64,
+    imageMimeType: image.imageMimeType,
+    promptUsed,
+  }, token);
+}
+
+export interface BatchImageAnalysis {
+  imageIndex: number;
+  model: string;
+  overallScore: number;
+  promptMatch: number;
+  composition: string;
+  lighting: string;
+  colors: string;
+  technicalQuality: string;
+  strengths: string[];
+  weaknesses: string[];
+}
+
+export interface BatchAnalysisResult {
+  analyses: BatchImageAnalysis[];
+  comparison: {
+    winnerIndex: number;
+    winnerReasoning: string;
+    commonIssues: string[];
+    modelStrengths: Record<string, string[]>;
+  };
+  improvedPrompt: string;
+}
+
+export interface BatchImageInput {
+  imageUrl?: string;
+  imageBase64?: string;
+  imageMimeType?: string;
+  model: string;
+}
+
+export async function batchAnalyzeImages(
+  images: BatchImageInput[],
+  promptUsed: string | undefined,
+  token: string
+): Promise<BatchAnalysisResult> {
+  return callAI('batch-analyze', { images, promptUsed }, token);
+}
+
+export interface PromptVariation {
+  type: string;
+  prompt: string;
+}
+
+export async function generatePromptVariations(
+  basePrompt: string,
+  token: string
+): Promise<PromptVariation[]> {
+  return callAI('generate-variations', { basePrompt }, token);
+}
+
+export function resizeImageToBase64(file: File, maxSize = 1024): Promise<{ data: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width;
+      let h = img.height;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) {
+          h = Math.round((h / w) * maxSize);
+          w = maxSize;
+        } else {
+          w = Math.round((w / h) * maxSize);
+          h = maxSize;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas not supported')); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      const base64 = dataUrl.split(',')[1];
+      resolve({ data: base64, mimeType: 'image/jpeg' });
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+}

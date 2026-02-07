@@ -1,0 +1,96 @@
+export interface Prompt {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  notes: string;
+  rating: number;
+  is_template: boolean;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+  tags?: Tag[];
+}
+
+export interface Tag {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  category: string;
+  created_at: string;
+}
+
+export interface PromptTag {
+  prompt_id: string;
+  tag_id: string;
+}
+
+export interface Character {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  reference_image_url: string;
+  created_at: string;
+  updated_at: string;
+  details?: CharacterDetail[];
+}
+
+export interface CharacterDetail {
+  id: string;
+  character_id: string;
+  category: string;
+  detail: string;
+  works_well: boolean;
+  created_at: string;
+}
+
+export interface GalleryItem {
+  id: string;
+  user_id: string;
+  title: string;
+  image_url: string;
+  prompt_used: string;
+  prompt_id: string | null;
+  character_id: string | null;
+  rating: number;
+  collection_id: string | null;
+  notes: string;
+  created_at: string;
+}
+
+export interface Collection {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  color: string;
+  created_at: string;
+}
+
+export interface ModelUsage {
+  id: string;
+  user_id: string;
+  model_id: string;
+  prompt_used: string;
+  category: string;
+  rating: number;
+  is_keeper: boolean;
+  notes: string;
+  created_at: string;
+}
+
+export type DetailCategory = 'clothing' | 'lighting' | 'pose' | 'style' | 'expression' | 'environment' | 'general';
+
+export const DETAIL_CATEGORIES: DetailCategory[] = [
+  'clothing', 'lighting', 'pose', 'style', 'expression', 'environment', 'general'
+];
+
+export const TAG_CATEGORIES = [
+  'landscape', 'character', 'mood', 'style', 'technique', 'general'
+] as const;
+
+export const TAG_COLORS = [
+  '#d97706', '#dc2626', '#059669', '#2563eb', '#7c3aed', '#db2777', '#0891b2', '#65a30d'
+];
