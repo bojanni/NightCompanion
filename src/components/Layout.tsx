@@ -11,6 +11,7 @@ import {
   Settings,
   Fingerprint,
   FlaskConical,
+  Coins,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/models', icon: Compass, label: 'Models' },
   { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
   { to: '/style', icon: Fingerprint, label: 'Style Profile' },
+  { to: '/cost-calculator', icon: Coins, label: 'Cost Calculator' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

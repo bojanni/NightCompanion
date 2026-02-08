@@ -11,6 +11,7 @@ import Generator from './pages/Generator';
 import Settings from './pages/Settings';
 import StyleProfile from './pages/StyleProfile';
 import BatchTesting from './pages/BatchTesting';
+import CostDemo from './pages/CostDemo';
 
 export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/models" element={<Models userId={user.id} />} />
           <Route path="/batch-testing" element={<BatchTesting userId={user.id} />} />
           <Route path="/style" element={<StyleProfile userId={user.id} />} />
+          <Route path="/cost-calculator" element={<CostDemo userId={user.id} />} />
           <Route path="/settings" element={<Settings userId={user.id} />} />
         </Route>
       </Routes>
