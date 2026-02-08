@@ -88,29 +88,7 @@ async function runMigrations() {
         await client.query('GRANT ALL ON auth.users TO service_role');
         await client.query('GRANT SELECT ON auth.users TO anon, authenticated');
 
-        // Create default user
-        const defaultUser = await client.query(`
-          INSERT INTO auth.users (email, raw_user_meta_data)
-          VALUES ('user@example.com', '{"name": "Local User"}')
-          ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email, raw_user_meta_data = EXCLUDED.raw_user_meta_data
-          RETURNING id;
-        `);
-        const userId = defaultUser.rows[0].id;
-        console.log(`Default user ID: ${userId}`);
-
-        // Create mock auth functions for RLS
-        console.log('Creating mock auth functions...');
-        await client.query(`
-            CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$
-            SELECT '${userId}'::uuid
-            $$ LANGUAGE sql STABLE;
-
-            CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$
-            SELECT 'authenticated'
-            $$ LANGUAGE sql STABLE;
-        `);
-
-        // 2. Run Migrations
+        // 2. Run Migrations (Create tables first!)
         if (!fs.existsSync(MIGRATIONS_DIR)) {
             console.error(`Migrations directory not found: ${MIGRATIONS_DIR}`);
             return;
@@ -127,16 +105,38 @@ async function runMigrations() {
                 await client.query(sql);
             } catch (err) {
                 if (err.code === '42P07') {
-                    console.log(`  -> Skipped (Relation already exists)`);
+                    // console.log(`  -> Skipped (Relation already exists)`);
                 } else if (err.code === '42710') {
-                    console.log(`  -> Skipped (Duplicate Object)`);
+                    // console.log(`  -> Skipped (Duplicate Object)`);
                 } else {
                     console.log(`  -> Error in ${file}: ${err.message}`);
                 }
             }
         }
-
         console.log('All migrations completed.');
+
+
+        // 3. Create default user (Triggers will fire now)
+        const defaultUser = await client.query(`
+          INSERT INTO auth.users (email, raw_user_meta_data)
+          VALUES ('user@example.com', '{"name": "Local User"}')
+          ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email, raw_user_meta_data = EXCLUDED.raw_user_meta_data
+          RETURNING id;
+        `);
+        const userId = defaultUser.rows[0].id;
+        console.log(`Default user ID: ${userId}`);
+
+        // 4. Create mock auth functions for RLS
+        console.log('Creating mock auth functions...');
+        await client.query(`
+            CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$
+            SELECT '${userId}'::uuid
+            $$ LANGUAGE sql STABLE;
+
+            CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$
+            SELECT 'authenticated'
+            $$ LANGUAGE sql STABLE;
+        `);
 
     } catch (err) {
         console.error('Migration failed:', err);
