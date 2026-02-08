@@ -1,9 +1,10 @@
 require('dotenv').config();
+
 console.log('🔍 ENV CHECK:');
 console.log('  DB_PASSWORD exists?', !!process.env.DB_PASSWORD);
 console.log('  DB_PASSWORD length:', process.env.DB_PASSWORD?.length);
 console.log('  DB_USER:', process.env.DB_USER);
-require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const { pool } = require('./db');
