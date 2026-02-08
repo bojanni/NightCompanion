@@ -16,25 +16,20 @@ app.use(cors());
 app.use(express.json());
 
 const createCrudRouter = require('./routes/crud');
+const apiKeysRouter = require('./routes/api-keys');
+const localEndpointsRouter = require('./routes/local-endpoints');
 
 // Mount generic CRUD routes
 app.use('/api/prompts', createCrudRouter('prompts'));
 app.use('/api/tags', createCrudRouter('tags'));
 app.use('/api/characters', createCrudRouter('characters'));
-// character_details is usually accessed via characters, but we can expose it directly or handle relations
 app.use('/api/character_details', createCrudRouter('character_details'));
 app.use('/api/gallery_items', createCrudRouter('gallery_items'));
 app.use('/api/collections', createCrudRouter('collections'));
 
-// API Keys management with encryption
-app.use('/api/api-keys', require('./routes/api-keys'));
-
-// Local Endpoints management
-app.use('/api/local-endpoints', require('./routes/local-endpoints'));
-
-// Alternative routes with underscore naming (for compatibility)
-app.use('/api/user_api_keys', require('./routes/api-keys'));
-app.use('/api/user_local_endpoints', require('./routes/local-endpoints'));
+// API Keys & Local Endpoints
+app.use('/api/user_api_keys', apiKeysRouter);
+app.use('/api/user_local_endpoints', localEndpointsRouter);
 
 // Mock Auth Route
 app.get('/api/auth/user', (req, res) => {
@@ -66,5 +61,5 @@ app.get('/api/db-test', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`✅ Server running on http://localhost:${port}`);
 });

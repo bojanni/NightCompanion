@@ -1,7 +1,4 @@
-
 // LOCAL ADAPTER REPLACING SUPABASE CLIENT
-// This redirects calls to our local Express API at http://localhost:3000
-
 const API_URL = 'http://localhost:3000/api';
 
 class LocalSupabaseClient {
@@ -17,7 +14,6 @@ class LocalSupabaseClient {
             }
         },
         getSession: async () => {
-            // Mock session
             const { data } = await this.auth.getUser();
             return {
                 data: { session: data.user ? { user: data.user, access_token: 'mock-token' } : null },
@@ -25,7 +21,6 @@ class LocalSupabaseClient {
             };
         },
         onAuthStateChange: (callback: any) => {
-            // Immediately trigger signed in state
             this.auth.getSession().then(({ data }) => {
                 if (data.session) {
                     callback('SIGNED_IN', data.session);
@@ -33,9 +28,12 @@ class LocalSupabaseClient {
             });
             return { data: { subscription: { unsubscribe: () => { } } } };
         },
-        signInWithOAuth: async () => {
-            console.warn("OAuth not supported in local mode");
-            return { error: { message: "Not supported locally" } };
+        signInWithPassword: async () => {
+            // Auto login for local development
+            return { data: { session: null, user: null }, error: null };
+        },
+        signUp: async () => {
+            return { data: { session: null, user: null }, error: null };
         },
         signOut: async () => {
             window.location.reload();
@@ -46,126 +44,224 @@ class LocalSupabaseClient {
     from(table: string) {
         return new QueryBuilder(table);
     }
+
+    // Mock functions object for edge function calls
+    functions = {
+        invoke: async (functionName: string, options?: any) => {
+            console.log(`🔄 Edge function call intercepted: ${functionName}`);
+
+            // Redirect edge function calls to local API
+            if (functionName === 'manage-api-keys') {
+                return this.handleApiKeyOperation(options?.body);
+            }
+
+            return { data: null, error: { message: 'Function not implemented locally' } };
+        }
+    };
+
+    private async handleApiKeyOperation(body: any) {
+        const { action } = body || {};
+
+        try {
+            switch (action) {
+                case 'list':
+                    const listRes = await fetch(`${API_URL}/user_api_keys`);
+                    const keys = await listRes.json();
+                    return { data: keys, error: null };
+
+                case 'save':
+                    const saveRes = await fetch(`${API_URL}/user_api_keys`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const saved = await saveRes.json();
+                    return { data: saved, error: null };
+
+                case 'delete':
+                    const { provider } = body;
+                    const deleteRes = await fetch(`${API_URL}/user_api_keys/${provider}`, {
+                        method: 'DELETE'
+                    });
+                    const deleted = await deleteRes.json();
+                    return { data: deleted, error: null };
+
+                case 'test':
+                    const testRes = await fetch(`${API_URL}/user_api_keys/test`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const testResult = await testRes.json();
+                    return { data: testResult, error: null };
+
+                default:
+                    return { data: null, error: { message: 'Unknown action' } };
+            }
+        } catch (error) {
+            console.error('API key operation error:', error);
+            return { data: null, error };
+        }
+    }
 }
 
 class QueryBuilder {
     table: string;
     url: string;
-    method: string = 'GET';
-    body: any = null;
-    id: any = null;
+    filters: Record<string, any> = {};
+    orderBy: { column: string; ascending: boolean } | null = null;
+    limitValue: number | null = null;
+    offsetValue: number | null = null;
 
     constructor(table: string) {
         this.table = table;
         this.url = `${API_URL}/${table}`;
     }
 
-    select(columns = '*') {
+    select(columns = '*', options?: any) {
         return this;
     }
 
     eq(column: string, value: any) {
-        if (column === 'id') {
-            this.id = value;
-        } else if (column === 'user_id') {
-            // Backend handles user_id automatically usually, but we can verify
+        if (column === 'user_id') {
+            this.filters.user_id = value;
+        } else if (column === 'id') {
+            this.url = `${API_URL}/${this.table}/${value}`;
         }
         return this;
     }
 
-    order(column: string, { ascending = false } = {}) {
+    order(column: string, options?: { ascending?: boolean }) {
+        this.orderBy = { column, ascending: options?.ascending ?? true };
         return this;
+    }
+
+    limit(count: number) {
+        this.limitValue = count;
+        return this;
+    }
+
+    range(from: number, to: number) {
+        this.offsetValue = from;
+        this.limitValue = to - from + 1;
+        return this;
+    }
+
+    maybeSingle() {
+        return this.executeSingle();
     }
 
     single() {
-        // This is a modifier that expects single result
-        // In real Supabase, this affects the return type (obj vs array)
-        // We'll handle this in the execution phase
-        this.isSingle = true;
-        return this;
+        return this.executeSingle();
     }
 
-    insert(data: any) {
-        this.method = 'POST';
-        this.body = data;
-        return this;
-    }
-
-    update(data: any) {
-        this.method = 'PUT';
-        this.body = data;
-        return this;
-    }
-
-    delete() {
-        this.method = 'DELETE';
-        return this;
-    }
-
-    limit(n: number) {
-        return this;
-    }
-
-    // Thenable to execute the query
-    then(resolve: any, reject: any) {
-        this.execute().then(resolve).catch(reject);
-    }
-
-    async execute() {
-        let fetchUrl = this.url;
-        const options: any = {
-            method: this.method,
-            headers: { 'Content-Type': 'application/json' }
-        };
-
-        if (this.body) {
-            options.body = JSON.stringify(this.body);
-        }
-
-        // Handle ID in URL for UPDATE/DELETE/GET-one
-        if (this.id) {
-            fetchUrl += `/${this.id}`;
-        }
-
+    async executeSingle() {
         try {
-            const response = await fetch(fetchUrl, options);
+            const response = await fetch(this.url);
             if (!response.ok) {
-                const text = await response.text();
-                return { data: null, error: { message: text } };
+                return { data: null, error: { message: `HTTP ${response.status}` } };
+            }
+            const text = await response.text();
+            const data = text ? JSON.parse(text) : null;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Query error:', error);
+            return { data: null, error };
+        }
+    }
+
+    async then(resolve: any, reject?: any) {
+        try {
+            let url = this.url;
+            const params = new URLSearchParams();
+
+            if (this.limitValue) params.append('limit', this.limitValue.toString());
+            if (this.offsetValue) params.append('offset', this.offsetValue.toString());
+
+            if (params.toString()) {
+                url += '?' + params.toString();
             }
 
-            if (this.method === 'DELETE') {
-                return { data: null, error: null };
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                const error = { message: `HTTP ${response.status}`, status: response.status };
+                return resolve({ data: null, error });
+            }
+
+            const text = await response.text();
+
+            // Handle empty response
+            if (!text || text.trim() === '') {
+                return resolve({ data: [], error: null, count: 0 });
+            }
+
+            const data = JSON.parse(text);
+
+            resolve({
+                data: Array.isArray(data) ? data : [data],
+                error: null,
+                count: Array.isArray(data) ? data.length : 1
+            });
+        } catch (error) {
+            console.error('Query execution error:', error);
+            resolve({ data: null, error });
+        }
+    }
+
+    async insert(data: any) {
+        try {
+            const response = await fetch(this.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                return { data: null, error: { message: `HTTP ${response.status}` } };
             }
 
             const result = await response.json();
-
-            let data = result;
-            // Supabase select() returns an array by default
-            // Our backend GET / usually returns array
-            // Our backend GET /:id returns object
-
-            if (this.method === 'GET' && !this.id) {
-                // generic list query
-                if (!Array.isArray(data)) data = [data]; // Should be array
-                if (this.isSingle && data.length > 0) data = data[0];
-            } else {
-                // POST/PUT/GET-one usually return single object
-                // But Supabase often wraps in array unless .single() used? 
-                // Actually .insert().select() returns array.
-                if (!Array.isArray(data)) data = [data];
-                if (this.isSingle) data = data[0];
-            }
-
-            return { data, error: null };
-
-        } catch (err: any) {
-            console.error("API Request Failed", err);
-            return { data: null, error: err };
+            return { data: result, error: null };
+        } catch (error) {
+            return { data: null, error };
         }
     }
 
-    isSingle = false;
+    async update(data: any) {
+        try {
+            const response = await fetch(this.url, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                return { data: null, error: { message: `HTTP ${response.status}` } };
+            }
+
+            const result = await response.json();
+            return { data: result, error: null };
+        } catch (error) {
+            return { data: null, error };
+        }
+    }
+
+    async delete() {
+        try {
+            const response = await fetch(this.url, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                return { data: null, error: { message: `HTTP ${response.status}` } };
+            }
+
+            return { data: null, error: null };
+        } catch (error) {
+            return { data: null, error };
+        }
+    }
 }
 
 export const supabase = new LocalSupabaseClient() as any;
