@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Plus, Search, Trash2, Edit3, ChevronDown, ChevronUp,
   ThumbsUp, ThumbsDown, X, Save, Loader2, Users,
@@ -8,6 +8,14 @@ import { supabase } from '../lib/supabase';
 import type { Character, CharacterDetail } from '../lib/types';
 import { DETAIL_CATEGORIES } from '../lib/types';
 import Modal from '../components/Modal';
+import {
+  useCharacters,
+  useCreateCharacter,
+  useUpdateCharacter,
+  useDeleteCharacter,
+  useAddCharacterDetail,
+  useDeleteCharacterDetail,
+} from '../hooks/useCharacters';
 
 const PAGE_SIZE = 12;
 
@@ -16,11 +24,8 @@ interface CharactersProps {
 }
 
 export default function Characters({ userId }: CharactersProps) {
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
   const [editingChar, setEditingChar] = useState<Character | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -36,31 +41,32 @@ export default function Characters({ userId }: CharactersProps) {
   const [detailText, setDetailText] = useState('');
   const [detailWorks, setDetailWorks] = useState(true);
 
-  useEffect(() => {
-    loadCharacters();
-  }, [currentPage]);
+  // React Query hooks
+  const { data, isLoading } = useCharacters(currentPage);
+  const characters = data?.characters ?? [];
+  const totalCount = data?.totalCount ?? 0;
 
-  async function loadCharacters() {
-    setLoading(true);
-    const { data, count } = await supabase
-      .from('characters')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+  const createMutation = useCreateCharacter();
+  const updateMutation = useUpdateCharacter();
+  const deleteMutation = useDeleteCharacter();
+  const addDetailMutation = useAddCharacterDetail();
+  const deleteDetailMutation = useDeleteCharacterDetail();
 
-    setCharacters(data ?? []);
-    setTotalCount(count ?? 0);
-    setLoading(false);
-  }
-
+  // Manual detail loading for character expansion
   async function loadDetails(characterId: string) {
     if (details[characterId]) return;
-    const { data } = await supabase
-      .from('character_details')
-      .select('*')
-      .eq('character_id', characterId)
-      .order('created_at', { ascending: false });
-    setDetails((prev) => ({ ...prev, [characterId]: data ?? [] }));
+    try {
+      const { data, error } = await supabase
+        .from('character_details')
+        .select('*')
+        .eq('character_id', characterId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDetails((prev) => ({ ...prev, [characterId]: data ?? [] }));
+    } catch (err) {
+      // Silent error - details just won't show
+    }
   }
 
   function openEditor(char: Character | null) {
@@ -78,23 +84,22 @@ export default function Characters({ userId }: CharactersProps) {
       name: formName.trim() || 'Unnamed Character',
       description: formDesc,
       reference_image_url: formImage,
-      updated_at: new Date().toISOString(),
     };
 
-    if (editingChar) {
-      await supabase.from('characters').update(payload).eq('id', editingChar.id);
-    } else {
-      await supabase.from('characters').insert(payload);
+    try {
+      if (editingChar) {
+        await updateMutation.mutateAsync({ id: editingChar.id, ...payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      setShowEditor(false);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
-    setShowEditor(false);
-    loadCharacters();
   }
 
   async function handleDeleteCharacter(id: string) {
-    await supabase.from('characters').delete().eq('id', id);
-    setCharacters((prev) => prev.filter((c) => c.id !== id));
+    await deleteMutation.mutateAsync(id);
   }
 
   async function handleToggleExpand(id: string) {
@@ -108,46 +113,31 @@ export default function Characters({ userId }: CharactersProps) {
 
   async function handleAddDetail(characterId: string) {
     if (!detailText.trim()) return;
-    const { data } = await supabase
-      .from('character_details')
-      .insert({
-        character_id: characterId,
-        category: detailCategory,
-        detail: detailText.trim(),
-        works_well: detailWorks,
-      })
-      .select()
-      .maybeSingle();
-
-    if (data) {
-      setDetails((prev) => ({
-        ...prev,
-        [characterId]: [data, ...(prev[characterId] ?? [])],
-      }));
-    }
+    await addDetailMutation.mutateAsync({
+      character_id: characterId,
+      category: detailCategory,
+      detail: detailText.trim(),
+      works_well: detailWorks,
+    });
     setDetailText('');
     setShowDetailForm(null);
   }
 
   async function handleDeleteDetail(characterId: string, detailId: string) {
-    await supabase.from('character_details').delete().eq('id', detailId);
-    setDetails((prev) => ({
-      ...prev,
-      [characterId]: (prev[characterId] ?? []).filter((d) => d.id !== detailId),
-    }));
+    await deleteDetailMutation.mutateAsync({ detailId, characterId });
   }
 
   const filtered = search
     ? characters.filter(
-        (c) =>
-          c.name.toLowerCase().includes(search.toLowerCase()) ||
-          c.description.toLowerCase().includes(search.toLowerCase())
-      )
+      (c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.description.toLowerCase().includes(search.toLowerCase())
+    )
     : characters;
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
@@ -404,11 +394,10 @@ export default function Characters({ userId }: CharactersProps) {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
-                      currentPage === page
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
                   >
                     {page + 1}
                   </button>

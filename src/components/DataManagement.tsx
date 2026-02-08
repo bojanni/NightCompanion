@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, AlertTriangle, CheckCircle, Loader2, Database, FileJson } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Loader2, Database, FileJson } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { handleError, showSuccess } from '../lib/error-handler';
 
 interface BackupData {
   version: string;
@@ -28,9 +29,6 @@ interface DataManagementProps {
 export function DataManagement({ userId }: DataManagementProps) {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [exportSuccess, setExportSuccess] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [importStats, setImportStats] = useState<Record<string, number> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -48,8 +46,6 @@ export function DataManagement({ userId }: DataManagementProps) {
 
   const exportAllData = async () => {
     setExporting(true);
-    setError(null);
-    setExportSuccess(false);
 
     try {
       const [
@@ -99,10 +95,9 @@ export function DataManagement({ userId }: DataManagementProps) {
 
       const timestamp = new Date().toISOString().split('T')[0];
       downloadJSON(backup, `nightcafe-companion-backup-${timestamp}.json`);
-      setExportSuccess(true);
-      setTimeout(() => setExportSuccess(false), 5000);
+      showSuccess('Data exported successfully!');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export data');
+      handleError(err, 'DataExport', { userId });
     } finally {
       setExporting(false);
     }
@@ -124,8 +119,6 @@ export function DataManagement({ userId }: DataManagementProps) {
 
   const importData = async (file: File) => {
     setImporting(true);
-    setError(null);
-    setImportSuccess(false);
     setImportStats(null);
 
     try {
@@ -146,7 +139,7 @@ export function DataManagement({ userId }: DataManagementProps) {
           user_id: userId,
         }));
 
-        const { data, error: insertError } = await supabase
+        const { error: insertError } = await supabase
           .from(table)
           .upsert(recordsWithUserId, { onConflict: 'id' });
 
@@ -158,13 +151,11 @@ export function DataManagement({ userId }: DataManagementProps) {
       }
 
       setImportStats(stats);
-      setImportSuccess(true);
+      const totalRecords = Object.values(stats).reduce((sum, count) => sum + count, 0);
+      showSuccess(`Successfully imported ${totalRecords} records!`);
     } catch (err) {
-      if (err instanceof SyntaxError) {
-        setError('Invalid JSON file. Please select a valid backup file.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to import data');
-      }
+      handleError(err, 'DataImport', { userId, fileName: file.name });
+      setImportStats(null);
     } finally {
       setImporting(false);
     }
@@ -177,10 +168,6 @@ export function DataManagement({ userId }: DataManagementProps) {
     }
   };
 
-  const getTotalRecords = () => {
-    if (!importStats) return 0;
-    return Object.values(importStats).reduce((sum, count) => sum + count, 0);
-  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -230,13 +217,6 @@ export function DataManagement({ userId }: DataManagementProps) {
                 </>
               )}
             </button>
-
-            {exportSuccess && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg p-3">
-                <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                <span>Data exported successfully!</span>
-              </div>
-            )}
           </div>
 
           <div className="border border-slate-200 rounded-lg p-5 hover:border-slate-300 transition-colors">
@@ -280,38 +260,21 @@ export function DataManagement({ userId }: DataManagementProps) {
               )}
             </button>
 
-            {importSuccess && importStats && (
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg p-3">
-                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>Imported {getTotalRecords()} records successfully!</span>
-                </div>
-                <div className="text-xs text-slate-600 space-y-1 bg-slate-50 rounded-lg p-3">
-                  {Object.entries(importStats).map(([table, count]) => (
-                    count > 0 && (
-                      <div key={table} className="flex justify-between">
-                        <span className="capitalize">{table.replace(/_/g, ' ')}:</span>
-                        <span className="font-medium">{count}</span>
-                      </div>
-                    )
-                  ))}
-                </div>
+            {importStats && (
+              <div className="mt-3 text-xs text-slate-600 space-y-1 bg-slate-50 rounded-lg p-3">
+                <div className="font-medium text-slate-700 mb-1.5">Import Details:</div>
+                {Object.entries(importStats).map(([table, count]) => (
+                  count > 0 && (
+                    <div key={table} className="flex justify-between">
+                      <span className="capitalize">{table.replace(/_/g, ' ')}:</span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  )
+                ))}
               </div>
             )}
           </div>
         </div>
-
-        {error && (
-          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <div>
-                <h4 className="text-sm font-semibold text-red-900 mb-1">Error</h4>
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">

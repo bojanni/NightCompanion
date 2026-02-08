@@ -13,6 +13,7 @@ import { PromptImprover } from '../components/PromptImprover';
 import PromptOptimizer from '../components/PromptOptimizer';
 import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
+import { handleError, showSuccess } from '../lib/error-handler';
 
 const PAGE_SIZE = 20;
 
@@ -106,20 +107,38 @@ export default function Prompts({ userId }: PromptsProps) {
   }, [prompts, search, filterType, filterTag, promptTagMap]);
 
   async function handleDelete(id: string) {
-    await supabase.from('prompts').delete().eq('id', id);
-    setPrompts((prev) => prev.filter((p) => p.id !== id));
+    try {
+      const { error } = await supabase.from('prompts').delete().eq('id', id);
+      if (error) throw error;
+
+      setPrompts((prev) => prev.filter((p) => p.id !== id));
+      showSuccess('Prompt deleted successfully!');
+    } catch (err) {
+      handleError(err, 'DeletePrompt', { promptId: id });
+    }
   }
 
   async function handleToggleFavorite(prompt: Prompt) {
-    const newVal = !prompt.is_favorite;
-    await supabase.from('prompts').update({ is_favorite: newVal }).eq('id', prompt.id);
-    setPrompts((prev) => prev.map((p) => (p.id === prompt.id ? { ...p, is_favorite: newVal } : p)));
+    try {
+      const newVal = !prompt.is_favorite;
+      const { error } = await supabase.from('prompts').update({ is_favorite: newVal }).eq('id', prompt.id);
+      if (error) throw error;
+
+      setPrompts((prev) => prev.map((p) => (p.id === prompt.id ? { ...p, is_favorite: newVal } : p)));
+    } catch (err) {
+      handleError(err, 'ToggleFavorite', { promptId: prompt.id });
+    }
   }
 
   async function handleCopy(content: string, id: string) {
-    await navigator.clipboard.writeText(content);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+      showSuccess('Copied to clipboard!');
+    } catch (err) {
+      handleError(err, 'CopyPrompt', { promptId: id });
+    }
   }
 
   function getTagsForPrompt(promptId: string): Tag[] {
@@ -129,37 +148,58 @@ export default function Prompts({ userId }: PromptsProps) {
 
   async function handleRestoreVersion(content: string) {
     if (historyPrompt) {
-      await supabase
-        .from('prompts')
-        .update({ content, updated_at: new Date().toISOString() })
-        .eq('id', historyPrompt.id);
+      try {
+        const { error } = await supabase
+          .from('prompts')
+          .update({ content, updated_at: new Date().toISOString() })
+          .eq('id', historyPrompt.id);
 
-      setShowHistory(false);
-      loadData();
+        if (error) throw error;
+
+        setShowHistory(false);
+        loadData();
+        showSuccess('Version restored successfully!');
+      } catch (err) {
+        handleError(err, 'RestoreVersion', { promptId: historyPrompt.id });
+      }
     }
   }
 
   async function handleApplyImprovement(content: string) {
     if (improverPrompt) {
-      await supabase
-        .from('prompts')
-        .update({ content, updated_at: new Date().toISOString() })
-        .eq('id', improverPrompt.id);
+      try {
+        const { error } = await supabase
+          .from('prompts')
+          .update({ content, updated_at: new Date().toISOString() })
+          .eq('id', improverPrompt.id);
 
-      setShowImprover(false);
-      loadData();
+        if (error) throw error;
+
+        setShowImprover(false);
+        loadData();
+        showSuccess('Improvement applied successfully!');
+      } catch (err) {
+        handleError(err, 'ApplyImprovement', { promptId: improverPrompt.id });
+      }
     }
   }
 
   async function handleApplyOptimization(content: string) {
     if (optimizerPrompt) {
-      await supabase
-        .from('prompts')
-        .update({ content, updated_at: new Date().toISOString() })
-        .eq('id', optimizerPrompt.id);
+      try {
+        const { error } = await supabase
+          .from('prompts')
+          .update({ content, updated_at: new Date().toISOString() })
+          .eq('id', optimizerPrompt.id);
 
-      setShowOptimizer(false);
-      loadData();
+        if (error) throw error;
+
+        setShowOptimizer(false);
+        loadData();
+        showSuccess('Optimization applied successfully!');
+      } catch (err) {
+        handleError(err, 'ApplyOptimization', { promptId: optimizerPrompt.id });
+      }
     }
   }
 
@@ -215,11 +255,10 @@ export default function Prompts({ userId }: PromptsProps) {
         <div className="flex gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
-              showFilters || filterTag
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || filterTag
                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                 : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             <Filter size={14} />
             Filters
@@ -228,11 +267,10 @@ export default function Prompts({ userId }: PromptsProps) {
             <button
               key={type}
               onClick={() => handleFilterChange(type)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                filterType === type
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === type
                   ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                   : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-              }`}
+                }`}
             >
               {type === 'templates' && <BookTemplate size={13} />}
               {type === 'favorites' && <Heart size={13} />}
@@ -247,11 +285,10 @@ export default function Prompts({ userId }: PromptsProps) {
         <div className="flex flex-wrap gap-1.5 p-4 bg-slate-900 border border-slate-800 rounded-xl">
           <button
             onClick={() => handleTagFilterChange(null)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-              !filterTag
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!filterTag
                 ? 'bg-white/10 text-white'
                 : 'text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             All Tags
           </button>
@@ -419,11 +456,10 @@ export default function Prompts({ userId }: PromptsProps) {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
-                      currentPage === page
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
                         ? 'bg-amber-500 text-white'
                         : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
+                      }`}
                   >
                     {page + 1}
                   </button>
