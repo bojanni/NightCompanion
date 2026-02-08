@@ -2,7 +2,6 @@
   "name": "nightcafe-companion",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
