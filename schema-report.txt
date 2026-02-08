@@ -1,0 +1,87 @@
+﻿ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+    SCHEMA VERIFICATION REPORT
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+
+1. USER_ID COLUMNS
+   Status: Ô£à ALL REMOVED
+
+2. DATABASE TABLES
+   Total: 18 tables
+   - batch_test_prompts
+   - batch_test_results
+   - batch_tests
+   - character_details
+   - characters
+   - collections
+   - credit_transactions
+   - gallery_items
+   - model_usage
+   - prompt_tags
+   - prompt_versions
+   - prompts
+   - style_keywords
+   - style_profiles
+   - tags
+   - user_api_keys
+   - user_local_endpoints
+   - user_profiles
+
+3. CUSTOM FUNCTIONS
+   Total: 43 functions
+   - armor
+   - armor
+   - create_initial_version
+   - create_user_profile
+   - create_version_on_update
+   - crypt
+   - dearmor
+   - decrypt
+   - decrypt_iv
+   - digest
+   - digest
+   - encrypt
+   - encrypt_iv
+   - fips_mode
+   - gen_random_bytes
+   - gen_random_uuid
+   - gen_salt
+   - gen_salt
+   - get_next_version_number
+   - hmac
+   - hmac
+   - pgp_armor_headers
+   - pgp_key_id
+   - pgp_pub_decrypt
+   - pgp_pub_decrypt
+   - pgp_pub_decrypt
+   - pgp_pub_decrypt_bytea
+   - pgp_pub_decrypt_bytea
+   - pgp_pub_decrypt_bytea
+   - pgp_pub_encrypt
+   - pgp_pub_encrypt
+   - pgp_pub_encrypt_bytea
+   - pgp_pub_encrypt_bytea
+   - pgp_sym_decrypt
+   - pgp_sym_decrypt
+   - pgp_sym_decrypt_bytea
+   - pgp_sym_decrypt_bytea
+   - pgp_sym_encrypt
+   - pgp_sym_encrypt
+   - pgp_sym_encrypt_bytea
+   - pgp_sym_encrypt_bytea
+   - rebuild_style_keywords
+   - track_style_keywords
+
+4. TRIGGERS
+   Total: 2 triggers
+   - create_initial_version_trigger on prompts
+   - create_version_on_update_trigger on prompts
+
+5. UNIQUE CONSTRAINTS
+   Total: 2 constraints
+   - style_keywords: style_keywords_keyword_category_unique
+   - user_api_keys: user_api_keys_provider_unique
+
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ
+Ô£à SCHEMA SIMPLIFICATION COMPLETE!
+ÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉ

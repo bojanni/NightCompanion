@@ -32,9 +32,6 @@ const createCrudRouter = (tableName) => {
         try {
             const data = req.body;
 
-            // Note: If the table requires user_id and it's not provided in data,
-            // this INSERT will fail unless the column has a DEFAULT value.
-
             const columns = Object.keys(data);
             const values = Object.values(data);
             const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
