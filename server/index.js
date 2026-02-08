@@ -29,6 +29,13 @@ app.use('/api/collections', createCrudRouter('collections'));
 // API Keys management with encryption
 app.use('/api/api-keys', require('./routes/api-keys'));
 
+// Local Endpoints management
+app.use('/api/local-endpoints', require('./routes/local-endpoints'));
+
+// Alternative routes with underscore naming (for compatibility)
+app.use('/api/user_api_keys', require('./routes/api-keys'));
+app.use('/api/user_local_endpoints', require('./routes/local-endpoints'));
+
 // Mock Auth Route
 app.get('/api/auth/user', (req, res) => {
   res.json({

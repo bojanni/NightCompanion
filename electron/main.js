@@ -16,6 +16,7 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js'),
+            webSecurity: isDev ? false : true, // ✨ Disable in dev to allow local API calls
         },
     });
 
