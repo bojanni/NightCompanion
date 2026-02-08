@@ -25,6 +25,9 @@ app.use('/api/character_details', createCrudRouter('character_details'));
 app.use('/api/gallery_items', createCrudRouter('gallery_items'));
 app.use('/api/collections', createCrudRouter('collections'));
 
+// API Keys management with encryption
+app.use('/api/api-keys', require('./routes/api-keys'));
+
 // Mock Auth Route
 app.get('/api/auth/user', (req, res) => {
   res.json({
