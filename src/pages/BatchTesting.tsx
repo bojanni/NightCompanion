@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FlaskConical, Plus, Trash2, Loader2, Star, ExternalLink, Grid3x3 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import PromptVariationGenerator, { VariationList } from '../components/PromptVariationGenerator';
 import ResultsComparisonMatrix from '../components/ResultsComparisonMatrix';
 import { generatePromptVariations } from '../lib/ai-service';
@@ -107,7 +107,7 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
 
       if (error) throw error;
 
-      await supabase.from('batch_test_prompts').insert({
+      await db.from('batch_test_prompts').insert({
         batch_test_id: data.id,
         prompt_text: newTestPrompt,
         variation_type: 'original',
@@ -131,7 +131,7 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
 
     setGenerating(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token ?? '';
+      const token = (await db.auth.getSession()).data.session?.access_token ?? '';
       const variations = await generatePromptVariations(selectedTest.base_prompt, token);
 
       const existingCount = selectedTest.prompts?.length || 1;
@@ -142,7 +142,7 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
         sort_order: existingCount + i,
       }));
 
-      const { error } = await supabase.from('batch_test_prompts').insert(promptsToInsert);
+      const { error } = await db.from('batch_test_prompts').insert(promptsToInsert);
 
       if (error) throw error;
 
@@ -158,7 +158,7 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
     if (!confirm('Delete this batch test and all its results?')) return;
 
     try {
-      const { error } = await supabase.from('batch_tests').delete().eq('id', testId);
+      const { error } = await db.from('batch_tests').delete().eq('id', testId);
 
       if (error) throw error;
 
@@ -173,7 +173,7 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
 
   async function addResult(promptId: string, modelUsed: string, imageUrl: string) {
     try {
-      const { error } = await supabase.from('batch_test_results').insert({
+      const { error } = await db.from('batch_test_results').insert({
         batch_test_prompt_id: promptId,
         model_used: modelUsed,
         image_url: imageUrl,

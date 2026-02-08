@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, Loader2, Plus, X } from 'lucide-react';
 import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import StarRating from './StarRating';
@@ -44,7 +44,7 @@ export default function PromptEditor({ prompt, userId, onSave, onCancel }: Promp
   }, [prompt]);
 
   async function loadTags() {
-    const { data } = await supabase.from('tags').select('*').order('name');
+    const { data } = await db.from('tags').select('*').order('name');
     setAllTags(data ?? []);
 
     if (prompt) {
@@ -103,14 +103,14 @@ export default function PromptEditor({ prompt, userId, onSave, onCancel }: Promp
       let promptId = prompt?.id;
 
       if (prompt) {
-        await supabase.from('prompts').update(payload).eq('id', prompt.id);
+        await db.from('prompts').update(payload).eq('id', prompt.id);
       } else {
-        const { data } = await supabase.from('prompts').insert(payload).select().maybeSingle();
+        const { data } = await db.from('prompts').insert(payload).select().maybeSingle();
         promptId = data?.id;
       }
 
       if (promptId) {
-        await supabase.from('prompt_tags').delete().eq('prompt_id', promptId);
+        await db.from('prompt_tags').delete().eq('prompt_id', promptId);
         if (selectedTagIds.length > 0) {
           await supabase
             .from('prompt_tags')

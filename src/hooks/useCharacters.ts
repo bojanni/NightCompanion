@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
 import { handleError, showSuccess } from '../lib/error-handler';
 
@@ -119,7 +119,7 @@ export function useDeleteCharacter() {
 
     return useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('characters').delete().eq('id', id);
+            const { error } = await db.from('characters').delete().eq('id', id);
             if (error) throw error;
         },
         onSuccess: () => {
@@ -145,7 +145,7 @@ export function useAddCharacterDetail() {
             detail: string;
             works_well: boolean;
         }) => {
-            const { error } = await supabase.from('character_details').insert(data);
+            const { error } = await db.from('character_details').insert(data);
             if (error) throw error;
         },
         onSuccess: (_, variables) => {

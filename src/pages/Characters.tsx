@@ -4,7 +4,7 @@ import {
   ThumbsUp, ThumbsDown, X, Save, Loader2, Users,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
 import { DETAIL_CATEGORIES } from '../lib/types';
 import Modal from '../components/Modal';

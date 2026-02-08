@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Trophy, TrendingUp, BarChart3,
   Save, Loader2, CheckCircle2,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import { MODELS, CATEGORY_OPTIONS, type ModelInfo } from '../lib/models-data';
 import StarRating from './StarRating';
 
@@ -60,7 +60,7 @@ export default function ModelTracker({ userId }: ModelTrackerProps) {
   async function handleSave() {
     if (!formModelId) return;
     setSaving(true);
-    await supabase.from('model_usage').insert({
+    await db.from('model_usage').insert({
       user_id: userId,
       model_id: formModelId,
       prompt_used: formPrompt,
@@ -85,7 +85,7 @@ export default function ModelTracker({ userId }: ModelTrackerProps) {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('model_usage').delete().eq('id', id);
+    await db.from('model_usage').delete().eq('id', id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 

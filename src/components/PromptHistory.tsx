@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Clock, RotateCcw, GitCompare, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import { PromptVersion } from '../lib/types';
 import Modal from './Modal';
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 
 interface RandomGeneratorProps {
   userId: string;
@@ -30,7 +30,7 @@ export default function RandomGenerator({ userId, onSwitchToGuided, onSaved }: R
   async function handleSave() {
     if (!prompt) return;
     setSaving(true);
-    await supabase.from('prompts').insert({
+    await db.from('prompts').insert({
       user_id: userId,
       title: 'Random: ' + prompt.split(',')[0].slice(0, 40),
       content: prompt,

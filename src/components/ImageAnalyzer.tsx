@@ -7,7 +7,7 @@ import {
   analyzeImage, batchAnalyzeImages, resizeImageToBase64,
 } from '../lib/ai-service';
 import type { ImageAnalysisResult, BatchAnalysisResult } from '../lib/ai-service';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import SingleAnalysis from './analysis/SingleAnalysis';
 import ComparisonResults from './analysis/ComparisonResults';
 
@@ -79,7 +79,7 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
     resetResults();
 
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await db.auth.getSession();
       const token = data.session?.access_token ?? '';
 
       if (filledSlots.length === 1) {

@@ -3,7 +3,7 @@ import {
   Key, ExternalLink, Loader2, Check, Trash2, Shield, Zap,
   Eye, EyeOff, RefreshCw, CircleDot, Server, Globe, TestTube2,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModelSelection } from '../lib/api-keys-service';
 import type { ApiKeyInfo } from '../lib/api-keys-service';
 import { testConnection } from '../lib/ai-service';
@@ -82,7 +82,7 @@ export default function Settings({ userId }: SettingsProps) {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const getToken = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await db.auth.getSession();
     return data.session?.access_token ?? '';
   }, []);
 
@@ -361,7 +361,7 @@ export default function Settings({ userId }: SettingsProps) {
                   setActionLoading('ollama');
                   setError('');
                   try {
-                    await supabase.from('user_local_endpoints').delete().eq('provider', 'ollama');
+                    await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
                     const { error: insertError } = await supabase
                       .from('user_local_endpoints')
                       .insert({
@@ -401,8 +401,8 @@ export default function Settings({ userId }: SettingsProps) {
                   setActionLoading('ollama-active');
                   setError('');
                   try {
-                    await supabase.from('user_api_keys').update({ is_active: false }).neq('provider', '');
-                    await supabase.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'ollama');
+                    await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
+                    await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'ollama');
                     const { error: updateError } = await supabase
                       .from('user_local_endpoints')
                       .update({ is_active: true })
@@ -426,7 +426,7 @@ export default function Settings({ userId }: SettingsProps) {
                   setActionLoading('lmstudio');
                   setError('');
                   try {
-                    await supabase.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
+                    await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
                     const { error: insertError } = await supabase
                       .from('user_local_endpoints')
                       .insert({
@@ -466,8 +466,8 @@ export default function Settings({ userId }: SettingsProps) {
                   setActionLoading('lmstudio-active');
                   setError('');
                   try {
-                    await supabase.from('user_api_keys').update({ is_active: false }).neq('provider', '');
-                    await supabase.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'lmstudio');
+                    await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
+                    await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'lmstudio');
                     const { error: updateError } = await supabase
                       .from('user_local_endpoints')
                       .update({ is_active: true })

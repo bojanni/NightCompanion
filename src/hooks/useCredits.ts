@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 
 export interface UserProfile {
   id: string;
@@ -94,7 +94,7 @@ export function useCredits(userId: string) {
 
       if (updateError) throw updateError;
 
-      await supabase.from('credit_transactions').insert({
+      await db.from('credit_transactions').insert({
         user_id: userId,
         amount: -amount,
         transaction_type: 'spent',
@@ -136,7 +136,7 @@ export function useCredits(userId: string) {
 
       if (updateError) throw updateError;
 
-      await supabase.from('credit_transactions').insert({
+      await db.from('credit_transactions').insert({
         user_id: userId,
         amount,
         transaction_type: type,

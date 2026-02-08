@@ -1,7 +1,7 @@
-// LOCAL ADAPTER REPLACING SUPABASE CLIENT
+// LOCAL ADAPTER REPLACING API CLIENT
 const API_URL = 'http://localhost:3000/api';
 
-class LocalSupabaseClient {
+class LocalApiClient {
     auth = {
         getUser: async () => {
             try {
@@ -264,4 +264,4 @@ class QueryBuilder {
     }
 }
 
-export const supabase = new LocalSupabaseClient() as any;
+export const db = new LocalApiClient() as any;

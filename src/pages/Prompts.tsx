@@ -3,7 +3,7 @@ import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
 import Modal from '../components/Modal';
 import { PromptSkeleton } from '../components/PromptSkeleton';
@@ -67,8 +67,8 @@ export default function Prompts({ userId }: PromptsProps) {
       .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
     const [tagsRes, ptRes] = await Promise.all([
-      supabase.from('tags').select('*').order('name'),
-      promptsData ? supabase.from('prompt_tags').select('*').in('prompt_id', promptsData.map(p => p.id)) : Promise.resolve({ data: [] }),
+      db.from('tags').select('*').order('name'),
+      promptsData ? db.from('prompt_tags').select('*').in('prompt_id', promptsData.map(p => p.id)) : Promise.resolve({ data: [] }),
     ]);
 
     setPrompts(promptsData ?? []);
@@ -109,7 +109,7 @@ export default function Prompts({ userId }: PromptsProps) {
 
   async function handleDelete(id: string) {
     try {
-      const { error } = await supabase.from('prompts').delete().eq('id', id);
+      const { error } = await db.from('prompts').delete().eq('id', id);
       if (error) throw error;
 
       setPrompts((prev) => prev.filter((p) => p.id !== id));
@@ -122,7 +122,7 @@ export default function Prompts({ userId }: PromptsProps) {
   async function handleToggleFavorite(prompt: Prompt) {
     try {
       const newVal = !prompt.is_favorite;
-      const { error } = await supabase.from('prompts').update({ is_favorite: newVal }).eq('id', prompt.id);
+      const { error } = await db.from('prompts').update({ is_favorite: newVal }).eq('id', prompt.id);
       if (error) throw error;
 
       setPrompts((prev) => prev.map((p) => (p.id === prompt.id ? { ...p, is_favorite: newVal } : p)));

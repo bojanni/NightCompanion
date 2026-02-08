@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, Copy, Check, Loader2, ChevronRight, Lightbulb, Wand2 } from 'lucide-react';
 import { improvePromptDetailed, DetailedImprovement } from '../lib/ai-service';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 
 interface PromptImproverProps {
   prompt: string;
@@ -21,7 +21,7 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
     setImprovement(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await db.auth.getSession();
       if (!session) {
         setError('Please sign in to use AI improvements');
         return;

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Download, Upload, AlertTriangle, Loader2, Database, FileJson } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import { handleError, showSuccess } from '../lib/error-handler';
 
 interface BackupData {
@@ -61,17 +61,17 @@ export function DataManagement({ userId }: DataManagementProps) {
         { data: batchTests },
         { data: batchTestResults },
       ] = await Promise.all([
-        supabase.from('prompts').select('*').eq('user_id', userId),
-        supabase.from('characters').select('*').eq('user_id', userId),
-        supabase.from('character_details').select('*').eq('user_id', userId),
-        supabase.from('gallery').select('*').eq('user_id', userId),
-        supabase.from('tags').select('*').eq('user_id', userId),
-        supabase.from('prompt_tags').select('*').eq('user_id', userId),
-        supabase.from('model_usage').select('*').eq('user_id', userId),
-        supabase.from('prompt_versions').select('*').eq('user_id', userId),
-        supabase.from('style_learning').select('*').eq('user_id', userId),
-        supabase.from('batch_tests').select('*').eq('user_id', userId),
-        supabase.from('batch_test_results').select('*').eq('user_id', userId),
+        db.from('prompts').select('*').eq('user_id', userId),
+        db.from('characters').select('*').eq('user_id', userId),
+        db.from('character_details').select('*').eq('user_id', userId),
+        db.from('gallery').select('*').eq('user_id', userId),
+        db.from('tags').select('*').eq('user_id', userId),
+        db.from('prompt_tags').select('*').eq('user_id', userId),
+        db.from('model_usage').select('*').eq('user_id', userId),
+        db.from('prompt_versions').select('*').eq('user_id', userId),
+        db.from('style_learning').select('*').eq('user_id', userId),
+        db.from('batch_tests').select('*').eq('user_id', userId),
+        db.from('batch_test_results').select('*').eq('user_id', userId),
       ]);
 
       const backup: BackupData = {

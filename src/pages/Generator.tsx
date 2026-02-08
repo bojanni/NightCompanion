@@ -5,7 +5,7 @@ import GuidedBuilder from '../components/GuidedBuilder';
 import AITools from '../components/AITools';
 import ModelRecommender from '../components/ModelRecommender';
 import ImageAnalyzer from '../components/ImageAnalyzer';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
 interface GeneratorProps {

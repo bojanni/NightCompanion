@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
 import { handleError, showSuccess } from '../lib/error-handler';
 
@@ -51,7 +51,7 @@ export function useTags() {
     return useQuery({
         queryKey: ['tags'],
         queryFn: async () => {
-            const { data, error } = await supabase.from('tags').select('*').order('name');
+            const { data, error } = await db.from('tags').select('*').order('name');
 
             if (error) throw error;
             return data ?? [];
@@ -96,7 +96,7 @@ export function useDeletePrompt() {
 
     return useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('prompts').delete().eq('id', id);
+            const { error } = await db.from('prompts').delete().eq('id', id);
             if (error) throw error;
         },
         onSuccess: () => {

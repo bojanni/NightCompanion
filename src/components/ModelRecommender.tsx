@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { recommendModels } from '../lib/ai-service';
 import type { ModelRecommendation } from '../lib/ai-service';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 
 const BUDGET_OPTIONS = [
   { value: 'low', label: 'Budget', desc: 'Cheap & fast' },
@@ -33,7 +33,7 @@ export default function ModelRecommender() {
     setError('');
     setResults(null);
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await db.auth.getSession();
       const token = data.session?.access_token ?? '';
       const result = await recommendModels(prompt, { budget }, token);
       setResults(result.recommendations ?? []);

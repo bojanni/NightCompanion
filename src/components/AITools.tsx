@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { improvePrompt, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import { saveStyleProfile } from '../lib/style-analysis';
 
 interface AIToolsProps {
@@ -44,7 +44,7 @@ export default function AITools({ userId, onPromptGenerated }: AIToolsProps) {
   const [copied, setCopied] = useState('');
 
   async function getToken() {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await db.auth.getSession();
     return data.session?.access_token ?? '';
   }
 

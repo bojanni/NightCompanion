@@ -4,7 +4,7 @@ import {
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { GalleryItem, Collection } from '../lib/types';
 import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
@@ -67,7 +67,7 @@ export default function Gallery({ userId }: GalleryProps) {
       .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
     const [collRes] = await Promise.all([
-      supabase.from('collections').select('*').order('name'),
+      db.from('collections').select('*').order('name'),
     ]);
 
     setItems(itemsData ?? []);
@@ -100,9 +100,9 @@ export default function Gallery({ userId }: GalleryProps) {
     };
 
     if (editingItem) {
-      await supabase.from('gallery_items').update(payload).eq('id', editingItem.id);
+      await db.from('gallery_items').update(payload).eq('id', editingItem.id);
     } else {
-      await supabase.from('gallery_items').insert(payload);
+      await db.from('gallery_items').insert(payload);
     }
 
     setSaving(false);
@@ -111,13 +111,13 @@ export default function Gallery({ userId }: GalleryProps) {
   }
 
   async function handleDeleteItem(id: string) {
-    await supabase.from('gallery_items').delete().eq('id', id);
+    await db.from('gallery_items').delete().eq('id', id);
     setItems((prev) => prev.filter((i) => i.id !== id));
     if (selectedItem?.id === id) setSelectedItem(null);
   }
 
   async function handleUpdateRating(item: GalleryItem, rating: number) {
-    await supabase.from('gallery_items').update({ rating }).eq('id', item.id);
+    await db.from('gallery_items').update({ rating }).eq('id', item.id);
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)));
     if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
   }
@@ -125,7 +125,7 @@ export default function Gallery({ userId }: GalleryProps) {
   async function handleSaveCollection() {
     if (!collName.trim()) return;
     setSaving(true);
-    await supabase.from('collections').insert({
+    await db.from('collections').insert({
       user_id: userId,
       name: collName.trim(),
       description: collDesc,
@@ -139,8 +139,8 @@ export default function Gallery({ userId }: GalleryProps) {
   }
 
   async function handleDeleteCollection(id: string) {
-    await supabase.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
-    await supabase.from('collections').delete().eq('id', id);
+    await db.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
+    await db.from('collections').delete().eq('id', id);
     setFilterCollection(null);
     loadData();
   }

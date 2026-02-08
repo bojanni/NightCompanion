@@ -115,7 +115,7 @@ export async function trackKeywordsFromPrompt(promptContent: string) {
   const keywords = extractKeywords(promptContent);
   if (keywords.length === 0) return;
 
-  await supabase.rpc('track_style_keywords', {
+  await db.rpc('track_style_keywords', {
     p_keywords: keywords,
   });
 }
@@ -130,7 +130,7 @@ export async function rebuildAllKeywords(userId: string) {
 
   const aggregated = aggregateKeywords(prompts.map((p) => p.content));
 
-  await supabase.rpc('rebuild_style_keywords', {
+  await db.rpc('rebuild_style_keywords', {
     p_keywords: aggregated,
   });
 }
@@ -140,7 +140,7 @@ export async function saveStyleProfile(
   analysis: StyleAnalysis,
   promptCount: number,
 ) {
-  await supabase.from('style_profiles').insert({
+  await db.from('style_profiles').insert({
     user_id: userId,
     profile: analysis.profile,
     signature: analysis.signature,

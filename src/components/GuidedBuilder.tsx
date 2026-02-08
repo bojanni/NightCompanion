@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { GUIDED_STEPS, OPTIONAL_ADDITIONS, buildGuidedPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 
 interface GuidedBuilderProps {
   userId: string;
@@ -63,7 +63,7 @@ export default function GuidedBuilder({ userId, initialPrompt, onSaved }: Guided
   async function handleSave() {
     if (!generatedPrompt) return;
     setSaving(true);
-    await supabase.from('prompts').insert({
+    await db.from('prompts').insert({
       user_id: userId,
       title: 'Guided: ' + generatedPrompt.split(',')[0].slice(0, 40),
       content: generatedPrompt,

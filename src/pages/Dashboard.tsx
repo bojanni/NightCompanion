@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Users, Image, Star, TrendingUp, Clock, Heart } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import type { Prompt, Character, GalleryItem } from '../lib/types';
 import StarRating from '../components/StarRating';
 
@@ -26,13 +26,13 @@ export default function Dashboard() {
   async function loadDashboard() {
     const [promptsRes, templatesRes, charsRes, galleryRes, recentPromptsRes, recentGalleryRes, topCharsRes] =
       await Promise.all([
-        supabase.from('prompts').select('id', { count: 'exact', head: true }),
-        supabase.from('prompts').select('id', { count: 'exact', head: true }).eq('is_template', true),
-        supabase.from('characters').select('id', { count: 'exact', head: true }),
-        supabase.from('gallery_items').select('id', { count: 'exact', head: true }),
-        supabase.from('prompts').select('*').order('created_at', { ascending: false }).limit(5),
-        supabase.from('gallery_items').select('*').order('created_at', { ascending: false }).limit(6),
-        supabase.from('characters').select('*').order('created_at', { ascending: false }).limit(3),
+        db.from('prompts').select('id', { count: 'exact', head: true }),
+        db.from('prompts').select('id', { count: 'exact', head: true }).eq('is_template', true),
+        db.from('characters').select('id', { count: 'exact', head: true }),
+        db.from('gallery_items').select('id', { count: 'exact', head: true }),
+        db.from('prompts').select('*').order('created_at', { ascending: false }).limit(5),
+        db.from('gallery_items').select('*').order('created_at', { ascending: false }).limit(6),
+        db.from('characters').select('*').order('created_at', { ascending: false }).limit(3),
       ]);
 
     setStats({

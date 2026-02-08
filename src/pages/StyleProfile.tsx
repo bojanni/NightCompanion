@@ -4,7 +4,7 @@ import {
   Clock, TrendingUp, Cpu, AlertCircle, Database,
 } from 'lucide-react';
 import { analyzeStyle } from '../lib/ai-service';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 import {
   saveStyleProfile, rebuildAllKeywords,
   getLatestProfile, getStyleHistory, getKeywordStats,
@@ -34,7 +34,7 @@ export default function StyleProfile({ userId }: Props) {
       getLatestProfile(userId),
       getStyleHistory(userId),
       getKeywordStats(userId),
-      supabase.from('prompts').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      db.from('prompts').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     ]);
     setProfile(profileRes);
     setHistory(historyRes);
@@ -47,7 +47,7 @@ export default function StyleProfile({ userId }: Props) {
     setAnalyzing(true);
     setError('');
     try {
-      const { data: session } = await supabase.auth.getSession();
+      const { data: session } = await db.auth.getSession();
       const token = session.session?.access_token ?? '';
 
       const { data: prompts } = await supabase

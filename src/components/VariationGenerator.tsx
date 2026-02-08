@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Wand2, Copy, Check, Loader2, Save } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/api';
 
 interface VariationGeneratorProps {
   basePrompt: string;
@@ -90,7 +90,7 @@ export default function VariationGenerator({ basePrompt, userId, onSaved }: Vari
   async function handleSaveAsPrompt(text: string, idx: number) {
     setSavingIdx(idx);
     const strategyLabel = VARIATION_STRATEGIES.find((s) => s.id === strategy)?.label ?? strategy;
-    await supabase.from('prompts').insert({
+    await db.from('prompts').insert({
       user_id: userId,
       title: `Variation: ${strategyLabel} #${idx + 1}`,
       content: text,
