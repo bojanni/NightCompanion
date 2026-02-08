@@ -1,37 +1,14 @@
 const express = require('express');
 const { pool } = require('../db');
 
-// Hardcoded user ID for local single-user mode
-// This matches the ID created in setup-db.js
-const TEST_USER_ID = '88ea3bcb-d9a8-44b5-ac26-c90885a74686';
-
 const createCrudRouter = (tableName) => {
     const router = express.Router();
 
-    // GET all items (filtered by user_id if column exists)
+    // GET all items (no user_id filtering)
     router.get('/', async (req, res) => {
         try {
-            // Check if table has user_id column
-            // This is a naive check but works for this known schema
-            let queryText = `SELECT * FROM ${tableName}`;
-            let params = [];
-
-            // We assume most tables have user_id, but verify in a real app
-            // For this rebuild, we'll force user_id check if valid
-            if (['prompts', 'tags', 'characters', 'character_details', 'gallery_items', 'collections'].includes(tableName)) {
-                queryText += ' WHERE user_id = $1';
-                params.push(TEST_USER_ID);
-            } else if (tableName === 'character_details') {
-                // character_details doesn't have user_id directly, it links to characters
-                // But for simplicity in this MVP, we might just return all or join. 
-                // Let's stick to simple SELECT * for now and let Frontend filter or rely on small local data volume
-                queryText = `SELECT * FROM ${tableName}`;
-                params = [];
-            }
-
-            queryText += ' ORDER BY created_at DESC';
-
-            const result = await pool.query(queryText, params);
+            const queryText = `SELECT * FROM ${tableName} ORDER BY created_at DESC`;
+            const result = await pool.query(queryText);
             res.json(result.rows);
         } catch (err) {
             console.error(`Error fetching ${tableName}:`, err);
@@ -55,10 +32,8 @@ const createCrudRouter = (tableName) => {
         try {
             const data = req.body;
 
-            // Inject user_id if missing and applicable
-            if (!data.user_id && ['prompts', 'tags', 'characters', 'gallery_items', 'collections'].includes(tableName)) {
-                data.user_id = TEST_USER_ID;
-            }
+            // Note: If the table requires user_id and it's not provided in data,
+            // this INSERT will fail unless the column has a DEFAULT value.
 
             const columns = Object.keys(data);
             const values = Object.values(data);
