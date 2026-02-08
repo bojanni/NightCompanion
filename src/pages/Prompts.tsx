@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
-  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles,
+  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Prompt, Tag } from '../lib/types';
@@ -10,6 +10,7 @@ import PromptEditor from '../components/PromptEditor';
 import VariationGenerator from '../components/VariationGenerator';
 import { PromptHistory } from '../components/PromptHistory';
 import { PromptImprover } from '../components/PromptImprover';
+import PromptOptimizer from '../components/PromptOptimizer';
 import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
 
@@ -39,6 +40,8 @@ export default function Prompts({ userId }: PromptsProps) {
   const [historyPrompt, setHistoryPrompt] = useState<Prompt | null>(null);
   const [showImprover, setShowImprover] = useState(false);
   const [improverPrompt, setImproverPrompt] = useState<Prompt | null>(null);
+  const [showOptimizer, setShowOptimizer] = useState(false);
+  const [optimizerPrompt, setOptimizerPrompt] = useState<Prompt | null>(null);
 
   useEffect(() => {
     loadData();
@@ -144,6 +147,18 @@ export default function Prompts({ userId }: PromptsProps) {
         .eq('id', improverPrompt.id);
 
       setShowImprover(false);
+      loadData();
+    }
+  }
+
+  async function handleApplyOptimization(content: string) {
+    if (optimizerPrompt) {
+      await supabase
+        .from('prompts')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', optimizerPrompt.id);
+
+      setShowOptimizer(false);
       loadData();
     }
   }
@@ -320,6 +335,16 @@ export default function Prompts({ userId }: PromptsProps) {
                     </button>
                     <button
                       onClick={() => {
+                        setOptimizerPrompt(prompt);
+                        setShowOptimizer(true);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-purple-400 hover:bg-slate-800 transition-colors"
+                      title="Optimize prompt"
+                    >
+                      <Zap size={14} />
+                    </button>
+                    <button
+                      onClick={() => {
                         setImproverPrompt(prompt);
                         setShowImprover(true);
                       }}
@@ -475,6 +500,20 @@ export default function Prompts({ userId }: PromptsProps) {
           <PromptImprover
             prompt={improverPrompt.content}
             onApply={handleApplyImprovement}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        open={showOptimizer}
+        onClose={() => setShowOptimizer(false)}
+        title={`Prompt Optimizer: ${optimizerPrompt?.title || 'Untitled'}`}
+        wide
+      >
+        {optimizerPrompt && (
+          <PromptOptimizer
+            prompt={optimizerPrompt.content}
+            onApply={handleApplyOptimization}
           />
         )}
       </Modal>
