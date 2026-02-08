@@ -265,3 +265,4 @@ class QueryBuilder {
 }
 
 export const db = new LocalApiClient() as any;
+export const supabase = db; // Alias for backward compatibility
