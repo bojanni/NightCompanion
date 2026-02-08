@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase';
 import type { GalleryItem, Collection } from '../lib/types';
 import Modal from '../components/Modal';
+import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
 
 const PAGE_SIZE = 24;
@@ -183,8 +184,18 @@ export default function Gallery({ userId }: GalleryProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Gallery</h1>
+            <p className="text-slate-400 mt-1">Loading...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <GallerySkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -234,11 +245,10 @@ export default function Gallery({ userId }: GalleryProps) {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => handleFilterCollectionChange(null)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-              !filterCollection
-                ? 'bg-white/10 border-white/20 text-white'
-                : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${!filterCollection
+              ? 'bg-white/10 border-white/20 text-white'
+              : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+              }`}
           >
             All
           </button>
@@ -246,11 +256,10 @@ export default function Gallery({ userId }: GalleryProps) {
             <div key={coll.id} className="flex items-center gap-0.5">
               <button
                 onClick={() => handleFilterCollectionChange(filterCollection === coll.id ? null : coll.id)}
-                className={`px-3 py-1.5 rounded-l-xl text-xs font-medium transition-all border ${
-                  filterCollection === coll.id
-                    ? 'border-amber-500/30 text-amber-400'
-                    : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
-                }`}
+                className={`px-3 py-1.5 rounded-l-xl text-xs font-medium transition-all border ${filterCollection === coll.id
+                  ? 'border-amber-500/30 text-amber-400'
+                  : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                  }`}
                 style={filterCollection === coll.id ? { backgroundColor: `${coll.color}15` } : {}}
               >
                 <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: coll.color }} />
@@ -360,11 +369,10 @@ export default function Gallery({ userId }: GalleryProps) {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
-                      currentPage === page
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
                   >
                     {page + 1}
                   </button>

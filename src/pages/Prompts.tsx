@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase';
 import type { Prompt, Tag } from '../lib/types';
 import Modal from '../components/Modal';
+import { PromptSkeleton } from '../components/PromptSkeleton';
 import PromptEditor from '../components/PromptEditor';
 import VariationGenerator from '../components/VariationGenerator';
 import { PromptHistory } from '../components/PromptHistory';
@@ -205,8 +206,18 @@ export default function Prompts({ userId }: PromptsProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Prompts</h1>
+            <p className="text-slate-400 mt-1">Loading...</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <PromptSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -256,8 +267,8 @@ export default function Prompts({ userId }: PromptsProps) {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || filterTag
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+              : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
               }`}
           >
             <Filter size={14} />
@@ -268,8 +279,8 @@ export default function Prompts({ userId }: PromptsProps) {
               key={type}
               onClick={() => handleFilterChange(type)}
               className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === type
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                 }`}
             >
               {type === 'templates' && <BookTemplate size={13} />}
@@ -286,8 +297,8 @@ export default function Prompts({ userId }: PromptsProps) {
           <button
             onClick={() => handleTagFilterChange(null)}
             className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!filterTag
-                ? 'bg-white/10 text-white'
-                : 'text-slate-400 hover:text-white'
+              ? 'bg-white/10 text-white'
+              : 'text-slate-400 hover:text-white'
               }`}
           >
             All Tags
@@ -457,8 +468,8 @@ export default function Prompts({ userId }: PromptsProps) {
                     key={page}
                     onClick={() => setCurrentPage(page)}
                     className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                       }`}
                   >
                     {page + 1}

@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import type { Character, CharacterDetail } from '../lib/types';
 import { DETAIL_CATEGORIES } from '../lib/types';
 import Modal from '../components/Modal';
+import { CharacterSkeleton } from '../components/CharacterSkeleton';
 import {
   useCharacters,
   useCreateCharacter,
@@ -139,8 +140,18 @@ export default function Characters({ userId }: CharactersProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Characters</h1>
+            <p className="text-slate-400 mt-1">Loading...</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CharacterSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
