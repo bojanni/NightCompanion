@@ -1,9 +1,9 @@
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const { Client } = require('pg');
 
 async function testConnection() {
-    console.log('--- Database Connection Diagnostic ---');
-    console.log('Loading .env from:', require('path').resolve('../.env'));
+    console.log('--- Database Connection Test ---');
 
     const config = {
         user: process.env.DB_USER,
@@ -18,32 +18,19 @@ async function testConnection() {
     console.log(`  Host: ${config.host}`);
     console.log(`  Database: ${config.database}`);
     console.log(`  Port: ${config.port}`);
-    console.log(`  Password: ${config.password ? '******' + config.password.slice(-3) : '(not set)'} (Length: ${config.password ? config.password.length : 0})`);
+    console.log(`  Password: ${config.password ? '***' + config.password.slice(-3) : '(not set)'}`);
 
-    // Test 1: Connect to target database
-    console.log('\nAttempting to connect to target database...');
-    const client1 = new Client(config);
+    const client = new Client(config);
+
     try {
-        await client1.connect();
-        console.log('✅ Connection successful!');
-        const res = await client1.query('SELECT NOW()');
+        await client.connect();
+        console.log('\n✅ Connection successful!');
+        const res = await client.query('SELECT NOW()');
         console.log('   Server time:', res.rows[0].now);
-        await client1.end();
+        await client.end();
     } catch (err) {
-        console.log('❌ Connection failed:', err.message);
+        console.log('\n❌ Connection failed:', err.message);
         if (err.code) console.log(`   Error Code: ${err.code}`);
-    }
-
-    // Test 2: Connect to 'postgres' database (maintenance db)
-    console.log('\nAttempting to connect to default "postgres" database...');
-    const config2 = { ...config, database: 'postgres' };
-    const client2 = new Client(config2);
-    try {
-        await client2.connect();
-        console.log('✅ Connection to "postgres" successful!');
-        await client2.end();
-    } catch (err) {
-        console.log('❌ Connection to "postgres" failed:', err.message);
     }
 }
 
