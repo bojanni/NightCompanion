@@ -1,0 +1,53 @@
+
+=== user_api_keys table schema ===
+
+id
+  Type: uuid
+  Nullable: NO
+  Default: gen_random_uuid()
+
+provider
+  Type: text
+  Nullable: NO
+  Default: none
+
+encrypted_key
+  Type: text
+  Nullable: NO
+  Default: none
+
+key_hint
+  Type: text
+  Nullable: NO
+  Default: ''::text
+
+is_active
+  Type: boolean
+  Nullable: YES
+  Default: true
+
+created_at
+  Type: timestamp with time zone
+  Nullable: YES
+  Default: now()
+
+updated_at
+  Type: timestamp with time zone
+  Nullable: YES
+  Default: now()
+
+model_name
+  Type: text
+  Nullable: YES
+  Default: none
+
+iv
+  Type: text
+  Nullable: NO
+  Default: ''::text
+
+auth_tag
+  Type: text
+  Nullable: NO
+  Default: ''::text
+
