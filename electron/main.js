@@ -34,8 +34,10 @@ function createWindow() {
 function startServer() {
     const { spawn } = require('child_process');
     const serverPath = path.join(__dirname, '../server/index.js');
+    const serverDir = path.join(__dirname, '../server'); // ✨ Set server directory
 
     serverProcess = spawn('node', [serverPath], {
+        cwd: serverDir, // ✨ This ensures dotenv finds the .env file
         env: { ...process.env, NODE_ENV: isDev ? 'development' : 'production' },
         stdio: 'inherit'
     });
