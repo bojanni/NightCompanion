@@ -1,14 +1,12 @@
-const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-api-keys`;
+const API_URL = 'http://localhost:3000/api/user_api_keys';
 
-async function callKeyService(action: string, payload: Record<string, unknown>, token: string) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
+async function callKeyService(method: string, endpoint: string = '', body?: any) {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method,
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
     },
-    body: JSON.stringify({ action, ...payload }),
+    body: body ? JSON.stringify(body) : null,
   });
 
   const data = await res.json();
@@ -26,23 +24,24 @@ export interface ApiKeyInfo {
   updated_at: string;
 }
 
-export async function listApiKeys(token: string): Promise<ApiKeyInfo[]> {
-  const { keys } = await callKeyService('list', {}, token);
+export async function listApiKeys(_token: string): Promise<ApiKeyInfo[]> {
+  const { keys } = await callKeyService('GET');
   return keys;
 }
 
-export async function saveApiKey(provider: string, apiKey: string, modelName: string, token: string): Promise<{ hint: string; is_active: boolean }> {
-  return callKeyService('save', { provider, apiKey, modelName }, token);
+export async function saveApiKey(provider: string, apiKey: string, modelName: string, _token: string): Promise<{ hint: string; is_active: boolean }> {
+  return callKeyService('POST', '', { action: 'save', provider, apiKey, modelName });
 }
 
-export async function deleteApiKey(provider: string, token: string): Promise<void> {
-  await callKeyService('delete', { provider }, token);
+export async function deleteApiKey(provider: string, _token: string): Promise<void> {
+  // Try newer REST endpoint first, fallback to action-based if needed (but we implemented REST delete)
+  await callKeyService('DELETE', `/${provider}`);
 }
 
-export async function setActiveProvider(provider: string, modelName: string, token: string): Promise<void> {
-  await callKeyService('set-active', { provider, modelName }, token);
+export async function setActiveProvider(provider: string, modelName: string, _token: string): Promise<void> {
+  await callKeyService('POST', '', { action: 'set-active', provider, modelName });
 }
 
-export async function updateModelSelection(provider: string, modelName: string, token: string): Promise<void> {
-  await callKeyService('update-model', { provider, modelName }, token);
+export async function updateModelSelection(provider: string, modelName: string, _token: string): Promise<void> {
+  await callKeyService('POST', '', { action: 'update-model', provider, modelName });
 }

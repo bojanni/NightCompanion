@@ -1,12 +1,13 @@
-const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-prompt-assistant`;
+const API_URL = 'http://localhost:3000/api/ai';
 
 async function callAI(action: string, payload: Record<string, unknown>, token: string) {
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+      // Token is technically not needed for local backend if we mock user, 
+      // but keeping it for consistency if we add real auth later
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ action, payload }),
   });
@@ -211,7 +212,7 @@ export function resizeImageToBase64(file: File, maxSize = 1024): Promise<{ data:
       if (!ctx) { reject(new Error('Canvas not supported')); return; }
       ctx.drawImage(img, 0, 0, w, h);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      const base64 = dataUrl.split(',')[1];
+      const base64 = dataUrl.split(',')[1] || '';
       resolve({ data: base64, mimeType: 'image/jpeg' });
     };
     img.onerror = () => reject(new Error('Failed to load image'));

@@ -30,6 +30,7 @@ app.use('/api/collections', createCrudRouter('collections'));
 // API Keys & Local Endpoints
 app.use('/api/user_api_keys', apiKeysRouter);
 app.use('/api/user_local_endpoints', localEndpointsRouter);
+app.use('/api/ai', require('./routes/ai'));
 
 // Mock Auth Route
 app.get('/api/auth/user', (req, res) => {
