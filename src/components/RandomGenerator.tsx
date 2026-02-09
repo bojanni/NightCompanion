@@ -8,17 +8,20 @@ import { generateRandomPromptAI } from '../lib/ai-service';
 interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
   onSaved: () => void;
+  onPromptGenerated: (prompt: string) => void;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGenerated }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function handleGenerate() {
-    setPrompt(generateRandomPrompt(filters));
+    const newPrompt = generateRandomPrompt(filters);
+    setPrompt(newPrompt);
     setCopied(false);
+    onPromptGenerated(newPrompt);
   }
 
   async function handleCopy() {
@@ -53,10 +56,13 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGen
       const result = await generateRandomPromptAI('mock-token');
       setPrompt(result);
       setCopied(false);
+      onPromptGenerated(result);
     } catch (err) {
       console.error('Failed to generate random prompt:', err);
       // Fallback to local random if AI fails
-      setPrompt(generateRandomPrompt(filters));
+      const fallback = generateRandomPrompt(filters);
+      setPrompt(fallback);
+      onPromptGenerated(fallback);
     } finally {
       setSaving(false);
     }

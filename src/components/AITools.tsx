@@ -10,6 +10,7 @@ import { saveStyleProfile } from '../lib/style-analysis';
 
 interface AIToolsProps {
   onPromptGenerated: (prompt: string) => void;
+  generatedPrompt?: string;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -207,6 +208,7 @@ export default function AITools({ onPromptGenerated }: AIToolsProps) {
               onSubmit={handleImprove}
               onCopy={handleCopy}
               onUse={() => onPromptGenerated(improveResult)}
+              generatedPrompt={generatedPrompt}
             />
           )}
 
@@ -222,6 +224,7 @@ export default function AITools({ onPromptGenerated }: AIToolsProps) {
               onSubmit={handleGenerate}
               onCopy={handleCopy}
               onUse={() => onPromptGenerated(generateResult)}
+              generatedPrompt={generatedPrompt}
             />
           )}
 
@@ -245,6 +248,7 @@ export default function AITools({ onPromptGenerated }: AIToolsProps) {
               onSubmit={handleDiagnose}
               onCopy={handleCopy}
               onUse={(p) => onPromptGenerated(p)}
+              generatedPrompt={generatedPrompt}
             />
           )}
         </div>
@@ -254,7 +258,7 @@ export default function AITools({ onPromptGenerated }: AIToolsProps) {
 }
 
 function ImproveTab({
-  input, setInput, result, loading, copied, onSubmit, onCopy, onUse,
+  input, setInput, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -264,6 +268,7 @@ function ImproveTab({
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
+  generatedPrompt?: string;
 }) {
   return (
     <div className="space-y-3">
@@ -328,7 +333,7 @@ const SUBJECT_OPTIONS = [
 ];
 
 function GenerateTab({
-  input, setInput, preferences, setPreferences, result, loading, copied, onSubmit, onCopy, onUse,
+  input, setInput, preferences, setPreferences, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -340,6 +345,7 @@ function GenerateTab({
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
+  generatedPrompt?: string;
 }) {
   const [showPrefs, setShowPrefs] = useState(false);
 
@@ -553,7 +559,7 @@ function AnalyzeTab({
 }
 
 function DiagnoseTab({
-  promptInput, setPromptInput, issue, setIssue, result, loading, copied, onSubmit, onCopy, onUse,
+  promptInput, setPromptInput, issue, setIssue, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt,
 }: {
   promptInput: string;
   setPromptInput: (v: string) => void;
@@ -565,6 +571,7 @@ function DiagnoseTab({
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: (p: string) => void;
+  generatedPrompt?: string;
 }) {
   return (
     <div className="space-y-3">
@@ -601,6 +608,17 @@ function DiagnoseTab({
           </button>
         )}
 
+        {generatedPrompt && (
+          <button
+            onClick={() => setPromptInput(generatedPrompt)}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
+            title="Use last generated prompt"
+          >
+            <ArrowUp size={14} />
+            Paste Generated
+          </button>
+        )}
+
         {result && (
           <button
             onClick={() => setPromptInput(result.improvedPrompt)}
@@ -608,7 +626,7 @@ function DiagnoseTab({
             title="Use improved prompt as input"
           >
             <ArrowUp size={14} />
-            Paste Generated
+            Use Result
           </button>
         )}
       </div>

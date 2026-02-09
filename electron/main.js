@@ -20,6 +20,10 @@ function createWindow() {
         },
     });
 
+    // Clear cache on startup
+    const { session } = require('electron');
+    session.defaultSession.clearCache().catch(console.error);
+
     if (isDev) {
         mainWindow.loadURL('http://localhost:5173');
         mainWindow.webContents.openDevTools();

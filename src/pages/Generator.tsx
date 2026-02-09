@@ -87,6 +87,7 @@ export default function Generator({ }: GeneratorProps) {
         <RandomGenerator
           onSwitchToGuided={handleSwitchToGuided}
           onSaved={() => setSaveCount((c) => c + 1)}
+          onPromptGenerated={(prompt) => setGuidedInitial(prompt)}
         />
       )}
 
@@ -145,6 +146,7 @@ export default function Generator({ }: GeneratorProps) {
           setGuidedInitial(prompt);
           setMode('guided');
         }}
+        generatedPrompt={guidedInitial}
       />
 
       <ModelRecommender generatedPrompt={guidedInitial} />
