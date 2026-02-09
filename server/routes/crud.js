@@ -4,14 +4,78 @@ const { pool } = require('../db');
 const createCrudRouter = (tableName) => {
     const router = express.Router();
 
-    // GET all items (no user_id filtering)
+    // GET all items with filtering, sorting, and pagination
     router.get('/', async (req, res) => {
         try {
-            const queryText = `SELECT * FROM ${tableName} ORDER BY created_at DESC`;
-            const result = await pool.query(queryText);
+            const { limit, offset, order, ...filters } = req.query;
+
+            let queryText = `SELECT * FROM ${tableName}`;
+            const values = [];
+            const conditions = [];
+
+            // Build filters
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value.startsWith('in.(') && value.endsWith(')')) {
+                    // Handle IN clause: ?col=in.(val1,val2)
+                    const list = value.slice(4, -1).split(',');
+                    if (list.length > 0) {
+                        const placeholders = list.map((_, i) => `$${values.length + i + 1}`).join(', ');
+                        conditions.push(`${key} IN (${placeholders})`);
+                        values.push(...list);
+                    }
+                } else {
+                    // Handle Equality: ?col=val
+                    conditions.push(`${key} = $${values.length + 1}`);
+                    values.push(value);
+                }
+            });
+
+            if (conditions.length > 0) {
+                queryText += ` WHERE ${conditions.join(' AND ')}`;
+            }
+
+            // Handle Sorting
+            // Default to created_at DESC if column exists (we assume it mostly does)
+            // Ideally we check if column exists, but for now we trust the input or default
+            if (order) {
+                const [col, dir] = order.split('.');
+                queryText += ` ORDER BY ${col} ${dir === 'desc' ? 'DESC' : 'ASC'}`;
+            } else {
+                queryText += ` ORDER BY created_at DESC`;
+            }
+
+            // Handle Pagination
+            if (limit) {
+                queryText += ` LIMIT $${values.length + 1}`;
+                values.push(parseInt(limit));
+            }
+            if (offset) {
+                queryText += ` OFFSET $${values.length + 1}`;
+                values.push(parseInt(offset));
+            }
+
+            const result = await pool.query(queryText, values);
+
+            // For range() support in client, we might need a count. 
+            // The client expects 'count' in the response sometimes if requested, 
+            // but the current local adapter implementation calculates count from array length?
+            // "count: Array.isArray(data) ? data.length : 1" in api.ts
+            // This is "page count", not "total count".
+            // To support real pagination, we'd need a separate count query.
+            // For now, let's just return the rows. exact count is hard in one query without window functions.
+
             res.json(result.rows);
         } catch (err) {
             console.error(`Error fetching ${tableName}:`, err);
+            // If created_at doesn't exist, retry without order
+            if (err.message.includes('column "created_at" does not exist')) {
+                try {
+                    const result = await pool.query(`SELECT * FROM ${tableName}`);
+                    return res.json(result.rows);
+                } catch (retryErr) {
+                    return res.status(500).json({ error: retryErr.message });
+                }
+            }
             res.status(500).json({ error: err.message });
         }
     });

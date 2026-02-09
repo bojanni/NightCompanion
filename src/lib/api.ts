@@ -126,14 +126,24 @@ class QueryBuilder {
         if (column === 'user_id') {
             // Ignore user_id filters for local mode
             return this;
-        } else if (column === 'id') {
-            this.url = `${API_URL}/${this.table}/${value}`;
+        }
+        this.filters[column] = value;
+        return this;
+    }
+
+    in(column: string, values: any[]) {
+        if (column === 'user_id') return this;
+        if (values && values.length > 0) {
+            this.filters[column] = `in.(${values.join(',')})`;
         }
         return this;
     }
 
     order(column: string, options?: { ascending?: boolean }) {
-        this.orderBy = { column, ascending: options?.ascending ?? true };
+        // Send order as query param: sort_col.desc or sort_col.asc
+        // My simple crud.js expects "column.desc"
+        const dir = options?.ascending ? 'asc' : 'desc';
+        this.filters['order'] = `${column}.${dir}`;
         return this;
     }
 
@@ -157,18 +167,18 @@ class QueryBuilder {
     }
 
     async executeSingle() {
-        try {
-            const response = await fetch(this.url);
-            if (!response.ok) {
-                return { data: null, error: { message: `HTTP ${response.status}` } };
-            }
-            const text = await response.text();
-            const data = text ? JSON.parse(text) : null;
-            return { data, error: null };
-        } catch (error) {
-            console.error('Query error:', error);
-            return { data: null, error };
-        }
+        // Reuse query logic but expect one result
+        return new Promise<{ data: any, error: any }>((resolve) => {
+            this.then((res: any) => {
+                if (res.error) {
+                    resolve({ data: null, error: res.error });
+                } else if (Array.isArray(res.data) && res.data.length > 0) {
+                    resolve({ data: res.data[0], error: null });
+                } else {
+                    resolve({ data: null, error: { message: 'Row not found', code: 'PGRST116' } });
+                }
+            });
+        });
     }
 
     async then(resolve: any, reject?: any) {
@@ -178,6 +188,10 @@ class QueryBuilder {
 
             if (this.limitValue) params.append('limit', this.limitValue.toString());
             if (this.offsetValue) params.append('offset', this.offsetValue.toString());
+
+            Object.entries(this.filters).forEach(([key, value]) => {
+                params.append(key, String(value));
+            });
 
             if (params.toString()) {
                 url += '?' + params.toString();

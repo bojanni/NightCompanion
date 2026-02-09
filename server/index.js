@@ -26,6 +26,15 @@ app.use('/api/characters', createCrudRouter('characters'));
 app.use('/api/character_details', createCrudRouter('character_details'));
 app.use('/api/gallery_items', createCrudRouter('gallery_items'));
 app.use('/api/collections', createCrudRouter('collections'));
+app.use('/api/prompt_tags', createCrudRouter('prompt_tags'));
+app.use('/api/style_profiles', createCrudRouter('style_profiles'));
+app.use('/api/style_keywords', createCrudRouter('style_keywords'));
+app.use('/api/style_learning', createCrudRouter('style_learning'));
+app.use('/api/batch_tests', createCrudRouter('batch_tests'));
+app.use('/api/batch_test_prompts', createCrudRouter('batch_test_prompts'));
+app.use('/api/batch_test_results', createCrudRouter('batch_test_results'));
+app.use('/api/model_usage', createCrudRouter('model_usage'));
+app.use('/api/user_profiles', createCrudRouter('user_profiles'));
 
 // API Keys & Local Endpoints
 app.use('/api/user_api_keys', apiKeysRouter);
