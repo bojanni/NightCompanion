@@ -194,6 +194,20 @@ export async function testConnection(token: string): Promise<string> {
   return callAI('test-connection', {}, token);
 }
 
+export interface CharacterDescriptionResult {
+  found: boolean;
+  description?: string;
+  reason?: string;
+}
+
+export async function describeCharacter(
+  imageUrl: string,
+  override: boolean,
+  token: string
+): Promise<CharacterDescriptionResult | string> {
+  return callAI('describe-character', { imageUrl, override }, token);
+}
+
 export function resizeImageToBase64(file: File, maxSize = 1024): Promise<{ data: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
     const img = new Image();

@@ -49,6 +49,15 @@ async function getActiveProvider() {
 
 // Minimal implementation of AI calls using fetch
 async function callOpenAI(apiKey, system, user, maxTokens = 1500) {
+    const messages = [{ role: 'system', content: system }];
+
+    if (typeof user === 'string') {
+        messages.push({ role: 'user', content: user });
+    } else {
+        // Handle multimodal input
+        messages.push({ role: 'user', content: user });
+    }
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -56,8 +65,8 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+            model: 'gpt-4o', // Default to vision capable model
+            messages: messages,
             max_tokens: maxTokens
         })
     });
@@ -67,6 +76,13 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500) {
 }
 
 async function callAnthropic(apiKey, system, user, maxTokens = 1500) {
+    let messages = [];
+    if (typeof user === 'string') {
+        messages.push({ role: 'user', content: user });
+    } else {
+        messages.push({ role: 'user', content: user });
+    }
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -75,10 +91,10 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'claude-3-haiku-20240307',
+            model: 'claude-3-opus-20240229',
             max_tokens: maxTokens,
             system: system,
-            messages: [{ role: 'user', content: user }]
+            messages: messages
         })
     });
     const data = await res.json();
@@ -87,11 +103,19 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500) {
 }
 
 async function callGemini(apiKey, system, user, maxTokens = 1500) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    // Gemini API structure for vision is slightly different, requiring 'inlineData' or 'fileData'
+    // For simplicity, we'll assume text-only for now unless we implement full file upload handling
+    // or convert base64 to parts.
+    // TODO: Implement full Gemini Vision support if needed.
+
+    // Fallback for now: only text
+    const textUser = typeof user === 'string' ? user : user.find(p => p.type === 'text')?.text || '';
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: system + '\n\n' + user }] }]
+            contents: [{ parts: [{ text: system + '\n\n' + textUser }] }]
         })
     });
     const data = await res.json();
@@ -100,6 +124,13 @@ async function callGemini(apiKey, system, user, maxTokens = 1500) {
 }
 
 async function callOpenRouter(apiKey, system, user, maxTokens = 1500) {
+    const messages = [{ role: 'system', content: system }];
+    if (typeof user === 'string') {
+        messages.push({ role: 'user', content: user });
+    } else {
+        messages.push({ role: 'user', content: user });
+    }
+
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -108,7 +139,7 @@ async function callOpenRouter(apiKey, system, user, maxTokens = 1500) {
         },
         body: JSON.stringify({
             model: 'google/gemini-2.0-flash-001',
-            messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+            messages: messages,
             max_tokens: maxTokens
         })
     });
@@ -119,13 +150,17 @@ async function callOpenRouter(apiKey, system, user, maxTokens = 1500) {
 
 async function callAI(providerConfig, system, user, maxTokens = 1500) {
     if (providerConfig.type === 'local') {
+        // Local usually doesn't support vision easily via standard OpenAI endpoint unless specific model
+        // We'll flatten to text if possible or error out for vision
+        const textUser = typeof user === 'string' ? user : user.find(p => p.type === 'text')?.text || '';
+
         const url = `${providerConfig.endpoint_url.replace(/\/$/, '')}/v1/chat/completions`;
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: providerConfig.model_name,
-                messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+                messages: [{ role: 'system', content: system }, { role: 'user', content: textUser }],
                 max_tokens: maxTokens
             })
         });
@@ -146,7 +181,7 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
 router.post('/', async (req, res) => {
     try {
         const { action, payload } = req.body;
-        const systemPrompt = SYSTEM_PROMPTS[action];
+        const systemPrompt = SYSTEM_PROMPTS[action] || '';
         let userPrompt = '';
         let maxTokens = 1500;
 
@@ -171,6 +206,39 @@ router.post('/', async (req, res) => {
         } else if (action === 'generate-variations') {
             userPrompt = `Variations for: "${payload.basePrompt}"`;
             maxTokens = 2000;
+        } else if (action === 'describe-character') {
+            // Vision multimodal prompt construction
+            // Payload should contain imageUrl (url or base64 data uri)
+            const imageUrl = payload.imageUrl;
+            const isOverride = payload.override;
+
+            // Check if it is a URL or Base64
+            const isBase64 = imageUrl.startsWith('data:');
+
+            let content = [];
+
+            // Logic: If override is true, we force description. If false, we check for person.
+            let instruction = isOverride
+                ? "Describe the character in this image in detail (physical appearance only). Ignoring any previous warnings about no person found."
+                : "Analyze this image. Is there a specific character/person? If yes, provide a detailed physical description. If NO person/character is found, return JSON: { \"found\": false, \"reason\": \"...\" }. If found, return JSON: { \"found\": true, \"description\": \"...\" }.";
+
+            content.push({ type: 'text', text: instruction });
+
+            if (isBase64) {
+                content.push({
+                    type: 'image_url',
+                    image_url: { url: imageUrl }
+                });
+            } else {
+                content.push({
+                    type: 'image_url',
+                    image_url: { url: imageUrl }
+                });
+            }
+
+            userPrompt = content; // Pass array for multimodal
+            maxTokens = 1000;
+
         } else if (action === 'test-connection') {
             // Bypass AI call for test, just check provider availability
             const provider = await getActiveProvider();
@@ -189,18 +257,18 @@ router.post('/', async (req, res) => {
 
         // Parse JSON if needed (for actions that return JSON)
         let parsedResult = result;
-        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'generate-variations'].includes(action)) {
+        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'generate-variations', 'describe-character'].includes(action)) {
             try {
                 // Try to extract JSON from code blocks if present
                 const jsonMatch = result.match(/```json\n([\s\S]*?)\n```/) || result.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
                     parsedResult = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-                } else {
+                } else if (typeof result === 'string' && (result.trim().startsWith('{') || result.trim().startsWith('['))) {
                     parsedResult = JSON.parse(result);
                 }
             } catch (e) {
                 console.warn('Failed to parse JSON response:', e);
-                // Return raw text if parsing fails
+                // Return raw text if parsing fails (except for strictly structured ones, maybe?)
             }
         }
 

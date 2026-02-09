@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import {
   Search, Plus, Filter, MoreHorizontal, Edit3, Trash2, X,
   ExternalLink, MessageSquare, Image as ImageIcon, Save, Loader2,
-  ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown
+  ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown, AlertCircle
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
@@ -15,6 +15,7 @@ import {
   useAddCharacterDetail,
   useDeleteCharacterDetail
 } from '../hooks/useCharacters';
+import { describeCharacter } from '../lib/ai-service';
 
 const PAGE_SIZE = 12;
 
@@ -32,6 +33,8 @@ export default function Characters({ }: CharactersProps) {
   const [formDesc, setFormDesc] = useState('');
   const [formImage, setFormImage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const [showDetailForm, setShowDetailForm] = useState<string | null>(null);
   const [detailCategory, setDetailCategory] = useState<string>('general');
@@ -98,6 +101,61 @@ export default function Characters({ }: CharactersProps) {
     await deleteMutation.mutateAsync(id);
   }
 
+  async function handleAnalyzeImage() {
+    if (!formImage) return;
+    setAnalyzing(true);
+    setAnalysisError(null);
+    try {
+      // Mock token for local - in real app, get from context/store
+      const token = 'mock-token';
+      const result = await describeCharacter(formImage, false, token);
+
+      if (typeof result === 'string') {
+        // Fallback if string returned
+        setFormDesc(prev => prev ? prev + '\n\n' + result : result || '');
+      } else {
+        if (result.found && result.description) {
+          setFormDesc(prev => prev ? prev + '\n\n' + result.description : result.description);
+        } else {
+          setAnalysisError(result.reason || 'No person detected in the image.');
+        }
+      }
+    } catch (err) {
+      console.error("Analysis failed", err);
+      setAnalysisError('Failed to analyze image. Please try again.');
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
+  async function handleOverrideAnalysis() {
+    if (!formImage) return;
+    setAnalyzing(true);
+    setAnalysisError(null);
+    try {
+      const token = 'mock-token';
+      const result = await describeCharacter(formImage, true, token);
+
+      let description = '';
+      if (typeof result === 'string') {
+        description = result;
+      } else {
+        description = result.description || '';
+      }
+
+      if (description) {
+        setFormDesc(prev => prev ? prev + '\n\n' + description : description);
+      } else {
+        setAnalysisError('Still could not generate a description.');
+      }
+
+    } catch (err) {
+      setAnalysisError('Override failed.');
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -154,12 +212,12 @@ export default function Characters({ }: CharactersProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {characters.map((char) => (
+          {characters.map((char: Character) => (
             <div
               key={char.id}
               className={`group bg-white rounded-xl border transition-all duration-300 ${expandedId === char.id
-                  ? 'border-blue-500 ring-4 ring-blue-500/10 col-span-full xl:col-span-2'
-                  : 'border-slate-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5'
+                ? 'border-blue-500 ring-4 ring-blue-500/10 col-span-full xl:col-span-2'
+                : 'border-slate-200 hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5'
                 }`}
             >
               <div className="p-4 space-y-4">
@@ -193,8 +251,8 @@ export default function Characters({ }: CharactersProps) {
                         }
                       }}
                       className={`p-1.5 rounded-lg transition-colors ${expandedId === char.id
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'
                         }`}
                       title={expandedId === char.id ? "Collapse details" : "Expand details"}
                     >
@@ -311,8 +369,8 @@ export default function Characters({ }: CharactersProps) {
                     )}
 
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                      {details[char.id]?.length > 0 ? (
-                        details[char.id].map((d) => (
+                      {(details[char.id] || []).length > 0 ? (
+                        (details[char.id] || []).map((d) => (
                           <div key={d.id} className="group flex items-start gap-2 text-sm p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all">
                             <div className={`mt-0.5 ${d.works_well ? 'text-emerald-500' : 'text-rose-500'}`} title={d.works_well ? "Works well" : "Issues reported"}>
                               {d.works_well ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
@@ -424,9 +482,35 @@ export default function Characters({ }: CharactersProps) {
                     value={formImage}
                     onChange={(e) => setFormImage(e.target.value)}
                     placeholder="https://..."
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full pl-9 pr-24 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+                    <button
+                      onClick={handleAnalyzeImage}
+                      disabled={!formImage || analyzing}
+                      className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors disabled:opacity-50"
+                      title="Analyze image to generate description"
+                    >
+                      {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Analyze'}
+                    </button>
+                  </div>
                 </div>
+
+                {analysisError && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
+                    <div className="text-red-500 mt-0.5"><AlertCircle className="w-4 h-4" /></div>
+                    <div className="flex-1">
+                      <p className="text-sm text-red-800 font-medium">{analysisError}</p>
+                      <button
+                        onClick={handleOverrideAnalysis}
+                        className="mt-2 text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors"
+                      >
+                        Override & Analyze Anyway
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {formImage && (
                   <div className="mt-2 relative aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
                     <img
