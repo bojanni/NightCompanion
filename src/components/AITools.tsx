@@ -400,14 +400,38 @@ function GenerateTab({
         </div>
       )}
 
-      <button
-        onClick={onSubmit}
-        disabled={loading || !input.trim()}
-        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-      >
-        {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
-        Generate Prompt
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={onSubmit}
+          disabled={loading || !input.trim()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
+          Generate Prompt
+        </button>
+
+        {input && (
+          <button
+            onClick={() => setInput('')}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+            title="Clear Input"
+          >
+            <Eraser size={14} />
+            Clear
+          </button>
+        )}
+
+        {result && (
+          <button
+            onClick={() => setInput(result)}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-teal-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
+            title="Use result as input for another pass"
+          >
+            <ArrowUp size={14} />
+            Paste Generated
+          </button>
+        )}
+      </div>
 
       {result && <PromptResult text={result} id="generate" copied={copied} onCopy={onCopy} onUse={onUse} />}
     </div>

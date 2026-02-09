@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Compass, Loader2, ChevronDown, ChevronUp,
-  Trophy, Lightbulb, DollarSign,
+  Trophy, Lightbulb, DollarSign, Eraser, ArrowUp,
 } from 'lucide-react';
 import { recommendModels } from '../lib/ai-service';
 import type { ModelRecommendation } from '../lib/ai-service';
@@ -19,7 +19,11 @@ const MEDAL_COLORS = [
   { bg: 'bg-orange-700/10', border: 'border-orange-700/25', text: 'text-orange-400', label: '3rd Pick' },
 ];
 
-export default function ModelRecommender() {
+interface ModelRecommenderProps {
+  generatedPrompt?: string;
+}
+
+export default function ModelRecommender({ generatedPrompt }: ModelRecommenderProps) {
   const [expanded, setExpanded] = useState(true);
   const [prompt, setPrompt] = useState('');
   const [budget, setBudget] = useState<string | undefined>();
@@ -78,11 +82,10 @@ export default function ModelRecommender() {
                 <button
                   key={opt.value}
                   onClick={() => setBudget(budget === opt.value ? undefined : opt.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs transition-all border ${
-                    budget === opt.value
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                      : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs transition-all border ${budget === opt.value
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                    : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600'
+                    }`}
                 >
                   <span className="font-medium">{opt.label}</span>
                   <span className="text-slate-500 ml-1.5">{opt.desc}</span>
@@ -91,14 +94,38 @@ export default function ModelRecommender() {
             </div>
           </div>
 
-          <button
-            onClick={handleRecommend}
-            disabled={loading || !prompt.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/15"
-          >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <Compass size={14} />}
-            Get Recommendations
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleRecommend}
+              disabled={loading || !prompt.trim()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/15"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Compass size={14} />}
+              Get Recommendations
+            </button>
+
+            {prompt && (
+              <button
+                onClick={() => setPrompt('')}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+                title="Clear Input"
+              >
+                <Eraser size={14} />
+                Clear
+              </button>
+            )}
+
+            {generatedPrompt && (
+              <button
+                onClick={() => setPrompt(generatedPrompt)}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
+                title="Use generated prompt"
+              >
+                <ArrowUp size={14} />
+                Paste Generated
+              </button>
+            )}
+          </div>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 text-xs text-red-400">

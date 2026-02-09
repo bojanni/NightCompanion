@@ -65,13 +65,13 @@ export default function Generator({ }: GeneratorProps) {
               if (id !== 'guided') setGuidedInitial('');
             }}
             className={`p-4 rounded-2xl text-left transition-all border ${mode === id
-                ? 'bg-amber-500/10 border-amber-500/30 shadow-sm'
-                : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+              ? 'bg-amber-500/10 border-amber-500/30 shadow-sm'
+              : 'bg-slate-900 border-slate-800 hover:border-slate-700'
               }`}
           >
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${mode === id
-                ? 'bg-amber-500/20 text-amber-400'
-                : 'bg-slate-800 text-slate-500'
+              ? 'bg-amber-500/20 text-amber-400'
+              : 'bg-slate-800 text-slate-500'
               }`}>
               <Icon size={18} />
             </div>
@@ -147,7 +147,7 @@ export default function Generator({ }: GeneratorProps) {
         }}
       />
 
-      <ModelRecommender />
+      <ModelRecommender generatedPrompt={guidedInitial} />
 
       <ImageAnalyzer
         onPromptGenerated={(prompt) => {
