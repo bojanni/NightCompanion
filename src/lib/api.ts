@@ -113,12 +113,16 @@ class QueryBuilder {
     limitValue: number | null = null;
     offsetValue: number | null = null;
 
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET';
+    body: any = null;
+
     constructor(table: string) {
         this.table = table;
         this.url = `${API_URL}/${table}`;
     }
 
     select(columns = '*', options?: any) {
+        this.method = 'GET';
         return this;
     }
 
@@ -126,6 +130,8 @@ class QueryBuilder {
         if (column === 'user_id') {
             // Ignore user_id filters for local mode
             return this;
+        } else if (column === 'id') {
+            this.url = `${API_URL}/${this.table}/${value}`;
         }
         this.filters[column] = value;
         return this;
@@ -186,22 +192,42 @@ class QueryBuilder {
             let url = this.url;
             const params = new URLSearchParams();
 
+            // Only append params for GET or DELETE (sometimes)
+            // For POST/PUT with body, we usually don't need params unless it's specific args
+            // But our local crud.js uses path params for ID update, which is handled in .eq()
+
             if (this.limitValue) params.append('limit', this.limitValue.toString());
             if (this.offsetValue) params.append('offset', this.offsetValue.toString());
 
             Object.entries(this.filters).forEach(([key, value]) => {
+                // don't append filters if we are using ID in path for single item ops
+                if (key === 'id' && url.includes(`/${value}`)) return;
                 params.append(key, String(value));
             });
 
-            if (params.toString()) {
+            if (params.toString() && (this.method === 'GET' || this.method === 'DELETE')) {
                 url += '?' + params.toString();
             }
 
-            const response = await fetch(url);
+            const options: RequestInit = {
+                method: this.method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+
+            if (this.body && (this.method === 'POST' || this.method === 'PUT')) {
+                options.body = JSON.stringify(this.body);
+            }
+
+            const response = await fetch(url, options);
 
             if (!response.ok) {
                 const error = { message: `HTTP ${response.status}`, status: response.status };
                 return resolve({ data: null, error });
+            }
+
+            // DELETE might return empty or status only
+            if (this.method === 'DELETE') {
+                return resolve({ data: null, error: null });
             }
 
             const text = await response.text();
@@ -224,64 +250,28 @@ class QueryBuilder {
         }
     }
 
-    async insert(data: any) {
-        try {
-            // Strip user_id from payload
-            const { user_id, ...cleanData } = data;
+    insert(data: any) {
+        this.method = 'POST';
+        // Strip user_id
+        const { user_id, ...cleanData } = data;
+        this.body = cleanData;
 
-            const response = await fetch(this.url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cleanData)
-            });
-
-            if (!response.ok) {
-                return { data: null, error: { message: `HTTP ${response.status}` } };
-            }
-
-            const result = await response.json();
-            return { data: result, error: null };
-        } catch (error) {
-            return { data: null, error };
-        }
+        // Supabase allows .insert().select(), so we return this
+        // But if they await .insert(), it calls .then()
+        return this;
     }
 
-    async update(data: any) {
-        try {
-            // Strip user_id from payload
-            const { user_id, ...cleanData } = data;
-
-            const response = await fetch(this.url, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(cleanData)
-            });
-
-            if (!response.ok) {
-                return { data: null, error: { message: `HTTP ${response.status}` } };
-            }
-
-            const result = await response.json();
-            return { data: result, error: null };
-        } catch (error) {
-            return { data: null, error };
-        }
+    update(data: any) {
+        this.method = 'PUT';
+        // Strip user_id
+        const { user_id, ...cleanData } = data;
+        this.body = cleanData;
+        return this;
     }
 
-    async delete() {
-        try {
-            const response = await fetch(this.url, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                return { data: null, error: { message: `HTTP ${response.status}` } };
-            }
-
-            return { data: null, error: null };
-        } catch (error) {
-            return { data: null, error };
-        }
+    delete() {
+        this.method = 'DELETE';
+        return this;
     }
 }
 

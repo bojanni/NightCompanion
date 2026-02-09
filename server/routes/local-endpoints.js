@@ -6,7 +6,7 @@ const { pool } = require('../db');
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT * FROM user_local_endpoints ORDER BY created_at DESC'
+            'SELECT id, name as provider, endpoint_url, api_key, model_name, is_active, created_at, updated_at FROM user_local_endpoints ORDER BY created_at DESC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -18,13 +18,15 @@ router.get('/', async (req, res) => {
 // Create new local endpoint
 router.post('/', async (req, res) => {
     try {
-        const { name, endpoint_url, api_key, model_name, is_active } = req.body;
+        const { provider, name, endpoint_url, api_key, model_name, is_active } = req.body;
+        // Map provider to name if name is missing
+        const dbName = name || provider;
 
         const result = await pool.query(
             `INSERT INTO user_local_endpoints (name, endpoint_url, api_key, model_name, is_active)
              VALUES ($1, $2, $3, $4, $5)
-             RETURNING *`,
-            [name, endpoint_url, api_key, model_name, is_active !== false]
+             RETURNING id, name as provider, endpoint_url, api_key, model_name, is_active, created_at, updated_at`,
+            [dbName, endpoint_url, api_key, model_name, is_active !== false]
         );
 
         res.json(result.rows[0]);
@@ -38,7 +40,8 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, endpoint_url, api_key, model_name, is_active } = req.body;
+        const { provider, name, endpoint_url, api_key, model_name, is_active } = req.body;
+        const dbName = name || provider;
 
         const result = await pool.query(
             `UPDATE user_local_endpoints 
@@ -49,8 +52,8 @@ router.patch('/:id', async (req, res) => {
                  is_active = COALESCE($5, is_active),
                  updated_at = NOW()
              WHERE id = $6
-             RETURNING *`,
-            [name, endpoint_url, api_key, model_name, is_active, id]
+             RETURNING id, name as provider, endpoint_url, api_key, model_name, is_active, created_at, updated_at`,
+            [dbName, endpoint_url, api_key, model_name, is_active, id]
         );
 
         res.json(result.rows[0]);
@@ -60,11 +63,20 @@ router.patch('/:id', async (req, res) => {
     }
 });
 
-// Delete local endpoint
-router.delete('/:id', async (req, res) => {
+// Delete local endpoint (support both ID parameter and query provider)
+router.delete('/:id?', async (req, res) => {
     try {
         const { id } = req.params;
-        await pool.query('DELETE FROM user_local_endpoints WHERE id = $1', [id]);
+        const { provider } = req.query;
+
+        if (id) {
+            await pool.query('DELETE FROM user_local_endpoints WHERE id = $1', [id]);
+        } else if (provider) {
+            await pool.query('DELETE FROM user_local_endpoints WHERE name = $1', [provider]);
+        } else {
+            return res.status(400).json({ error: 'Missing id or provider' });
+        }
+
         res.json({ success: true });
     } catch (err) {
         console.error('Error deleting local endpoint:', err);

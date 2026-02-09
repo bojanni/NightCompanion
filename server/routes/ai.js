@@ -20,7 +20,7 @@ const SYSTEM_PROMPTS = {
 async function getActiveProvider() {
     // Check local endpoint first
     const local = await pool.query(
-        'SELECT provider, endpoint_url, model_name FROM user_local_endpoints WHERE is_active = true'
+        'SELECT name as provider, endpoint_url, model_name FROM user_local_endpoints WHERE is_active = true'
     );
     if (local.rows.length > 0) {
         return {
