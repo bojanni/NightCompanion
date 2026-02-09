@@ -34,6 +34,34 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Bulk update local endpoints (e.g. set all inactive)
+router.put('/', async (req, res) => {
+    try {
+        const { is_active } = req.body;
+        const { provider } = req.query;
+
+        let query = 'UPDATE user_local_endpoints SET is_active = $1';
+        const params = [is_active];
+
+        if (provider) {
+            if (provider.startsWith('neq.')) {
+                const val = provider.substring(4); // Remove 'neq.'
+                query += ' WHERE provider != $2';
+                params.push(val);
+            } else {
+                query += ' WHERE provider = $2';
+                params.push(provider);
+            }
+        }
+
+        const result = await pool.query(query, params);
+        res.json({ success: true, updated: result.rowCount });
+    } catch (err) {
+        console.error('Error updating local endpoints:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update local endpoint
 router.patch('/:id', async (req, res) => {
     try {

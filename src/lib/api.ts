@@ -137,6 +137,12 @@ class QueryBuilder {
         return this;
     }
 
+    neq(column: string, value: any) {
+        if (column === 'user_id') return this;
+        this.filters[column] = `neq.${value}`;
+        return this;
+    }
+
     in(column: string, values: any[]) {
         if (column === 'user_id') return this;
         if (values && values.length > 0) {

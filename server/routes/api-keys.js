@@ -15,6 +15,34 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Bulk update API keys (e.g. set all inactive)
+router.put('/', async (req, res) => {
+    try {
+        const { is_active } = req.body;
+        const { provider } = req.query;
+
+        let query = 'UPDATE user_api_keys SET is_active = $1';
+        const params = [is_active];
+
+        if (provider) {
+            if (provider.startsWith('neq.')) {
+                const val = provider.substring(4); // Remove 'neq.'
+                query += ' WHERE provider != $2';
+                params.push(val);
+            } else {
+                query += ' WHERE provider = $2';
+                params.push(provider);
+            }
+        }
+
+        const result = await pool.query(query, params);
+        res.json({ success: true, updated: result.rowCount });
+    } catch (err) {
+        console.error('Error updating API keys:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const { action, provider, apiKey, modelName } = req.body;
