@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
-  Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp,
+  Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp,
 } from 'lucide-react';
 import { improvePrompt, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
@@ -180,8 +180,8 @@ export default function AITools({ onPromptGenerated }: AIToolsProps) {
                 key={id}
                 onClick={() => { setTab(id); setError(''); }}
                 className={`p-3 rounded-xl text-left transition-all border ${tab === id
-                    ? 'bg-teal-500/10 border-teal-500/30'
-                    : 'bg-slate-800/30 border-slate-800 hover:border-slate-700'
+                  ? 'bg-teal-500/10 border-teal-500/30'
+                  : 'bg-slate-800/30 border-slate-800 hover:border-slate-700'
                   }`}
               >
                 <Icon size={15} className={tab === id ? 'text-teal-400' : 'text-slate-500'} />
@@ -273,14 +273,38 @@ function ImproveTab({
         placeholder="Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style..."
         className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
       />
-      <button
-        onClick={onSubmit}
-        disabled={loading || !input.trim()}
-        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-      >
-        {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-        Improve Prompt
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={onSubmit}
+          disabled={loading || !input.trim()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+          Improve Prompt
+        </button>
+
+        {input && (
+          <button
+            onClick={() => setInput('')}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+            title="Clear Input"
+          >
+            <Eraser size={14} />
+            Clear
+          </button>
+        )}
+
+        {result && (
+          <button
+            onClick={() => setInput(result)}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-teal-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
+            title="Use result as input for another pass"
+          >
+            <ArrowUp size={14} />
+            Paste Generated
+          </button>
+        )}
+      </div>
 
       {result && <PromptResult text={result} id="improve" copied={copied} onCopy={onCopy} onUse={onUse} />}
     </div>
@@ -407,8 +431,8 @@ function PreferenceRow({
             key={opt}
             onClick={() => onChange(value === opt ? undefined : opt)}
             className={`px-2.5 py-1 rounded-lg text-[11px] transition-all border ${value === opt
-                ? 'bg-teal-500/15 border-teal-500/30 text-teal-300'
-                : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
+              ? 'bg-teal-500/15 border-teal-500/30 text-teal-300'
+              : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
               }`}
           >
             {opt}
@@ -532,14 +556,38 @@ function DiagnoseTab({
         placeholder='Describe what went wrong, e.g. "The lighting was flat and the character looked deformed"'
         className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-20 focus:outline-none focus:border-teal-500/40"
       />
-      <button
-        onClick={onSubmit}
-        disabled={loading || !promptInput.trim() || !issue.trim()}
-        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-      >
-        {loading ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
-        Diagnose Issue
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={onSubmit}
+          disabled={loading || !promptInput.trim() || !issue.trim()}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
+        >
+          {loading ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
+          Diagnose Issue
+        </button>
+
+        {(promptInput || issue) && (
+          <button
+            onClick={() => { setPromptInput(''); setIssue(''); }}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+            title="Clear Inputs"
+          >
+            <Eraser size={14} />
+            Clear
+          </button>
+        )}
+
+        {result && (
+          <button
+            onClick={() => setPromptInput(result.improvedPrompt)}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-teal-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
+            title="Use improved prompt as input"
+          >
+            <ArrowUp size={14} />
+            Paste Generated
+          </button>
+        )}
+      </div>
 
       {result && (
         <div className="space-y-3">
