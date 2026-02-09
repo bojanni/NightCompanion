@@ -5,16 +5,14 @@ import GuidedBuilder from '../components/GuidedBuilder';
 import AITools from '../components/AITools';
 import ModelRecommender from '../components/ModelRecommender';
 import ImageAnalyzer from '../components/ImageAnalyzer';
-import { db } from '../lib/api';
+import { supabase } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
-interface GeneratorProps {
-  userId: string;
-}
+interface GeneratorProps { }
 
 type Mode = 'random' | 'guided' | 'remix';
 
-export default function Generator({ userId }: GeneratorProps) {
+export default function Generator({ }: GeneratorProps) {
   const [mode, setMode] = useState<Mode>('random');
   const [guidedInitial, setGuidedInitial] = useState('');
   const [lastPrompts, setLastPrompts] = useState<Prompt[]>([]);
@@ -66,17 +64,15 @@ export default function Generator({ userId }: GeneratorProps) {
               setMode(id);
               if (id !== 'guided') setGuidedInitial('');
             }}
-            className={`p-4 rounded-2xl text-left transition-all border ${
-              mode === id
+            className={`p-4 rounded-2xl text-left transition-all border ${mode === id
                 ? 'bg-amber-500/10 border-amber-500/30 shadow-sm'
                 : 'bg-slate-900 border-slate-800 hover:border-slate-700'
-            }`}
+              }`}
           >
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${
-              mode === id
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${mode === id
                 ? 'bg-amber-500/20 text-amber-400'
                 : 'bg-slate-800 text-slate-500'
-            }`}>
+              }`}>
               <Icon size={18} />
             </div>
             <p className={`text-sm font-medium ${mode === id ? 'text-amber-300' : 'text-white'}`}>
@@ -89,7 +85,6 @@ export default function Generator({ userId }: GeneratorProps) {
 
       {mode === 'random' && (
         <RandomGenerator
-          userId={userId}
           onSwitchToGuided={handleSwitchToGuided}
           onSaved={() => setSaveCount((c) => c + 1)}
         />
@@ -98,7 +93,6 @@ export default function Generator({ userId }: GeneratorProps) {
       {mode === 'guided' && (
         <GuidedBuilder
           key={guidedInitial}
-          userId={userId}
           initialPrompt={guidedInitial || undefined}
           onSaved={() => setSaveCount((c) => c + 1)}
         />
@@ -147,7 +141,6 @@ export default function Generator({ userId }: GeneratorProps) {
       )}
 
       <AITools
-        userId={userId}
         onPromptGenerated={(prompt) => {
           setGuidedInitial(prompt);
           setMode('guided');

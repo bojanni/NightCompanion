@@ -1,12 +1,11 @@
 import { useState, useRef } from 'react';
 import { Download, Upload, AlertTriangle, Loader2, Database, FileJson } from 'lucide-react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import { handleError, showSuccess } from '../lib/error-handler';
 
 interface BackupData {
   version: string;
   exported_at: string;
-  user_id: string;
   data: {
     prompts: any[];
     characters: any[];
@@ -22,11 +21,9 @@ interface BackupData {
   };
 }
 
-interface DataManagementProps {
-  userId: string;
-}
+interface DataManagementProps { }
 
-export function DataManagement({ userId }: DataManagementProps) {
+export function DataManagement({ }: DataManagementProps) {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState<Record<string, number> | null>(null);
@@ -61,23 +58,22 @@ export function DataManagement({ userId }: DataManagementProps) {
         { data: batchTests },
         { data: batchTestResults },
       ] = await Promise.all([
-        db.from('prompts').select('*').eq('user_id', userId),
-        db.from('characters').select('*').eq('user_id', userId),
-        db.from('character_details').select('*').eq('user_id', userId),
-        db.from('gallery').select('*').eq('user_id', userId),
-        db.from('tags').select('*').eq('user_id', userId),
-        db.from('prompt_tags').select('*').eq('user_id', userId),
-        db.from('model_usage').select('*').eq('user_id', userId),
-        db.from('prompt_versions').select('*').eq('user_id', userId),
-        db.from('style_learning').select('*').eq('user_id', userId),
-        db.from('batch_tests').select('*').eq('user_id', userId),
-        db.from('batch_test_results').select('*').eq('user_id', userId),
+        db.from('prompts').select('*'),
+        db.from('characters').select('*'),
+        db.from('character_details').select('*'),
+        db.from('gallery').select('*'),
+        db.from('tags').select('*'),
+        db.from('prompt_tags').select('*'),
+        db.from('model_usage').select('*'),
+        db.from('prompt_versions').select('*'),
+        db.from('style_learning').select('*'),
+        db.from('batch_tests').select('*'),
+        db.from('batch_test_results').select('*'),
       ]);
 
       const backup: BackupData = {
         version: '1.0',
         exported_at: new Date().toISOString(),
-        user_id: userId,
         data: {
           prompts: prompts || [],
           characters: characters || [],
@@ -97,14 +93,14 @@ export function DataManagement({ userId }: DataManagementProps) {
       downloadJSON(backup, `nightcafe-companion-backup-${timestamp}.json`);
       showSuccess('Data exported successfully!');
     } catch (err) {
-      handleError(err, 'DataExport', { userId });
+      handleError(err as Error, 'DataExport');
     } finally {
       setExporting(false);
     }
   };
 
   const validateBackup = (backup: any): backup is BackupData => {
-    if (!backup.version || !backup.exported_at || !backup.user_id || !backup.data) {
+    if (!backup.version || !backup.exported_at || !backup.data) {
       return false;
     }
 
@@ -134,14 +130,12 @@ export function DataManagement({ userId }: DataManagementProps) {
       for (const [table, records] of Object.entries(backup.data)) {
         if (!Array.isArray(records) || records.length === 0) continue;
 
-        const recordsWithUserId = records.map(record => ({
-          ...record,
-          user_id: userId,
-        }));
+        // Strip user_id from imported records if present
+        const cleanRecords = records.map(({ user_id, ...rest }) => rest);
 
         const { error: insertError } = await supabase
           .from(table)
-          .upsert(recordsWithUserId, { onConflict: 'id' });
+          .upsert(cleanRecords, { onConflict: 'id' });
 
         if (insertError) {
           console.warn(`Warning: Some ${table} records may not have imported:`, insertError);
@@ -154,7 +148,7 @@ export function DataManagement({ userId }: DataManagementProps) {
       const totalRecords = Object.values(stats).reduce((sum, count) => sum + count, 0);
       showSuccess(`Successfully imported ${totalRecords} records!`);
     } catch (err) {
-      handleError(err, 'DataImport', { userId, fileName: file.name });
+      handleError(err as Error, 'DataImport', { fileName: file.name });
       setImportStats(null);
     } finally {
       setImporting(false);

@@ -3,7 +3,7 @@ import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap,
 } from 'lucide-react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
 import Modal from '../components/Modal';
 import { PromptSkeleton } from '../components/PromptSkeleton';
@@ -18,11 +18,9 @@ import { handleError, showSuccess } from '../lib/error-handler';
 
 const PAGE_SIZE = 20;
 
-interface PromptsProps {
-  userId: string;
-}
+interface PromptsProps { }
 
-export default function Prompts({ userId }: PromptsProps) {
+export default function Prompts({ }: PromptsProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [promptTagMap, setPromptTagMap] = useState<Record<string, string[]>>({});
@@ -500,7 +498,6 @@ export default function Prompts({ userId }: PromptsProps) {
       >
         <PromptEditor
           prompt={editingPrompt}
-          userId={userId}
           onSave={() => {
             setShowEditor(false);
             loadData();
@@ -517,7 +514,6 @@ export default function Prompts({ userId }: PromptsProps) {
       >
         <VariationGenerator
           basePrompt={variationBase}
-          userId={userId}
           onSaved={loadData}
         />
       </Modal>

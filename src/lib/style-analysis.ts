@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, db } from './api';
 import type { StyleAnalysis } from './ai-service';
 
 const VOCAB: Record<string, string[]> = {
@@ -115,33 +115,54 @@ export async function trackKeywordsFromPrompt(promptContent: string) {
   const keywords = extractKeywords(promptContent);
   if (keywords.length === 0) return;
 
-  await db.rpc('track_style_keywords', {
-    p_keywords: keywords,
-  });
+  // For local app, we can just upsert directly to style_keywords table
+  // Since RPCs might not be available or needed for simple local logic
+
+  for (const { keyword, category } of keywords) {
+    const { data: existing } = await supabase
+      .from('style_keywords')
+      .select('count')
+      .eq('keyword', keyword)
+      .single();
+
+    const count = (existing?.count || 0) + 1;
+
+    await supabase.from('style_keywords').upsert({
+      keyword,
+      category,
+      count
+    }, { onConflict: 'keyword' });
+  }
 }
 
-export async function rebuildAllKeywords(userId: string) {
+export async function rebuildAllKeywords() {
   const { data: prompts } = await supabase
     .from('prompts')
-    .select('content')
-    .eq('user_id', userId);
+    .select('content');
 
   if (!prompts || prompts.length === 0) return;
 
+  // Clear existing
+  await supabase.from('style_keywords').delete().neq('id', 0); // Hack to delete all if needed, or loop delete
+
   const aggregated = aggregateKeywords(prompts.map((p) => p.content));
 
-  await db.rpc('rebuild_style_keywords', {
-    p_keywords: aggregated,
-  });
+  const updates = aggregated.map(stat => ({
+    keyword: stat.keyword,
+    category: stat.category,
+    count: stat.count
+  }));
+
+  if (updates.length > 0) {
+    await supabase.from('style_keywords').upsert(updates, { onConflict: 'keyword' });
+  }
 }
 
 export async function saveStyleProfile(
-  userId: string,
   analysis: StyleAnalysis,
   promptCount: number,
 ) {
   await db.from('style_profiles').insert({
-    user_id: userId,
     profile: analysis.profile,
     signature: analysis.signature,
     themes: analysis.themes,
@@ -162,31 +183,28 @@ export interface StyleProfile {
   created_at: string;
 }
 
-export async function getLatestProfile(userId: string): Promise<StyleProfile | null> {
+export async function getLatestProfile(): Promise<StyleProfile | null> {
   const { data } = await supabase
     .from('style_profiles')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   return data;
 }
 
-export async function getStyleHistory(userId: string): Promise<StyleProfile[]> {
+export async function getStyleHistory(): Promise<StyleProfile[]> {
   const { data } = await supabase
     .from('style_profiles')
     .select('*')
-    .eq('user_id', userId)
     .order('created_at', { ascending: true });
   return data ?? [];
 }
 
-export async function getKeywordStats(userId: string): Promise<KeywordStat[]> {
+export async function getKeywordStats(): Promise<KeywordStat[]> {
   const { data } = await supabase
     .from('style_keywords')
     .select('keyword, category, count')
-    .eq('user_id', userId)
     .order('count', { ascending: false });
   return data ?? [];
 }

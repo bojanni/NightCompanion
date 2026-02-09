@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 
 export interface UserProfile {
   id: string;
-  user_id: string;
   credit_balance: number;
   total_credits_earned: number;
   total_credits_spent: number;
@@ -13,7 +12,6 @@ export interface UserProfile {
 
 export interface CreditTransaction {
   id: string;
-  user_id: string;
   amount: number;
   transaction_type: 'earned' | 'spent' | 'purchase' | 'bonus';
   description: string;
@@ -21,18 +19,14 @@ export interface CreditTransaction {
   created_at: string;
 }
 
-export function useCredits(userId: string) {
+export function useCredits() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
     loadProfile();
-  }, [userId]);
+  }, []);
 
   async function loadProfile() {
     try {
@@ -42,7 +36,6 @@ export function useCredits(userId: string) {
       const { data, error: fetchError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('user_id', userId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
@@ -51,7 +44,6 @@ export function useCredits(userId: string) {
         const { data: newProfile, error: insertError } = await supabase
           .from('user_profiles')
           .insert({
-            user_id: userId,
             credit_balance: 1000,
             total_credits_earned: 1000,
             total_credits_spent: 0,
@@ -90,12 +82,11 @@ export function useCredits(userId: string) {
           total_credits_spent: profile.total_credits_spent + amount,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', userId);
+        .eq('id', profile.id);
 
       if (updateError) throw updateError;
 
       await db.from('credit_transactions').insert({
-        user_id: userId,
         amount: -amount,
         transaction_type: 'spent',
         description,
@@ -132,12 +123,11 @@ export function useCredits(userId: string) {
           total_credits_earned: profile.total_credits_earned + amount,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', userId);
+        .eq('id', profile.id);
 
       if (updateError) throw updateError;
 
       await db.from('credit_transactions').insert({
-        user_id: userId,
         amount,
         transaction_type: type,
         description,

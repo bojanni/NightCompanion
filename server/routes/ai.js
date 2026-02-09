@@ -3,8 +3,6 @@ const router = express.Router();
 const { pool } = require('../db');
 const { decrypt } = require('../lib/crypto');
 
-const USER_ID = '88ea3bcb-d9a8-44b5-ac26-c90885a74686';
-
 const SYSTEM_PROMPTS = {
     improve: `You are an expert AI image prompt engineer for NightCafe Studio. Your job is to take a user's image generation prompt and improve it for better results. Rules: Keep the core subject/intent. Add specific technical terms (lighting, composition, resolution). Add atmosphere/mood. Keep under 150 words. Return ONLY the improved prompt text.`,
 
@@ -22,8 +20,7 @@ const SYSTEM_PROMPTS = {
 async function getActiveProvider() {
     // Check local endpoint first
     const local = await pool.query(
-        'SELECT provider, endpoint_url, model_name FROM user_local_endpoints WHERE user_id = $1 AND is_active = true',
-        [USER_ID]
+        'SELECT provider, endpoint_url, model_name FROM user_local_endpoints WHERE is_active = true'
     );
     if (local.rows.length > 0) {
         return {
@@ -34,8 +31,7 @@ async function getActiveProvider() {
 
     // Check cloud provider keys
     const cloud = await pool.query(
-        'SELECT provider, encrypted_key FROM user_api_keys WHERE user_id = $1 AND is_active = true',
-        [USER_ID]
+        'SELECT provider, encrypted_key FROM user_api_keys WHERE is_active = true'
     );
 
     if (cloud.rows.length > 0) {

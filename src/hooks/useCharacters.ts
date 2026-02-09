@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
 import { handleError, showSuccess } from '../lib/error-handler';
 
@@ -58,7 +58,6 @@ export function useCreateCharacter() {
 
     return useMutation({
         mutationFn: async (data: {
-            user_id: string;
             name: string;
             description: string;
             reference_image_url: string;
@@ -88,7 +87,6 @@ export function useUpdateCharacter() {
     return useMutation({
         mutationFn: async (data: {
             id: string;
-            user_id: string;
             name: string;
             description: string;
             reference_image_url: string;

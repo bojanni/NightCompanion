@@ -34,16 +34,16 @@ export default function App() {
       <Routes>
         <Route element={<Layout onSignOut={signOut} />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/generator" element={<Generator userId={user.id} />} />
-          <Route path="/prompts" element={<Prompts userId={user.id} />} />
-          <Route path="/characters" element={<Characters userId={user.id} />} />
-          <Route path="/gallery" element={<Gallery userId={user.id} />} />
-          <Route path="/models" element={<Models userId={user.id} />} />
-          <Route path="/batch-testing" element={<BatchTesting userId={user.id} />} />
-          <Route path="/style" element={<StyleProfile userId={user.id} />} />
-          <Route path="/cost-calculator" element={<CostDemo userId={user.id} />} />
+          <Route path="/generator" element={<Generator />} />
+          <Route path="/prompts" element={<Prompts />} />
+          <Route path="/characters" element={<Characters />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/models" element={<Models />} />
+          <Route path="/batch-testing" element={<BatchTesting />} />
+          <Route path="/style" element={<StyleProfile />} />
+          <Route path="/cost-calculator" element={<CostDemo />} />
           <Route path="/versioning-guide" element={<VersioningGuide />} />
-          <Route path="/settings" element={<Settings userId={user.id} />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -3,13 +3,11 @@ import {
   Plus, Trash2, Trophy, TrendingUp, BarChart3,
   Save, Loader2, CheckCircle2,
 } from 'lucide-react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import { MODELS, CATEGORY_OPTIONS, type ModelInfo } from '../lib/models-data';
 import StarRating from './StarRating';
 
-interface ModelTrackerProps {
-  userId: string;
-}
+interface ModelTrackerProps { }
 
 interface UsageEntry {
   id: string;
@@ -31,7 +29,7 @@ interface ModelStats {
   topCategory: string;
 }
 
-export default function ModelTracker({ userId }: ModelTrackerProps) {
+export default function ModelTracker({ }: ModelTrackerProps) {
   const [entries, setEntries] = useState<UsageEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -61,7 +59,6 @@ export default function ModelTracker({ userId }: ModelTrackerProps) {
     if (!formModelId) return;
     setSaving(true);
     await db.from('model_usage').insert({
-      user_id: userId,
       model_id: formModelId,
       prompt_used: formPrompt,
       category: formCategory,

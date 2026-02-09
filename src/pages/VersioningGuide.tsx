@@ -120,10 +120,9 @@ export default function VersioningGuide() {
         <h2 className="text-lg font-semibold text-white mb-4">Database Schema</h2>
         <div className="bg-slate-900/50 rounded-xl p-4 overflow-x-auto">
           <pre className="text-xs text-slate-300 font-mono">
-{`CREATE TABLE prompt_versions (
+            {`CREATE TABLE prompt_versions (
   id uuid PRIMARY KEY,
   prompt_id uuid REFERENCES prompts(id),
-  user_id uuid REFERENCES auth.users(id),
   content text NOT NULL,
   version_number integer NOT NULL,
   change_description text,

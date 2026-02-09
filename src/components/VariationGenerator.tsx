@@ -4,7 +4,6 @@ import { db } from '../lib/api';
 
 interface VariationGeneratorProps {
   basePrompt: string;
-  userId: string;
   onSaved: () => void;
 }
 
@@ -70,7 +69,7 @@ function generateVariations(base: string, strategy: string, count: number): stri
   return shuffled.slice(0, count).map((mod) => `${base}, ${mod}`);
 }
 
-export default function VariationGenerator({ basePrompt, userId, onSaved }: VariationGeneratorProps) {
+export default function VariationGenerator({ basePrompt, onSaved }: VariationGeneratorProps) {
   const [strategy, setStrategy] = useState('style');
   const [count, setCount] = useState(5);
   const [variations, setVariations] = useState<string[]>([]);
@@ -91,7 +90,6 @@ export default function VariationGenerator({ basePrompt, userId, onSaved }: Vari
     setSavingIdx(idx);
     const strategyLabel = VARIATION_STRATEGIES.find((s) => s.id === strategy)?.label ?? strategy;
     await db.from('prompts').insert({
-      user_id: userId,
       title: `Variation: ${strategyLabel} #${idx + 1}`,
       content: text,
       notes: `Generated variation from: "${basePrompt.slice(0, 100)}..."`,
@@ -115,11 +113,10 @@ export default function VariationGenerator({ basePrompt, userId, onSaved }: Vari
           <button
             key={s.id}
             onClick={() => setStrategy(s.id)}
-            className={`p-3 rounded-xl text-left transition-all ${
-              strategy === s.id
+            className={`p-3 rounded-xl text-left transition-all ${strategy === s.id
                 ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
                 : 'bg-slate-700/30 border border-slate-700 text-slate-300 hover:bg-slate-700/50'
-            }`}
+              }`}
           >
             <p className="text-xs font-medium">{s.label}</p>
             <p className="text-[10px] mt-0.5 opacity-70">{s.description}</p>

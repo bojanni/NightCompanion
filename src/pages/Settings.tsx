@@ -3,17 +3,15 @@ import {
   Key, ExternalLink, Loader2, Check, Trash2, Shield, Zap,
   Eye, EyeOff, RefreshCw, CircleDot, Server, Globe, TestTube2,
 } from 'lucide-react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModelSelection } from '../lib/api-keys-service';
 import type { ApiKeyInfo } from '../lib/api-keys-service';
 import { testConnection } from '../lib/ai-service';
-import { ApiKeySchema, LocalEndpointSchema } from '../lib/validation-schemas';
+import { ApiKeySchema } from '../lib/validation-schemas';
 import { DataManagement } from '../components/DataManagement';
 import { getModelsForProvider, getDefaultModelForProvider } from '../lib/provider-models';
 
-interface SettingsProps {
-  userId: string;
-}
+interface SettingsProps { }
 
 interface LocalEndpoint {
   id: string;
@@ -71,7 +69,7 @@ const PROVIDERS = [
   },
 ];
 
-export default function Settings({ userId }: SettingsProps) {
+export default function Settings({ }: SettingsProps) {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,8 +80,8 @@ export default function Settings({ userId }: SettingsProps) {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const getToken = useCallback(async () => {
-    const { data } = await db.auth.getSession();
-    return data.session?.access_token ?? '';
+    // Return a dummy token or empty string since auth is disabled
+    return 'mock-token';
   }, []);
 
   const loadKeys = useCallback(async () => {
@@ -231,11 +229,10 @@ export default function Settings({ userId }: SettingsProps) {
           </button>
 
           {testResult && (
-            <div className={`border rounded-xl px-4 py-3 text-sm ${
-              testResult.success
+            <div className={`border rounded-xl px-4 py-3 text-sm ${testResult.success
                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                 : 'bg-red-500/10 border-red-500/20 text-red-400'
-            }`}>
+              }`}>
               <div className="flex items-start gap-2">
                 <div className="shrink-0 mt-0.5">
                   {testResult.success ? <Check size={14} /> : <Trash2 size={14} />}
@@ -365,7 +362,6 @@ export default function Settings({ userId }: SettingsProps) {
                     const { error: insertError } = await supabase
                       .from('user_local_endpoints')
                       .insert({
-                        user_id: userId,
                         provider: 'ollama',
                         endpoint_url: endpointUrl,
                         model_name: modelName,
@@ -430,7 +426,6 @@ export default function Settings({ userId }: SettingsProps) {
                     const { error: insertError } = await supabase
                       .from('user_local_endpoints')
                       .insert({
-                        user_id: userId,
                         provider: 'lmstudio',
                         endpoint_url: endpointUrl,
                         model_name: modelName,
@@ -488,7 +483,7 @@ export default function Settings({ userId }: SettingsProps) {
         </>
       )}
 
-      <DataManagement userId={userId} />
+      <DataManagement />
     </div>
   );
 }
@@ -534,11 +529,10 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
 
   return (
     <div
-      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all ${
-        isActive
+      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all ${isActive
           ? `${provider.borderColor} shadow-lg`
           : 'border-slate-800 hover:border-slate-700'
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -604,11 +598,10 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
             <button
               onClick={onSetActive}
               disabled={isSettingActive || isActive}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                isActive
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive
                   ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
                   : `${provider.bgGlow} ${provider.textColor} hover:opacity-80`
-              } disabled:opacity-50`}
+                } disabled:opacity-50`}
             >
               {isSettingActive ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
               {isActive ? 'Active' : 'Activate'}
@@ -707,33 +700,32 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
 
   const config = type === 'ollama'
     ? {
-        name: 'Ollama',
-        description: 'Run LLMs locally on your machine. Free and private.',
-        docsUrl: 'https://ollama.ai',
-        defaultEndpoint: 'http://localhost:11434',
-        gradient: 'from-violet-500 to-purple-600',
-        bgGlow: 'bg-violet-500/10',
-        textColor: 'text-violet-400',
-        borderColor: 'border-violet-500/20',
-      }
+      name: 'Ollama',
+      description: 'Run LLMs locally on your machine. Free and private.',
+      docsUrl: 'https://ollama.ai',
+      defaultEndpoint: 'http://localhost:11434',
+      gradient: 'from-violet-500 to-purple-600',
+      bgGlow: 'bg-violet-500/10',
+      textColor: 'text-violet-400',
+      borderColor: 'border-violet-500/20',
+    }
     : {
-        name: 'LM Studio',
-        description: 'Desktop app for running local LLMs. Easy setup with GUI.',
-        docsUrl: 'https://lmstudio.ai',
-        defaultEndpoint: 'http://localhost:1234',
-        gradient: 'from-sky-500 to-blue-600',
-        bgGlow: 'bg-sky-500/10',
-        textColor: 'text-sky-400',
-        borderColor: 'border-sky-500/20',
-      };
+      name: 'LM Studio',
+      description: 'Desktop app for running local LLMs. Easy setup with GUI.',
+      docsUrl: 'https://lmstudio.ai',
+      defaultEndpoint: 'http://localhost:1234',
+      gradient: 'from-sky-500 to-blue-600',
+      bgGlow: 'bg-sky-500/10',
+      textColor: 'text-sky-400',
+      borderColor: 'border-sky-500/20',
+    };
 
   return (
     <div
-      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all ${
-        isActive
+      className={`bg-slate-900/60 border rounded-2xl p-5 transition-all ${isActive
           ? `${config.borderColor} shadow-lg`
           : 'border-slate-800 hover:border-slate-700'
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
@@ -812,34 +804,32 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
       ) : (
         <div className="space-y-3">
           <div className="space-y-2">
-            <div className="relative">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Endpoint URL</label>
               <input
                 type="text"
-                value={endpointUrl}
+                value={endpointUrl || config.defaultEndpoint}
                 onChange={(e) => setEndpointUrl(e.target.value)}
                 placeholder={config.defaultEndpoint}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-slate-600"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none focus:border-slate-600"
               />
             </div>
-            <div className="relative">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Model Name (optional)</label>
               <input
                 type="text"
                 value={modelName}
                 onChange={(e) => setModelName(e.target.value)}
-                placeholder="e.g., llama3.2 or local-model"
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-slate-600"
+                placeholder="e.g. llama3, mistral"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none focus:border-slate-600"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                const url = endpointUrl.trim() || config.defaultEndpoint;
-                const model = modelName.trim();
-                if (model) onSave(url, model);
-              }}
-              disabled={isSaving || !modelName.trim()}
+              onClick={() => onSave(endpointUrl || config.defaultEndpoint, modelName)}
+              disabled={isSaving}
               className={`flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r ${config.gradient} text-white text-xs font-medium rounded-lg hover:opacity-90 transition-all disabled:opacity-50 shadow-lg`}
             >
               {isSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
@@ -853,15 +843,6 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
                 Cancel
               </button>
             )}
-            <a
-              href={config.docsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              Docs
-              <ExternalLink size={9} />
-            </a>
           </div>
         </div>
       )}

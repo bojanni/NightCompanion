@@ -5,12 +5,11 @@ import { analyzePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
 
 interface RandomGeneratorProps {
-  userId: string;
   onSwitchToGuided: (prompt: string) => void;
   onSaved: () => void;
 }
 
-export default function RandomGenerator({ userId, onSwitchToGuided, onSaved }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copied, setCopied] = useState(false);
@@ -31,7 +30,6 @@ export default function RandomGenerator({ userId, onSwitchToGuided, onSaved }: R
     if (!prompt) return;
     setSaving(true);
     await db.from('prompts').insert({
-      user_id: userId,
       title: 'Random: ' + prompt.split(',')[0].slice(0, 40),
       content: prompt,
       notes: 'Generated with Random mode' +
@@ -66,11 +64,10 @@ export default function RandomGenerator({ userId, onSwitchToGuided, onSaved }: R
             <button
               key={key}
               onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                filters[key]
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${filters[key]
                   ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
                   : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
-              }`}
+                }`}
             >
               {filters[key] ? '* ' : ''}{label}
             </button>

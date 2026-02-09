@@ -4,7 +4,7 @@ import {
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import type { GalleryItem, Collection } from '../lib/types';
 import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
@@ -12,11 +12,9 @@ import StarRating from '../components/StarRating';
 
 const PAGE_SIZE = 24;
 
-interface GalleryProps {
-  userId: string;
-}
+interface GalleryProps { }
 
-export default function Gallery({ userId }: GalleryProps) {
+export default function Gallery({ }: GalleryProps) {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,7 +88,6 @@ export default function Gallery({ userId }: GalleryProps) {
   async function handleSaveItem() {
     setSaving(true);
     const payload = {
-      user_id: userId,
       title: formTitle.trim() || 'Untitled',
       image_url: formImageUrl,
       prompt_used: formPromptUsed,
@@ -126,7 +123,6 @@ export default function Gallery({ userId }: GalleryProps) {
     if (!collName.trim()) return;
     setSaving(true);
     await db.from('collections').insert({
-      user_id: userId,
       name: collName.trim(),
       description: collDesc,
       color: collColor,

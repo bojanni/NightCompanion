@@ -8,12 +8,11 @@ import { analyzePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
 
 interface GuidedBuilderProps {
-  userId: string;
   initialPrompt?: string;
   onSaved: () => void;
 }
 
-export default function GuidedBuilder({ userId, initialPrompt, onSaved }: GuidedBuilderProps) {
+export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [additions, setAdditions] = useState<string[]>([]);
@@ -64,7 +63,6 @@ export default function GuidedBuilder({ userId, initialPrompt, onSaved }: Guided
     if (!generatedPrompt) return;
     setSaving(true);
     await db.from('prompts').insert({
-      user_id: userId,
       title: 'Guided: ' + generatedPrompt.split(',')[0].slice(0, 40),
       content: generatedPrompt,
       notes: 'Built with Guided mode',
@@ -136,11 +134,10 @@ export default function GuidedBuilder({ userId, initialPrompt, onSaved }: Guided
                     : [...additions, add.id];
                   setGeneratedPrompt(buildGuidedPrompt(selections, newAdditions));
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-                  additions.includes(add.id)
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${additions.includes(add.id)
                     ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
                     : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
-                }`}
+                  }`}
               >
                 {add.label}
               </button>
@@ -174,13 +171,12 @@ export default function GuidedBuilder({ userId, initialPrompt, onSaved }: Guided
           <button
             key={s.id}
             onClick={() => setCurrentStep(i)}
-            className={`flex-1 h-1.5 rounded-full transition-all ${
-              selections[s.id]
+            className={`flex-1 h-1.5 rounded-full transition-all ${selections[s.id]
                 ? 'bg-amber-500'
                 : i === currentStep
-                ? 'bg-amber-500/40'
-                : 'bg-slate-800'
-            }`}
+                  ? 'bg-amber-500/40'
+                  : 'bg-slate-800'
+              }`}
           />
         ))}
       </div>
@@ -202,11 +198,10 @@ export default function GuidedBuilder({ userId, initialPrompt, onSaved }: Guided
             <button
               key={option.id}
               onClick={() => handleSelect(option.id)}
-              className={`p-4 rounded-xl text-left transition-all border ${
-                isSelected
+              className={`p-4 rounded-xl text-left transition-all border ${isSelected
                   ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 ring-1 ring-amber-500/20'
                   : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
-              }`}
+                }`}
             >
               <span className="text-sm font-medium block">{option.label}</span>
               <span className="text-[10px] text-slate-500 mt-1 block truncate">

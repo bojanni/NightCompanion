@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { FlaskConical, Plus, Trash2, Loader2, Star, ExternalLink, Grid3x3 } from 'lucide-react';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import PromptVariationGenerator, { VariationList } from '../components/PromptVariationGenerator';
 import ResultsComparisonMatrix from '../components/ResultsComparisonMatrix';
 import { generatePromptVariations } from '../lib/ai-service';
 
-interface BatchTestingProps {
-  userId: string;
-}
+interface BatchTestingProps { }
 
 interface BatchTest {
   id: string;
@@ -34,7 +32,7 @@ interface BatchTestResult {
   notes: string;
 }
 
-export default function BatchTesting({ userId }: BatchTestingProps) {
+export default function BatchTesting({ }: BatchTestingProps) {
   const [tests, setTests] = useState<BatchTest[]>([]);
   const [selectedTest, setSelectedTest] = useState<BatchTest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,7 +96,6 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
       const { data, error } = await supabase
         .from('batch_tests')
         .insert({
-          user_id: userId,
           name: newTestName,
           base_prompt: newTestPrompt,
         })
@@ -302,11 +299,10 @@ export default function BatchTesting({ userId }: BatchTestingProps) {
                   <button
                     key={test.id}
                     onClick={() => setSelectedTest(test)}
-                    className={`w-full text-left p-3 rounded-lg transition-all ${
-                      selectedTest?.id === test.id
+                    className={`w-full text-left p-3 rounded-lg transition-all ${selectedTest?.id === test.id
                         ? 'bg-cyan-500/10 border border-cyan-500/30'
                         : 'bg-slate-800/50 border border-slate-800 hover:border-slate-700'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <h3 className="text-sm font-medium text-white line-clamp-1">{test.name}</h3>

@@ -5,11 +5,10 @@ import {
 } from 'lucide-react';
 import { improvePrompt, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import { saveStyleProfile } from '../lib/style-analysis';
 
 interface AIToolsProps {
-  userId: string;
   onPromptGenerated: (prompt: string) => void;
 }
 
@@ -22,7 +21,7 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles; desc: string }[] = 
   { id: 'diagnose', label: 'Diagnose', icon: AlertTriangle, desc: 'Fix issues' },
 ];
 
-export default function AITools({ userId, onPromptGenerated }: AIToolsProps) {
+export default function AITools({ onPromptGenerated }: AIToolsProps) {
   const [tab, setTab] = useState<Tab>('improve');
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -82,12 +81,10 @@ export default function AITools({ userId, onPromptGenerated }: AIToolsProps) {
         supabase
           .from('characters')
           .select('name, description')
-          .eq('user_id', userId)
           .limit(5),
         supabase
           .from('prompts')
           .select('content')
-          .eq('user_id', userId)
           .gte('rating', 4)
           .order('rating', { ascending: false })
           .limit(5),
@@ -124,7 +121,6 @@ export default function AITools({ userId, onPromptGenerated }: AIToolsProps) {
       const { data } = await supabase
         .from('prompts')
         .select('content')
-        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(20);
       if (!data || data.length < 3) {
@@ -134,7 +130,7 @@ export default function AITools({ userId, onPromptGenerated }: AIToolsProps) {
       }
       const result = await analyzeStyle(data.map((p) => p.content), token);
       setStyleResult(result);
-      saveStyleProfile(userId, result, data.length).catch(() => {});
+      saveStyleProfile(result, data.length).catch(() => { });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to analyze style');
     } finally {
@@ -183,11 +179,10 @@ export default function AITools({ userId, onPromptGenerated }: AIToolsProps) {
               <button
                 key={id}
                 onClick={() => { setTab(id); setError(''); }}
-                className={`p-3 rounded-xl text-left transition-all border ${
-                  tab === id
+                className={`p-3 rounded-xl text-left transition-all border ${tab === id
                     ? 'bg-teal-500/10 border-teal-500/30'
                     : 'bg-slate-800/30 border-slate-800 hover:border-slate-700'
-                }`}
+                  }`}
               >
                 <Icon size={15} className={tab === id ? 'text-teal-400' : 'text-slate-500'} />
                 <p className={`text-xs font-medium mt-1.5 ${tab === id ? 'text-teal-300' : 'text-slate-300'}`}>{label}</p>
@@ -411,11 +406,10 @@ function PreferenceRow({
           <button
             key={opt}
             onClick={() => onChange(value === opt ? undefined : opt)}
-            className={`px-2.5 py-1 rounded-lg text-[11px] transition-all border ${
-              value === opt
+            className={`px-2.5 py-1 rounded-lg text-[11px] transition-all border ${value === opt
                 ? 'bg-teal-500/15 border-teal-500/30 text-teal-300'
                 : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600 hover:text-slate-300'
-            }`}
+              }`}
           >
             {opt}
           </button>

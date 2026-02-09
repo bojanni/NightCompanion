@@ -5,10 +5,8 @@ const { pool } = require('../db');
 // Get all local endpoints for user
 router.get('/', async (req, res) => {
     try {
-        const userId = '88ea3bcb-d9a8-44b5-ac26-c90885a74686'; // Mock user
         const result = await pool.query(
-            'SELECT * FROM user_local_endpoints WHERE user_id = $1 ORDER BY created_at DESC',
-            [userId]
+            'SELECT * FROM user_local_endpoints ORDER BY created_at DESC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -20,14 +18,13 @@ router.get('/', async (req, res) => {
 // Create new local endpoint
 router.post('/', async (req, res) => {
     try {
-        const userId = '88ea3bcb-d9a8-44b5-ac26-c90885a74686';
         const { name, endpoint_url, api_key, model_name, is_active } = req.body;
 
         const result = await pool.query(
-            `INSERT INTO user_local_endpoints (user_id, name, endpoint_url, api_key, model_name, is_active)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO user_local_endpoints (name, endpoint_url, api_key, model_name, is_active)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
-            [userId, name, endpoint_url, api_key, model_name, is_active !== false]
+            [name, endpoint_url, api_key, model_name, is_active !== false]
         );
 
         res.json(result.rows[0]);

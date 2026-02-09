@@ -6,9 +6,7 @@ import ModelGuide from '../components/ModelGuide';
 import Modal from '../components/Modal';
 import type { ModelInfo } from '../lib/models-data';
 
-interface ModelsProps {
-  userId: string;
-}
+interface ModelsProps { }
 
 const TABS = [
   { id: 'advisor', label: 'Advisor', icon: Compass, description: 'Get model suggestions for your prompt' },
@@ -18,7 +16,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-export default function Models({ userId }: ModelsProps) {
+export default function Models({ }: ModelsProps) {
   const [activeTab, setActiveTab] = useState<TabId>('advisor');
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
 
@@ -34,11 +32,10 @@ export default function Models({ userId }: ModelsProps) {
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-              activeTab === id
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === id
                 ? 'bg-slate-800 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             <Icon size={16} />
             <span className="hidden sm:inline">{label}</span>
@@ -55,7 +52,7 @@ export default function Models({ userId }: ModelsProps) {
       )}
 
       {activeTab === 'tracker' && (
-        <ModelTracker userId={userId} />
+        <ModelTracker />
       )}
 
       {activeTab === 'guide' && (
@@ -74,15 +71,14 @@ export default function Models({ userId }: ModelsProps) {
               <span className="text-xs font-medium px-2 py-0.5 bg-slate-700 text-slate-300 rounded-md">
                 {selectedModel.provider}
               </span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${
-                selectedModel.creditCost === 'low'
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${selectedModel.creditCost === 'low'
                   ? 'bg-emerald-500/10 text-emerald-400'
                   : selectedModel.creditCost === 'medium'
-                  ? 'bg-amber-500/10 text-amber-400'
-                  : selectedModel.creditCost === 'high'
-                  ? 'bg-orange-500/10 text-orange-400'
-                  : 'bg-red-500/10 text-red-400'
-              }`}>
+                    ? 'bg-amber-500/10 text-amber-400'
+                    : selectedModel.creditCost === 'high'
+                      ? 'bg-orange-500/10 text-orange-400'
+                      : 'bg-red-500/10 text-red-400'
+                }`}>
                 {selectedModel.creditCost} cost
               </span>
             </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Save, Loader2, Plus, X } from 'lucide-react';
 import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import StarRating from './StarRating';
@@ -10,12 +10,11 @@ import TagBadge from './TagBadge';
 
 interface PromptEditorProps {
   prompt: Prompt | null;
-  userId: string;
   onSave: () => void;
   onCancel: () => void;
 }
 
-export default function PromptEditor({ prompt, userId, onSave, onCancel }: PromptEditorProps) {
+export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [notes, setNotes] = useState('');
@@ -60,7 +59,7 @@ export default function PromptEditor({ prompt, userId, onSave, onCancel }: Promp
     if (!newTagName.trim()) return;
     const { data } = await supabase
       .from('tags')
-      .insert({ user_id: userId, name: newTagName.trim(), color: newTagColor, category: newTagCategory })
+      .insert({ name: newTagName.trim(), color: newTagColor, category: newTagCategory })
       .select()
       .maybeSingle();
     if (data) {
@@ -90,7 +89,6 @@ export default function PromptEditor({ prompt, userId, onSave, onCancel }: Promp
       });
 
       const payload = {
-        user_id: userId,
         title: validated.title,
         content: validated.content,
         notes,
@@ -119,7 +117,7 @@ export default function PromptEditor({ prompt, userId, onSave, onCancel }: Promp
       }
 
       if (validated.content.trim()) {
-        trackKeywordsFromPrompt(validated.content).catch(() => {});
+        trackKeywordsFromPrompt(validated.content).catch(() => { });
       }
 
       setSaving(false);

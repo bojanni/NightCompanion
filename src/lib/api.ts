@@ -124,7 +124,8 @@ class QueryBuilder {
 
     eq(column: string, value: any) {
         if (column === 'user_id') {
-            this.filters.user_id = value;
+            // Ignore user_id filters for local mode
+            return this;
         } else if (column === 'id') {
             this.url = `${API_URL}/${this.table}/${value}`;
         }
@@ -211,10 +212,13 @@ class QueryBuilder {
 
     async insert(data: any) {
         try {
+            // Strip user_id from payload
+            const { user_id, ...cleanData } = data;
+
             const response = await fetch(this.url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(cleanData)
             });
 
             if (!response.ok) {
@@ -230,10 +234,13 @@ class QueryBuilder {
 
     async update(data: any) {
         try {
+            // Strip user_id from payload
+            const { user_id, ...cleanData } = data;
+
             const response = await fetch(this.url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(cleanData)
             });
 
             if (!response.ok) {

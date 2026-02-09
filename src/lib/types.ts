@@ -1,6 +1,5 @@
 export interface Prompt {
   id: string;
-  user_id: string;
   title: string;
   content: string;
   notes: string;
@@ -14,7 +13,6 @@ export interface Prompt {
 
 export interface Tag {
   id: string;
-  user_id: string;
   name: string;
   color: string;
   category: string;
@@ -29,7 +27,6 @@ export interface PromptTag {
 export interface PromptVersion {
   id: string;
   prompt_id: string;
-  user_id: string;
   content: string;
   version_number: number;
   change_description: string | null;
@@ -38,7 +35,6 @@ export interface PromptVersion {
 
 export interface Character {
   id: string;
-  user_id: string;
   name: string;
   description: string;
   reference_image_url: string;
@@ -58,7 +54,6 @@ export interface CharacterDetail {
 
 export interface GalleryItem {
   id: string;
-  user_id: string;
   title: string;
   image_url: string;
   prompt_used: string;
@@ -72,7 +67,6 @@ export interface GalleryItem {
 
 export interface Collection {
   id: string;
-  user_id: string;
   name: string;
   description: string;
   color: string;
@@ -81,7 +75,6 @@ export interface Collection {
 
 export interface ModelUsage {
   id: string;
-  user_id: string;
   model_id: string;
   prompt_used: string;
   category: string;
@@ -93,7 +86,6 @@ export interface ModelUsage {
 
 export interface UserProfile {
   id: string;
-  user_id: string;
   credit_balance: number;
   total_credits_earned: number;
   total_credits_spent: number;
@@ -103,7 +95,6 @@ export interface UserProfile {
 
 export interface CreditTransaction {
   id: string;
-  user_id: string;
   amount: number;
   transaction_type: 'earned' | 'spent' | 'purchase' | 'bonus';
   description: string;

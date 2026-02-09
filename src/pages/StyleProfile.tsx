@@ -4,7 +4,7 @@ import {
   Clock, TrendingUp, Cpu, AlertCircle, Database,
 } from 'lucide-react';
 import { analyzeStyle } from '../lib/ai-service';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import {
   saveStyleProfile, rebuildAllKeywords,
   getLatestProfile, getStyleHistory, getKeywordStats,
@@ -12,11 +12,9 @@ import {
 } from '../lib/style-analysis';
 import type { StyleProfile as StyleProfileType, KeywordStat } from '../lib/style-analysis';
 
-interface Props {
-  userId: string;
-}
+interface Props { }
 
-export default function StyleProfile({ userId }: Props) {
+export default function StyleProfile({ }: Props) {
   const [profile, setProfile] = useState<StyleProfileType | null>(null);
   const [history, setHistory] = useState<StyleProfileType[]>([]);
   const [keywords, setKeywords] = useState<KeywordStat[]>([]);
@@ -26,15 +24,15 @@ export default function StyleProfile({ userId }: Props) {
   const [rebuilding, setRebuilding] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => { loadData(); }, [userId]);
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
     const [profileRes, historyRes, keywordsRes, countRes] = await Promise.all([
-      getLatestProfile(userId),
-      getStyleHistory(userId),
-      getKeywordStats(userId),
-      db.from('prompts').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      getLatestProfile(),
+      getStyleHistory(),
+      getKeywordStats(),
+      db.from('prompts').select('id', { count: 'exact', head: true }),
     ]);
     setProfile(profileRes);
     setHistory(historyRes);
@@ -47,13 +45,13 @@ export default function StyleProfile({ userId }: Props) {
     setAnalyzing(true);
     setError('');
     try {
+      // Local auth doesn't really have tokens, but we keep this for compatibility structure
       const { data: session } = await db.auth.getSession();
       const token = session.session?.access_token ?? '';
 
       const { data: prompts } = await supabase
         .from('prompts')
         .select('content')
-        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(30);
 
@@ -64,7 +62,7 @@ export default function StyleProfile({ userId }: Props) {
       }
 
       const result = await analyzeStyle(prompts.map((p) => p.content), token);
-      await saveStyleProfile(userId, result, prompts.length);
+      await saveStyleProfile(result, prompts.length);
       await loadData();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Analysis failed');
@@ -76,8 +74,8 @@ export default function StyleProfile({ userId }: Props) {
   async function handleRebuildKeywords() {
     setRebuilding(true);
     try {
-      await rebuildAllKeywords(userId);
-      const fresh = await getKeywordStats(userId);
+      await rebuildAllKeywords();
+      const fresh = await getKeywordStats();
       setKeywords(fresh);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Keyword rebuild failed');
@@ -374,14 +372,12 @@ function EvolutionTimeline({ history }: { history: StyleProfileType[] }) {
             const isLatest = i === history.length - 1;
             return (
               <div key={snapshot.id} className="flex gap-4 pl-1">
-                <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 z-10 ${
-                  isLatest
+                <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 z-10 ${isLatest
                     ? 'bg-teal-500 border-teal-400'
                     : 'bg-slate-800 border-slate-600'
-                }`} />
-                <div className={`flex-1 p-3 rounded-xl ${
-                  isLatest ? 'bg-teal-500/5 border border-teal-500/20' : 'bg-slate-800/30'
-                }`}>
+                  }`} />
+                <div className={`flex-1 p-3 rounded-xl ${isLatest ? 'bg-teal-500/5 border border-teal-500/20' : 'bg-slate-800/30'
+                  }`}>
                   <div className="flex items-center justify-between mb-1">
                     <p className={`text-xs font-medium ${isLatest ? 'text-teal-400' : 'text-slate-400'}`}>
                       "{snapshot.signature}"
