@@ -22,7 +22,7 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles; desc: string }[] = 
   { id: 'diagnose', label: 'Diagnose', icon: AlertTriangle, desc: 'Fix issues' },
 ];
 
-export default function AITools({ onPromptGenerated }: AIToolsProps) {
+export default function AITools({ onPromptGenerated, generatedPrompt }: AIToolsProps) {
   const [tab, setTab] = useState<Tab>('improve');
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
