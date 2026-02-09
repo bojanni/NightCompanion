@@ -1,14 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
-  Search, Plus, Filter, MoreHorizontal, Edit3, Trash2, X,
-  ExternalLink, MessageSquare, Image as ImageIcon, Save, Loader2,
+  Search, Plus, Edit3, Trash2, X,
+  MessageSquare, Image as ImageIcon, Save, Loader2,
   ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown, AlertCircle
 } from 'lucide-react';
-import { db, supabase } from '../lib/api';
+import { supabase } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
 import {
   useCharacters,
-  useCharacterDetails,
   useCreateCharacter,
   useUpdateCharacter,
   useDeleteCharacter,
@@ -30,7 +29,7 @@ export default function Characters({ }: CharactersProps) {
   const [details, setDetails] = useState<Record<string, CharacterDetail[]>>({});
 
   const [formName, setFormName] = useState('');
-  const [formDesc, setFormDesc] = useState('');
+  const [formDesc, setFormDesc] = useState<string>('');
   const [formImage, setFormImage] = useState('');
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -112,7 +111,9 @@ export default function Characters({ }: CharactersProps) {
 
       if (typeof result === 'string') {
         // Fallback if string returned
-        setFormDesc(prev => prev ? prev + '\n\n' + result : result || '');
+        if (result) {
+          setFormDesc((prev: string) => prev ? prev + '\n\n' + result : result);
+        }
       } else {
         if (result.found && result.description) {
           setFormDesc(prev => prev ? prev + '\n\n' + result.description : result.description);
@@ -503,8 +504,10 @@ export default function Characters({ }: CharactersProps) {
                       <p className="text-sm text-red-800 font-medium">{analysisError}</p>
                       <button
                         onClick={handleOverrideAnalysis}
-                        className="mt-2 text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors"
+                        disabled={analyzing}
+                        className="mt-2 text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                       >
+                        {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                         Override & Analyze Anyway
                       </button>
                     </div>
