@@ -208,6 +208,7 @@ export default function AITools({ onPromptGenerated, generatedPrompt }: AIToolsP
               onSubmit={handleImprove}
               onCopy={handleCopy}
               onUse={() => onPromptGenerated(improveResult)}
+              onClear={() => setImproveResult('')}
               generatedPrompt={generatedPrompt}
             />
           )}
@@ -257,8 +258,10 @@ export default function AITools({ onPromptGenerated, generatedPrompt }: AIToolsP
   );
 }
 
+import { diffWords, type DiffType } from '../lib/diff-utils';
+
 function ImproveTab({
-  input, setInput, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt,
+  input, setInput, result, loading, copied, onSubmit, onCopy, onUse, onClear, generatedPrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -268,61 +271,109 @@ function ImproveTab({
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
+  onClear: () => void;
   generatedPrompt?: string;
 }) {
+  const [showDiff, setShowDiff] = useState(true);
+
+  const diff = result ? diffWords(input, result) : [];
+
+  const handleAccept = () => {
+    setInput(result);
+    onClear();
+  };
+
   return (
     <div className="space-y-3">
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style..."
-        className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
-      />
+      {!result && (
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style..."
+          className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
+        />
+      )}
+
+      {result && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 bg-slate-900/50 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDiff(true)}
+                className={`text-xs font-medium px-2 py-1 rounded-lg transition-colors ${showDiff ? 'bg-teal-500/10 text-teal-400' : 'text-slate-400 hover:text-slate-300'}`}
+              >
+                Diff View
+              </button>
+              <button
+                onClick={() => setShowDiff(false)}
+                className={`text-xs font-medium px-2 py-1 rounded-lg transition-colors ${!showDiff ? 'bg-teal-500/10 text-teal-400' : 'text-slate-400 hover:text-slate-300'}`}
+              >
+                Final Result
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 text-sm leading-relaxed min-h-[6rem]">
+            {showDiff ? (
+              <div className="whitespace-pre-wrap">
+                {diff.map((part, i) => (
+                  <span
+                    key={i}
+                    className={`${part.type === 'add' ? 'bg-emerald-500/20 text-emerald-200 px-0.5 rounded' :
+                      part.type === 'del' ? 'bg-red-500/20 text-red-300 line-through decoration-red-400/50 px-0.5 rounded mx-0.5' :
+                        'text-slate-300'
+                      }`}
+                  >
+                    {part.value}{' '}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-white whitespace-pre-wrap">{result}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={onSubmit}
-          disabled={loading || !input.trim()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-        >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-          {loading ? 'Improving...' : 'Improve Prompt'}
-        </button>
-
-        {input && (
+        {!result ? (
           <button
-            onClick={() => setInput('')}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
-            title="Clear Input"
+            onClick={onSubmit}
+            disabled={loading || !input.trim()}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
           >
-            <Eraser size={14} />
-            Clear
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            {loading ? 'Improving...' : 'Improve Prompt'}
           </button>
+        ) : (
+          <>
+            <button
+              onClick={handleAccept}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-sm font-medium rounded-xl hover:bg-emerald-600/30 transition-all"
+            >
+              <Check size={14} />
+              Accept Changes
+            </button>
+            <button
+              onClick={onClear}
+              className="px-4 py-2.5 text-slate-400 hover:text-white text-sm transition-colors border border-transparent hover:border-slate-700 rounded-xl"
+            >
+              Discard
+            </button>
+
+            <button
+              onClick={() => onCopy(result, 'improve')}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-400 text-xs rounded-lg hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+            >
+              {copied === 'improve' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+              {copied === 'improve' ? 'Copied' : 'Copy Result'}
+            </button>
+          </>
         )}
 
-        {generatedPrompt && (
-          <button
-            onClick={() => setInput(generatedPrompt)}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
-            title="Use last generated prompt"
-          >
-            <ArrowUp size={14} />
-            Paste Generated
-          </button>
-        )}
-
-        {result && (
-          <button
-            onClick={() => setInput(result)}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-teal-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
-            title="Use result as input for another pass"
-          >
-            <ArrowUp size={14} />
-            Use Result
-          </button>
-        )}
       </div>
 
-      {result && <PromptResult text={result} id="improve" copied={copied} onCopy={onCopy} onUse={onUse} />}
+      {/* If result is shown, provide actions */}
     </div>
   );
 }
