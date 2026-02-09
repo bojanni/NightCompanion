@@ -3,11 +3,9 @@ import { useCredits } from '../hooks/useCredits';
 import CostCalculator from '../components/CostCalculator';
 import { Coins, Plus } from 'lucide-react';
 
-interface CostDemoProps {
-  userId: string;
-}
 
-export default function CostDemo({ userId }: CostDemoProps) {
+
+export default function CostDemo() {
   const { creditBalance, loading, addCredits } = useCredits();
   const [modelId, setModelId] = useState('sdxl');
   const [resolution, setResolution] = useState('1024x1024');
