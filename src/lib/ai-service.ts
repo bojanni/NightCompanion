@@ -56,6 +56,7 @@ export interface GeneratePreferences {
   style?: string | undefined;
   mood?: string | undefined;
   subject?: string | undefined;
+  maxWords?: number | undefined;
 }
 
 export async function generateFromDescription(

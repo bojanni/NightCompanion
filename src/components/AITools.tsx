@@ -449,9 +449,9 @@ function GenerateTab({
         className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-400 transition-colors"
       >
         {showPrefs ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        Style preferences {(preferences.style || preferences.mood || preferences.subject) && (
+        Style preferences {(preferences.style || preferences.mood || preferences.subject || preferences.maxWords) && (
           <span className="text-teal-400 ml-1">
-            ({[preferences.style, preferences.mood, preferences.subject].filter(Boolean).length} set)
+            ({[preferences.style, preferences.mood, preferences.subject, preferences.maxWords].filter(Boolean).length} set)
           </span>
         )}
       </button>
@@ -481,7 +481,23 @@ function GenerateTab({
             onChange={(v) => setPreferences({ ...preferences, subject: v })}
           />
 
-          {(preferences.style || preferences.mood || preferences.subject) && (
+          <div className="pt-2 border-t border-slate-700/50">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[11px] font-medium text-slate-400">Max Words</label>
+              <span className="text-[11px] font-medium text-teal-400">{preferences.maxWords || 70} words</span>
+            </div>
+            <input
+              type="range"
+              min="20"
+              max="80"
+              step="5"
+              value={preferences.maxWords || 70}
+              onChange={(e) => setPreferences({ ...preferences, maxWords: parseInt(e.target.value) })}
+              className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+            />
+          </div>
+
+          {(preferences.style || preferences.mood || preferences.subject || preferences.maxWords) && (
             <button
               onClick={() => setPreferences({})}
               className="text-[11px] text-slate-500 hover:text-red-400 transition-colors"

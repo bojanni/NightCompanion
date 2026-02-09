@@ -8,7 +8,7 @@ const SYSTEM_PROMPTS = {
 
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
-    generate: `You are a creative AI image prompt generator. Rules: 1. Transform description to technical prompt. 2. Max 70 words. 3. Strict order: Subject, Action/Setting, Style, Technique. 4. Use NightCafe keywords. Return ONLY the prompt text.`,
+    generate: `You are a creative AI image prompt generator. Rules: 1. Transform description to technical prompt. 2. Strict order: Subject, Action/Setting, Style, Technique. 3. Use NightCafe keywords. Return ONLY the prompt text.`,
 
     diagnose: `You are an AI troubleshooting expert. Analyze failed prompts. Provide: 1. Likely cause. 2. 3 fixes. 3. Improved prompt. Format as JSON: { cause, fixes[], improvedPrompt }.`,
 
@@ -194,7 +194,9 @@ router.post('/', async (req, res) => {
         } else if (action === 'analyze-style') {
             userPrompt = `Analyze these prompts:\n${payload.prompts.join('\n')}`;
         } else if (action === 'generate') {
+            const maxWords = payload.preferences?.maxWords || 70;
             userPrompt = `Description: ${payload.description}\n\n`;
+            userPrompt += `System Rule: Limit response to ${maxWords} words maximum.\n`;
             if (payload.preferences) userPrompt += `Prefs: ${JSON.stringify(payload.preferences)}\n`;
             if (payload.context) userPrompt += `Context: ${payload.context}`;
         } else if (action === 'diagnose') {
