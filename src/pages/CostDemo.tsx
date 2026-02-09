@@ -8,10 +8,13 @@ interface CostDemoProps {
 }
 
 export default function CostDemo({ userId }: CostDemoProps) {
-  const { creditBalance, loading, addCredits } = useCredits(userId);
+  const { creditBalance, loading, addCredits } = useCredits();
   const [modelId, setModelId] = useState('sdxl');
   const [resolution, setResolution] = useState('1024x1024');
   const [quantity, setQuantity] = useState(1);
+  const [customBalance, setCustomBalance] = useState('');
+
+  const effectiveBalance = customBalance ? parseFloat(customBalance) : creditBalance;
 
   async function handleAddTestCredits() {
     await addCredits(500, 'bonus', 'Test credits added');
@@ -46,22 +49,49 @@ export default function CostDemo({ userId }: CostDemoProps) {
               <p className="text-xs text-slate-400">Current available credits</p>
             </div>
           </div>
-          <button
-            onClick={handleAddTestCredits}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-xs font-medium text-amber-400 transition-all"
-          >
-            <Plus size={14} />
-            Add 500 Test Credits
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="number"
+                step="0.1"
+                placeholder="Override balance"
+                value={customBalance}
+                onChange={(e) => setCustomBalance(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 w-32 focus:outline-none focus:border-amber-500/50"
+              />
+              {customBalance && (
+                <button
+                  onClick={() => setCustomBalance('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            <button
+              onClick={handleAddTestCredits}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-xs font-medium text-amber-400 transition-all"
+            >
+              <Plus size={14} />
+              Add 500
+            </button>
+          </div>
         </div>
-        <div className="text-3xl font-bold text-amber-400">{creditBalance} credits</div>
+        <div className="flex items-baseline gap-2">
+          <div className="text-3xl font-bold text-amber-400">{effectiveBalance} credits</div>
+          {customBalance && (
+            <span className="text-xs text-slate-500 line-through">
+              Actual: {creditBalance}
+            </span>
+          )}
+        </div>
       </div>
 
       <CostCalculator
         modelId={modelId}
         resolution={resolution}
         quantity={quantity}
-        creditBalance={creditBalance}
+        creditBalance={effectiveBalance}
         onModelChange={setModelId}
         onResolutionChange={setResolution}
         onQuantityChange={setQuantity}
@@ -92,7 +122,7 @@ export default function CostDemo({ userId }: CostDemoProps) {
       <div className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-5">
         <h3 className="text-sm font-semibold text-white mb-3">Integration Example</h3>
         <pre className="text-xs text-slate-300 bg-slate-900/50 rounded-lg p-3 overflow-x-auto">
-{`import { useCredits } from '../hooks/useCredits';
+          {`import { useCredits } from '../hooks/useCredits';
 import CostCalculator from '../components/CostCalculator';
 
 function YourComponent({ userId }) {
