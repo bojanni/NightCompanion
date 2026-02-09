@@ -53,17 +53,17 @@ export async function analyzeStyle(prompts: string[], token: string): Promise<St
 }
 
 export interface GeneratePreferences {
-  style?: string;
-  mood?: string;
-  subject?: string;
+  style?: string | undefined;
+  mood?: string | undefined;
+  subject?: string | undefined;
 }
 
 export async function generateFromDescription(
   description: string,
   options: {
-    context?: string;
-    preferences?: GeneratePreferences;
-    successfulPrompts?: string[];
+    context?: string | undefined;
+    preferences?: GeneratePreferences | undefined;
+    successfulPrompts?: string[] | undefined;
   },
   token: string
 ): Promise<string> {

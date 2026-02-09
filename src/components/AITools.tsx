@@ -272,7 +272,7 @@ function ImproveTab({
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
   onClear: () => void;
-  generatedPrompt?: string;
+  generatedPrompt?: string | undefined;
 }) {
   const [showDiff, setShowDiff] = useState(true);
 
@@ -337,14 +337,38 @@ function ImproveTab({
 
       <div className="flex flex-wrap items-center gap-2">
         {!result ? (
-          <button
-            onClick={onSubmit}
-            disabled={loading || !input.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-          >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-            {loading ? 'Improving...' : 'Improve Prompt'}
-          </button>
+          <>
+            <button
+              onClick={onSubmit}
+              disabled={loading || !input.trim()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {loading ? 'Improving...' : 'Improve Prompt'}
+            </button>
+
+            {input && (
+              <button
+                onClick={() => setInput('')}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+                title="Clear Input"
+              >
+                <Eraser size={14} />
+                Clear
+              </button>
+            )}
+
+            {generatedPrompt && (
+              <button
+                onClick={() => setInput(generatedPrompt)}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
+                title="Use last generated prompt"
+              >
+                <ArrowUp size={14} />
+                Paste Generated
+              </button>
+            )}
+          </>
         ) : (
           <>
             <button
@@ -407,7 +431,7 @@ function GenerateTab({
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
-  generatedPrompt?: string;
+  generatedPrompt?: string | undefined;
 }) {
   const [showPrefs, setShowPrefs] = useState(false);
 
@@ -521,7 +545,7 @@ function PreferenceRow({
   label, value, options, onChange,
 }: {
   label: string;
-  value?: string;
+  value?: string | undefined;
   options: string[];
   onChange: (v: string | undefined) => void;
 }) {
@@ -644,7 +668,7 @@ function DiagnoseTab({
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: (p: string) => void;
-  generatedPrompt?: string;
+  generatedPrompt?: string | undefined;
 }) {
   return (
     <div className="space-y-3">
