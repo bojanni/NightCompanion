@@ -288,39 +288,6 @@ function ImproveTab({
           {loading ? 'Improving...' : 'Improve Prompt'}
         </button>
 
-// ... inside GenerateTab ...
-
-        <button
-          onClick={onSubmit}
-          disabled={loading || !input.trim()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-        >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
-          {loading ? 'Generating...' : 'Generate Prompt'}
-        </button>
-
-// ... inside AnalyzeTab ...
-
-        <button
-          onClick={onAnalyze}
-          disabled={loading}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15 mx-auto"
-        >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-          {loading ? 'Analyzing...' : 'Analyze My Style'}
-        </button>
-
-// ... inside DiagnoseTab ...
-
-        <button
-          onClick={onSubmit}
-          disabled={loading || !promptInput.trim() || !issue.trim()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-        >
-          {loading ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
-          {loading ? 'Diagnosing...' : 'Diagnose Issue'}
-        </button>
-
         {input && (
           <button
             onClick={() => setInput('')}
@@ -457,7 +424,7 @@ function GenerateTab({
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
-          Generate Prompt
+          {loading ? 'Generating...' : 'Generate Prompt'}
         </button>
 
         {input && (
@@ -548,7 +515,7 @@ function AnalyzeTab({
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15 mx-auto"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-            Analyze My Style
+            {loading ? 'Analyzing...' : 'Analyze My Style'}
           </button>
         </div>
       )}
@@ -649,7 +616,7 @@ function DiagnoseTab({
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
-          Diagnose Issue
+          {loading ? 'Diagnosing...' : 'Diagnose Issue'}
         </button>
 
         {(promptInput || issue) && (
