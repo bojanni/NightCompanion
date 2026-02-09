@@ -14,7 +14,9 @@ const SYSTEM_PROMPTS = {
 
     'recommend-models': `You are a model selection expert. Recommend NightCafe models based on prompt. Return JSON: { recommendations: [{ modelId, modelName, matchScore, reasoning, tips[] }] }.`,
 
-    'generate-variations': `Generate 6 variations (lighting, style, composition, mood, detail, color). Return JSON: { variations: [{ type, prompt }] }.`
+    'generate-variations': `Generate 6 variations (lighting, style, composition, mood, detail, color). Return JSON: { variations: [{ type, prompt }] }.`,
+
+    random: `You are an endless source of unique, high-quality AI art prompts. Generate a single, detailed, creative image prompt. It should be vivid, descriptive, and ready to use. Do not include "Here is a prompt:" or quotes. Just the raw prompt text.`
 };
 
 async function getActiveProvider() {
@@ -164,6 +166,8 @@ router.post('/', async (req, res) => {
             userPrompt = `Prompt: "${payload.prompt}"\nIssue: ${payload.issue}`;
         } else if (action === 'recommend-models') {
             userPrompt = `Recommend models for: "${payload.prompt}"`;
+        } else if (action === 'random') {
+            userPrompt = `Generate a random, creative image prompt. Theme: ${payload.theme || 'anything'}.`;
         } else if (action === 'generate-variations') {
             userPrompt = `Variations for: "${payload.basePrompt}"`;
             maxTokens = 2000;

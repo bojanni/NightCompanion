@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
+import { generateRandomPromptAI } from '../lib/ai-service';
 
 interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
@@ -30,7 +31,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGen
     if (!prompt) return;
     setSaving(true);
     await db.from('prompts').insert({
-      title: 'Random: ' + prompt.split(',')[0].slice(0, 40),
+      title: 'Random: ' + (prompt || '').split(',')[0].slice(0, 40),
       content: prompt,
       notes: 'Generated with Random mode' +
         (filters.dreamy ? ' [dreamy]' : '') +
@@ -45,6 +46,21 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGen
   }
 
   const topSuggestion = prompt ? analyzePrompt(prompt)[0] : null;
+
+  async function handleMagicRandom() {
+    setSaving(true); // Reuse saving state for loading to disable buttons
+    try {
+      const result = await generateRandomPromptAI('mock-token');
+      setPrompt(result);
+      setCopied(false);
+    } catch (err) {
+      console.error('Failed to generate random prompt:', err);
+      // Fallback to local random if AI fails
+      setPrompt(generateRandomPrompt(filters));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -63,10 +79,10 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGen
           ].map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
+              onClick={() => setFilters((f: any) => ({ ...f, [key]: !f[key] }))}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${filters[key]
-                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
-                  : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
                 }`}
             >
               {filters[key] ? '* ' : ''}{label}
@@ -74,12 +90,24 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved }: RandomGen
           ))}
         </div>
 
-        <button
-          onClick={handleGenerate}
-          className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm"
-        >
-          Generate Random Prompt
-        </button>
+        <div className="flex justify-center gap-3">
+          <button
+            onClick={handleGenerate}
+            disabled={saving}
+            className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
+          >
+            Standard Random
+          </button>
+
+          <button
+            onClick={handleMagicRandom}
+            disabled={saving}
+            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            Magic Random (AI)
+          </button>
+        </div>
       </div>
 
       {prompt && (

@@ -75,6 +75,10 @@ export async function generateFromDescription(
   }, token);
 }
 
+export async function generateRandomPromptAI(token: string, theme?: string): Promise<string> {
+  return callAI('random', { theme }, token);
+}
+
 export interface Diagnosis {
   cause: string;
   fixes: string[];
