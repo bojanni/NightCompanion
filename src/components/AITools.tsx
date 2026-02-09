@@ -299,6 +299,17 @@ function ImproveTab({
           </button>
         )}
 
+        {generatedPrompt && (
+          <button
+            onClick={() => setInput(generatedPrompt)}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
+            title="Use last generated prompt"
+          >
+            <ArrowUp size={14} />
+            Paste Generated
+          </button>
+        )}
+
         {result && (
           <button
             onClick={() => setInput(result)}
@@ -306,7 +317,7 @@ function ImproveTab({
             title="Use result as input for another pass"
           >
             <ArrowUp size={14} />
-            Paste Generated
+            Use Result
           </button>
         )}
       </div>
@@ -427,6 +438,17 @@ function GenerateTab({
           </button>
         )}
 
+        {generatedPrompt && (
+          <button
+            onClick={() => setInput(generatedPrompt)}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
+            title="Use last generated prompt"
+          >
+            <ArrowUp size={14} />
+            Paste Generated
+          </button>
+        )}
+
         {result && (
           <button
             onClick={() => setInput(result)}
@@ -434,7 +456,7 @@ function GenerateTab({
             title="Use result as input for another pass"
           >
             <ArrowUp size={14} />
-            Paste Generated
+            Use Result
           </button>
         )}
       </div>
