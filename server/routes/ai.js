@@ -4,11 +4,11 @@ const { pool } = require('../db');
 const { decrypt } = require('../lib/crypto');
 
 const SYSTEM_PROMPTS = {
-    improve: `You are an expert AI image prompt engineer for NightCafe Studio. Your job is to take a user's image generation prompt and improve it for better results. Rules: Keep the core subject/intent. Add specific technical terms (lighting, composition, resolution). Add atmosphere/mood. Keep under 150 words. Return ONLY the improved prompt text.`,
+    improve: `You are an expert AI image prompt engineer for NightCafe Studio. Your job is to improve the user's prompt. Rules: 1. Max 70 words. 2. Strict order: Subject, Action/Setting, Style, Technique. 3. Add technical terms/mood. Return ONLY the improved prompt text.`,
 
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
-    generate: `You are a creative AI image prompt generator. Generate detailed prompts based on description, style prefs, and history. Rules: Transform casual description to technical prompt. Use NightCafe keywords (volumetric, 8k, etc). Keep 60-120 words. Return ONLY the prompt text.`,
+    generate: `You are a creative AI image prompt generator. Rules: 1. Transform description to technical prompt. 2. Max 70 words. 3. Strict order: Subject, Action/Setting, Style, Technique. 4. Use NightCafe keywords. Return ONLY the prompt text.`,
 
     diagnose: `You are an AI troubleshooting expert. Analyze failed prompts. Provide: 1. Likely cause. 2. 3 fixes. 3. Improved prompt. Format as JSON: { cause, fixes[], improvedPrompt }.`,
 
@@ -16,7 +16,7 @@ const SYSTEM_PROMPTS = {
 
     'generate-variations': `Generate 6 variations (lighting, style, composition, mood, detail, color). Return JSON: { variations: [{ type, prompt }] }.`,
 
-    random: `You are an endless source of unique, high-quality AI art prompts. Generate a single, detailed, creative image prompt. It should be vivid, descriptive, and ready to use. Do not include "Here is a prompt:" or quotes. Just the raw prompt text.`
+    random: `You are an endless source of unique, high-quality AI art prompts. Rules: 1. Max 70 words. 2. Strict order: Subject, Action/Setting, Style, Technique. 3. Creative & vivid. Do not include "Here is a prompt:" or quotes. Just the raw prompt text.`
 };
 
 async function getActiveProvider() {
