@@ -10,11 +10,12 @@ export default function StarRating({ rating, onChange, size = 16 }: StarRatingPr
   return (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <button
+        <span
           key={star}
-          type="button"
+          role={onChange ? 'button' : undefined}
+          tabIndex={onChange ? 0 : undefined}
           onClick={() => onChange?.(star === rating ? 0 : star)}
-          disabled={!onChange}
+          onKeyDown={(e) => { if (onChange && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onChange(star === rating ? 0 : star); } }}
           className={`transition-colors ${onChange ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
         >
           <Star
@@ -25,7 +26,7 @@ export default function StarRating({ rating, onChange, size = 16 }: StarRatingPr
                 : 'text-slate-600'
             }
           />
-        </button>
+        </span>
       ))}
     </div>
   );

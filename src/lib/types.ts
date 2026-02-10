@@ -120,14 +120,9 @@ export const TAG_COLORS = [
   '#d97706', '#dc2626', '#059669', '#2563eb', '#7c3aed', '#db2777', '#0891b2', '#65a30d'
 ];
 
+import { MODELS } from './models-data';
+
 export const AI_MODELS = [
-  'Stable Diffusion 1.5',
-  'Stable Diffusion XL',
-  'Flux 1.0',
-  'DALL-E 3',
-  'Midjourney v6',
-  'Stable Cascade',
-  'Playground v2',
-  'Leonardo AI',
+  ...MODELS.map(m => m.name),
   'Other'
 ] as const;
