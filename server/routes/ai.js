@@ -169,6 +169,15 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
             })
         });
         const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error?.message || data.error || `Local AI Provider Error: ${res.statusText}`);
+        }
+
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid response format from Local AI Provider: Missing choices/message');
+        }
+
         return data.choices[0].message.content;
     }
 
