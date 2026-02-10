@@ -117,38 +117,39 @@ export default function Generator({ }: GeneratorProps) {
       </div>
 
       {/* Global Max Words Slider */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
-          <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
             <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
-            <button
-              onClick={handleClearAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-400 text-xs rounded-lg hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
-              title="Clear all generated prompts and reset to defaults"
-            >
-              <Eraser size={12} />
-              Clear All
-            </button>
+          </div>
+          <input
+            type="range"
+            min="20"
+            max="100"
+            step="5"
+            value={maxWords}
+            onChange={(e) => setMaxWords(parseInt(e.target.value))}
+            className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            style={{
+              background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
+            }}
+          />
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-slate-500">Short (20)</span>
+            <span className="text-xs text-slate-500">Standard (70)</span>
+            <span className="text-xs text-slate-500">Long (100)</span>
           </div>
         </div>
-        <input
-          type="range"
-          min="20"
-          max="100"
-          step="5"
-          value={maxWords}
-          onChange={(e) => setMaxWords(parseInt(e.target.value))}
-          className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-          style={{
-            background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
-          }}
-        />
-        <div className="flex justify-between mt-2">
-          <span className="text-xs text-slate-500">Short (20)</span>
-          <span className="text-xs text-slate-500">Standard (70)</span>
-          <span className="text-xs text-slate-500">Long (100)</span>
-        </div>
+
+        <button
+          onClick={handleClearAll}
+          className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
+          title="Clear all generated prompts and reset to defaults"
+        >
+          <Eraser size={14} />
+          Clear All
+        </button>
       </div>
 
       {mode === 'random' && (
