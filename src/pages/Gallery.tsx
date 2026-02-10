@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Link,
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import type { GalleryItem, Collection } from '../lib/types';
 import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
+import PromptSelector from '../components/PromptSelector';
 
 const PAGE_SIZE = 24;
 
@@ -40,6 +41,8 @@ export default function Gallery({ }: GalleryProps) {
   const [collName, setCollName] = useState('');
   const [collDesc, setCollDesc] = useState('');
   const [collColor, setCollColor] = useState('#d97706');
+  const [showPromptSelector, setShowPromptSelector] = useState(false);
+  const [linkingImage, setLinkingImage] = useState<GalleryItem | null>(null);
 
   useEffect(() => {
     loadData();
@@ -139,6 +142,28 @@ export default function Gallery({ }: GalleryProps) {
     await db.from('collections').delete().eq('id', id);
     setFilterCollection(null);
     loadData();
+  }
+
+  async function handleLinkPrompt(image: GalleryItem) {
+    setLinkingImage(image);
+    setShowPromptSelector(true);
+  }
+
+  async function handleSelectPrompt(prompt: any) {
+    if (!linkingImage) return;
+    try {
+      await db.from('gallery_items').update({ prompt_id: prompt.id }).eq('id', linkingImage.id);
+      setItems(prev => prev.map(item =>
+        item.id === linkingImage.id ? { ...item, prompt_id: prompt.id } : item
+      ));
+      if (selectedItem?.id === linkingImage.id) {
+        setSelectedItem({ ...selectedItem, prompt_id: prompt.id });
+      }
+      setShowPromptSelector(false);
+      setLinkingImage(null);
+    } catch (err) {
+      console.error('Failed to link prompt:', err);
+    }
   }
 
   const filtered = useMemo(() => {
@@ -563,12 +588,22 @@ export default function Gallery({ }: GalleryProps) {
                 onChange={(r) => handleUpdateRating(selectedItem, r)}
                 size={20}
               />
-              {selectedItem.collection_id && (
-                <span className="text-sm text-slate-400">
-                  <FolderOpen size={13} className="inline mr-1" />
-                  {getCollectionName(selectedItem.collection_id)}
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleLinkPrompt(selectedItem)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${selectedItem.prompt_id ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'}`}
+                  title={selectedItem.prompt_id ? 'Linked to prompt' : 'Link to prompt'}
+                >
+                  <Link size={12} />
+                  {selectedItem.prompt_id ? 'Linked' : 'Link Prompt'}
+                </button>
+                {selectedItem.collection_id && (
+                  <span className="text-sm text-slate-400">
+                    <FolderOpen size={13} className="inline mr-1" />
+                    {getCollectionName(selectedItem.collection_id)}
+                  </span>
+                )}
+              </div>
             </div>
             {selectedItem.prompt_used && (
               <div>
@@ -597,6 +632,24 @@ export default function Gallery({ }: GalleryProps) {
             )}
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={showPromptSelector}
+        onClose={() => {
+          setShowPromptSelector(false);
+          setLinkingImage(null);
+        }}
+        title="Select Prompt to Link"
+        wide
+      >
+        <PromptSelector
+          onSelect={handleSelectPrompt}
+          onCancel={() => {
+            setShowPromptSelector(false);
+            setLinkingImage(null);
+          }}
+        />
       </Modal>
     </div>
   );

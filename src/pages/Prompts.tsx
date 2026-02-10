@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
-  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap,
+  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
@@ -14,6 +14,7 @@ import { PromptImprover } from '../components/PromptImprover';
 import PromptOptimizer from '../components/PromptOptimizer';
 import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
+import ImageSelector from '../components/ImageSelector';
 import { handleError, showSuccess } from '../lib/error-handler';
 
 const PAGE_SIZE = 20;
@@ -42,6 +43,9 @@ export default function Prompts({ }: PromptsProps) {
   const [improverPrompt, setImproverPrompt] = useState<Prompt | null>(null);
   const [showOptimizer, setShowOptimizer] = useState(false);
   const [optimizerPrompt, setOptimizerPrompt] = useState<Prompt | null>(null);
+  const [showImageSelector, setShowImageSelector] = useState(false);
+  const [linkingPrompt, setLinkingPrompt] = useState<Prompt | null>(null);
+  const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string } }>({});
 
   useEffect(() => {
     loadData();
@@ -79,6 +83,25 @@ export default function Prompts({ }: PromptsProps) {
       map[pt.prompt_id].push(pt.tag_id);
     });
     setPromptTagMap(map);
+
+    // Load linked images
+    if (promptsData && promptsData.length > 0) {
+      const { data: galleryData } = await db
+        .from('gallery_items')
+        .select('id, image_url, title, prompt_id')
+        .in('prompt_id', promptsData.map((p: Prompt) => p.id));
+
+      const imageMap: { [key: string]: { id: string; image_url: string; title: string } } = {};
+      (galleryData ?? []).forEach((img: any) => {
+        if (img.prompt_id) {
+          imageMap[img.prompt_id] = { id: img.id, image_url: img.image_url, title: img.title };
+        }
+      });
+      setLinkedImages(imageMap);
+    } else {
+      setLinkedImages({});
+    }
+
     setLoading(false);
   }
 
@@ -199,6 +222,38 @@ export default function Prompts({ }: PromptsProps) {
       } catch (err) {
         handleError(err, 'ApplyOptimization', { promptId: optimizerPrompt.id });
       }
+    }
+  }
+
+  async function handleLinkImage(prompt: Prompt) {
+    setLinkingPrompt(prompt);
+    setShowImageSelector(true);
+  }
+
+  async function handleSelectImage(image: any) {
+    if (!linkingPrompt) return;
+    try {
+      await db.from('gallery_items').update({ prompt_id: linkingPrompt.id }).eq('id', image.id);
+      setLinkedImages(prev => ({ ...prev, [linkingPrompt.id]: { id: image.id, image_url: image.image_url, title: image.title } }));
+      setShowImageSelector(false);
+      setLinkingPrompt(null);
+      showSuccess('Image linked successfully!');
+    } catch (err) {
+      handleError(err, 'LinkImage', { promptId: linkingPrompt.id, imageId: image.id });
+    }
+  }
+
+  async function handleUnlinkImage(promptId: string, imageId: string) {
+    try {
+      await db.from('gallery_items').update({ prompt_id: null }).eq('id', imageId);
+      setLinkedImages(prev => {
+        const newMap = { ...prev };
+        delete newMap[promptId];
+        return newMap;
+      });
+      showSuccess('Image unlinked successfully!');
+    } catch (err) {
+      handleError(err, 'UnlinkImage', { promptId, imageId });
     }
   }
 
@@ -369,6 +424,33 @@ export default function Prompts({ }: PromptsProps) {
                   </div>
                 )}
 
+                {linkedImages[prompt.id] && (
+                  <div className="relative group/img mb-3">
+                    <div className="relative w-full h-24 bg-slate-800 rounded-xl overflow-hidden">
+                      <img
+                        src={linkedImages[prompt.id].image_url}
+                        alt={linkedImages[prompt.id].title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                        <button
+                          onClick={() => handleUnlinkImage(prompt.id, linkedImages[prompt.id].id)}
+                          className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100"
+                          title="Unlink image"
+                        >
+                          <X size={12} />
+                        </button>
+                        <div className="absolute bottom-1 left-1 right-1">
+                          <p className="text-[10px] text-white truncate flex items-center gap-1">
+                            <Lock size={9} />
+                            Linked: {linkedImages[prompt.id].title}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <StarRating rating={prompt.rating} size={13} />
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -380,12 +462,20 @@ export default function Prompts({ }: PromptsProps) {
                       {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                     </button>
                     <button
+                      onClick={() => handleLinkImage(prompt)}
+                      className={`p-1.5 rounded-lg transition-colors ${linkedImages[prompt.id] ? 'text-amber-400 hover:text-amber-300' : 'text-slate-500 hover:text-amber-400'} hover:bg-slate-800`}
+                      title={linkedImages[prompt.id] ? 'Linked to image' : 'Link to image'}
+                    >
+                      <Link size={14} />
+                    </button>
+                    <button
                       onClick={() => {
                         setOptimizerPrompt(prompt);
                         setShowOptimizer(true);
                       }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-purple-400 hover:bg-slate-800 transition-colors"
-                      title="Optimize prompt"
+                      disabled={!!linkedImages[prompt.id]}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-purple-400 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Optimize prompt'}
                     >
                       <Zap size={14} />
                     </button>
@@ -394,8 +484,9 @@ export default function Prompts({ }: PromptsProps) {
                         setImproverPrompt(prompt);
                         setShowImprover(true);
                       }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-orange-400 hover:bg-slate-800 transition-colors"
-                      title="Improve with AI"
+                      disabled={!!linkedImages[prompt.id]}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-orange-400 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Improve with AI'}
                     >
                       <Sparkles size={14} />
                     </button>
@@ -424,10 +515,11 @@ export default function Prompts({ }: PromptsProps) {
                         setEditingPrompt(prompt);
                         setShowEditor(true);
                       }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
-                      title="Edit"
+                      disabled={!!linkedImages[prompt.id]}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Edit'}
                     >
-                      <Edit3 size={14} />
+                      {linkedImages[prompt.id] ? <Lock size={14} /> : <Edit3 size={14} />}
                     </button>
                     <button
                       onClick={() => handleDelete(prompt.id)}
@@ -559,6 +651,24 @@ export default function Prompts({ }: PromptsProps) {
             onApply={handleApplyOptimization}
           />
         )}
+      </Modal>
+
+      <Modal
+        open={showImageSelector}
+        onClose={() => {
+          setShowImageSelector(false);
+          setLinkingPrompt(null);
+        }}
+        title="Select Image to Link"
+        wide
+      >
+        <ImageSelector
+          onSelect={handleSelectImage}
+          onCancel={() => {
+            setShowImageSelector(false);
+            setLinkingPrompt(null);
+          }}
+        />
       </Modal>
     </div>
   );
