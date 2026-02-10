@@ -453,7 +453,7 @@ export default function Prompts({ }: PromptsProps) {
 
                 <div className="flex items-center justify-between">
                   <StarRating rating={prompt.rating} size={13} />
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleCopy(prompt.content, prompt.id)}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"

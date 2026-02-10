@@ -43,6 +43,8 @@ export default function Gallery({ }: GalleryProps) {
   const [collColor, setCollColor] = useState('#d97706');
   const [showPromptSelector, setShowPromptSelector] = useState(false);
   const [linkingImage, setLinkingImage] = useState<GalleryItem | null>(null);
+  const [linkedPrompts, setLinkedPrompts] = useState<{ [key: string]: { id: string; content: string; title: string } }>({});
+  const [lightboxImage, setLightboxImage] = useState<GalleryItem | null>(null);
 
   useEffect(() => {
     loadData();
@@ -70,6 +72,27 @@ export default function Gallery({ }: GalleryProps) {
     const [collRes] = await Promise.all([
       db.from('collections').select('*').order('name'),
     ]);
+
+    // Load linked prompts
+    if (itemsData && itemsData.length > 0) {
+      const itemsWithPrompts = itemsData.filter((item: GalleryItem) => item.prompt_id);
+      if (itemsWithPrompts.length > 0) {
+        const { data: promptsData } = await db
+          .from('prompts')
+          .select('id, content, title')
+          .in('id', itemsWithPrompts.map((item: GalleryItem) => item.prompt_id));
+
+        const promptMap: { [key: string]: { id: string; content: string; title: string } } = {};
+        (promptsData ?? []).forEach((prompt: any) => {
+          promptMap[prompt.id] = { id: prompt.id, content: prompt.content, title: prompt.title };
+        });
+        setLinkedPrompts(promptMap);
+      } else {
+        setLinkedPrompts({});
+      }
+    } else {
+      setLinkedPrompts({});
+    }
 
     setItems(itemsData ?? []);
     setCollections(collRes.data ?? []);
@@ -163,6 +186,28 @@ export default function Gallery({ }: GalleryProps) {
       setLinkingImage(null);
     } catch (err) {
       console.error('Failed to link prompt:', err);
+    }
+  }
+
+  function openLightbox(item: GalleryItem) {
+    setLightboxImage(item);
+  }
+
+  function closeLightbox() {
+    setLightboxImage(null);
+  }
+
+  function navigateLightbox(direction: 'prev' | 'next') {
+    const currentIndex = filtered.findIndex(item => item.id === lightboxImage?.id);
+    if (currentIndex === -1) return;
+
+    let newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0) newIndex = filtered.length - 1;
+    if (newIndex >= filtered.length) newIndex = 0;
+
+    const newItem = filtered[newIndex];
+    if (newItem) {
+      setLightboxImage(newItem);
     }
   }
 
@@ -316,10 +361,9 @@ export default function Gallery({ }: GalleryProps) {
           {filtered.map((item) => (
             <div
               key={item.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all group cursor-pointer"
-              onClick={() => setSelectedItem(item)}
+              className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all group"
             >
-              <div className="aspect-square bg-slate-800 relative overflow-hidden">
+              <div className="aspect-square bg-slate-800 relative overflow-hidden cursor-pointer" onClick={() => openLightbox(item)}>
                 {item.image_url ? (
                   <img
                     src={item.image_url}
@@ -363,6 +407,17 @@ export default function Gallery({ }: GalleryProps) {
                     </span>
                   )}
                 </div>
+                {item.prompt_id && linkedPrompts[item.prompt_id] && (
+                  <div className="mt-2 pt-2 border-t border-slate-800">
+                    <p className="text-[9px] text-slate-500 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+                      <Link size={8} />
+                      Linked Prompt
+                    </p>
+                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                      {linkedPrompts[item.prompt_id]?.content}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -650,6 +705,110 @@ export default function Gallery({ }: GalleryProps) {
             setLinkingImage(null);
           }}
         />
+      </Modal>
+
+      {/* Lightbox Modal */}
+      <Modal
+        open={!!lightboxImage}
+        onClose={closeLightbox}
+        title=""
+        wide
+      >
+        {lightboxImage && (
+          <div className="relative">
+            {/* Image */}
+            <div className="relative bg-slate-800 rounded-xl overflow-hidden">
+              <img
+                src={lightboxImage.image_url}
+                alt={lightboxImage.title}
+                className="w-full max-h-[70vh] object-contain"
+              />
+            </div>
+
+            {/* Navigation */}
+            {filtered.length > 1 && (
+              <>
+                <button
+                  onClick={() => navigateLightbox('prev')}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                  title="Previous"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={() => navigateLightbox('next')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                  title="Next"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
+            )}
+
+            {/* Info */}
+            <div className="mt-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{lightboxImage.title || 'Untitled'}</h3>
+                  {lightboxImage.collection_id && (
+                    <span className="text-sm text-slate-400">
+                      <FolderOpen size={13} className="inline mr-1" />
+                      {getCollectionName(lightboxImage.collection_id)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <StarRating
+                    rating={lightboxImage.rating}
+                    onChange={(r) => handleUpdateRating(lightboxImage, r)}
+                    size={18}
+                  />
+                  <button
+                    onClick={() => {
+                      setSelectedItem(lightboxImage);
+                      closeLightbox();
+                    }}
+                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    title="View details"
+                  >
+                    <ExternalLink size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {lightboxImage.prompt_id && linkedPrompts[lightboxImage.prompt_id] && (
+                <div className="bg-slate-800/50 rounded-xl p-4">
+                  <h4 className="text-xs font-medium text-slate-400 mb-2 flex items-center gap-1.5">
+                    <Link size={12} />
+                    Linked Prompt: {linkedPrompts[lightboxImage.prompt_id]?.title}
+                  </h4>
+                  <p className="text-sm text-slate-200 leading-relaxed">
+                    {linkedPrompts[lightboxImage.prompt_id]?.content}
+                  </p>
+                </div>
+              )}
+
+              {lightboxImage.prompt_used && (
+                <div>
+                  <h4 className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1">
+                    <MessageSquare size={12} />
+                    Prompt Used
+                  </h4>
+                  <p className="text-sm text-slate-300 bg-slate-800/50 rounded-xl p-3">
+                    {lightboxImage.prompt_used}
+                  </p>
+                </div>
+              )}
+
+              {lightboxImage.notes && (
+                <div>
+                  <h4 className="text-xs font-medium text-slate-400 mb-1.5">Notes</h4>
+                  <p className="text-sm text-slate-300">{lightboxImage.notes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
