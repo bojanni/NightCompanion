@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
@@ -47,7 +46,7 @@ export default function Prompts({ }: PromptsProps) {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [linkingPrompt, setLinkingPrompt] = useState<Prompt | null>(null);
   const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string } }>({});
-  const navigate = useNavigate();
+  const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -430,8 +429,11 @@ export default function Prompts({ }: PromptsProps) {
                   <div className="relative group/img mb-3">
                     <div
                       className="relative w-full h-24 bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
-                      onClick={() => navigate('/gallery')}
-                      title="Open in gallery"
+                      onClick={() => {
+                        const img = linkedImages[prompt.id];
+                        if (img) setLightboxImage(img);
+                      }}
+                      title="View image"
                     >
                       <img
                         src={linkedImages[prompt.id].image_url}
@@ -678,6 +680,27 @@ export default function Prompts({ }: PromptsProps) {
             setLinkingPrompt(null);
           }}
         />
+      </Modal>
+
+      {/* Image Lightbox */}
+      <Modal
+        open={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        title=""
+        wide
+      >
+        {lightboxImage && (
+          <div className="relative">
+            <img
+              src={lightboxImage.image_url}
+              alt={lightboxImage.title}
+              className="w-full max-h-[70vh] object-contain rounded-xl"
+            />
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
