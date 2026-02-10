@@ -45,8 +45,10 @@ export default function Gallery({ }: GalleryProps) {
   const [linkingImage, setLinkingImage] = useState<GalleryItem | null>(null);
   const [linkedPrompts, setLinkedPrompts] = useState<{ [key: string]: { id: string; content: string; title: string } }>({});
   const [lightboxImage, setLightboxImage] = useState<GalleryItem | null>(null);
+  const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
   const [promptSuggestions, setPromptSuggestions] = useState<Prompt[]>([]);
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
+  const [promptSearchValue, setPromptSearchValue] = useState('');
 
   useEffect(() => {
     loadData();
@@ -71,8 +73,9 @@ export default function Gallery({ }: GalleryProps) {
     const { data: itemsData, count } = await query
       .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
-    const [collRes] = await Promise.all([
+    const [collRes, promptsRes] = await Promise.all([
       db.from('collections').select('*').order('name'),
+      db.from('prompts').select('id, title, content').order('title'),
     ]);
 
     // Load linked prompts
@@ -98,6 +101,7 @@ export default function Gallery({ }: GalleryProps) {
 
     setItems(itemsData ?? []);
     setCollections(collRes.data ?? []);
+    setAllPrompts(promptsRes.data as Prompt[] ?? []);
     setTotalCount(count ?? 0);
     setLoading(false);
   }
@@ -110,6 +114,9 @@ export default function Gallery({ }: GalleryProps) {
     setFormRating(item?.rating ?? 0);
     setFormCollectionId(item?.collection_id ?? '');
     setFormNotes(item?.notes ?? '');
+    setPromptSearchValue('');
+    setPromptSuggestions([]);
+    setShowPromptSuggestions(false);
     setShowItemEditor(true);
   }
 
@@ -187,30 +194,34 @@ export default function Gallery({ }: GalleryProps) {
   }
 
   async function searchPrompts(query: string) {
-    if (query.length < 3) {
-      setPromptSuggestions([]);
-      setShowPromptSuggestions(false);
+    if (query.length === 0) {
+      setPromptSuggestions(allPrompts);
       return;
     }
 
-    const { data } = await db
-      .from('prompts')
-      .select('id, title, content')
-      .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
-      .limit(10);
-
-    setPromptSuggestions(data as Prompt[] ?? []);
-    setShowPromptSuggestions(true);
+    const filtered = allPrompts.filter(p =>
+      p.title.toLowerCase().includes(query.toLowerCase()) ||
+      p.content.toLowerCase().includes(query.toLowerCase())
+    );
+    setPromptSuggestions(filtered);
   }
 
   function handlePromptSearchChange(value: string) {
-    setFormPromptUsed(value);
+    setPromptSearchValue(value);
     searchPrompts(value);
   }
 
   function selectPrompt(prompt: Prompt) {
     setFormPromptUsed(prompt.content);
+    setPromptSearchValue(prompt.title);
     setShowPromptSuggestions(false);
+  }
+
+  function handlePromptInputFocus() {
+    setShowPromptSuggestions(true);
+    if (promptSuggestions.length === 0) {
+      setPromptSuggestions(allPrompts);
+    }
   }
 
   async function handleSelectPrompt(prompt: any) {
@@ -577,28 +588,36 @@ export default function Gallery({ }: GalleryProps) {
           </div>
           <div className="relative">
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Prompt Used</label>
-            <textarea
-              value={formPromptUsed}
-              onChange={(e) => handlePromptSearchChange(e.target.value)}
-              onFocus={() => formPromptUsed.length >= 3 && setShowPromptSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowPromptSuggestions(false), 200)}
-              placeholder="Type at least 3 characters to search saved prompts..."
-              rows={3}
-              className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none"
-            />
-            {showPromptSuggestions && promptSuggestions.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                {promptSuggestions.map((prompt) => (
-                  <button
-                    key={prompt.id}
-                    type="button"
-                    onClick={() => selectPrompt(prompt)}
-                    className="w-full text-left px-4 py-3 hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-b-0"
-                  >
-                    <div className="font-medium text-white text-sm mb-1">{prompt.title}</div>
-                    <div className="text-xs text-slate-400 line-clamp-2">{prompt.content}</div>
-                  </button>
-                ))}
+            <div className="relative">
+              <input
+                type="text"
+                value={promptSearchValue}
+                onChange={(e) => handlePromptSearchChange(e.target.value)}
+                onFocus={handlePromptInputFocus}
+                onBlur={() => setTimeout(() => setShowPromptSuggestions(false), 200)}
+                placeholder="Search saved prompts..."
+                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+              />
+              {showPromptSuggestions && promptSuggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {promptSuggestions.map((prompt) => (
+                    <button
+                      key={prompt.id}
+                      type="button"
+                      onClick={() => selectPrompt(prompt)}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-b-0"
+                    >
+                      <div className="font-medium text-white text-sm mb-1">{prompt.title}</div>
+                      <div className="text-xs text-slate-400 line-clamp-2">{prompt.content}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {formPromptUsed && (
+              <div className="mt-2 p-3 bg-slate-800/50 rounded-xl">
+                <p className="text-xs text-slate-400 mb-1">Selected Prompt:</p>
+                <p className="text-sm text-slate-200">{formPromptUsed}</p>
               </div>
             )}
           </div>
