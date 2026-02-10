@@ -24,9 +24,9 @@ const SYSTEM_PROMPTS = {
 
     'recommend-models': `You are a model selection expert. Recommend NightCafe models based on prompt. Return JSON: { recommendations: [{ modelId, modelName, matchScore, reasoning, tips[] }] }.`,
 
-    'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON: { variations: [{ type, prompt }] }. Include the Negative Prompt at the end of the prompt string in format: " ... ### Negative Prompt: ..."`,
+    'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { variations: [{ type: string, prompt: string, negativePrompt: string }] }.\n\nCRITICAL: In the 'prompt' field, combine the Subject, Style, Details, Atmosphere, and Modifiers into a single flowing text string. DO NOT include checking labels like '**Subject:**', 'Style:', etc. - just the raw prompt text.\nPut the negative prompt list in the 'negativePrompt' field.`,
 
-    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept from scratch. Rotate through genres such as Cyberpunk, Dark Fantasy, Bio-organic Architecture, Retro-futurism, Mythological, or Impressionism. Return ONLY the raw prompt text (including the negative prompt at the end).`,
+    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept. Return JSON: { prompt: string, negativePrompt: string }. \n\nCRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Details, Atmosphere, Modifiers combined) without any field labels or markdown headers. Put the negative items in 'negativePrompt'.`,
 
     'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. Return ONLY the title text. No quotes.`,
 
