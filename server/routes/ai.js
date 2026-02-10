@@ -5,28 +5,29 @@ const { decrypt } = require('../lib/crypto');
 
 const BASE_PERSONA = `You are an expert AI Art Prompt Engineer specializing in NightCafe. Your goal is to generate high-quality, descriptive prompts for models like SDXL, Stable Diffusion, and DALL-E 3.
 
-Prompt Structure (Always in English):
+Key Elements of a Great Prompt:
 - Subject: Highly specific description of the main character, object, or scene.
-- Style & Medium: Define the art form (e.g., 'digital concept art', 'oil on canvas', 'macro photography', '3D render').
-- Visual Details: Include 'intricate textures', 'hyper-detailed', 'volumetric lighting', 'cinematic framing', or 'sharp focus'.
-- Atmosphere: Describe the mood and environment (e.g., 'eerie morning mist', 'vibrant neon glow', 'ethereal and calm').
-- NightCafe Modifiers: End each prompt with optimized tags like '8k resolution', 'unreal engine 5', 'masterpiece', 'artstation', and 'detailed matte painting'.
-- Negative Prompt: For every prompt generated, provide a concise 'Negative Prompt' list of elements to avoid (e.g., 'blurry, low quality, distorted limbs, watermark').`;
+- Style & Medium: Defined art form (e.g., 'digital concept art', 'oil on canvas').
+- Visual Details: Intricate textures, lighting (e.g., 'volumetric lighting', 'cinematic framing').
+- Atmosphere: Mood and environment (e.g., 'eerie morning mist', 'vibrant neon glow').
+- Modifiers: Optimized tags like '8k resolution', 'unreal engine 5', 'masterpiece'.
+
+You must combine these elements into a single, flowing text description without using labels like 'Subject:' or lines.`;
 
 const SYSTEM_PROMPTS = {
-    improve: `You are an expert AI image prompt engineer. Improve the user's prompt using the following structure: Subject, Style & Medium, Visual Details, Atmosphere, Modifiers. Return ONLY the improved prompt text.`,
+    improve: `You are an expert AI image prompt engineer. Improve the user's prompt by enhancing subject, style, details, and atmosphere. Return ONLY the improved prompt text.`,
 
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
-    generate: `${BASE_PERSONA}\n\nTask: Transform the description into a technical NightCafe prompt following the structure above. Return ONLY the prompt text.`,
+    generate: `${BASE_PERSONA}\n\nTask: Transform the description into a technical NightCafe prompt. Return ONLY the prompt text.`,
 
     diagnose: `You are an AI troubleshooting expert. Analyze failed prompts. Provide: 1. Likely cause. 2. 3 fixes. 3. Improved prompt. Format as JSON: { cause, fixes[], improvedPrompt }.`,
 
     'recommend-models': `You are a model selection expert. Recommend NightCafe models based on prompt. Return JSON: { recommendations: [{ modelId, modelName, matchScore, reasoning, tips[] }] }.`,
 
-    'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { variations: [{ type: string, prompt: string, negativePrompt: string }] }.\n\nCRITICAL: In the 'prompt' field, combine the Subject, Style, Details, Atmosphere, and Modifiers into a single flowing text string. DO NOT include checking labels like '**Subject:**', 'Style:', etc. - just the raw prompt text.\nPut the negative prompt list in the 'negativePrompt' field.`,
+    'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { "variations": [{ "type": "string", "prompt": "string", "negativePrompt": "string" }] }.\n\nCRITICAL: The 'prompt' field must be a SINGLE string containing the full image description. DO NOT include structure labels (e.g. 'Subject:', 'Style:'). Just the raw, ready-to-use prompt text.\nPut elements to avoid in 'negativePrompt'.`,
 
-    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept. Return JSON: { prompt: string, negativePrompt: string }. \n\nCRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Details, Atmosphere, Modifiers combined) without any field labels or markdown headers. Put the negative items in 'negativePrompt'.`,
+    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept. Return JSON: { "prompt": "string", "negativePrompt": "string" }. \n\nCRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Modifiers combined) without any field labels, markdown headers, or newlines. Put negative items in 'negativePrompt'.`,
 
     'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. Return ONLY the title text. No quotes.`,
 
@@ -300,18 +301,26 @@ router.post('/', async (req, res) => {
 
         // Parse JSON if needed (for actions that return JSON)
         let parsedResult = result;
-        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'generate-variations', 'describe-character'].includes(action)) {
+        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'generate-variations', 'describe-character', 'random'].includes(action)) {
             try {
-                // Try to extract JSON from code blocks if present
-                const jsonMatch = result.match(/```json\n([\s\S]*?)\n```/) || result.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    parsedResult = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-                } else if (typeof result === 'string' && (result.trim().startsWith('{') || result.trim().startsWith('['))) {
-                    parsedResult = JSON.parse(result);
+                let jsonStr = result;
+                // Attempt to find JSON within markdown code blocks first
+                const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                if (codeBlockMatch) {
+                    jsonStr = codeBlockMatch[1];
+                } else {
+                    // Fallback to finding the first { and last }
+                    const firstBrace = result.indexOf('{');
+                    const lastBrace = result.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace !== -1) {
+                        jsonStr = result.substring(firstBrace, lastBrace + 1);
+                    }
                 }
+                parsedResult = JSON.parse(jsonStr);
             } catch (e) {
                 console.warn('Failed to parse JSON response:', e);
-                // Return raw text if parsing fails (except for strictly structured ones, maybe?)
+                // Return raw text if parsing fails, but helpful to log what it was
+                console.log('Raw output was:', result);
             }
         }
 
