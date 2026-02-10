@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, Link,
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
-import type { GalleryItem, Collection } from '../lib/types';
+import type { GalleryItem, Collection, Prompt } from '../lib/types';
 import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
@@ -45,6 +45,8 @@ export default function Gallery({ }: GalleryProps) {
   const [linkingImage, setLinkingImage] = useState<GalleryItem | null>(null);
   const [linkedPrompts, setLinkedPrompts] = useState<{ [key: string]: { id: string; content: string; title: string } }>({});
   const [lightboxImage, setLightboxImage] = useState<GalleryItem | null>(null);
+  const [promptSuggestions, setPromptSuggestions] = useState<Prompt[]>([]);
+  const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -170,6 +172,45 @@ export default function Gallery({ }: GalleryProps) {
   async function handleLinkPrompt(image: GalleryItem) {
     setLinkingImage(image);
     setShowPromptSelector(true);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Convert to base64 data URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormImageUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function searchPrompts(query: string) {
+    if (query.length < 3) {
+      setPromptSuggestions([]);
+      setShowPromptSuggestions(false);
+      return;
+    }
+
+    const { data } = await db
+      .from('prompts')
+      .select('id, title, content')
+      .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+      .limit(10);
+
+    setPromptSuggestions(data as Prompt[] ?? []);
+    setShowPromptSuggestions(true);
+  }
+
+  function handlePromptSearchChange(value: string) {
+    setFormPromptUsed(value);
+    searchPrompts(value);
+  }
+
+  function selectPrompt(prompt: Prompt) {
+    setFormPromptUsed(prompt.content);
+    setShowPromptSuggestions(false);
   }
 
   async function handleSelectPrompt(prompt: any) {
@@ -502,33 +543,64 @@ export default function Gallery({ }: GalleryProps) {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Image URL</label>
-            <input
-              value={formImageUrl}
-              onChange={(e) => setFormImageUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-            />
-            {formImageUrl && (
-              <img
-                src={formImageUrl}
-                alt="Preview"
-                className="mt-2 h-32 rounded-xl object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            )}
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Image</label>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  value={formImageUrl}
+                  onChange={(e) => setFormImageUrl(e.target.value)}
+                  placeholder="Paste URL or upload image below..."
+                  className="flex-1 px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                />
+                <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer transition-colors text-sm font-medium">
+                  <Image size={16} />
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              {formImageUrl && (
+                <img
+                  src={formImageUrl}
+                  alt="Preview"
+                  className="w-full h-32 rounded-xl object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              )}
+            </div>
           </div>
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Prompt Used</label>
             <textarea
               value={formPromptUsed}
-              onChange={(e) => setFormPromptUsed(e.target.value)}
-              placeholder="The prompt that generated this image..."
+              onChange={(e) => handlePromptSearchChange(e.target.value)}
+              onFocus={() => formPromptUsed.length >= 3 && setShowPromptSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowPromptSuggestions(false), 200)}
+              placeholder="Type at least 3 characters to search saved prompts..."
               rows={3}
               className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none"
             />
+            {showPromptSuggestions && promptSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                {promptSuggestions.map((prompt) => (
+                  <button
+                    key={prompt.id}
+                    type="button"
+                    onClick={() => selectPrompt(prompt)}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-b-0"
+                  >
+                    <div className="font-medium text-white text-sm mb-1">{prompt.title}</div>
+                    <div className="text-xs text-slate-400 line-clamp-2">{prompt.content}</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Notes</label>
