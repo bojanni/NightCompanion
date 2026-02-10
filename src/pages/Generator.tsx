@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shuffle, Target, Zap, Clock, ArrowRight } from 'lucide-react';
+import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser } from 'lucide-react';
 import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
 import AITools from '../components/AITools';
@@ -12,6 +12,8 @@ interface GeneratorProps { }
 
 type Mode = 'random' | 'guided' | 'remix';
 
+const STORAGE_KEY = 'nightcompanion_generator_state';
+
 export default function Generator({ }: GeneratorProps) {
   const [mode, setMode] = useState<Mode>('random');
   const [guidedInitial, setGuidedInitial] = useState('');
@@ -20,9 +22,32 @@ export default function Generator({ }: GeneratorProps) {
   const [saveCount, setSaveCount] = useState(0);
   const [maxWords, setMaxWords] = useState(70);
 
+  // Load state from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+        if (state.guidedInitial) setGuidedInitial(state.guidedInitial);
+        if (state.maxWords) setMaxWords(state.maxWords);
+        if (state.mode) setMode(state.mode);
+      } catch (e) {
+        console.error('Failed to load saved state:', e);
+      }
+    }
+    loadRecentPrompts();
+  }, []);
+
+  // Reload prompts when saveCount changes
   useEffect(() => {
     loadRecentPrompts();
   }, [saveCount]);
+
+  // Save state to localStorage when it changes
+  useEffect(() => {
+    const state = { guidedInitial, maxWords, mode };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [guidedInitial, maxWords, mode]);
 
   async function loadRecentPrompts() {
     const { data } = await db
@@ -42,6 +67,13 @@ export default function Generator({ }: GeneratorProps) {
     setRemixBase(prompt.content);
     setGuidedInitial(prompt.content);
     setMode('guided');
+  }
+
+  function handleClearAll() {
+    setGuidedInitial('');
+    setMode('random');
+    setMaxWords(70);
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   const modes = [
@@ -88,7 +120,17 @@ export default function Generator({ }: GeneratorProps) {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
-          <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
+            <button
+              onClick={handleClearAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-400 text-xs rounded-lg hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+              title="Clear all generated prompts and reset to defaults"
+            >
+              <Eraser size={12} />
+              Clear All
+            </button>
+          </div>
         </div>
         <input
           type="range"

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, RotateCcw } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
@@ -142,10 +142,11 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
                 Save to Library
               </button>
               <button
-                onClick={handleGenerate}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
+                onClick={handleMagicRandom}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50"
               >
-                <Shuffle size={12} />
+                {saving ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
                 Regenerate
               </button>
               <button
