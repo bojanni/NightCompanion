@@ -481,7 +481,7 @@ function GenerateTab({
             onChange={(v) => setPreferences({ ...preferences, subject: v })}
           />
 
-          <div className="pt-2 border-t border-slate-700/50">
+          <div className="mt-1">
             <div className="flex items-center justify-between mb-2">
               <label className="text-[11px] font-medium text-slate-400">Max Words</label>
               <span className="text-[11px] font-medium text-teal-400">{preferences.maxWords || 70} words</span>

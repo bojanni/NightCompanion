@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
   ChevronLeft, ChevronRight, Copy, Check, Save,
-  Loader2, RotateCcw, Compass,
+  Loader2, RotateCcw, Compass, Sparkles,
 } from 'lucide-react';
 import { GUIDED_STEPS, OPTIONAL_ADDITIONS, buildGuidedPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
+import { generateFromDescription } from '../lib/ai-service';
 import { db } from '../lib/api';
 
 interface GuidedBuilderProps {
@@ -20,8 +21,18 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
   const [showResult, setShowResult] = useState(!!initialPrompt);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
-  const step = GUIDED_STEPS[currentStep];
+  const step = GUIDED_STEPS[currentStep] || GUIDED_STEPS[0];
+
+  if (!step) {
+    return (
+      <div className="flex items-center justify-center p-8 text-slate-400">
+        <Loader2 size={24} className="animate-spin" />
+      </div>
+    );
+  }
+
   const totalSteps = GUIDED_STEPS.length;
   const isLastStep = currentStep === totalSteps - 1;
   const completedSteps = Object.keys(selections).length;
@@ -43,6 +54,32 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
     const prompt = buildGuidedPrompt(selections, additions);
     setGeneratedPrompt(prompt);
     setShowResult(true);
+  }
+
+  async function handleAIFinish() {
+    setAiLoading(true);
+    try {
+      const currentPrompt = buildGuidedPrompt(selections, additions);
+      const token = (await db.auth.getSession()).data.session?.access_token || '';
+
+      const improved = await generateFromDescription(
+        `Complete and polish this image prompt based on these attributes: ${currentPrompt}`,
+        {
+          context: 'User is using a guided prompt builder. Maintain their choices but make it professional and high quality.',
+          preferences: { maxWords: 70 }
+        },
+        token
+      );
+
+      setGeneratedPrompt(improved);
+      setShowResult(true);
+    } catch (err) {
+      console.error('AI Finish failed:', err);
+      // Fallback to normal build if AI fails
+      handleBuild();
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function handleReset() {
@@ -135,8 +172,8 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
                   setGeneratedPrompt(buildGuidedPrompt(selections, newAdditions));
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${additions.includes(add.id)
-                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
-                    : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                  : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
                   }`}
               >
                 {add.label}
@@ -172,10 +209,10 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
             key={s.id}
             onClick={() => setCurrentStep(i)}
             className={`flex-1 h-1.5 rounded-full transition-all ${selections[s.id]
-                ? 'bg-amber-500'
-                : i === currentStep
-                  ? 'bg-amber-500/40'
-                  : 'bg-slate-800'
+              ? 'bg-amber-500'
+              : i === currentStep
+                ? 'bg-amber-500/40'
+                : 'bg-slate-800'
               }`}
           />
         ))}
@@ -199,8 +236,8 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
               key={option.id}
               onClick={() => handleSelect(option.id)}
               className={`p-4 rounded-xl text-left transition-all border ${isSelected
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 ring-1 ring-amber-500/20'
-                  : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 ring-1 ring-amber-500/20'
+                : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
                 }`}
             >
               <span className="text-sm font-medium block">{option.label}</span>
@@ -223,14 +260,25 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
         </button>
 
         {isLastStep ? (
-          <button
-            onClick={handleBuild}
-            disabled={completedSteps < 2}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
-          >
-            Build Prompt
-            <ChevronRight size={14} />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleBuild}
+              disabled={completedSteps < 2}
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-sm font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all disabled:opacity-50 shadow-lg shadow-amber-500/20"
+            >
+              Build Prompt
+              Build Prompt
+              <ChevronRight size={14} />
+            </button>
+            <button
+              onClick={handleAIFinish}
+              disabled={completedSteps < 2 || aiLoading}
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/20"
+            >
+              {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              Finish with AI
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => setCurrentStep((s) => Math.min(totalSteps - 1, s + 1))}
