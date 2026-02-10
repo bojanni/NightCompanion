@@ -116,6 +116,67 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   }
 
 
+  async function generateTags() {
+    if (isGeneratingTags || !content.trim()) return;
+
+    setIsGeneratingTags(true);
+    try {
+      const tagString = await suggestTags(content, 'dummy-token');
+      if (tagString) {
+        const suggestedTags = tagString.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+
+        // Find existing tags that match
+        const existingTagsMap = new Map(allTags.map(t => [t.name.toLowerCase(), t]));
+        const newTagIds = [...selectedTagIds];
+        const tagsToCreate: string[] = [];
+
+        suggestedTags.forEach(tagName => {
+          const existing = existingTagsMap.get(tagName);
+          if (existing) {
+            if (!newTagIds.includes(existing.id)) newTagIds.push(existing.id);
+          } else {
+            tagsToCreate.push(tagName);
+          }
+        });
+
+        // Create new tags if they don't exist
+        if (tagsToCreate.length > 0) {
+          const createdTags = await Promise.all(tagsToCreate.map(async (name) => {
+            const { data } = await supabase
+              .from('tags')
+              .insert({
+                name: name,
+                color: TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)],
+                category: 'General'
+              })
+              .select()
+              .maybeSingle();
+            return data;
+          }));
+
+          createdTags.forEach(tag => {
+            if (tag) {
+              newTagIds.push(tag.id);
+              // Update local formatted cache to avoid refetch
+              setAllTags(prev => [...prev, tag]);
+            }
+          });
+        }
+
+        setSelectedTagIds(newTagIds);
+      }
+    } catch (e: any) {
+      console.error('Failed to suggest tags:', e);
+      if (e.message?.includes('No AI provider')) {
+        toast.error('AI Auto-Tagging failed: No provider configured. Check Settings.');
+      } else {
+        toast.error('Failed to auto-generate tags. Please try again.');
+      }
+    } finally {
+      setIsGeneratingTags(false);
+    }
+  }
+
   async function handlePromptBlur() {
     if (!content.trim()) return;
 
@@ -127,72 +188,15 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         if (newTitle) setTitle(newTitle.replace(/^"|"$/g, '').trim()); // Remove quotes if present
       } catch (e) {
         console.error('Failed to generate title:', e);
-        // Silent fail for title auto-gen to strictly avoid interrupting flow, 
-        // unless it's a configuration error we might want to warn about once?
-        // For now, let's keep title silent but tags vocal as user specifically asked about tags.
+        // Silent fail for title auto-gen
       } finally {
         setIsGeneratingTitle(false);
       }
     }
 
     // Generate Tags
-    if (autoGenerateTags && !isGeneratingTags) {
-      setIsGeneratingTags(true);
-      try {
-        const tagString = await suggestTags(content, 'dummy-token');
-        if (tagString) {
-          const suggestedTags = tagString.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
-
-          // Find existing tags that match
-          const existingTagsMap = new Map(allTags.map(t => [t.name.toLowerCase(), t]));
-          const newTagIds = [...selectedTagIds];
-          const tagsToCreate: string[] = [];
-
-          suggestedTags.forEach(tagName => {
-            const existing = existingTagsMap.get(tagName);
-            if (existing) {
-              if (!newTagIds.includes(existing.id)) newTagIds.push(existing.id);
-            } else {
-              tagsToCreate.push(tagName);
-            }
-          });
-
-          // Create new tags if they don't exist
-          if (tagsToCreate.length > 0) {
-            const createdTags = await Promise.all(tagsToCreate.map(async (name) => {
-              const { data } = await supabase
-                .from('tags')
-                .insert({
-                  name: name,
-                  color: TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)],
-                  category: 'General'
-                })
-                .select()
-                .maybeSingle();
-              return data;
-            }));
-
-            createdTags.forEach(tag => {
-              if (tag) {
-                newTagIds.push(tag.id);
-                // Update local formatted cache to avoid refetch
-                setAllTags(prev => [...prev, tag]);
-              }
-            });
-          }
-
-          setSelectedTagIds(newTagIds);
-        }
-      } catch (e: any) {
-        console.error('Failed to suggest tags:', e);
-        if (e.message?.includes('No AI provider')) {
-          toast.error('AI Auto-Tagging failed: No provider configured. Check Settings.');
-        } else {
-          toast.error('Failed to auto-generate tags. Please try again.');
-        }
-      } finally {
-        setIsGeneratingTags(false);
-      }
+    if (autoGenerateTags) {
+      generateTags();
     }
   }
 
@@ -413,6 +417,15 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         <div className="flex justify-between items-center mb-2">
           <label className="block text-sm font-medium text-slate-300">Tags</label>
           <label className="flex items-center gap-1.5 cursor-pointer">
+            <button
+              onClick={generateTags}
+              disabled={isGeneratingTags || !content.trim()}
+              className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <Wand2 size={12} />
+              Regenerate
+            </button>
+            <div className="w-px h-3 bg-slate-700 mx-1" />
             <input
               type="checkbox"
               checked={autoGenerateTags}
