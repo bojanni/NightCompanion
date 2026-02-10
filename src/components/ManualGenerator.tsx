@@ -1,17 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Copy, Save, Check, Plus, Minus, Info } from 'lucide-react';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
+    initialPrompts?: string[] | undefined;
+    initialNegativePrompt?: string | undefined;
 }
 
-export default function ManualGenerator({ onSaved }: ManualGeneratorProps) {
-    const [prompts, setPrompts] = useState<string[]>(['']);
-    const [negativePrompt, setNegativePrompt] = useState('');
+const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
+
+export default function ManualGenerator({ onSaved, initialPrompts, initialNegativePrompt }: ManualGeneratorProps) {
+    const [prompts, setPrompts] = useState<string[]>(() => {
+        if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
+        const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
+        if (saved) {
+            try { return JSON.parse(saved).prompts || ['']; } catch { /* ignore */ }
+        }
+        return [''];
+    });
+    const [negativePrompt, setNegativePrompt] = useState(() => {
+        if (initialNegativePrompt) return initialNegativePrompt;
+        const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
+        if (saved) {
+            try { return JSON.parse(saved).negativePrompt || ''; } catch { /* ignore */ }
+        }
+        return '';
+    });
     const [copied, setCopied] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    // Persist manual generator state
+    useEffect(() => {
+        localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify({ prompts, negativePrompt }));
+    }, [prompts, negativePrompt]);
 
     function handleAddPrompt() {
         if (prompts.length < 3) {

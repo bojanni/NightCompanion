@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, RotateCcw } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
@@ -7,14 +7,18 @@ import { generateRandomPromptAI } from '../lib/ai-service';
 
 interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
+  onSwitchToManual?: (prompt: string, negative: string) => void;
   onSaved: () => void;
   onPromptGenerated: (prompt: string) => void;
+  onNegativePromptChanged?: (neg: string) => void;
   maxWords: number;
   initialPrompt?: string;
+  initialNegativePrompt?: string;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGenerated, maxWords, initialPrompt }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
+  const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -23,12 +27,17 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
   function handleGenerate() {
     const newPrompt = generateRandomPrompt(filters);
     setPrompt(newPrompt);
+    setNegativePrompt('');
+    onNegativePromptChanged?.('');
     setCopied(false);
     onPromptGenerated(newPrompt);
   }
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(prompt);
+    const fullText = negativePrompt
+      ? `${prompt}\n\n### Negative Prompt:\n${negativePrompt}`
+      : prompt;
+    await navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -36,9 +45,14 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
   async function handleSave() {
     if (!prompt) return;
     setSaving(true);
+
+    const fullContent = negativePrompt
+      ? `${prompt}\n\n### Negative Prompt:\n${negativePrompt}`
+      : prompt;
+
     await db.from('prompts').insert({
       title: 'Random: ' + (prompt.split(',')[0] || 'Untitled').slice(0, 40),
-      content: prompt,
+      content: fullContent,
       notes: 'Generated with Random mode' +
         (filters.dreamy ? ' [dreamy]' : '') +
         (filters.characters ? ' [characters]' : '') +
@@ -58,14 +72,29 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
     try {
       const token = (await db.auth.getSession()).data.session?.access_token || '';
       const result = await generateRandomPromptAI(token, undefined, maxWords);
-      setPrompt(result);
-      setCopied(false);
-      onPromptGenerated(result);
+
+      // result is { prompt: string, negativePrompt?: string }
+      if (result && typeof result === 'object' && 'prompt' in result) {
+        const promptText = result.prompt || '';
+        const negText = result.negativePrompt || '';
+        setPrompt(promptText);
+        setNegativePrompt(negText);
+        onNegativePromptChanged?.(negText);
+        setCopied(false);
+        onPromptGenerated(promptText);
+      } else if (typeof result === 'string') {
+        setPrompt(result);
+        setNegativePrompt('');
+        onNegativePromptChanged?.('');
+        setCopied(false);
+        onPromptGenerated(result);
+      }
     } catch (err) {
       console.error('Failed to generate random prompt:', err);
-      // Fallback to local random if AI fails
       const fallback = generateRandomPrompt(filters);
       setPrompt(fallback);
+      setNegativePrompt('');
+      onNegativePromptChanged?.('');
       onPromptGenerated(fallback);
     } finally {
       setRegenerating(false);
@@ -123,8 +152,23 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
       {prompt && (
         <div className="space-y-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <p className="text-sm text-white leading-relaxed flex-1">{prompt}</p>
+            <div className="flex flex-col gap-3 mb-4">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none h-32"
+                placeholder="Positive prompt..."
+              />
+
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                <p className="text-[10px] text-red-300 font-bold uppercase mb-1">Negative Prompt</p>
+                <textarea
+                  value={negativePrompt}
+                  onChange={(e) => { setNegativePrompt(e.target.value); onNegativePromptChanged?.(e.target.value); }}
+                  className="w-full bg-transparent border-0 p-0 text-xs text-red-200/80 leading-relaxed focus:outline-none focus:ring-0 placeholder-red-900/50 resize-none h-16"
+                  placeholder="blurred, low quality, watermark, distorted..."
+                />
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -135,36 +179,29 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
                 {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
+              {onSwitchToManual && (
+                <button
+                  onClick={() => onSwitchToManual(prompt, negativePrompt)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-teal-400 text-xs rounded-lg hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
+                >
+                  <PenTool size={11} />
+                  Edit in Manual
+                </button>
+              )}
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50 ml-auto"
               >
                 <Save size={12} />
                 Save to Library
-              </button>
-              <button
-                onClick={handleGenerate}
-                disabled={saving || regenerating}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50"
-              >
-                <RotateCcw size={12} />
-                Regenerate
-              </button>
-              <button
-                onClick={handleMagicRandom}
-                disabled={saving || regenerating}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 text-xs rounded-lg hover:bg-purple-500/20 transition-colors disabled:opacity-50"
-              >
-                {regenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                Regenerate with AI
               </button>
               <button
                 onClick={() => onSwitchToGuided(prompt)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
               >
                 <ArrowRight size={12} />
-                Tweak in Guided Mode
+                Guided Mode
               </button>
             </div>
           </div>

@@ -23,6 +23,8 @@ export default function Generator({ }: GeneratorProps) {
   const [saveCount, setSaveCount] = useState(0);
   const [maxWords, setMaxWords] = useState(70);
   const [randomPrompt, setRandomPrompt] = useState('');
+  const [randomNegativePrompt, setRandomNegativePrompt] = useState('');
+  const [manualInitial, setManualInitial] = useState<{ prompts: string[], negative: string }>({ prompts: [], negative: '' });
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -34,6 +36,8 @@ export default function Generator({ }: GeneratorProps) {
         if (state.maxWords) setMaxWords(state.maxWords);
         if (state.mode) setMode(state.mode);
         if (state.randomPrompt) setRandomPrompt(state.randomPrompt);
+        if (state.randomNegativePrompt) setRandomNegativePrompt(state.randomNegativePrompt);
+        if (state.manualInitial) setManualInitial(state.manualInitial);
       } catch (e) {
         console.error('Failed to load saved state:', e);
       }
@@ -48,9 +52,9 @@ export default function Generator({ }: GeneratorProps) {
 
   // Save state to localStorage when it changes
   useEffect(() => {
-    const state = { guidedInitial, maxWords, mode, randomPrompt };
+    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, manualInitial };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [guidedInitial, maxWords, mode, randomPrompt]);
+  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, manualInitial]);
 
   async function loadRecentPrompts() {
     const { data } = await db
@@ -66,6 +70,11 @@ export default function Generator({ }: GeneratorProps) {
     setMode('guided');
   }
 
+  function handleSwitchToManual(prompt: string, negative: string) {
+    setManualInitial({ prompts: [prompt], negative });
+    setMode('manual');
+  }
+
   function handleSelectRemix(prompt: Prompt) {
     setRemixBase(prompt.content);
     setGuidedInitial(prompt.content);
@@ -75,6 +84,8 @@ export default function Generator({ }: GeneratorProps) {
   function handleClearAll() {
     setGuidedInitial('');
     setRandomPrompt('');
+    setRandomNegativePrompt('');
+    setManualInitial({ prompts: [], negative: '' });
     setMode('random');
     setMaxWords(70);
     localStorage.removeItem(STORAGE_KEY);
@@ -162,13 +173,16 @@ export default function Generator({ }: GeneratorProps) {
       {mode === 'random' && (
         <RandomGenerator
           onSwitchToGuided={handleSwitchToGuided}
+          onSwitchToManual={handleSwitchToManual}
           onSaved={() => setSaveCount((c) => c + 1)}
           onPromptGenerated={(prompt) => {
             setGuidedInitial(prompt);
             setRandomPrompt(prompt);
           }}
+          onNegativePromptChanged={setRandomNegativePrompt}
           maxWords={maxWords}
           initialPrompt={randomPrompt}
+          initialNegativePrompt={randomNegativePrompt}
         />
       )}
 
@@ -182,7 +196,11 @@ export default function Generator({ }: GeneratorProps) {
       )}
 
       {mode === 'manual' && (
-        <ManualGenerator onSaved={() => setSaveCount((c) => c + 1)} />
+        <ManualGenerator
+          onSaved={() => setSaveCount((c) => c + 1)}
+          initialPrompts={manualInitial.prompts.length > 0 ? manualInitial.prompts : undefined}
+          initialNegativePrompt={manualInitial.negative || undefined}
+        />
       )}
 
       {mode === 'remix' && (
