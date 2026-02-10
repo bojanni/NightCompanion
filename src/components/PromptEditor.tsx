@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Save, Loader2, Plus, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Save, Loader2, Plus, X, Image as ImageIcon, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
@@ -37,6 +37,11 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
   const [newTagCategory, setNewTagCategory] = useState<string>(TAG_CATEGORIES[0]);
+
+  // Image Upload State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (prompt) {
@@ -82,6 +87,28 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
     setSelectedTagIds((prev) =>
       prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
     );
+  }
+
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function clearImage() {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
 
@@ -202,6 +229,41 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
           await supabase
             .from('prompt_tags')
             .insert(selectedTagIds.map((tag_id) => ({ prompt_id: promptId!, tag_id })));
+        }
+
+        // Handle Image Upload & Linking
+        if (selectedImage) {
+          const formData = new FormData();
+          formData.append('image', selectedImage);
+
+          const uploadRes = await fetch('http://localhost:3000/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json();
+
+            // Create Gallery Item linked to Prompt
+            const { data: galleryItem } = await db.from('gallery_items').insert({
+              title: validated.title || 'Prompt Image',
+              image_url: url,
+              prompt_used: validated.content,
+              prompt_id: promptId,
+              rating: 0,
+              notes: 'Uploaded via Prompt Editor',
+              created_at: new Date().toISOString()
+            }).select().maybeSingle();
+
+            if (galleryItem) {
+              // Bi-directional link: Update Prompt with gallery_item_id
+              await db.from('prompts').update({ gallery_item_id: galleryItem.id }).eq('id', promptId);
+            }
+
+            toast.success('Image uploaded and linked to gallery');
+          } else {
+            toast.error('Failed to upload image');
+          }
         }
       }
 
@@ -384,6 +446,6 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
           {prompt ? 'Update' : 'Create'} Prompt
         </button>
       </div>
-    </div>
+    </div >
   );
 }

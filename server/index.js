@@ -8,6 +8,7 @@ console.log('  DB_USER:', process.env.DB_USER);
 const express = require('express');
 const cors = require('cors');
 const { pool } = require('./db');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -42,6 +43,8 @@ app.use('/api/user_api_keys', apiKeysRouter);
 app.use('/api/user_local_endpoints', localEndpointsRouter);
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Mock Auth Route
 app.get('/api/auth/user', (req, res) => {

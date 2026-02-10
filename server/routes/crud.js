@@ -91,23 +91,47 @@ const createCrudRouter = (tableName) => {
         }
     });
 
-    // CREATE item
+    // CREATE item (support bulk insert)
     router.post('/', async (req, res) => {
         try {
             const data = req.body;
 
-            const columns = Object.keys(data);
-            const values = Object.values(data);
-            const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+            if (Array.isArray(data)) {
+                if (data.length === 0) return res.json([]);
 
-            const query = `
-        INSERT INTO ${tableName} (${columns.join(', ')})
-        VALUES (${placeholders})
-        RETURNING *
-      `;
+                const columns = Object.keys(data[0]);
+                const values = [];
+                const rowPlaceholders = [];
 
-            const result = await pool.query(query, values);
-            res.status(201).json(result.rows[0]);
+                data.forEach((row, rowIndex) => {
+                    const rowValues = Object.values(row);
+                    const placeholders = rowValues.map((_, i) => `$${values.length + i + 1}`);
+                    rowPlaceholders.push(`(${placeholders.join(', ')})`);
+                    values.push(...rowValues);
+                });
+
+                const query = `
+                    INSERT INTO ${tableName} (${columns.join(', ')})
+                    VALUES ${rowPlaceholders.join(', ')}
+                    RETURNING *
+                `;
+
+                const result = await pool.query(query, values);
+                res.status(201).json(result.rows);
+            } else {
+                const columns = Object.keys(data);
+                const values = Object.values(data);
+                const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+
+                const query = `
+            INSERT INTO ${tableName} (${columns.join(', ')})
+            VALUES (${placeholders})
+            RETURNING *
+          `;
+
+                const result = await pool.query(query, values);
+                res.status(201).json(result.rows[0]);
+            }
         } catch (err) {
             console.error(`Error creating in ${tableName}:`, err);
             res.status(500).json({ error: err.message });

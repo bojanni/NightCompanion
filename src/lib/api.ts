@@ -256,11 +256,16 @@ class QueryBuilder {
         }
     }
 
-    insert(data: any) {
+    insert(data: any | any[]) {
         this.method = 'POST';
-        // Strip user_id
-        const { user_id, ...cleanData } = data;
-        this.body = cleanData;
+        if (Array.isArray(data)) {
+            // Strip user_id from each item
+            this.body = data.map(({ user_id, ...rest }) => rest);
+        } else {
+            // Strip user_id
+            const { user_id, ...cleanData } = data;
+            this.body = cleanData;
+        }
 
         // Supabase allows .insert().select(), so we return this
         // But if they await .insert(), it calls .then()

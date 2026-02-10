@@ -9,6 +9,7 @@ export interface Prompt {
   created_at: string;
   updated_at: string;
   tags?: Tag[];
+  gallery_item_id?: string | null;
 }
 
 export interface Tag {
