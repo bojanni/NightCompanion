@@ -146,6 +146,16 @@ class QueryBuilder {
         return this;
     }
 
+    gte(column: string, value: any) {
+        this.filters[column] = `gte.${value}`;
+        return this;
+    }
+
+    lte(column: string, value: any) {
+        this.filters[column] = `lte.${value}`;
+        return this;
+    }
+
     in(column: string, values: any[]) {
         if (column === 'user_id') return this;
         if (values && values.length > 0) {

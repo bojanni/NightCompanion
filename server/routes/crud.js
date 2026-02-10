@@ -43,6 +43,18 @@ const createCrudRouter = (tableName) => {
                         conditions.push(`${key} IN (${placeholders})`);
                         values.push(...list);
                     }
+                } else if (value.startsWith('neq.')) {
+                    // Handle NOT EQUAL: ?col=neq.val
+                    conditions.push(`${key} != $${values.length + 1}`);
+                    values.push(value.substring(4));
+                } else if (value.startsWith('gte.')) {
+                    // Handle GREATER THAN OR EQUAL: ?col=gte.val
+                    conditions.push(`${key} >= $${values.length + 1}`);
+                    values.push(value.substring(4));
+                } else if (value.startsWith('lte.')) {
+                    // Handle LESS THAN OR EQUAL: ?col=lte.val
+                    conditions.push(`${key} <= $${values.length + 1}`);
+                    values.push(value.substring(4));
                 } else {
                     // Handle Equality: ?col=val
                     conditions.push(`${key} = $${values.length + 1}`);
