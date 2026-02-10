@@ -437,66 +437,101 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           </label>
         </div>
         <div className="flex flex-wrap gap-1.5 mb-3">
-          {allTags.map((tag) => (
+          {allTags.filter(t => selectedTagIds.includes(t.id)).map((tag) => (
             <TagBadge
               key={tag.id}
               tag={tag}
               onClick={() => toggleTag(tag.id)}
-              selected={selectedTagIds.includes(tag.id)}
+              selected={true}
             />
           ))}
           <button
             onClick={() => setShowNewTag(true)}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
           >
-            <Plus size={12} /> New Tag
+            <Plus size={12} /> Add Tag
           </button>
         </div>
 
         {showNewTag && (
-          <div className="flex flex-wrap items-end gap-2 p-3 bg-slate-700/30 rounded-xl">
-            <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs text-slate-400 mb-1">Name</label>
-              <input
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                placeholder="Tag name"
-                className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Color</label>
+          <div className="p-3 bg-slate-700/30 rounded-xl space-y-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="flex-1 min-w-[120px]">
+                <label className="block text-xs text-slate-400 mb-1">Search or Create</label>
+                <input
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  placeholder="Type tag name..."
+                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Color</label>
+                <div className="flex gap-1">
+                  {TAG_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setNewTagColor(c)}
+                      className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''}`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Category</label>
+                <select
+                  value={newTagCategory}
+                  onChange={(e) => setNewTagCategory(e.target.value)}
+                  className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none"
+                >
+                  {TAG_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex gap-1">
-                {TAG_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setNewTagColor(c)}
-                    className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
+                <button
+                  onClick={handleCreateTag}
+                  disabled={!newTagName.trim() || allTags.some(t => t.name.toLowerCase() === newTagName.trim().toLowerCase() && selectedTagIds.includes(t.id))}
+                  className="px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create
+                </button>
+                <button onClick={() => setShowNewTag(false)} className="p-1.5 text-slate-400 hover:text-white">
+                  <X size={14} />
+                </button>
               </div>
             </div>
-            <div>
-              <label className="block text-xs text-slate-400 mb-1">Category</label>
-              <select
-                value={newTagCategory}
-                onChange={(e) => setNewTagCategory(e.target.value)}
-                className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none"
-              >
-                {TAG_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-1">
-              <button onClick={handleCreateTag} className="px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600">
-                Add
-              </button>
-              <button onClick={() => setShowNewTag(false)} className="p-1.5 text-slate-400 hover:text-white">
-                <X size={14} />
-              </button>
-            </div>
+
+            {/* Existing Tags Suggestions */}
+            {newTagName.trim() && (
+              <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-700/50">
+                {allTags
+                  .filter(t =>
+                    t.name.toLowerCase().includes(newTagName.toLowerCase()) &&
+                    !selectedTagIds.includes(t.id)
+                  )
+                  .slice(0, 8)
+                  .map(tag => (
+                    <button
+                      key={tag.id}
+                      onClick={() => {
+                        toggleTag(tag.id);
+                        setNewTagName('');
+                      }}
+                      className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-md text-xs text-slate-300 hover:text-white hover:border-slate-500 transition-colors flex items-center gap-1"
+                    >
+                      <Plus size={10} />
+                      {tag.name}
+                    </button>
+                  ))}
+                {allTags.filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id)).length === 0 && (
+                  <span className="text-xs text-slate-500 italic">No existing tags match. Create new?</span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
