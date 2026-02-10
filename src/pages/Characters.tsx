@@ -15,6 +15,7 @@ import {
   useDeleteCharacterDetail
 } from '../hooks/useCharacters';
 import { describeCharacter } from '../lib/ai-service';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 12;
 
@@ -87,8 +88,10 @@ export default function Characters({ }: CharactersProps) {
     try {
       if (editingChar) {
         await updateMutation.mutateAsync({ id: editingChar.id, ...payload });
+        toast.success('Character updated');
       } else {
         await createMutation.mutateAsync(payload);
+        toast.success('Character created');
       }
       setShowEditor(false);
     } finally {
@@ -98,6 +101,7 @@ export default function Characters({ }: CharactersProps) {
 
   async function handleDeleteCharacter(id: string) {
     await deleteMutation.mutateAsync(id);
+    toast.success('Character deleted');
   }
 
   async function handleAnalyzeImage() {

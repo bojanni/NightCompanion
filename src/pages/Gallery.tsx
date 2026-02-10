@@ -12,6 +12,7 @@ import StarRating from '../components/StarRating';
 import PromptSelector from '../components/PromptSelector';
 import ModelSelector from '../components/ModelSelector';
 import { generateFromDescription } from '../lib/ai-service';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 24;
 
@@ -147,13 +148,15 @@ export default function Gallery({ }: GalleryProps) {
 
       if (editingItem) {
         await db.from('gallery_items').update(itemData).eq('id', editingItem.id);
+        toast.success('Image updated successfully');
       } else {
         await db.from('gallery_items').insert(itemData);
+        toast.success('Image added to gallery');
       }
       // ... (rest of function)
     } catch (error) {
       console.error('Failed to save item:', error);
-      // Optionally, show an error message to the user
+      toast.error('Failed to save image');
     } finally {
       setSaving(false);
       setShowItemEditor(false);
@@ -165,6 +168,7 @@ export default function Gallery({ }: GalleryProps) {
     await db.from('gallery_items').delete().eq('id', id);
     setItems((prev) => prev.filter((i) => i.id !== id));
     if (selectedItem?.id === id) setSelectedItem(null);
+    toast.success('Image deleted');
   }
 
   async function handleUpdateRating(item: GalleryItem, rating: number) {
@@ -190,6 +194,7 @@ export default function Gallery({ }: GalleryProps) {
     setShowCollectionEditor(false);
     setCollName('');
     setCollDesc('');
+    toast.success('Collection created');
     loadData();
   }
 
@@ -197,6 +202,7 @@ export default function Gallery({ }: GalleryProps) {
     await db.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
     await db.from('collections').delete().eq('id', id);
     setFilterCollection(null);
+    toast.success('Collection deleted');
     loadData();
   }
 
@@ -292,6 +298,7 @@ export default function Gallery({ }: GalleryProps) {
       }
       setShowPromptSelector(false);
       setLinkingImage(null);
+      toast.success('Prompt linked to image');
     } catch (err) {
       console.error('Failed to link prompt:', err);
     }
