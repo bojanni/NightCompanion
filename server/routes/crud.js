@@ -158,6 +158,7 @@ const createCrudRouter = (tableName) => {
             const data = req.body;
             delete data.id; // Don't update ID
             delete data.created_at; // Don't update created_at usually
+            delete data.updated_at; // Let the automatic timestamp handle this
 
             if (Object.keys(data).length === 0) return res.json({ status: 'no changes' });
 

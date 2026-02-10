@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Loader2, Plus, X, Upload } from 'lucide-react';
+import { Save, Loader2, Plus, X, Upload, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
@@ -310,6 +310,27 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         <div className="flex justify-between items-center mb-1.5">
           <label className="block text-sm font-medium text-slate-300">Title</label>
           <label className="flex items-center gap-1.5 cursor-pointer">
+            <button
+              onClick={async () => {
+                if (!content.trim()) return;
+                setIsGeneratingTitle(true);
+                try {
+                  const newTitle = await generateTitle(content, 'dummy-token');
+                  if (newTitle) setTitle(newTitle.replace(/^"|"$/g, '').trim());
+                } catch (e) {
+                  console.error('Failed to regenerate title:', e);
+                  toast.error('Failed to regenerate title');
+                } finally {
+                  setIsGeneratingTitle(false);
+                }
+              }}
+              disabled={isGeneratingTitle || !content.trim()}
+              className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              <Wand2 size={12} />
+              Regenerate
+            </button>
+            <div className="w-px h-3 bg-slate-700 mx-1" />
             <input
               type="checkbox"
               checked={autoGenerateTitle}
