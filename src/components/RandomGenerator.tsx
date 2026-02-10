@@ -9,9 +9,10 @@ interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
   onSaved: () => void;
   onPromptGenerated: (prompt: string) => void;
+  maxWords: number;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGenerated }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGenerated, maxWords }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState('');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copied, setCopied] = useState(false);
@@ -53,7 +54,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
   async function handleMagicRandom() {
     setSaving(true); // Reuse saving state for loading to disable buttons
     try {
-      const result = await generateRandomPromptAI('mock-token');
+      const token = (await db.auth.getSession()).data.session?.access_token || '';
+      const result = await generateRandomPromptAI(token, undefined, maxWords);
       setPrompt(result);
       setCopied(false);
       onPromptGenerated(result);

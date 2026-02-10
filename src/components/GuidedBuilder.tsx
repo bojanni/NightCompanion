@@ -11,9 +11,10 @@ import { db } from '../lib/api';
 interface GuidedBuilderProps {
   initialPrompt?: string;
   onSaved: () => void;
+  maxWords: number;
 }
 
-export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderProps) {
+export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: GuidedBuilderProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [additions, setAdditions] = useState<string[]>([]);
@@ -66,7 +67,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved }: GuidedBuilderP
         `Complete and polish this image prompt based on these attributes: ${currentPrompt}`,
         {
           context: 'User is using a guided prompt builder. Maintain their choices but make it professional and high quality.',
-          preferences: { maxWords: 70 }
+          preferences: { maxWords }
         },
         token
       );

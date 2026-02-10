@@ -5,7 +5,7 @@ import GuidedBuilder from '../components/GuidedBuilder';
 import AITools from '../components/AITools';
 import ModelRecommender from '../components/ModelRecommender';
 import ImageAnalyzer from '../components/ImageAnalyzer';
-import { supabase } from '../lib/api';
+import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
 interface GeneratorProps { }
@@ -18,13 +18,14 @@ export default function Generator({ }: GeneratorProps) {
   const [lastPrompts, setLastPrompts] = useState<Prompt[]>([]);
   const [remixBase, setRemixBase] = useState('');
   const [saveCount, setSaveCount] = useState(0);
+  const [maxWords, setMaxWords] = useState(70);
 
   useEffect(() => {
     loadRecentPrompts();
   }, [saveCount]);
 
   async function loadRecentPrompts() {
-    const { data } = await supabase
+    const { data } = await db
       .from('prompts')
       .select('*')
       .order('created_at', { ascending: false })
@@ -83,11 +84,37 @@ export default function Generator({ }: GeneratorProps) {
         ))}
       </div>
 
+      {/* Global Max Words Slider */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
+          <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
+        </div>
+        <input
+          type="range"
+          min="20"
+          max="100"
+          step="5"
+          value={maxWords}
+          onChange={(e) => setMaxWords(parseInt(e.target.value))}
+          className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          style={{
+            background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
+          }}
+        />
+        <div className="flex justify-between mt-2">
+          <span className="text-xs text-slate-500">Short (20)</span>
+          <span className="text-xs text-slate-500">Standard (70)</span>
+          <span className="text-xs text-slate-500">Long (100)</span>
+        </div>
+      </div>
+
       {mode === 'random' && (
         <RandomGenerator
           onSwitchToGuided={handleSwitchToGuided}
           onSaved={() => setSaveCount((c) => c + 1)}
           onPromptGenerated={(prompt) => setGuidedInitial(prompt)}
+          maxWords={maxWords}
         />
       )}
 
@@ -96,6 +123,7 @@ export default function Generator({ }: GeneratorProps) {
           key={guidedInitial}
           initialPrompt={guidedInitial || undefined}
           onSaved={() => setSaveCount((c) => c + 1)}
+          maxWords={maxWords}
         />
       )}
 
@@ -147,6 +175,7 @@ export default function Generator({ }: GeneratorProps) {
           setMode('guided');
         }}
         generatedPrompt={guidedInitial}
+        maxWords={maxWords}
       />
 
       <ModelRecommender generatedPrompt={guidedInitial} />

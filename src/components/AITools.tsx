@@ -101,7 +101,10 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
         generateInput,
         {
           context: context || undefined,
-          preferences: hasPrefs ? generatePrefs : undefined,
+          preferences: {
+            ...generatePrefs,
+            maxWords,
+          },
           successfulPrompts: successfulPrompts.length > 0 ? successfulPrompts : undefined,
         },
         token,
@@ -227,6 +230,7 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
               onCopy={handleCopy}
               onUse={() => onPromptGenerated(generateResult)}
               generatedPrompt={generatedPrompt}
+              maxWords={maxWords}
             />
           )}
 
@@ -420,7 +424,7 @@ const SUBJECT_OPTIONS = [
 ];
 
 function GenerateTab({
-  input, setInput, preferences, setPreferences, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt,
+  input, setInput, preferences, setPreferences, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt, maxWords,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -433,6 +437,7 @@ function GenerateTab({
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
   generatedPrompt?: string | undefined;
+  maxWords: number;
 }) {
   const [showPrefs, setShowPrefs] = useState(false);
 

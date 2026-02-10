@@ -204,7 +204,9 @@ router.post('/', async (req, res) => {
         } else if (action === 'recommend-models') {
             userPrompt = `Recommend models for: "${payload.prompt}"`;
         } else if (action === 'random') {
+            const maxWords = payload.maxWords || 70;
             userPrompt = `Generate a random, creative image prompt. Theme: ${payload.theme || 'anything'}.`;
+            userPrompt += `\nSystem Rule: Limit response to ${maxWords} words maximum.`;
         } else if (action === 'generate-variations') {
             userPrompt = `Variations for: "${payload.basePrompt}"`;
             maxTokens = 2000;
