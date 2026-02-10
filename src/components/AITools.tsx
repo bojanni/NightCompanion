@@ -401,6 +401,17 @@ function ImproveTab({
                 Paste Generated
               </button>
             )}
+
+            {input.trim() && (
+              <button
+                onClick={() => onSave(input)}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-xl hover:bg-amber-500/20 transition-colors border border-amber-500/30 ml-auto"
+                title="Save current text to library"
+              >
+                <Save size={14} />
+                Save to Library
+              </button>
+            )}
           </>
         ) : (
           <>
@@ -439,7 +450,7 @@ function ImproveTab({
       </div>
 
       {/* If result is shown, provide actions */}
-    </div>
+    </div >
   );
 }
 

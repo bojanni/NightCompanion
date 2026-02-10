@@ -48,6 +48,31 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
     }
   };
 
+  const handleSave = async (text: string) => {
+    try {
+      const { data } = await db.auth.getUser(); // Get user for later just in case, though usually not needed for local insert if RLS disabled
+      // Local DB insert
+      await db.from('prompts').insert({
+        title: 'Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 30),
+        content: text,
+        notes: 'Created via AI Prompt Improver',
+        rating: 0,
+        is_template: false,
+        is_favorite: false,
+      });
+      // Show success (simple alert/console for now if toast not available in this context, but better to use toast if possible)
+      // Assuming toast is available or we can just change button state briefly
+      const btn = document.getElementById('save-btn-' + text.length);
+      if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Saved!';
+        setTimeout(() => btn.innerHTML = originalText, 2000);
+      }
+    } catch (e) {
+      console.error('Failed to save prompt:', e);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {!improvement && (
@@ -115,6 +140,13 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
                     Apply
                   </button>
                 )}
+                <button
+                  id={'save-btn-' + improvement.improved.length}
+                  onClick={() => handleSave(improvement.improved)}
+                  className="px-3 py-1.5 rounded-lg bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-medium transition-colors border border-orange-200"
+                >
+                  Save
+                </button>
               </div>
             </div>
             <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
@@ -166,9 +198,8 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
                         <p className="text-xs text-slate-600">{alternate.description}</p>
                       </div>
                       <ChevronRight
-                        className={`w-4 h-4 text-slate-500 transition-transform ${
-                          expandedAlternate === index ? 'rotate-90' : ''
-                        }`}
+                        className={`w-4 h-4 text-slate-500 transition-transform ${expandedAlternate === index ? 'rotate-90' : ''
+                          }`}
                       />
                     </div>
                   </button>
