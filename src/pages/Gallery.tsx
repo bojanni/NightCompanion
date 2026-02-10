@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
 import PromptSelector from '../components/PromptSelector';
+import { generateFromDescription } from '../lib/ai-service';
 
 const PAGE_SIZE = 24;
 
@@ -49,6 +50,9 @@ export default function Gallery({ }: GalleryProps) {
   const [promptSuggestions, setPromptSuggestions] = useState<Prompt[]>([]);
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
   const [promptSearchValue, setPromptSearchValue] = useState('');
+  const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
+  const [generatingTitle, setGeneratingTitle] = useState(false);
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -117,29 +121,37 @@ export default function Gallery({ }: GalleryProps) {
     setPromptSearchValue('');
     setPromptSuggestions([]);
     setShowPromptSuggestions(false);
+    setSelectedPromptId(item?.prompt_id ?? null);
     setShowItemEditor(true);
   }
 
   async function handleSaveItem() {
+    if (!formImageUrl) return;
     setSaving(true);
-    const payload = {
-      title: formTitle.trim() || 'Untitled',
-      image_url: formImageUrl,
-      prompt_used: formPromptUsed,
-      rating: formRating,
-      collection_id: formCollectionId || null,
-      notes: formNotes,
-    };
+    try {
+      const itemData = {
+        title: formTitle,
+        image_url: formImageUrl,
+        prompt_used: formPromptUsed,
+        prompt_id: selectedPromptId,
+        rating: formRating,
+        collection_id: formCollectionId || null,
+        notes: formNotes,
+      };
 
-    if (editingItem) {
-      await db.from('gallery_items').update(payload).eq('id', editingItem.id);
-    } else {
-      await db.from('gallery_items').insert(payload);
+      if (editingItem) {
+        await db.from('gallery_items').update(itemData).eq('id', editingItem.id);
+      } else {
+        await db.from('gallery_items').insert(itemData);
+      }
+    } catch (error) {
+      console.error('Failed to save item:', error);
+      // Optionally, show an error message to the user
+    } finally {
+      setSaving(false);
+      setShowItemEditor(false);
+      loadData();
     }
-
-    setSaving(false);
-    setShowItemEditor(false);
-    loadData();
   }
 
   async function handleDeleteItem(id: string) {
@@ -215,6 +227,38 @@ export default function Gallery({ }: GalleryProps) {
     setFormPromptUsed(prompt.content);
     setPromptSearchValue(prompt.title);
     setShowPromptSuggestions(false);
+    setSelectedPromptId(prompt.id);
+
+    // Auto-generate title if checkbox is enabled
+    if (autoGenerateTitle) {
+      generateTitle(prompt.content);
+    }
+  }
+
+  async function generateTitle(promptContent: string) {
+    if (!promptContent || !autoGenerateTitle) return;
+
+    setGeneratingTitle(true);
+    try {
+      // Use AI to generate a concise title (max 10 words)
+      const title = await generateFromDescription(
+        `Create a short, descriptive title (maximum 10 words) for this image prompt: "${promptContent}"`,
+        {
+          preferences: { maxWords: 10 }
+        },
+        '' // Empty token for local backend
+      );
+      // Remove markdown bold formatting (**)
+      const cleanTitle = title.trim().replace(/\*\*/g, '');
+      setFormTitle(cleanTitle);
+    } catch (err) {
+      console.error('Failed to generate title:', err);
+      // Fallback: use first few words of prompt
+      const fallbackTitle = promptContent.split(' ').slice(0, 10).join(' ');
+      setFormTitle(fallbackTitle);
+    } finally {
+      setGeneratingTitle(false);
+    }
   }
 
   function handlePromptInputFocus() {
@@ -531,13 +575,30 @@ export default function Gallery({ }: GalleryProps) {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
-              <input
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="Image title"
-                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-slate-300">Title</label>
+                <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={autoGenerateTitle}
+                    onChange={(e) => setAutoGenerateTitle(e.target.checked)}
+                    className="rounded border-slate-600 bg-slate-700 text-amber-500 focus:ring-2 focus:ring-amber-500/40"
+                  />
+                  Auto-generate from prompt
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  value={formTitle}
+                  onChange={(e) => setFormTitle(e.target.value)}
+                  disabled={autoGenerateTitle && generatingTitle}
+                  placeholder={generatingTitle ? "Generating title..." : "Image title"}
+                  className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {generatingTitle && (
+                  <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 animate-spin" />
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Collection</label>
@@ -595,10 +656,11 @@ export default function Gallery({ }: GalleryProps) {
                 onChange={(e) => handlePromptSearchChange(e.target.value)}
                 onFocus={handlePromptInputFocus}
                 onBlur={() => setTimeout(() => setShowPromptSuggestions(false), 200)}
-                placeholder="Search saved prompts..."
-                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                placeholder={selectedPromptId ? "Linked to saved prompt" : "Search saved prompts..."}
+                disabled={!!selectedPromptId}
+                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              {showPromptSuggestions && promptSuggestions.length > 0 && (
+              {showPromptSuggestions && promptSuggestions.length > 0 && !selectedPromptId && (
                 <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                   {promptSuggestions.map((prompt) => (
                     <button
@@ -614,6 +676,19 @@ export default function Gallery({ }: GalleryProps) {
                 </div>
               )}
             </div>
+            {selectedPromptId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPromptId(null);
+                  setPromptSearchValue('');
+                  setFormPromptUsed('');
+                }}
+                className="mt-2 text-xs text-amber-500 hover:text-amber-400 transition-colors"
+              >
+                Unlink prompt
+              </button>
+            )}
             {formPromptUsed && (
               <div className="mt-2 p-3 bg-slate-800/50 rounded-xl">
                 <p className="text-xs text-slate-400 mb-1">Selected Prompt:</p>

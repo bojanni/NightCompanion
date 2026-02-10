@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
@@ -46,6 +47,7 @@ export default function Prompts({ }: PromptsProps) {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [linkingPrompt, setLinkingPrompt] = useState<Prompt | null>(null);
   const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string } }>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
@@ -426,7 +428,11 @@ export default function Prompts({ }: PromptsProps) {
 
                 {linkedImages[prompt.id] && (
                   <div className="relative group/img mb-3">
-                    <div className="relative w-full h-24 bg-slate-800 rounded-xl overflow-hidden">
+                    <div
+                      className="relative w-full h-24 bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
+                      onClick={() => navigate('/gallery')}
+                      title="Open in gallery"
+                    >
                       <img
                         src={linkedImages[prompt.id].image_url}
                         alt={linkedImages[prompt.id].title}
@@ -434,7 +440,10 @@ export default function Prompts({ }: PromptsProps) {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
                         <button
-                          onClick={() => handleUnlinkImage(prompt.id, linkedImages[prompt.id].id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnlinkImage(prompt.id, linkedImages[prompt.id].id);
+                          }}
                           className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100"
                           title="Unlink image"
                         >
