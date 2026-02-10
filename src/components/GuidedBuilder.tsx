@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ChevronLeft, ChevronRight, Copy, Check, Save,
   Loader2, RotateCcw, Compass, Sparkles,
