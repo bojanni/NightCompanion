@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser } from 'lucide-react';
+import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser, PenTool } from 'lucide-react';
 import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
+import ManualGenerator from '../components/ManualGenerator';
 import AITools from '../components/AITools';
 import ModelRecommender from '../components/ModelRecommender';
 import ImageAnalyzer from '../components/ImageAnalyzer';
@@ -10,7 +11,7 @@ import type { Prompt } from '../lib/types';
 
 interface GeneratorProps { }
 
-type Mode = 'random' | 'guided' | 'remix';
+type Mode = 'random' | 'guided' | 'remix' | 'manual';
 
 const STORAGE_KEY = 'nightcompanion_generator_state';
 
@@ -82,6 +83,7 @@ export default function Generator({ }: GeneratorProps) {
   const modes = [
     { id: 'random' as Mode, label: 'Random', icon: Shuffle, desc: 'One click, done' },
     { id: 'guided' as Mode, label: 'Guided', icon: Target, desc: 'Full control' },
+    { id: 'manual' as Mode, label: 'Manual', icon: PenTool, desc: 'Multi-part build' },
     { id: 'remix' as Mode, label: 'Quick Remix', icon: Zap, desc: 'Modify last prompt' },
   ];
 
@@ -92,7 +94,7 @@ export default function Generator({ }: GeneratorProps) {
         <p className="text-slate-400 mt-1">Create the perfect prompt for your next creation</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         {modes.map(({ id, label, icon: Icon, desc }) => (
           <button
             key={id}
@@ -119,41 +121,43 @@ export default function Generator({ }: GeneratorProps) {
         ))}
       </div>
 
-      {/* Global Max Words Slider */}
-      <div className="flex items-start gap-3">
-        <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
-            <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
+      {/* Global Max Words Slider (Hide in Manual Mode?) - Keep for consistency maybe, or hide if irrelevant */}
+      {mode !== 'manual' && (
+        <div className="flex items-start gap-3">
+          <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
+              <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
+            </div>
+            <input
+              type="range"
+              min="20"
+              max="100"
+              step="5"
+              value={maxWords}
+              onChange={(e) => setMaxWords(parseInt(e.target.value))}
+              className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              style={{
+                background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
+              }}
+            />
+            <div className="flex justify-between mt-2">
+              <span className="text-xs text-slate-500">Short (20)</span>
+              <span className="text-xs text-slate-500">Standard (70)</span>
+              <span className="text-xs text-slate-500">Long (100)</span>
+            </div>
           </div>
-          <input
-            type="range"
-            min="20"
-            max="100"
-            step="5"
-            value={maxWords}
-            onChange={(e) => setMaxWords(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
-            style={{
-              background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
-            }}
-          />
-          <div className="flex justify-between mt-2">
-            <span className="text-xs text-slate-500">Short (20)</span>
-            <span className="text-xs text-slate-500">Standard (70)</span>
-            <span className="text-xs text-slate-500">Long (100)</span>
-          </div>
-        </div>
 
-        <button
-          onClick={handleClearAll}
-          className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
-          title="Clear all generated prompts and reset to defaults"
-        >
-          <Eraser size={14} />
-          Clear All
-        </button>
-      </div>
+          <button
+            onClick={handleClearAll}
+            className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
+            title="Clear all generated prompts and reset to defaults"
+          >
+            <Eraser size={14} />
+            Clear All
+          </button>
+        </div>
+      )}
 
       {mode === 'random' && (
         <RandomGenerator
@@ -175,6 +179,10 @@ export default function Generator({ }: GeneratorProps) {
           onSaved={() => setSaveCount((c) => c + 1)}
           maxWords={maxWords}
         />
+      )}
+
+      {mode === 'manual' && (
+        <ManualGenerator onSaved={() => setSaveCount((c) => c + 1)} />
       )}
 
       {mode === 'remix' && (
