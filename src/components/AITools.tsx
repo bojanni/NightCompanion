@@ -382,12 +382,12 @@ function ImproveTab({
 
             {input && (
               <button
-                onClick={() => setInput('')}
+                onClick={() => onCopy(input, 'input-copy')}
                 className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
-                title="Clear Input"
+                title="Copy current text"
               >
-                <Eraser size={14} />
-                Clear
+                {copied === 'input-copy' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                {copied === 'input-copy' ? 'Copied' : 'Copy'}
               </button>
             )}
 
@@ -405,11 +405,22 @@ function ImproveTab({
             {input.trim() && (
               <button
                 onClick={() => onSave(input)}
-                className="flex items-center gap-1.5 px-3 py-2.5 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-xl hover:bg-amber-500/20 transition-colors border border-amber-500/30 ml-auto"
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-xl hover:bg-amber-500/20 transition-colors border border-amber-500/30"
                 title="Save current text to library"
               >
                 <Save size={14} />
                 Save to Library
+              </button>
+            )}
+
+            {input && (
+              <button
+                onClick={() => setInput('')}
+                className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700 ml-auto sm:ml-0"
+                title="Clear Input"
+              >
+                <Eraser size={14} />
+                Clear
               </button>
             )}
           </>
