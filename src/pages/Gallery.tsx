@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
 import PromptSelector from '../components/PromptSelector';
+import ModelSelector from '../components/ModelSelector';
 import { generateFromDescription } from '../lib/ai-service';
 
 const PAGE_SIZE = 24;
@@ -38,6 +39,7 @@ export default function Gallery({ }: GalleryProps) {
   const [formCollectionId, setFormCollectionId] = useState<string>('');
   const [formNotes, setFormNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [formModel, setFormModel] = useState('');
 
   const [collName, setCollName] = useState('');
   const [collDesc, setCollDesc] = useState('');
@@ -110,6 +112,8 @@ export default function Gallery({ }: GalleryProps) {
     setLoading(false);
   }
 
+
+
   function openItemEditor(item: GalleryItem | null) {
     setEditingItem(item);
     setFormTitle(item?.title ?? '');
@@ -117,6 +121,7 @@ export default function Gallery({ }: GalleryProps) {
     setFormPromptUsed(item?.prompt_used ?? '');
     setFormRating(item?.rating ?? 0);
     setFormCollectionId(item?.collection_id ?? '');
+    setFormModel(item?.model ?? '');
     setFormNotes(item?.notes ?? '');
     setPromptSearchValue('');
     setPromptSuggestions([]);
@@ -136,6 +141,7 @@ export default function Gallery({ }: GalleryProps) {
         prompt_id: selectedPromptId,
         rating: formRating,
         collection_id: formCollectionId || null,
+        model: formModel || null,
         notes: formNotes,
       };
 
@@ -144,6 +150,7 @@ export default function Gallery({ }: GalleryProps) {
       } else {
         await db.from('gallery_items').insert(itemData);
       }
+      // ... (rest of function)
     } catch (error) {
       console.error('Failed to save item:', error);
       // Optionally, show an error message to the user
@@ -612,6 +619,10 @@ export default function Gallery({ }: GalleryProps) {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Model</label>
+              <ModelSelector value={formModel} onChange={setFormModel} />
             </div>
           </div>
           <div>

@@ -10,6 +10,7 @@ export interface Prompt {
   updated_at: string;
   tags?: Tag[];
   gallery_item_id?: string | null;
+  model?: string;
 }
 
 export interface Tag {
@@ -32,6 +33,7 @@ export interface PromptVersion {
   version_number: number;
   change_description: string | null;
   created_at: string;
+  model?: string;
 }
 
 export interface Character {
@@ -64,6 +66,7 @@ export interface GalleryItem {
   collection_id: string | null;
   notes: string;
   created_at: string;
+  model?: string;
 }
 
 export interface Collection {
@@ -116,3 +119,15 @@ export const TAG_CATEGORIES = [
 export const TAG_COLORS = [
   '#d97706', '#dc2626', '#059669', '#2563eb', '#7c3aed', '#db2777', '#0891b2', '#65a30d'
 ];
+
+export const AI_MODELS = [
+  'Stable Diffusion 1.5',
+  'Stable Diffusion XL',
+  'Flux 1.0',
+  'DALL-E 3',
+  'Midjourney v6',
+  'Stable Cascade',
+  'Playground v2',
+  'Leonardo AI',
+  'Other'
+] as const;

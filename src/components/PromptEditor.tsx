@@ -7,6 +7,7 @@ import { db, supabase } from '../lib/api';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
+import ModelSelector from './ModelSelector';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
 
@@ -21,6 +22,7 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
   const [content, setContent] = useState('');
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
+  const [model, setModel] = useState('');
   const [isTemplate, setIsTemplate] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,6 +51,7 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
       setContent(prompt.content);
       setNotes(prompt.notes);
       setRating(prompt.rating);
+      setModel(prompt.model || '');
       setIsTemplate(prompt.is_template);
       setIsFavorite(prompt.is_favorite);
     }
@@ -209,6 +212,7 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
         content: validated.content,
         notes,
         rating: validated.rating,
+        model: model || null,
         is_template: validated.is_template,
         is_favorite: isFavorite,
         updated_at: new Date().toISOString(),
@@ -261,6 +265,7 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
                 prompt_used: validated.content,
                 prompt_id: promptId,
                 rating: 0,
+                model: model || null,
                 notes: 'Uploaded via Prompt Editor',
                 created_at: new Date().toISOString()
               }).select().maybeSingle();
@@ -322,12 +327,15 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
         />
       </div>
 
+      <ModelSelector value={model} onChange={setModel} />
+
       <div>
         <label className="block text-sm font-medium text-slate-300 mb-1.5">Prompt</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Your full prompt text..."
+
           rows={5}
           onBlur={handlePromptBlur}
           className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none"

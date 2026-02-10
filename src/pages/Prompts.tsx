@@ -142,6 +142,16 @@ export default function Prompts({ }: PromptsProps) {
     }
   }
 
+  async function handleRatePrompt(id: string, rating: number) {
+    try {
+      const { error } = await db.from('prompts').update({ rating }).eq('id', id);
+      if (error) throw error;
+      setPrompts(prev => prev.map(p => p.id === id ? { ...p, rating } : p));
+    } catch (err) {
+      handleError(err, 'RatePrompt', { promptId: id });
+    }
+  }
+
   async function handleToggleFavorite(prompt: Prompt) {
     try {
       const newVal = !prompt.is_favorite;
@@ -464,7 +474,11 @@ export default function Prompts({ }: PromptsProps) {
                 )}
 
                 <div className="flex items-center justify-between">
-                  <StarRating rating={prompt.rating} size={13} />
+                  <StarRating
+                    rating={prompt.rating}
+                    onChange={(newRating) => handleRatePrompt(prompt.id, newRating)}
+                    size={13}
+                  />
                   <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleCopy(prompt.content, prompt.id)}

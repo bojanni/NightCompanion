@@ -4,6 +4,26 @@ const { pool } = require('../db');
 const createCrudRouter = (tableName) => {
     const router = express.Router();
 
+    // Helper to get columns
+    const getTableColumns = async (tableName) => {
+        if (!global.tableColumnsCache) global.tableColumnsCache = {};
+        if (global.tableColumnsCache[tableName]) return global.tableColumnsCache[tableName];
+
+        try {
+            const colResult = await pool.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = $1
+            `, [tableName]);
+            const cols = colResult.rows.map(r => r.column_name);
+            global.tableColumnsCache[tableName] = cols;
+            return cols;
+        } catch (e) {
+            console.error('Error fetching columns:', e);
+            return [];
+        }
+    };
+
     // GET all items with filtering, sorting, and pagination
     router.get('/', async (req, res) => {
         try {
@@ -35,24 +55,7 @@ const createCrudRouter = (tableName) => {
             }
 
             // Handle Sorting
-            // Check if created_at exists to avoid errors on tables like prompt_tags
-            // Simple in-memory cache for table columns
-            if (!global.tableColumnsCache) global.tableColumnsCache = {};
-            if (!global.tableColumnsCache[tableName]) {
-                try {
-                    const colResult = await pool.query(`
-                        SELECT column_name 
-                        FROM information_schema.columns 
-                        WHERE table_name = $1
-                    `, [tableName]);
-                    global.tableColumnsCache[tableName] = colResult.rows.map(r => r.column_name);
-                } catch (e) {
-                    console.error('Error fetching columns:', e);
-                    global.tableColumnsCache[tableName] = [];
-                }
-            }
-
-            const tableCols = global.tableColumnsCache[tableName] || [];
+            const tableCols = await getTableColumns(tableName);
             const hasCreatedAt = tableCols.includes('created_at');
 
             if (order) {
@@ -74,19 +77,10 @@ const createCrudRouter = (tableName) => {
             }
 
             const result = await pool.query(queryText, values);
-
-            // For range() support in client, we might need a count. 
-            // The client expects 'count' in the response sometimes if requested, 
-            // but the current local adapter implementation calculates count from array length?
-            // "count: Array.isArray(data) ? data.length : 1" in api.ts
-            // This is "page count", not "total count".
-            // To support real pagination, we'd need a separate count query.
-            // For now, let's just return the rows. exact count is hard in one query without window functions.
-
             res.json(result.rows);
         } catch (err) {
             console.error(`Error fetching ${tableName}:`, err);
-            // If created_at doesn't exist, retry without order
+            // Retry without order if created_at failed (fallback)
             if (err.message.includes('column "created_at" does not exist')) {
                 try {
                     const result = await pool.query(`SELECT * FROM ${tableName}`);
@@ -167,6 +161,10 @@ const createCrudRouter = (tableName) => {
 
             if (Object.keys(data).length === 0) return res.json({ status: 'no changes' });
 
+            // Check for updated_at column
+            const tableCols = await getTableColumns(tableName);
+            const hasUpdatedAt = tableCols.includes('updated_at');
+
             // Build SET clause
             const updates = [];
             const values = [];
@@ -178,11 +176,15 @@ const createCrudRouter = (tableName) => {
                 idx++;
             });
 
+            if (hasUpdatedAt) {
+                updates.push(`updated_at = NOW()`);
+            }
+
             values.push(id);
 
             const query = `
         UPDATE ${tableName}
-        SET ${updates.join(', ')}, updated_at = NOW()
+        SET ${updates.join(', ')}
         WHERE id = $${idx}
         RETURNING *
       `;
