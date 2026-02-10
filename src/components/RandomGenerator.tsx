@@ -51,7 +51,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
     onSaved();
   }
 
-  const topSuggestion = prompt ? analyzePrompt(prompt)[0] : null;
+  const topSuggestion = (prompt && typeof prompt === 'string') ? analyzePrompt(prompt)[0] : null;
 
   async function handleMagicRandom() {
     setRegenerating(true);
