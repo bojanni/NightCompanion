@@ -24,6 +24,40 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('nightcompanion_guided_state');
+      if (saved) {
+        const state = JSON.parse(saved);
+        // Only restore if we don't have a specific initialPrompt acting as a "new" seed
+        // OR if the saved state matches the current initialPrompt intent (complex to detect, simply favoring 'restoring work' if initialPrompt is empty)
+        if (!initialPrompt || initialPrompt === state.initialPrompt) {
+          if (state.selections) setSelections(state.selections);
+          if (state.additions) setAdditions(state.additions);
+          if (state.currentStep) setCurrentStep(state.currentStep);
+          if (state.generatedPrompt) setGeneratedPrompt(state.generatedPrompt);
+          if (state.showResult !== undefined) setShowResult(state.showResult);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load guided state', e);
+    }
+  }, [initialPrompt]);
+
+  // Save to localStorage
+  useEffect(() => {
+    const state = {
+      selections,
+      additions,
+      currentStep,
+      generatedPrompt,
+      showResult,
+      initialPrompt // Save this to compare later
+    };
+    localStorage.setItem('nightcompanion_guided_state', JSON.stringify(state));
+  }, [selections, additions, currentStep, generatedPrompt, showResult, initialPrompt]);
+
   const step = GUIDED_STEPS[currentStep] || GUIDED_STEPS[0];
 
   if (!step) {
@@ -89,6 +123,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
     setCurrentStep(0);
     setGeneratedPrompt('');
     setShowResult(false);
+    localStorage.removeItem('nightcompanion_guided_state');
   }
 
   async function handleCopy() {
