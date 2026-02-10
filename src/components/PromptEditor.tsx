@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save, Loader2, Plus, X } from 'lucide-react';
+import { toast } from 'sonner';
 import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
 import { db, supabase } from '../lib/api';
@@ -95,6 +96,9 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
         if (newTitle) setTitle(newTitle.replace(/^"|"$/g, '').trim()); // Remove quotes if present
       } catch (e) {
         console.error('Failed to generate title:', e);
+        // Silent fail for title auto-gen to strictly avoid interrupting flow, 
+        // unless it's a configuration error we might want to warn about once?
+        // For now, let's keep title silent but tags vocal as user specifically asked about tags.
       } finally {
         setIsGeneratingTitle(false);
       }
@@ -131,8 +135,13 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
 
           setSelectedTagIds(newTagIds);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('Failed to suggest tags:', e);
+        if (e.message?.includes('No AI provider')) {
+          toast.error('AI Auto-Tagging failed: No provider configured. Check Settings.');
+        } else {
+          toast.error('Failed to auto-generate tags. Please try again.');
+        }
       } finally {
         setIsGeneratingTags(false);
       }

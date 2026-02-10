@@ -152,6 +152,31 @@ const createCrudRouter = (tableName) => {
         }
     });
 
+    // DELETE with filters (e.g. DELETE /?prompt_id=123)
+    router.delete('/', async (req, res) => {
+        try {
+            const filters = req.query;
+            if (Object.keys(filters).length === 0) {
+                return res.status(400).json({ error: 'Delete operation requires filters' });
+            }
+
+            const conditions = [];
+            const values = [];
+
+            Object.entries(filters).forEach(([key, value]) => {
+                conditions.push(`${key} = $${values.length + 1}`);
+                values.push(value);
+            });
+
+            const query = `DELETE FROM ${tableName} WHERE ${conditions.join(' AND ')}`;
+            await pool.query(query, values);
+            res.json({ status: 'deleted' });
+        } catch (err) {
+            console.error(`Error deleting from ${tableName}:`, err);
+            res.status(500).json({ error: err.message });
+        }
+    });
+
     // DELETE item
     router.delete('/:id', async (req, res) => {
         try {
