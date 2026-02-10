@@ -11,6 +11,7 @@ import { saveStyleProfile } from '../lib/style-analysis';
 interface AIToolsProps {
   onPromptGenerated: (prompt: string) => void;
   generatedPrompt?: string;
+  maxWords: number;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -22,7 +23,7 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles; desc: string }[] = 
   { id: 'diagnose', label: 'Diagnose', icon: AlertTriangle, desc: 'Fix issues' },
 ];
 
-export default function AITools({ onPromptGenerated, generatedPrompt }: AIToolsProps) {
+export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }: AIToolsProps) {
   const [tab, setTab] = useState<Tab>('improve');
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -481,20 +482,9 @@ function GenerateTab({
             onChange={(v) => setPreferences({ ...preferences, subject: v })}
           />
 
-          <div className="mt-1">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-medium text-slate-400">Max Words</label>
-              <span className="text-[11px] font-medium text-teal-400">{preferences.maxWords || 70} words</span>
-            </div>
-            <input
-              type="range"
-              min="20"
-              max="80"
-              step="5"
-              value={preferences.maxWords || 70}
-              onChange={(e) => setPreferences({ ...preferences, maxWords: parseInt(e.target.value) })}
-              className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
-            />
+          <div className="flex items-center gap-2 mb-2 p-3 bg-slate-900/50 border border-slate-700/50 rounded-lg">
+            <span className="text-[11px] font-medium text-slate-400">Word Count:</span>
+            <span className="text-[11px] font-medium text-teal-400">Global setting ({preferences.maxWords || 70})</span>
           </div>
 
           {(preferences.style || preferences.mood || preferences.subject || preferences.maxWords) && (
