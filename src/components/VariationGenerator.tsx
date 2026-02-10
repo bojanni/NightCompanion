@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Wand2, Copy, Check, Loader2, Save } from 'lucide-react';
+import { Wand2, Copy, Check, Save, Sparkles, Loader2 } from 'lucide-react';
 import { db } from '../lib/api';
+import { generatePromptVariations } from '../lib/ai-service';
 
 interface VariationGeneratorProps {
   basePrompt: string;
@@ -75,6 +76,7 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
   const [variations, setVariations] = useState<string[]>([]);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [savingIdx, setSavingIdx] = useState<number | null>(null);
+  const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null);
 
   function handleGenerate() {
     setVariations(generateVariations(basePrompt, strategy, count));
@@ -101,6 +103,30 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
     onSaved();
   }
 
+  async function handleRegenerateWithAI(idx: number) {
+    setRegeneratingIdx(idx);
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No session available');
+        setRegeneratingIdx(null);
+        return;
+      }
+
+      const aiVariations = await generatePromptVariations(basePrompt, session.access_token);
+      if (aiVariations && aiVariations.length > 0 && aiVariations[0]?.prompt) {
+        // Replace the current variation with the first AI-generated variation
+        const newVariations = [...variations];
+        newVariations[idx] = aiVariations[0].prompt;
+        setVariations(newVariations);
+      }
+    } catch (error) {
+      console.error('Failed to regenerate with AI:', error);
+    } finally {
+      setRegeneratingIdx(null);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="p-3 bg-slate-700/30 rounded-xl">
@@ -114,8 +140,8 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
             key={s.id}
             onClick={() => setStrategy(s.id)}
             className={`p-3 rounded-xl text-left transition-all ${strategy === s.id
-                ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
-                : 'bg-slate-700/30 border border-slate-700 text-slate-300 hover:bg-slate-700/50'
+              ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
+              : 'bg-slate-700/30 border border-slate-700 text-slate-300 hover:bg-slate-700/50'
               }`}
           >
             <p className="text-xs font-medium">{s.label}</p>
@@ -162,12 +188,20 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
                   {copiedIdx === i ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                 </button>
                 <button
+                  onClick={() => handleRegenerateWithAI(i)}
+                  disabled={regeneratingIdx === i}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-purple-400 hover:bg-slate-600 transition-colors disabled:opacity-50"
+                  title="Regenerate with AI"
+                >
+                  {regeneratingIdx === i ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                </button>
+                <button
                   onClick={() => handleSaveAsPrompt(v, i)}
                   disabled={savingIdx === i}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-slate-600 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-slate-600 transition-colors disabled:opacity-50"
                   title="Save as prompt"
                 >
-                  {savingIdx === i ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                  <Save size={13} />
                 </button>
               </div>
             </div>
