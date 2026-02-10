@@ -17,6 +17,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   function handleGenerate() {
     const newPrompt = generateRandomPrompt(filters);
@@ -35,7 +36,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
     if (!prompt) return;
     setSaving(true);
     await db.from('prompts').insert({
-      title: 'Random: ' + (prompt || '').split(',')[0].slice(0, 40),
+      title: 'Random: ' + (prompt.split(',')[0] || 'Untitled').slice(0, 40),
       content: prompt,
       notes: 'Generated with Random mode' +
         (filters.dreamy ? ' [dreamy]' : '') +
@@ -52,7 +53,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
   const topSuggestion = prompt ? analyzePrompt(prompt)[0] : null;
 
   async function handleMagicRandom() {
-    setSaving(true); // Reuse saving state for loading to disable buttons
+    setRegenerating(true);
     try {
       const token = (await db.auth.getSession()).data.session?.access_token || '';
       const result = await generateRandomPromptAI(token, undefined, maxWords);
@@ -66,7 +67,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
       setPrompt(fallback);
       onPromptGenerated(fallback);
     } finally {
-      setSaving(false);
+      setRegenerating(false);
     }
   }
 
@@ -101,7 +102,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
         <div className="flex justify-center gap-3">
           <button
             onClick={handleGenerate}
-            disabled={saving}
+            disabled={saving || regenerating}
             className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
           >
             Standard Random
@@ -109,11 +110,11 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
 
           <button
             onClick={handleMagicRandom}
-            disabled={saving}
+            disabled={saving || regenerating}
             className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {saving ? 'Generating...' : 'Magic Random (AI)'}
+            {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {regenerating ? 'Generating...' : 'Magic Random (AI)'}
           </button>
         </div>
       </div>
@@ -136,18 +137,26 @@ export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGen
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50"
               >
-                {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                <Save size={12} />
                 Save to Library
               </button>
               <button
-                onClick={handleMagicRandom}
-                disabled={saving}
+                onClick={handleGenerate}
+                disabled={saving || regenerating}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors disabled:opacity-50"
               >
-                {saving ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                <RotateCcw size={12} />
                 Regenerate
+              </button>
+              <button
+                onClick={handleMagicRandom}
+                disabled={saving || regenerating}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-400 text-xs rounded-lg hover:bg-purple-500/20 transition-colors disabled:opacity-50"
+              >
+                {regenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                Regenerate with AI
               </button>
               <button
                 onClick={() => onSwitchToGuided(prompt)}
