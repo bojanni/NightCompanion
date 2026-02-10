@@ -25,6 +25,14 @@ export async function improvePrompt(prompt: string, token: string): Promise<stri
   return callAI('improve', { prompt }, token);
 }
 
+export async function improvePromptWithNegative(
+  prompt: string,
+  negativePrompt: string,
+  token: string
+): Promise<{ improved: string; negativePrompt: string }> {
+  return callAI('improve-with-negative', { prompt, negativePrompt }, token);
+}
+
 export interface DetailedImprovement {
   improved: string;
   reasoning: string[];

@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
   Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
 } from 'lucide-react';
-import { improvePrompt, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
+import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
 import { db, supabase } from '../lib/api';
 import { saveStyleProfile } from '../lib/style-analysis';
 
 interface AIToolsProps {
   onPromptGenerated: (prompt: string) => void;
+  onNegativePromptGenerated?: (neg: string) => void;
   generatedPrompt?: string;
+  generatedNegativePrompt?: string;
   maxWords: number;
   onSaved?: () => void;
 }
@@ -24,27 +26,54 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles; desc: string }[] = 
   { id: 'diagnose', label: 'Diagnose', icon: AlertTriangle, desc: 'Fix issues' },
 ];
 
-export default function AITools({ onPromptGenerated, generatedPrompt, maxWords, onSaved }: AIToolsProps) {
-  const [tab, setTab] = useState<Tab>('improve');
-  const [expanded, setExpanded] = useState(true);
+const AITOOLS_STORAGE_KEY = 'nightcompanion_aitools_state';
+
+function loadAIToolsState<T>(key: string, fallback: T): T {
+  try {
+    const s = localStorage.getItem(AITOOLS_STORAGE_KEY);
+    if (s) {
+      const parsed = JSON.parse(s);
+      return parsed[key] !== undefined ? parsed[key] : fallback;
+    }
+  } catch { }
+  return fallback;
+}
+
+export default function AITools({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved }: AIToolsProps) {
+  const [tab, setTab] = useState<Tab>(() => loadAIToolsState('tab', 'improve'));
+  const [expanded, setExpanded] = useState(() => loadAIToolsState('expanded', true));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [improveInput, setImproveInput] = useState('');
-  const [improveResult, setImproveResult] = useState('');
+  const [improveInput, setImproveInput] = useState(() => loadAIToolsState('improveInput', ''));
+  const [improveResult, setImproveResult] = useState(() => loadAIToolsState('improveResult', ''));
+  const [negativeInput, setNegativeInput] = useState(() => loadAIToolsState('negativeInput', ''));
+  const [negativeResult, setNegativeResult] = useState(() => loadAIToolsState('negativeResult', ''));
 
-  const [generateInput, setGenerateInput] = useState('');
-  const [generateResult, setGenerateResult] = useState('');
-  const [generatePrefs, setGeneratePrefs] = useState<GeneratePreferences>({});
+  const [generateInput, setGenerateInput] = useState(() => loadAIToolsState('generateInput', ''));
+  const [generateResult, setGenerateResult] = useState(() => loadAIToolsState('generateResult', ''));
+  const [generatePrefs, setGeneratePrefs] = useState<GeneratePreferences>(() => loadAIToolsState('generatePrefs', {}));
 
-  const [styleResult, setStyleResult] = useState<StyleAnalysis | null>(null);
+  const [styleResult, setStyleResult] = useState<StyleAnalysis | null>(() => loadAIToolsState('styleResult', null));
 
-  const [diagnosePromptInput, setDiagnosePromptInput] = useState('');
-  const [diagnoseIssue, setDiagnoseIssue] = useState('');
-  const [diagnoseResult, setDiagnoseResult] = useState<Diagnosis | null>(null);
+  const [diagnosePromptInput, setDiagnosePromptInput] = useState(() => loadAIToolsState('diagnosePromptInput', ''));
+  const [diagnoseIssue, setDiagnoseIssue] = useState(() => loadAIToolsState('diagnoseIssue', ''));
+  const [diagnoseResult, setDiagnoseResult] = useState<Diagnosis | null>(() => loadAIToolsState('diagnoseResult', null));
 
   const [copied, setCopied] = useState('');
   const [saving, setSaving] = useState('');
+
+  // Persist state to localStorage
+  useEffect(() => {
+    const state = {
+      tab, expanded,
+      improveInput, improveResult, negativeInput, negativeResult,
+      generateInput, generateResult, generatePrefs,
+      styleResult,
+      diagnosePromptInput, diagnoseIssue, diagnoseResult,
+    };
+    localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
+  }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
 
   async function getToken() {
     const { data } = await db.auth.getSession();
@@ -62,10 +91,17 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords, 
     setLoading(true);
     setError('');
     setImproveResult('');
+    setNegativeResult('');
     try {
       const token = await getToken();
-      const result = await improvePrompt(improveInput, token);
-      setImproveResult(result);
+      if (negativeInput.trim()) {
+        const result = await improvePromptWithNegative(improveInput, negativeInput, token);
+        setImproveResult(result.improved);
+        setNegativeResult(result.negativePrompt);
+      } else {
+        const result = await improvePrompt(improveInput, token);
+        setImproveResult(result);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to improve prompt');
     } finally {
@@ -226,16 +262,23 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords, 
             <ImproveTab
               input={improveInput}
               setInput={setImproveInput}
+              negativeInput={negativeInput}
+              setNegativeInput={setNegativeInput}
               result={improveResult}
+              negativeResult={negativeResult}
               loading={loading}
               copied={copied}
               saving={saving}
               onSubmit={handleImprove}
               onCopy={handleCopy}
-              onUse={() => onPromptGenerated(improveResult)}
+              onUse={() => {
+                onPromptGenerated(improveResult);
+                if (negativeResult && onNegativePromptGenerated) onNegativePromptGenerated(negativeResult);
+              }}
               onSave={(text) => handleSavePrompt(text, 'AI Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 40))}
-              onClear={() => setImproveResult('')}
+              onClear={() => { setImproveResult(''); setNegativeResult(''); }}
               generatedPrompt={generatedPrompt}
+              generatedNegativePrompt={generatedNegativePrompt}
             />
           )}
 
@@ -292,11 +335,14 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords, 
 import { diffWords } from '../lib/diff-utils';
 
 function ImproveTab({
-  input, setInput, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt,
+  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
+  negativeInput: string;
+  setNegativeInput: (v: string) => void;
   result: string;
+  negativeResult: string;
   loading: boolean;
   copied: string;
   saving: string;
@@ -306,25 +352,39 @@ function ImproveTab({
   onSave: (text: string) => void;
   onClear: () => void;
   generatedPrompt?: string | undefined;
+  generatedNegativePrompt?: string | undefined;
 }) {
   const [showDiff, setShowDiff] = useState(true);
 
   const diff = result ? diffWords(input, result) : [];
+  const negativeDiff = negativeResult ? diffWords(negativeInput, negativeResult) : [];
 
   const handleAccept = () => {
     setInput(result);
+    if (negativeResult) setNegativeInput(negativeResult);
     onClear();
   };
 
   return (
     <div className="space-y-3">
       {!result && (
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style..."
-          className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
-        />
+        <>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style..."
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
+          />
+          <div>
+            <label className="text-[11px] font-medium text-slate-400 mb-1.5 block">Negative Prompt <span className="text-slate-600">(optional)</span></label>
+            <textarea
+              value={negativeInput}
+              onChange={(e) => setNegativeInput(e.target.value)}
+              placeholder="Things to avoid, e.g. blurry, deformed, low quality, extra limbs..."
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
+            />
+          </div>
+        </>
       )}
 
       {result && (
@@ -347,6 +407,7 @@ function ImproveTab({
           </div>
 
           <div className="p-4 text-sm leading-relaxed min-h-[6rem]">
+            <p className="text-[10px] font-medium text-teal-400/70 mb-1 uppercase tracking-wider">Positive Prompt</p>
             {showDiff ? (
               <div className="whitespace-pre-wrap">
                 {diff.map((part, i) => (
@@ -363,6 +424,29 @@ function ImproveTab({
               </div>
             ) : (
               <p className="text-white whitespace-pre-wrap">{result}</p>
+            )}
+
+            {negativeResult && (
+              <div className="mt-4 pt-3 border-t border-slate-700/50">
+                <p className="text-[10px] font-medium text-red-400/70 mb-1 uppercase tracking-wider">Negative Prompt</p>
+                {showDiff ? (
+                  <div className="whitespace-pre-wrap">
+                    {negativeDiff.map((part, i) => (
+                      <span
+                        key={i}
+                        className={`${part.type === 'add' ? 'bg-emerald-500/20 text-emerald-200 px-0.5 rounded' :
+                          part.type === 'del' ? 'bg-red-500/20 text-red-300 line-through decoration-red-400/50 px-0.5 rounded mx-0.5' :
+                            'text-slate-300'
+                          }`}
+                      >
+                        {part.value}{' '}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-white whitespace-pre-wrap">{negativeResult}</p>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -393,7 +477,10 @@ function ImproveTab({
 
             {generatedPrompt && (
               <button
-                onClick={() => setInput(generatedPrompt)}
+                onClick={() => {
+                  setInput(generatedPrompt);
+                  if (generatedNegativePrompt) setNegativeInput(generatedNegativePrompt);
+                }}
                 className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-amber-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-amber-300 transition-colors border border-slate-700"
                 title="Use last generated prompt"
               >
@@ -413,9 +500,9 @@ function ImproveTab({
               </button>
             )}
 
-            {input && (
+            {(input || negativeInput) && (
               <button
-                onClick={() => setInput('')}
+                onClick={() => { setInput(''); setNegativeInput(''); }}
                 className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700 ml-auto sm:ml-0"
                 title="Clear Input"
               >

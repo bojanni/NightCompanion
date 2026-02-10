@@ -17,6 +17,8 @@ You must combine these elements into a single, flowing text description without 
 const SYSTEM_PROMPTS = {
     improve: `You are an expert AI image prompt engineer. Improve the user's prompt by enhancing subject, style, details, and atmosphere. Return ONLY the improved prompt text.`,
 
+    'improve-with-negative': `You are an expert AI image prompt engineer. Improve both the positive prompt and the negative prompt. For the positive prompt, enhance subject, style, details, and atmosphere. For the negative prompt, refine it with better exclusion terms (e.g., deformed, blurry, low quality, extra limbs, bad anatomy). Return ONLY valid JSON: { "improved": "...", "negativePrompt": "..." }.`,
+
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
     generate: `${BASE_PERSONA}\n\nTask: Transform the description into a technical NightCafe prompt. Return ONLY the prompt text.`,
@@ -212,6 +214,8 @@ router.post('/', async (req, res) => {
         // Construct user prompt based on action
         if (action === 'improve') {
             userPrompt = `Improve this prompt: ${payload.prompt}`;
+        } else if (action === 'improve-with-negative') {
+            userPrompt = `Positive prompt: "${payload.prompt}"\nNegative prompt: "${payload.negativePrompt}"\n\nImprove both prompts.`;
         } else if (action === 'improve-detailed') {
             userPrompt = `Detailed analysis for: "${payload.prompt}"`;
             maxTokens = 2000;
@@ -301,7 +305,7 @@ router.post('/', async (req, res) => {
 
         // Parse JSON if needed (for actions that return JSON)
         let parsedResult = result;
-        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'generate-variations', 'describe-character', 'random'].includes(action)) {
+        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'improve-with-negative', 'generate-variations', 'describe-character', 'random'].includes(action)) {
             try {
                 let jsonStr = result;
                 // Attempt to find JSON within markdown code blocks first

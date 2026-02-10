@@ -248,7 +248,9 @@ export default function Generator({ }: GeneratorProps) {
           setGuidedInitial(prompt);
           setMode('guided');
         }}
+        onNegativePromptGenerated={(neg) => setRandomNegativePrompt(neg)}
         generatedPrompt={guidedInitial}
+        generatedNegativePrompt={randomNegativePrompt}
         maxWords={maxWords}
         onSaved={() => setSaveCount((c) => c + 1)}
       />
