@@ -127,11 +127,28 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
           });
 
           // Create new tags if they don't exist
-          // We limit this to avoid flooding DB? Maybe for now simple check
-          // Just selecting existing ones is safer, but let's try to add them if simple
-          // For now, let's just select existing ones to be safe and avoid duplicates or messy DB
-          // Actually user said "Add tags", so creation might be expected.
-          // Let's stick to existing tags first to avoid color/category complexity issues automatically
+          if (tagsToCreate.length > 0) {
+            const createdTags = await Promise.all(tagsToCreate.map(async (name) => {
+              const { data } = await supabase
+                .from('tags')
+                .insert({
+                  name: name,
+                  color: TAG_COLORS[Math.floor(Math.random() * TAG_COLORS.length)],
+                  category: 'General'
+                })
+                .select()
+                .maybeSingle();
+              return data;
+            }));
+
+            createdTags.forEach(tag => {
+              if (tag) {
+                newTagIds.push(tag.id);
+                // Update local formatted cache to avoid refetch
+                setAllTags(prev => [...prev, tag]);
+              }
+            });
+          }
 
           setSelectedTagIds(newTagIds);
         }
