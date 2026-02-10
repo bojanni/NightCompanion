@@ -16,32 +16,32 @@ type Mode = 'random' | 'guided' | 'remix' | 'manual';
 const STORAGE_KEY = 'nightcompanion_generator_state';
 
 export default function Generator({ }: GeneratorProps) {
-  const [mode, setMode] = useState<Mode>('random');
-  const [guidedInitial, setGuidedInitial] = useState('');
+  // Use lazy state initializers to read from localStorage synchronously on mount.
+  // This ensures child components receive the correct initial values immediately.
+  const [mode, setMode] = useState<Mode>(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).mode || 'random'; } catch { } return 'random';
+  });
+  const [guidedInitial, setGuidedInitial] = useState(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).guidedInitial || ''; } catch { } return '';
+  });
   const [lastPrompts, setLastPrompts] = useState<Prompt[]>([]);
   const [remixBase, setRemixBase] = useState('');
   const [saveCount, setSaveCount] = useState(0);
-  const [maxWords, setMaxWords] = useState(70);
-  const [randomPrompt, setRandomPrompt] = useState('');
-  const [randomNegativePrompt, setRandomNegativePrompt] = useState('');
-  const [manualInitial, setManualInitial] = useState<{ prompts: string[], negative: string }>({ prompts: [], negative: '' });
+  const [maxWords, setMaxWords] = useState(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).maxWords || 70; } catch { } return 70;
+  });
+  const [randomPrompt, setRandomPrompt] = useState(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomPrompt || ''; } catch { } return '';
+  });
+  const [randomNegativePrompt, setRandomNegativePrompt] = useState(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomNegativePrompt || ''; } catch { } return '';
+  });
+  const [manualInitial, setManualInitial] = useState<{ prompts: string[], negative: string }>(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).manualInitial || { prompts: [], negative: '' }; } catch { } return { prompts: [], negative: '' };
+  });
 
-  // Load state from localStorage on mount
+  // Load recent prompts on mount
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const state = JSON.parse(saved);
-        if (state.guidedInitial) setGuidedInitial(state.guidedInitial);
-        if (state.maxWords) setMaxWords(state.maxWords);
-        if (state.mode) setMode(state.mode);
-        if (state.randomPrompt) setRandomPrompt(state.randomPrompt);
-        if (state.randomNegativePrompt) setRandomNegativePrompt(state.randomNegativePrompt);
-        if (state.manualInitial) setManualInitial(state.manualInitial);
-      } catch (e) {
-        console.error('Failed to load saved state:', e);
-      }
-    }
     loadRecentPrompts();
   }, []);
 

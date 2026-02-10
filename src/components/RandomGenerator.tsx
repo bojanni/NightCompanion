@@ -155,7 +155,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             <div className="flex flex-col gap-3 mb-4">
               <textarea
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none h-32"
                 placeholder="Positive prompt..."
               />
