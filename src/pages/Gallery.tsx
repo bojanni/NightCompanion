@@ -171,6 +171,7 @@ export default function Gallery({ }: GalleryProps) {
     await db.from('gallery_items').update({ rating }).eq('id', item.id);
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)));
     if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
+    if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
   }
 
   async function handleSaveCollection() {
@@ -927,12 +928,19 @@ export default function Gallery({ }: GalleryProps) {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">{lightboxImage.title || 'Untitled'}</h3>
-                  {lightboxImage.collection_id && (
-                    <span className="text-sm text-slate-400">
-                      <FolderOpen size={13} className="inline mr-1" />
-                      {getCollectionName(lightboxImage.collection_id)}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    {lightboxImage.collection_id && (
+                      <span className="text-sm text-slate-400 flex items-center gap-1">
+                        <FolderOpen size={13} />
+                        {getCollectionName(lightboxImage.collection_id)}
+                      </span>
+                    )}
+                    {lightboxImage.model && (
+                      <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-md bg-slate-700 text-slate-300 border border-slate-600">
+                        {lightboxImage.model}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <StarRating
@@ -965,7 +973,7 @@ export default function Gallery({ }: GalleryProps) {
                 </div>
               )}
 
-              {lightboxImage.prompt_used && (
+              {lightboxImage.prompt_used && (!lightboxImage.prompt_id || !linkedPrompts[lightboxImage.prompt_id]) && (
                 <div>
                   <h4 className="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1">
                     <MessageSquare size={12} />
