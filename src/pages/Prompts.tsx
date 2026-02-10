@@ -147,6 +147,16 @@ export default function Prompts({ }: PromptsProps) {
       const { error } = await db.from('prompts').update({ rating }).eq('id', id);
       if (error) throw error;
       setPrompts(prev => prev.map(p => p.id === id ? { ...p, rating } : p));
+      // Sync rating to linked gallery item
+      const linkedImage = linkedImages[id];
+      if (linkedImage) {
+        await db.from('gallery_items').update({ rating }).eq('id', linkedImage.id);
+        setLinkedImages(prev => {
+          const existing = prev[id];
+          if (!existing) return prev;
+          return { ...prev, [id]: { ...existing, rating } };
+        });
+      }
     } catch (err) {
       handleError(err, 'RatePrompt', { promptId: id });
     }

@@ -172,6 +172,10 @@ export default function Gallery({ }: GalleryProps) {
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)));
     if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
     if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
+    // Sync rating to linked prompt
+    if (item.prompt_id) {
+      await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
+    }
   }
 
   async function handleSaveCollection() {
@@ -504,7 +508,7 @@ export default function Gallery({ }: GalleryProps) {
               <div className="p-3">
                 <h3 className="text-xs font-medium text-white truncate">{item.title || 'Untitled'}</h3>
                 <div className="flex items-center justify-between mt-1.5">
-                  <StarRating rating={item.rating} size={11} />
+                  <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
                   {item.collection_id && (
                     <span className="text-[10px] text-slate-500 truncate ml-2">
                       {getCollectionName(item.collection_id)}
