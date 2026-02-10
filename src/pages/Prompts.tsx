@@ -567,11 +567,10 @@ export default function Prompts({ }: PromptsProps) {
                         setEditingPrompt(prompt);
                         setShowEditor(true);
                       }}
-                      disabled={!!linkedImages[prompt.id]}
-                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                      title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Edit'}
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
+                      title={linkedImages[prompt.id] ? 'Edit (Restricted)' : 'Edit'}
                     >
-                      {linkedImages[prompt.id] ? <Lock size={14} /> : <Edit3 size={14} />}
+                      {linkedImages[prompt.id] ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
                     </button>
                     <button
                       onClick={() => handleDelete(prompt.id)}
@@ -642,6 +641,7 @@ export default function Prompts({ }: PromptsProps) {
       >
         <PromptEditor
           prompt={editingPrompt}
+          isLinked={editingPrompt ? !!linkedImages[editingPrompt.id] : false}
           onSave={() => {
             setShowEditor(false);
             loadData();
