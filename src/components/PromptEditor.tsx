@@ -217,52 +217,71 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
       let promptId = prompt?.id;
 
       if (prompt) {
-        await db.from('prompts').update(payload).eq('id', prompt.id);
+        const { error } = await db.from('prompts').update(payload).eq('id', prompt.id);
+        if (error) throw error;
       } else {
-        const { data } = await db.from('prompts').insert(payload).select().maybeSingle();
+        const { data, error } = await db.from('prompts').insert(payload).select().maybeSingle();
+        if (error) {
+          console.error('Error creating prompt:', error);
+          throw error;
+        }
         promptId = data?.id;
+
       }
 
       if (promptId) {
         await db.from('prompt_tags').delete().eq('prompt_id', promptId);
         if (selectedTagIds.length > 0) {
-          await supabase
+          const { error: tagError } = await supabase
             .from('prompt_tags')
             .insert(selectedTagIds.map((tag_id) => ({ prompt_id: promptId!, tag_id })));
+          if (tagError) console.error('Error saving tags:', tagError);
         }
 
         // Handle Image Upload & Linking
         if (selectedImage) {
+
           const formData = new FormData();
           formData.append('image', selectedImage);
 
-          const uploadRes = await fetch('http://localhost:3000/api/upload', {
-            method: 'POST',
-            body: formData
-          });
+          try {
+            const uploadRes = await fetch('http://localhost:3000/api/upload', {
+              method: 'POST',
+              body: formData
+            });
 
-          if (uploadRes.ok) {
-            const { url } = await uploadRes.json();
+            if (uploadRes.ok) {
+              const { url } = await uploadRes.json();
 
-            // Create Gallery Item linked to Prompt
-            const { data: galleryItem } = await db.from('gallery_items').insert({
-              title: validated.title || 'Prompt Image',
-              image_url: url,
-              prompt_used: validated.content,
-              prompt_id: promptId,
-              rating: 0,
-              notes: 'Uploaded via Prompt Editor',
-              created_at: new Date().toISOString()
-            }).select().maybeSingle();
 
-            if (galleryItem) {
-              // Bi-directional link: Update Prompt with gallery_item_id
-              await db.from('prompts').update({ gallery_item_id: galleryItem.id }).eq('id', promptId);
+              // Create Gallery Item linked to Prompt
+              const { data: galleryItem, error: galleryError } = await db.from('gallery_items').insert({
+                title: validated.title || 'Prompt Image',
+                image_url: url,
+                prompt_used: validated.content,
+                prompt_id: promptId,
+                rating: 0,
+                notes: 'Uploaded via Prompt Editor',
+                created_at: new Date().toISOString()
+              }).select().maybeSingle();
+
+              if (galleryError) console.error('Error creating gallery item:', galleryError);
+
+              if (galleryItem) {
+
+                // Bi-directional link: Update Prompt with gallery_item_id
+                const { error: updateError } = await db.from('prompts').update({ gallery_item_id: galleryItem.id }).eq('id', promptId);
+                if (updateError) console.error('Error linking prompt to gallery:', updateError);
+              }
+
+              toast.success('Image uploaded and linked to gallery');
+            } else {
+              console.error('Upload failed:', await uploadRes.text());
+              toast.error('Failed to upload image');
             }
-
-            toast.success('Image uploaded and linked to gallery');
-          } else {
-            toast.error('Failed to upload image');
+          } catch (uploadErr) {
+            console.error('Upload exception:', uploadErr);
+            toast.error('Failed to upload image (Network/Server error)');
           }
         }
       }

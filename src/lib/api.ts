@@ -122,6 +122,9 @@ class QueryBuilder {
     }
 
     select(columns = '*', options?: any) {
+        if (this.method === 'POST' || this.method === 'PUT' || this.method === 'DELETE') {
+            return this;
+        }
         this.method = 'GET';
         return this;
     }
