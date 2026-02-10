@@ -186,9 +186,11 @@ export interface PromptVariation {
 
 export async function generatePromptVariations(
   basePrompt: string,
-  token: string
+  token: string,
+  count: number = 5,
+  strategy: string = 'mixed'
 ): Promise<PromptVariation[]> {
-  return callAI('generate-variations', { basePrompt }, token);
+  return callAI('generate-variations', { basePrompt, count, strategy }, token);
 }
 
 export async function testConnection(token: string): Promise<string> {

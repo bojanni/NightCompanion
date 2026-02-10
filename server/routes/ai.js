@@ -221,7 +221,17 @@ router.post('/', async (req, res) => {
             userPrompt = `Generate a random, creative image prompt. Theme: ${payload.theme || 'anything'}.`;
             userPrompt += `\nSystem Rule: Limit response to ${maxWords} words maximum.`;
         } else if (action === 'generate-variations') {
-            userPrompt = `Variations for: "${payload.basePrompt}"`;
+            const count = payload.count || 5;
+            const strategy = payload.strategy || 'mixed';
+
+            if (strategy === 'mixed') {
+                userPrompt = `Generate ${count} variations for: "${payload.basePrompt}". Include a mix of lighting, style, composition, mood, detail, and color variations.`;
+            } else {
+                userPrompt = `Generate ${count} ${strategy} variations for: "${payload.basePrompt}". Focus specifically on altering the ${strategy} while keeping the core subject intact.`;
+            }
+            // Ensure response format
+            userPrompt += ` Return ONLY valid JSON: { "variations": [{ "type": "${strategy}", "prompt": "..." }] }.`;
+
             maxTokens = 2000;
         } else if (action === 'generate-title') {
             userPrompt = `Prompt: "${payload.prompt}"`;

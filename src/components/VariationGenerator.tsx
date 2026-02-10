@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Wand2, Copy, Check, Save, Sparkles, Loader2 } from 'lucide-react';
+import { Wand2, Copy, Check, Save, Sparkles, Loader2, Bot } from 'lucide-react';
 import { db } from '../lib/api';
 import { generatePromptVariations } from '../lib/ai-service';
+import { toast } from 'sonner';
 
 interface VariationGeneratorProps {
   basePrompt: string;
@@ -78,8 +79,34 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
   const [savingIdx, setSavingIdx] = useState<number | null>(null);
   const [regeneratingIdx, setRegeneratingIdx] = useState<number | null>(null);
 
-  function handleGenerate() {
-    setVariations(generateVariations(basePrompt, strategy, count));
+  const [useAI, setUseAI] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  async function handleGenerate() {
+    if (useAI) {
+      setIsGenerating(true);
+      try {
+        const { data: { session } } = await db.auth.getSession();
+        // Allow generation without token for local dev if backend supports it (it does via mock)
+        // But let's pass an empty string or dummy if no session
+        const token = session?.access_token || 'dummy-token';
+
+        const aiVariations = await generatePromptVariations(basePrompt, token, count, strategy);
+
+        if (aiVariations && aiVariations.length > 0) {
+          setVariations(aiVariations.map(v => v.prompt));
+        } else {
+          toast.error('AI failed to generate variations');
+        }
+      } catch (error) {
+        console.error('AI Generation error:', error);
+        toast.error('Failed to generate AI variations');
+      } finally {
+        setIsGenerating(false);
+      }
+    } else {
+      setVariations(generateVariations(basePrompt, strategy, count));
+    }
   }
 
   async function handleCopy(text: string, idx: number) {
@@ -162,14 +189,29 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
             className="w-full accent-amber-500"
           />
         </div>
+
+        <div className="flex items-center gap-2 mt-4 px-3 py-2 bg-slate-700/30 rounded-lg border border-slate-700/50">
+          <input
+            type="checkbox"
+            id="useAI"
+            checked={useAI}
+            onChange={(e) => setUseAI(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500/40 bg-slate-700"
+          />
+          <label htmlFor="useAI" className="text-xs text-slate-300 font-medium cursor-pointer flex items-center gap-1.5">
+            <Bot size={14} className={useAI ? "text-amber-400" : "text-slate-500"} />
+            Use AI Model
+          </label>
+        </div>
+
         <span className="text-sm text-white font-medium mt-4 w-6 text-center">{count}</span>
         <button
           onClick={handleGenerate}
-          disabled={!basePrompt}
-          className="flex items-center gap-2 px-4 py-2 mt-4 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors disabled:opacity-50"
+          disabled={!basePrompt || isGenerating}
+          className="flex items-center gap-2 px-4 py-2 mt-4 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors disabled:opacity-50 min-w-[100px] justify-center"
         >
-          <Wand2 size={14} />
-          Generate
+          {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+          {isGenerating ? 'Creating...' : 'Generate'}
         </button>
       </div>
 
