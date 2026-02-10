@@ -70,7 +70,7 @@ export default function Prompts({ }: PromptsProps) {
       .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
     const [tagsRes, ptRes] = await Promise.all([
-      db.from('tags').select('*').order('name'),
+      db.from('tags').select('*').order('name').limit(5000),
       promptsData ? db.from('prompt_tags').select('*').in('prompt_id', promptsData.map(p => p.id)) : Promise.resolve({ data: [] }),
     ]);
 
@@ -455,13 +455,15 @@ export default function Prompts({ }: PromptsProps) {
 
                 <p className="text-xs text-slate-400 line-clamp-3 mb-3 leading-relaxed">{prompt.content}</p>
 
-                {promptTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {promptTags.map((tag) => (
+                <div className="flex flex-wrap gap-1 mb-3 min-h-[24px]">
+                  {promptTags.length > 0 ? (
+                    promptTags.slice(0, 10).map((tag) => (
                       <TagBadge key={tag.id} tag={tag} />
-                    ))}
-                  </div>
-                )}
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
+                  )}
+                </div>
 
                 {linkedImage && (
                   <div className="relative group/img mb-3">
