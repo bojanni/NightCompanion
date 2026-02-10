@@ -21,6 +21,7 @@ export default function Generator({ }: GeneratorProps) {
   const [remixBase, setRemixBase] = useState('');
   const [saveCount, setSaveCount] = useState(0);
   const [maxWords, setMaxWords] = useState(70);
+  const [randomPrompt, setRandomPrompt] = useState('');
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function Generator({ }: GeneratorProps) {
         if (state.guidedInitial) setGuidedInitial(state.guidedInitial);
         if (state.maxWords) setMaxWords(state.maxWords);
         if (state.mode) setMode(state.mode);
+        if (state.randomPrompt) setRandomPrompt(state.randomPrompt);
       } catch (e) {
         console.error('Failed to load saved state:', e);
       }
@@ -45,9 +47,9 @@ export default function Generator({ }: GeneratorProps) {
 
   // Save state to localStorage when it changes
   useEffect(() => {
-    const state = { guidedInitial, maxWords, mode };
+    const state = { guidedInitial, maxWords, mode, randomPrompt };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [guidedInitial, maxWords, mode]);
+  }, [guidedInitial, maxWords, mode, randomPrompt]);
 
   async function loadRecentPrompts() {
     const { data } = await db
@@ -71,6 +73,7 @@ export default function Generator({ }: GeneratorProps) {
 
   function handleClearAll() {
     setGuidedInitial('');
+    setRandomPrompt('');
     setMode('random');
     setMaxWords(70);
     localStorage.removeItem(STORAGE_KEY);
@@ -156,15 +159,19 @@ export default function Generator({ }: GeneratorProps) {
         <RandomGenerator
           onSwitchToGuided={handleSwitchToGuided}
           onSaved={() => setSaveCount((c) => c + 1)}
-          onPromptGenerated={(prompt) => setGuidedInitial(prompt)}
+          onPromptGenerated={(prompt) => {
+            setGuidedInitial(prompt);
+            setRandomPrompt(prompt);
+          }}
           maxWords={maxWords}
+          initialPrompt={randomPrompt}
         />
       )}
 
       {mode === 'guided' && (
         <GuidedBuilder
           key={guidedInitial}
-          initialPrompt={guidedInitial || undefined}
+          {...(guidedInitial && { initialPrompt: guidedInitial })}
           onSaved={() => setSaveCount((c) => c + 1)}
           maxWords={maxWords}
         />
@@ -219,6 +226,7 @@ export default function Generator({ }: GeneratorProps) {
         }}
         generatedPrompt={guidedInitial}
         maxWords={maxWords}
+        onSaved={() => setSaveCount((c) => c + 1)}
       />
 
       <ModelRecommender generatedPrompt={guidedInitial} />

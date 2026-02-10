@@ -10,10 +10,11 @@ interface RandomGeneratorProps {
   onSaved: () => void;
   onPromptGenerated: (prompt: string) => void;
   maxWords: number;
+  initialPrompt?: string;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGenerated, maxWords }: RandomGeneratorProps) {
-  const [prompt, setPrompt] = useState('');
+export default function RandomGenerator({ onSwitchToGuided, onSaved, onPromptGenerated, maxWords, initialPrompt }: RandomGeneratorProps) {
+  const [prompt, setPrompt] = useState(initialPrompt || '');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);

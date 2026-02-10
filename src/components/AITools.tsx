@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
-  Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp,
+  Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
 } from 'lucide-react';
 import { improvePrompt, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
@@ -12,6 +12,7 @@ interface AIToolsProps {
   onPromptGenerated: (prompt: string) => void;
   generatedPrompt?: string;
   maxWords: number;
+  onSaved?: () => void;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -23,7 +24,7 @@ const TABS: { id: Tab; label: string; icon: typeof Sparkles; desc: string }[] = 
   { id: 'diagnose', label: 'Diagnose', icon: AlertTriangle, desc: 'Fix issues' },
 ];
 
-export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }: AIToolsProps) {
+export default function AITools({ onPromptGenerated, generatedPrompt, maxWords, onSaved }: AIToolsProps) {
   const [tab, setTab] = useState<Tab>('improve');
   const [expanded, setExpanded] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,7 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
   const [diagnoseResult, setDiagnoseResult] = useState<Diagnosis | null>(null);
 
   const [copied, setCopied] = useState('');
+  const [saving, setSaving] = useState('');
 
   async function getToken() {
     const { data } = await db.auth.getSession();
@@ -92,10 +94,9 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
           .limit(5),
       ]);
 
-      const context = charsRes.data?.map((c) => `${c.name}: ${c.description}`).join('; ');
-      const successfulPrompts = topPromptsRes.data?.map((p) => p.content) ?? [];
+      const context = charsRes.data?.map((c: { name: string; description: string }) => `${c.name}: ${c.description}`).join('; ');
+      const successfulPrompts = topPromptsRes.data?.map((p: { content: string }) => p.content) ?? [];
 
-      const hasPrefs = generatePrefs.style || generatePrefs.mood || generatePrefs.subject;
 
       const result = await generateFromDescription(
         generateInput,
@@ -133,7 +134,7 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
         setLoading(false);
         return;
       }
-      const result = await analyzeStyle(data.map((p) => p.content), token);
+      const result = await analyzeStyle(data.map((p: { content: string }) => p.content), token);
       setStyleResult(result);
       saveStyleProfile(result, data.length).catch(() => { });
     } catch (e) {
@@ -156,6 +157,25 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
       setError(e instanceof Error ? e.message : 'Failed to diagnose');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSavePrompt(text: string, title: string) {
+    setSaving(title);
+    try {
+      await db.from('prompts').insert({
+        title: title,
+        content: text,
+        notes: 'Generated with AI Tools',
+        rating: 0,
+        is_template: false,
+        is_favorite: false,
+      });
+      if (onSaved) onSaved();
+    } catch (e) {
+      console.error('Failed to save prompt:', e);
+    } finally {
+      setSaving('');
     }
   }
 
@@ -209,9 +229,11 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
               result={improveResult}
               loading={loading}
               copied={copied}
+              saving={saving}
               onSubmit={handleImprove}
               onCopy={handleCopy}
               onUse={() => onPromptGenerated(improveResult)}
+              onSave={(text) => handleSavePrompt(text, 'AI Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 40))}
               onClear={() => setImproveResult('')}
               generatedPrompt={generatedPrompt}
             />
@@ -226,9 +248,11 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
               result={generateResult}
               loading={loading}
               copied={copied}
+              saving={saving}
               onSubmit={handleGenerate}
               onCopy={handleCopy}
               onUse={() => onPromptGenerated(generateResult)}
+              onSave={(text) => handleSavePrompt(text, 'AI Generated: ' + generateInput.slice(0, 40))}
               generatedPrompt={generatedPrompt}
               maxWords={maxWords}
             />
@@ -251,9 +275,11 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
               result={diagnoseResult}
               loading={loading}
               copied={copied}
+              saving={saving}
               onSubmit={handleDiagnose}
               onCopy={handleCopy}
               onUse={(p) => onPromptGenerated(p)}
+              onSave={(text) => handleSavePrompt(text, 'AI Diagnosed: ' + (text.split(',')[0] || 'Untitled').slice(0, 40))}
               generatedPrompt={generatedPrompt}
             />
           )}
@@ -263,19 +289,21 @@ export default function AITools({ onPromptGenerated, generatedPrompt, maxWords }
   );
 }
 
-import { diffWords, type DiffType } from '../lib/diff-utils';
+import { diffWords } from '../lib/diff-utils';
 
 function ImproveTab({
-  input, setInput, result, loading, copied, onSubmit, onCopy, onUse, onClear, generatedPrompt,
+  input, setInput, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
   result: string;
   loading: boolean;
   copied: string;
+  saving: string;
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
+  onSave: (text: string) => void;
   onClear: () => void;
   generatedPrompt?: string | undefined;
 }) {
@@ -391,6 +419,14 @@ function ImproveTab({
             </button>
 
             <button
+              onClick={() => onSave(result)}
+              disabled={saving === 'improve'}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors border border-amber-500/30 disabled:opacity-50"
+            >
+              <Save size={11} />
+              Save to Library
+            </button>
+            <button
               onClick={() => onCopy(result, 'improve')}
               className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-400 text-xs rounded-lg hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
             >
@@ -424,7 +460,7 @@ const SUBJECT_OPTIONS = [
 ];
 
 function GenerateTab({
-  input, setInput, preferences, setPreferences, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt, maxWords,
+  input, setInput, preferences, setPreferences, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, generatedPrompt, maxWords,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -433,9 +469,11 @@ function GenerateTab({
   result: string;
   loading: boolean;
   copied: string;
+  saving: string;
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
+  onSave: (text: string) => void;
   generatedPrompt?: string | undefined;
   maxWords: number;
 }) {
@@ -547,7 +585,7 @@ function GenerateTab({
         )}
       </div>
 
-      {result && <PromptResult text={result} id="generate" copied={copied} onCopy={onCopy} onUse={onUse} />}
+      {result && <PromptResult text={result} id="generate" copied={copied} saving={saving} onCopy={onCopy} onUse={onUse} onSave={() => onSave(result)} />}
     </div>
   );
 }
@@ -667,7 +705,7 @@ function AnalyzeTab({
 }
 
 function DiagnoseTab({
-  promptInput, setPromptInput, issue, setIssue, result, loading, copied, onSubmit, onCopy, onUse, generatedPrompt,
+  promptInput, setPromptInput, issue, setIssue, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, generatedPrompt,
 }: {
   promptInput: string;
   setPromptInput: (v: string) => void;
@@ -676,9 +714,11 @@ function DiagnoseTab({
   result: Diagnosis | null;
   loading: boolean;
   copied: string;
+  saving: string;
   onSubmit: () => void;
   onCopy: (text: string, id: string) => void;
   onUse: (p: string) => void;
+  onSave: (text: string) => void;
   generatedPrompt?: string | undefined;
 }) {
   return (
@@ -762,8 +802,10 @@ function DiagnoseTab({
             text={result.improvedPrompt}
             id="diagnose"
             copied={copied}
+            saving={saving}
             onCopy={onCopy}
             onUse={() => onUse(result.improvedPrompt)}
+            onSave={() => onSave(result.improvedPrompt)}
             label="Improved Prompt"
           />
         </div>
@@ -773,13 +815,15 @@ function DiagnoseTab({
 }
 
 function PromptResult({
-  text, id, copied, onCopy, onUse, label,
+  text, id, copied, saving, onCopy, onUse, onSave, label,
 }: {
   text: string;
   id: string;
   copied: string;
+  saving?: string;
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
+  onSave?: () => void;
   label?: string;
 }) {
   return (
@@ -794,6 +838,16 @@ function PromptResult({
           {copied === id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
           {copied === id ? 'Copied' : 'Copy'}
         </button>
+        {onSave && (
+          <button
+            onClick={onSave}
+            disabled={saving === id}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors border border-amber-500/30 disabled:opacity-50"
+          >
+            <Save size={11} />
+            Save to Library
+          </button>
+        )}
         <button
           onClick={onUse}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 text-xs rounded-lg hover:bg-teal-500/20 transition-colors"
