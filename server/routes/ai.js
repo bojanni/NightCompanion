@@ -16,7 +16,11 @@ const SYSTEM_PROMPTS = {
 
     'generate-variations': `Generate 6 variations (lighting, style, composition, mood, detail, color). Return JSON: { variations: [{ type, prompt }] }.`,
 
-    random: `You are an endless source of unique, high-quality AI art prompts. Rules: 1. Max 70 words. 2. Strict order: Subject, Action/Setting, Style, Technique. 3. Creative & vivid. Do not include "Here is a prompt:" or quotes. Just the raw prompt text.`
+    random: `You are an endless source of unique, high-quality AI art prompts. Rules: 1. Max 70 words. 2. Strict order: Subject, Action/Setting, Style, Technique. 3. Creative & vivid. Do not include "Here is a prompt:" or quotes. Just the raw prompt text.`,
+
+    'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. Return ONLY the title text. No quotes.`,
+
+    'suggest-tags': `Suggest 5-10 comma-separated tags for the image prompt. Return ONLY the tags. Example: "nature, landscape, mountain, blue sky".`
 };
 
 async function getActiveProvider() {
@@ -210,6 +214,12 @@ router.post('/', async (req, res) => {
         } else if (action === 'generate-variations') {
             userPrompt = `Variations for: "${payload.basePrompt}"`;
             maxTokens = 2000;
+        } else if (action === 'generate-title') {
+            userPrompt = `Prompt: "${payload.prompt}"`;
+            maxTokens = 100;
+        } else if (action === 'suggest-tags') {
+            userPrompt = `Prompt: "${payload.prompt}"`;
+            maxTokens = 200;
         } else if (action === 'describe-character') {
             // Vision multimodal prompt construction
             // Payload should contain imageUrl (url or base64 data uri)

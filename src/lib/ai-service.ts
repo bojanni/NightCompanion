@@ -238,3 +238,11 @@ export function resizeImageToBase64(file: File, maxSize = 1024): Promise<{ data:
     img.src = URL.createObjectURL(file);
   });
 }
+
+export async function generateTitle(prompt: string, token: string): Promise<string> {
+  return callAI('generate-title', { prompt }, token);
+}
+
+export async function suggestTags(prompt: string, token: string): Promise<string> {
+  return callAI('suggest-tags', { prompt }, token);
+}
