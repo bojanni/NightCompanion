@@ -28,7 +28,8 @@ export default function ManualGenerator({ onSaved, initialPrompts, initialNegati
         }
         return '';
     });
-    const [copied, setCopied] = useState(false);
+    const [copiedPrompt, setCopiedPrompt] = useState(false);
+    const [copiedNeg, setCopiedNeg] = useState(false);
     const [saving, setSaving] = useState(false);
 
     // Persist manual generator state
@@ -59,12 +60,22 @@ export default function ManualGenerator({ onSaved, initialPrompts, initialNegati
         negativePrompt.trim() ? `\n### Negative Prompt:\n${negativePrompt.trim()}` : ''
     ].filter(Boolean).join('\n');
 
-    async function handleCopy() {
-        if (!fullPrompt) return;
-        await navigator.clipboard.writeText(fullPrompt);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const positivePrompt = prompts.filter(p => p.trim()).join('\n');
+
+    async function handleCopyPrompt() {
+        if (!positivePrompt) return;
+        await navigator.clipboard.writeText(positivePrompt);
+        setCopiedPrompt(true);
+        setTimeout(() => setCopiedPrompt(false), 2000);
         toast.success('Prompt copied to clipboard');
+    }
+
+    async function handleCopyNegative() {
+        if (!negativePrompt.trim()) return;
+        await navigator.clipboard.writeText(negativePrompt.trim());
+        setCopiedNeg(true);
+        setTimeout(() => setCopiedNeg(false), 2000);
+        toast.success('Negative prompt copied to clipboard');
     }
 
     async function handleSave() {
@@ -153,13 +164,22 @@ export default function ManualGenerator({ onSaved, initialPrompts, initialNegati
 
             <div className="flex justify-end gap-3">
                 <button
-                    onClick={handleCopy}
-                    disabled={!fullPrompt.trim()}
+                    onClick={handleCopyPrompt}
+                    disabled={!positivePrompt.trim()}
                     className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-all disabled:opacity-50 border border-slate-700"
                 >
-                    {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                    {copied ? 'Copied' : 'Copy Full'}
+                    {copiedPrompt ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                    {copiedPrompt ? 'Copied' : 'Copy Prompt'}
                 </button>
+                {negativePrompt.trim() && (
+                    <button
+                        onClick={handleCopyNegative}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-red-300 text-sm font-medium rounded-xl hover:bg-slate-700 hover:text-red-200 transition-all border border-slate-700"
+                    >
+                        {copiedNeg ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                        {copiedNeg ? 'Copied' : 'Copy Negative'}
+                    </button>
+                )}
                 <button
                     onClick={handleSave}
                     disabled={!fullPrompt.trim() || saving}

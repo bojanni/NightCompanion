@@ -20,7 +20,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
-  const [copied, setCopied] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedNeg, setCopiedNeg] = useState(false);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
@@ -29,17 +30,21 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     setPrompt(newPrompt);
     setNegativePrompt('');
     onNegativePromptChanged?.('');
-    setCopied(false);
+    setCopiedPrompt(false);
     onPromptGenerated(newPrompt);
   }
 
-  async function handleCopy() {
-    const fullText = negativePrompt
-      ? `${prompt}\n\n### Negative Prompt:\n${negativePrompt}`
-      : prompt;
-    await navigator.clipboard.writeText(fullText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function handleCopyPrompt() {
+    await navigator.clipboard.writeText(prompt);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  }
+
+  async function handleCopyNegative() {
+    if (!negativePrompt) return;
+    await navigator.clipboard.writeText(negativePrompt);
+    setCopiedNeg(true);
+    setTimeout(() => setCopiedNeg(false), 2000);
   }
 
   async function handleSave() {
@@ -80,13 +85,13 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         setPrompt(promptText);
         setNegativePrompt(negText);
         onNegativePromptChanged?.(negText);
-        setCopied(false);
+        setCopiedPrompt(false);
         onPromptGenerated(promptText);
       } else if (typeof result === 'string') {
         setPrompt(result);
         setNegativePrompt('');
         onNegativePromptChanged?.('');
-        setCopied(false);
+        setCopiedPrompt(false);
         onPromptGenerated(result);
       }
     } catch (err) {
@@ -173,12 +178,21 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
             <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={handleCopy}
+                onClick={handleCopyPrompt}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
               >
-                {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                {copied ? 'Copied' : 'Copy'}
+                {copiedPrompt ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                {copiedPrompt ? 'Copied' : 'Copy Prompt'}
               </button>
+              {negativePrompt && (
+                <button
+                  onClick={handleCopyNegative}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-red-300 text-xs rounded-lg hover:bg-slate-700 hover:text-red-200 transition-colors"
+                >
+                  {copiedNeg ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  {copiedNeg ? 'Copied' : 'Copy Negative'}
+                </button>
+              )}
               {onSwitchToManual && (
                 <button
                   onClick={() => onSwitchToManual(prompt, negativePrompt)}
