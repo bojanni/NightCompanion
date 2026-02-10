@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, AlertTriangle, Loader2, Database, FileJson } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Loader2, Database, FileJson, Trash2, X } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import { handleError, showSuccess } from '../lib/error-handler';
 
@@ -27,6 +27,12 @@ export function DataManagement({ }: DataManagementProps) {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState<Record<string, number> | null>(null);
+
+  // Reset Database State
+  const [resetStep, setResetStep] = useState(0); // 0=closed, 1=warning, 2=confirm
+  const [deleteInput, setDeleteInput] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadJSON = (data: any, filename: string) => {
@@ -152,6 +158,35 @@ export function DataManagement({ }: DataManagementProps) {
       setImportStats(null);
     } finally {
       setImporting(false);
+    }
+  };
+
+
+
+  const handleResetDatabase = async () => {
+    if (deleteInput !== 'DELETE') return;
+
+    setIsResetting(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/reset-db', {
+        method: 'POST',
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Reset failed');
+
+      showSuccess('Database has been successfully reset. The application will reload.');
+      setResetStep(0);
+      setDeleteInput('');
+
+      // Reload to clear any in-memory state
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      handleError(err as Error, 'DatabaseReset');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -328,6 +363,108 @@ export function DataManagement({ }: DataManagementProps) {
           </div>
         </div>
       </div>
+
+      {/* Danger Zone */}
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Trash2 className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-red-900 mb-1">Danger Zone</h2>
+            <p className="text-sm text-red-700 mb-4">
+              Irreversible actions that will permanently delete your data.
+            </p>
+
+            <button
+              onClick={() => setResetStep(1)}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+            >
+              Reset Database
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Reset Confirmation Modals */}
+      {resetStep > 0 && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+
+            {/* Step 1: Warning */}
+            {resetStep === 1 && (
+              <div className="p-6">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 text-center mb-2">Are you absolutely sure?</h3>
+                <p className="text-sm text-slate-600 text-center mb-6">
+                  This action will <strong>permanently delete</strong> all characters, prompts, gallery images, and history.
+                  <br /><br />
+                  Your API keys and AI settings will be safely preserved.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setResetStep(0)}
+                    className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setResetStep(2)}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Final Confirmation */}
+            {resetStep === 2 && (
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold text-red-600">Final Confirmation</h3>
+                  <button onClick={() => setResetStep(0)} className="text-slate-400 hover:text-slate-600">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <p className="text-sm text-slate-600 mb-4">
+                  To confirm deletion, please type <span className="font-mono font-bold select-all">DELETE</span> below.
+                </p>
+
+                <input
+                  type="text"
+                  value={deleteInput}
+                  onChange={(e) => setDeleteInput(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 uppercase"
+                  autoFocus
+                />
+
+                <button
+                  onClick={handleResetDatabase}
+                  disabled={deleteInput !== 'DELETE' || isResetting}
+                  className="w-full px-4 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                >
+                  {isResetting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Wiping Database...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      Wipe Everything
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
