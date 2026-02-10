@@ -11,12 +11,7 @@ import { db } from '../lib/api';
 import SingleAnalysis from './analysis/SingleAnalysis';
 import ComparisonResults from './analysis/ComparisonResults';
 
-const NIGHTCAFE_MODELS = [
-  'Stable Diffusion XL', 'Stable Diffusion 3', 'Flux',
-  'Stable Diffusion 1.5', 'DALL-E 3', 'DALL-E 2',
-  'NightCafe Artistic', 'RealVisXL', 'DreamShaper XL',
-  'Juggernaut XL', 'Other',
-];
+import { AI_MODELS } from '../lib/types';
 
 interface ImageSlotState {
   id: string;
@@ -34,7 +29,7 @@ function createSlot(): ImageSlotState {
     file: null,
     url: '',
     previewUrl: '',
-    model: NIGHTCAFE_MODELS[0],
+    model: AI_MODELS[0],
   };
 }
 
@@ -248,21 +243,19 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
       <div className="flex gap-1.5">
         <button
           onClick={() => { onUpdate({ inputMode: 'upload' }); clearImage(); }}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${
-            slot.inputMode === 'upload'
-              ? 'bg-cyan-500/15 text-cyan-300'
-              : 'text-slate-500 hover:text-slate-400'
-          }`}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${slot.inputMode === 'upload'
+            ? 'bg-cyan-500/15 text-cyan-300'
+            : 'text-slate-500 hover:text-slate-400'
+            }`}
         >
           <Upload size={9} /> File
         </button>
         <button
           onClick={() => { onUpdate({ inputMode: 'url' }); clearImage(); }}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${
-            slot.inputMode === 'url'
-              ? 'bg-cyan-500/15 text-cyan-300'
-              : 'text-slate-500 hover:text-slate-400'
-          }`}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${slot.inputMode === 'url'
+            ? 'bg-cyan-500/15 text-cyan-300'
+            : 'text-slate-500 hover:text-slate-400'
+            }`}
         >
           <Link2 size={9} /> URL
         </button>
@@ -310,7 +303,7 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
         onChange={(e) => onUpdate({ model: e.target.value })}
         className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500/40 appearance-none"
       >
-        {NIGHTCAFE_MODELS.map((m) => (
+        {AI_MODELS.map((m) => (
           <option key={m} value={m}>{m}</option>
         ))}
       </select>

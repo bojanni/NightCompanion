@@ -4,8 +4,6 @@ import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
 import ManualGenerator from '../components/ManualGenerator';
 import AITools from '../components/AITools';
-import ModelRecommender from '../components/ModelRecommender';
-import ImageAnalyzer from '../components/ImageAnalyzer';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
@@ -253,15 +251,6 @@ export default function Generator({ }: GeneratorProps) {
         generatedPrompt={guidedInitial}
         maxWords={maxWords}
         onSaved={() => setSaveCount((c) => c + 1)}
-      />
-
-      <ModelRecommender generatedPrompt={guidedInitial} />
-
-      <ImageAnalyzer
-        onPromptGenerated={(prompt) => {
-          setGuidedInitial(prompt);
-          setMode('guided');
-        }}
       />
     </div>
   );

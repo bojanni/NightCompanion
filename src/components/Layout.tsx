@@ -12,6 +12,7 @@ import {
   Fingerprint,
   FlaskConical,
   Coins,
+  Wrench,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
   { to: '/style', icon: Fingerprint, label: 'Style Profile' },
   { to: '/cost-calculator', icon: Coins, label: 'Cost Calculator' },
+  { to: '/tools', icon: Wrench, label: 'AI Tools' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -54,10 +56,9 @@ export default function Layout({ onSignOut }: LayoutProps) {
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-amber-500/10 text-amber-400 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive
+                  ? 'bg-amber-500/10 text-amber-400 shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`
               }
             >

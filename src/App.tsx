@@ -13,6 +13,7 @@ import StyleProfile from './pages/StyleProfile';
 import BatchTesting from './pages/BatchTesting';
 import CostDemo from './pages/CostDemo';
 import VersioningGuide from './pages/VersioningGuide';
+import Tools from './pages/Tools';
 
 export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/cost-calculator" element={<CostDemo />} />
           <Route path="/versioning-guide" element={<VersioningGuide />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/tools" element={<Tools />} />
         </Route>
       </Routes>
     </BrowserRouter>
