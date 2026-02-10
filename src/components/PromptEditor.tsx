@@ -430,6 +430,44 @@ export default function PromptEditor({ prompt, onSave, onCancel }: PromptEditorP
         )}
       </div>
 
+
+
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-2">Reference Image</label>
+
+        {!imagePreview ? (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-800/30 hover:bg-slate-800/50"
+          >
+            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center mb-2 text-slate-400">
+              <Upload size={20} />
+            </div>
+            <p className="text-sm text-slate-400 font-medium">Click to upload image</p>
+            <p className="text-xs text-slate-500 mt-1">Saves to gallery & links to prompt</p>
+          </div>
+        ) : (
+          <div className="relative rounded-xl overflow-hidden border border-slate-700 group">
+            <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button
+                onClick={(e) => { e.stopPropagation(); clearImage(); }}
+                className="p-2 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageSelect}
+          accept="image/*"
+          className="hidden"
+        />
+      </div>
+
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-700">
         <button
           onClick={onCancel}

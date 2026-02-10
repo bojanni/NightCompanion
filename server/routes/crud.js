@@ -35,12 +35,31 @@ const createCrudRouter = (tableName) => {
             }
 
             // Handle Sorting
-            // Default to created_at DESC if column exists (we assume it mostly does)
-            // Ideally we check if column exists, but for now we trust the input or default
+            // Check if created_at exists to avoid errors on tables like prompt_tags
+            // Simple in-memory cache for table columns
+            if (!global.tableColumnsCache) global.tableColumnsCache = {};
+            if (!global.tableColumnsCache[tableName]) {
+                try {
+                    const colResult = await pool.query(`
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = $1
+                    `, [tableName]);
+                    global.tableColumnsCache[tableName] = colResult.rows.map(r => r.column_name);
+                } catch (e) {
+                    console.error('Error fetching columns:', e);
+                    global.tableColumnsCache[tableName] = [];
+                }
+            }
+
+            const tableCols = global.tableColumnsCache[tableName] || [];
+            const hasCreatedAt = tableCols.includes('created_at');
+
             if (order) {
                 const [col, dir] = order.split('.');
+                // Only sort if column exists to be safe, or trust client
                 queryText += ` ORDER BY ${col} ${dir === 'desc' ? 'DESC' : 'ASC'}`;
-            } else {
+            } else if (hasCreatedAt) {
                 queryText += ` ORDER BY created_at DESC`;
             }
 
