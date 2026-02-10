@@ -130,6 +130,7 @@ export default function Prompts({ }: PromptsProps) {
   }, [prompts, search, filterType, filterTag, promptTagMap]);
 
   async function handleDelete(id: string) {
+    if (!window.confirm('Are you sure you want to delete this prompt?')) return;
     try {
       const { error } = await db.from('prompts').delete().eq('id', id);
       if (error) throw error;
@@ -464,17 +465,17 @@ export default function Prompts({ }: PromptsProps) {
 
                 <div className="flex items-center justify-between">
                   <StarRating rating={prompt.rating} size={13} />
-                  <div className="flex flex-wrap gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleCopy(prompt.content, prompt.id)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
                       title="Copy prompt"
                     >
                       {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                     </button>
                     <button
                       onClick={() => handleLinkImage(prompt)}
-                      className={`p-1.5 rounded-lg transition-colors ${linkedImages[prompt.id] ? 'text-amber-400 hover:text-amber-300' : 'text-slate-500 hover:text-amber-400'} hover:bg-slate-800`}
+                      className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${linkedImages[prompt.id] ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
                       title={linkedImages[prompt.id] ? 'Linked to image' : 'Link to image'}
                     >
                       <Link size={14} />
@@ -485,7 +486,7 @@ export default function Prompts({ }: PromptsProps) {
                         setShowOptimizer(true);
                       }}
                       disabled={!!linkedImages[prompt.id]}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-purple-400 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                       title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Optimize prompt'}
                     >
                       <Zap size={14} />
@@ -496,7 +497,7 @@ export default function Prompts({ }: PromptsProps) {
                         setShowImprover(true);
                       }}
                       disabled={!!linkedImages[prompt.id]}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-orange-400 hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                       title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Improve with AI'}
                     >
                       <Sparkles size={14} />
@@ -506,7 +507,7 @@ export default function Prompts({ }: PromptsProps) {
                         setHistoryPrompt(prompt);
                         setShowHistory(true);
                       }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-blue-400 hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-blue-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
                       title="Version history"
                     >
                       <Clock size={14} />
@@ -516,7 +517,7 @@ export default function Prompts({ }: PromptsProps) {
                         setVariationBase(prompt.content);
                         setShowVariations(true);
                       }}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-amber-400 hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
                       title="Generate variations"
                     >
                       <Wand2 size={14} />
@@ -527,14 +528,14 @@ export default function Prompts({ }: PromptsProps) {
                         setShowEditor(true);
                       }}
                       disabled={!!linkedImages[prompt.id]}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                       title={linkedImages[prompt.id] ? 'Locked: linked to image' : 'Edit'}
                     >
                       {linkedImages[prompt.id] ? <Lock size={14} /> : <Edit3 size={14} />}
                     </button>
                     <button
                       onClick={() => handleDelete(prompt.id)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-colors"
+                      className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
                       title="Delete"
                     >
                       <Trash2 size={14} />
