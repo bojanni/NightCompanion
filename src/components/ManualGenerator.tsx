@@ -59,12 +59,20 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 setPrompts(newPrompts);
                 if (result.negativePrompt) {
                     setNegativePrompt((prev: string) => {
-                        const trimmed = result.negativePrompt?.trim();
-                        if (!trimmed) return prev;
-                        if (!prev.trim()) return trimmed;
-                        // Avoid exact duplicates
-                        if (prev.includes(trimmed)) return prev;
-                        return prev + ', ' + trimmed;
+                        const newTerms = result.negativePrompt
+                            ? result.negativePrompt.split(',').map(t => t.trim()).filter(Boolean)
+                            : [];
+
+                        if (newTerms.length === 0) return prev;
+                        if (!prev.trim()) return newTerms.join(', ');
+
+                        const existingTerms = prev.split(',').map(t => t.trim().toLowerCase());
+                        const uniqueNewTerms = newTerms.filter(term =>
+                            !existingTerms.includes(term.toLowerCase())
+                        );
+
+                        if (uniqueNewTerms.length === 0) return prev;
+                        return prev + ', ' + uniqueNewTerms.join(', ');
                     });
                 }
             } else if (typeof result === 'string') {
