@@ -64,14 +64,15 @@ async function getActiveProvider() {
 
     // Check cloud provider keys
     const cloud = await pool.query(
-        'SELECT provider, encrypted_key FROM user_api_keys WHERE is_active = true'
+        'SELECT provider, encrypted_key, model_name FROM user_api_keys WHERE is_active = true'
     );
 
     if (cloud.rows.length > 0) {
         return {
             type: 'cloud',
             provider: cloud.rows[0].provider,
-            apiKey: decrypt(cloud.rows[0].encrypted_key)
+            apiKey: decrypt(cloud.rows[0].encrypted_key),
+            modelName: cloud.rows[0].model_name
         };
     }
 
@@ -154,7 +155,7 @@ async function callGemini(apiKey, system, user, maxTokens = 1500) {
     return data.candidates[0].content.parts[0].text;
 }
 
-async function callOpenRouter(apiKey, system, user, maxTokens = 1500) {
+async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
     const messages = [{ role: 'system', content: system }];
     if (typeof user === 'string') {
         messages.push({ role: 'user', content: user });
@@ -166,16 +167,46 @@ async function callOpenRouter(apiKey, system, user, maxTokens = 1500) {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://nightcompanion.app', // Optional, for including your app on openrouter.ai rankings.
+            'X-Title': 'NightCompanion', // Optional. Shows in rankings on openrouter.ai.
         },
         body: JSON.stringify({
-            model: 'google/gemini-2.0-flash-001',
+            model: model || 'google/gemini-2.0-flash-001',
             messages: messages,
             max_tokens: maxTokens
         })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'OpenRouter error');
+    return data.choices[0].message.content;
+}
+
+async function callTogether(apiKey, system, user, model, maxTokens = 1500) {
+    const messages = [{ role: 'system', content: system }];
+    if (typeof user === 'string') {
+        messages.push({ role: 'user', content: user });
+    } else {
+        // Together supports vision on some models, but we'll stick to text for now unless using specific vision models
+        // For simplicity, flattening content to text if array
+        const textContent = Array.isArray(user) ? user.find(p => p.type === 'text')?.text || '' : user;
+        messages.push({ role: 'user', content: textContent });
+    }
+
+    const res = await fetch('https://api.together.xyz/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model || 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+            messages: messages,
+            max_tokens: maxTokens
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Together AI error');
     return data.choices[0].message.content;
 }
 
@@ -213,7 +244,9 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         case 'openai': return callOpenAI(apiKey, system, user, maxTokens);
         case 'anthropic': return callAnthropic(apiKey, system, user, maxTokens);
         case 'gemini': return callGemini(apiKey, system, user, maxTokens);
-        case 'openrouter': return callOpenRouter(apiKey, system, user, maxTokens);
+        case 'gemini': return callGemini(apiKey, system, user, maxTokens);
+        case 'openrouter': return callOpenRouter(apiKey, system, user, providerConfig.modelName, maxTokens);
+        case 'together': return callTogether(apiKey, system, user, providerConfig.modelName, maxTokens);
         default: throw new Error(`Unknown provider: ${provider}`);
     }
 }

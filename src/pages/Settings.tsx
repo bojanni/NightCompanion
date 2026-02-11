@@ -67,6 +67,17 @@ const PROVIDERS = [
     textColor: 'text-rose-400',
     borderColor: 'border-rose-500/20',
   },
+  {
+    id: 'together',
+    name: 'Together AI',
+    description: 'Fast inference for open-source models like Llama 3 and Mixtral.',
+    docsUrl: 'https://api.together.xyz/settings/api-keys',
+    placeholder: 'talk_...',
+    gradient: 'from-violet-600 to-indigo-600',
+    bgGlow: 'bg-violet-500/10',
+    textColor: 'text-violet-400',
+    borderColor: 'border-violet-500/20',
+  },
 ];
 
 export default function Settings({ }: SettingsProps) {
@@ -230,8 +241,8 @@ export default function Settings({ }: SettingsProps) {
 
           {testResult && (
             <div className={`border rounded-xl px-4 py-3 text-sm ${testResult.success
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                : 'bg-red-500/10 border-red-500/20 text-red-400'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
               }`}>
               <div className="flex items-start gap-2">
                 <div className="shrink-0 mt-0.5">
@@ -490,7 +501,7 @@ export default function Settings({ }: SettingsProps) {
 
 interface ProviderCardProps {
   provider: typeof PROVIDERS[number];
-  keyInfo?: ApiKeyInfo;
+  keyInfo: ApiKeyInfo | undefined;
   actionLoading: string | null;
   onSave: (apiKey: string, modelName: string) => void;
   onDelete: () => void;
@@ -500,7 +511,7 @@ interface ProviderCardProps {
 
 interface LocalEndpointCardProps {
   type: 'ollama' | 'lmstudio';
-  endpoint?: LocalEndpoint;
+  endpoint: LocalEndpoint | undefined;
   actionLoading: string | null;
   onSave: (endpointUrl: string, modelName: string) => void;
   onDelete: () => void;
@@ -530,8 +541,8 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
   return (
     <div
       className={`bg-slate-900/60 border rounded-2xl p-5 transition-all ${isActive
-          ? `${provider.borderColor} shadow-lg`
-          : 'border-slate-800 hover:border-slate-700'
+        ? `${provider.borderColor} shadow-lg`
+        : 'border-slate-800 hover:border-slate-700'
         }`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -599,8 +610,8 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
               onClick={onSetActive}
               disabled={isSettingActive || isActive}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive
-                  ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
-                  : `${provider.bgGlow} ${provider.textColor} hover:opacity-80`
+                ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
+                : `${provider.bgGlow} ${provider.textColor} hover:opacity-80`
                 } disabled:opacity-50`}
             >
               {isSettingActive ? <Loader2 size={11} className="animate-spin" /> : <Zap size={11} />}
@@ -723,8 +734,8 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
   return (
     <div
       className={`bg-slate-900/60 border rounded-2xl p-5 transition-all ${isActive
-          ? `${config.borderColor} shadow-lg`
-          : 'border-slate-800 hover:border-slate-700'
+        ? `${config.borderColor} shadow-lg`
+        : 'border-slate-800 hover:border-slate-700'
         }`}
     >
       <div className="flex items-start justify-between mb-3">

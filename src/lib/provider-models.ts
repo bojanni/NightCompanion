@@ -30,6 +30,14 @@ export const PROVIDER_MODELS: Record<string, ModelOption[]> = {
     { id: 'qwen/qwen-2.5-72b-instruct', name: 'Qwen 2.5 72B', description: 'Strong multilingual' },
     { id: 'mistralai/mistral-large', name: 'Mistral Large', description: 'European flagship' },
   ],
+  together: [
+    { id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', name: 'Llama 3.3 70B Turbo', description: 'Fast, high quality open model' },
+    { id: 'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', name: 'Llama 3.1 405B', description: 'Massive, GPT-4 class open model' },
+    { id: 'Qwen/Qwen2.5-72B-Instruct-Turbo', name: 'Qwen 2.5 72B Turbo', description: 'Strong reasoning & coding' },
+    { id: 'mistralai/Mixtral-8x22B-Instruct-v0.1', name: 'Mixtral 8x22B', description: 'Large MoE model' },
+    { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', description: 'Efficient & capable' },
+    { id: 'Gryphe/MythoMax-L2-13b', name: 'MythoMax 13B', description: 'Roleplay specialized' },
+  ],
 };
 
 export function getModelsForProvider(provider: string): ModelOption[] {
