@@ -313,12 +313,29 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                     </button>
                                 )}
                             </div>
-                            <textarea
-                                value={negativePrompt}
-                                onChange={(e) => setNegativePrompt(e.target.value)}
-                                placeholder="blurred, low quality, watermark, distorted..."
-                                className="w-full bg-slate-900/30 border border-red-900/30 focus:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-50 placeholder-red-900/50 resize-none h-20 focus:outline-none"
-                            />
+                            <div className="relative">
+                                <textarea
+                                    value={negativePrompt}
+                                    onChange={(e) => setNegativePrompt(e.target.value)}
+                                    placeholder="blurred, low quality, watermark, distorted..."
+                                    className="w-full bg-slate-900/30 border border-red-900/30 focus:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-50 placeholder-red-900/50 resize-none h-20 focus:outline-none pr-20"
+                                />
+                                <button
+                                    onClick={() => {
+                                        const embeddings = 'EasyNegative, BadHandV4';
+                                        if (!negativePrompt.includes('EasyNegative')) {
+                                            setNegativePrompt(prev => prev ? `${prev}, ${embeddings}` : embeddings);
+                                            toast.success('Added EasyNegative & BadHandV4 embeddings');
+                                        } else {
+                                            toast('Embeddings already present');
+                                        }
+                                    }}
+                                    className="absolute bottom-2 right-2 px-2 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-medium rounded border border-red-500/20 transition-colors"
+                                    title="Add standard negative embeddings (EasyNegative, BadHandV4)"
+                                >
+                                    + Embeddings
+                                </button>
+                            </div>
                         </>
                     )}
                 </div>
