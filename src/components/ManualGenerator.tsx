@@ -10,11 +10,12 @@ interface ManualGeneratorProps {
     maxWords: number;
     initialPrompts?: string[] | undefined;
     initialNegativePrompt?: string | undefined;
+    targetModel?: 'sd' | 'dall-e-3';
 }
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '' }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', targetModel = 'sd' }: ManualGeneratorProps) {
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -162,7 +163,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
     const fullPrompt = [
         ...prompts.filter(p => p.trim()),
-        negativePrompt.trim() ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
+        (targetModel !== 'dall-e-3' && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
     ].filter(Boolean).join('\n');
 
     const positivePrompt = prompts.filter(p => p.trim()).join('\n');
@@ -285,32 +286,41 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 </div>
 
                 <div className="pt-2 border-t border-slate-700/50">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-red-300 uppercase tracking-wide">Negative Prompt</span>
-                            <div className="group relative">
-                                <Info size={12} className="text-slate-500 cursor-help" />
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-slate-700 rounded-lg text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                    What you want to avoid (e.g. blurry, deformed, text)
-                                </div>
-                            </div>
+                    {targetModel === 'dall-e-3' ? (
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex items-center gap-3 text-slate-500">
+                            <Info size={16} />
+                            <p className="text-sm">Negative prompts are not supported by DALL-E 3.</p>
                         </div>
-                        {negativePrompt && (
-                            <button
-                                onClick={() => setNegativePrompt('')}
-                                className="p-1 text-slate-500 hover:text-red-300 transition-colors"
-                                title="Clear negative prompt"
-                            >
-                                <X size={12} />
-                            </button>
-                        )}
-                    </div>
-                    <textarea
-                        value={negativePrompt}
-                        onChange={(e) => setNegativePrompt(e.target.value)}
-                        placeholder="blurred, low quality, watermark, distorted..."
-                        className="w-full bg-slate-900/30 border border-red-900/30 focus:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-50 placeholder-red-900/50 resize-none h-20 focus:outline-none"
-                    />
+                    ) : (
+                        <>
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-red-300 uppercase tracking-wide">Negative Prompt</span>
+                                    <div className="group relative">
+                                        <Info size={12} className="text-slate-500 cursor-help" />
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-slate-700 rounded-lg text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                            What you want to avoid (e.g. blurry, deformed, text)
+                                        </div>
+                                    </div>
+                                </div>
+                                {negativePrompt && (
+                                    <button
+                                        onClick={() => setNegativePrompt('')}
+                                        className="p-1 text-slate-500 hover:text-red-300 transition-colors"
+                                        title="Clear negative prompt"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+                            <textarea
+                                value={negativePrompt}
+                                onChange={(e) => setNegativePrompt(e.target.value)}
+                                placeholder="blurred, low quality, watermark, distorted..."
+                                className="w-full bg-slate-900/30 border border-red-900/30 focus:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-50 placeholder-red-900/50 resize-none h-20 focus:outline-none"
+                            />
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -344,26 +354,75 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
             {fullPrompt.trim() && (
                 <div className="relative bg-slate-900/50 border border-slate-800 rounded-xl p-4 group">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-slate-500 font-mono">PREVIEW</p>
-                        <button
-                            onClick={handleUnify}
-                            disabled={unifying}
-                            className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded hover:bg-indigo-500/20 disabled:opacity-50 transition-colors"
-                            title="Merge all sections into one cohesive prompt using AI"
-                        >
-                            {unifying ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                            {unifying ? 'Unifying...' : 'Unify to Single Prompt'}
-                        </button>
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-800/50 pb-2">
+                        <div className="flex items-center gap-3">
+                            <p className="text-xs text-slate-500 font-mono">PREVIEW</p>
+                            {(() => {
+                                const tokenCount = Math.round(fullPrompt.length / 4);
+                                let color = 'text-emerald-400';
+                                let status = 'Optimal';
+
+                                if (tokenCount > 150) {
+                                    color = 'text-red-400';
+                                    status = 'Excessive (Dilution Risk)';
+                                } else if (tokenCount > 75) {
+                                    color = 'text-amber-400';
+                                    status = 'Heavy';
+                                }
+
+                                return (
+                                    <div className="flex items-center gap-2" title={`1 token ≈ 4 characters. Status: ${status}`}>
+                                        <div className={`text-[10px] font-mono ${color} bg-slate-950/50 px-1.5 py-0.5 rounded border border-slate-800`}>
+                                            {tokenCount} tokens
+                                        </div>
+                                        {tokenCount > 75 && (
+                                            <span className={`text-[10px] ${color}`}>
+                                                {tokenCount > 150 ? '⚠️ Dilution Risk > 150' : '⚠️ Best < 75'}
+                                            </span>
+                                        )}
+                                        {fullPrompt.length > 1500 && (
+                                            <span className="text-[10px] text-red-500 font-bold bg-red-500/10 px-1 rounded" title="Technical Limit: 1500 chars">
+                                                ⛔ &gt; 1500 chars
+                                            </span>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="group/tip relative flex items-center">
+                                <Info size={12} className="text-slate-600 hover:text-slate-400 cursor-help transition-colors" />
+                                <div className="absolute bottom-full right-0 mb-2 w-64 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-xl text-xs text-slate-300 opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10">
+                                    <p className="font-semibold text-teal-400 mb-1">Optimization Tip</p>
+                                    <p className="mb-2">For best results, keep the core prompt under 75 tokens.</p>
+                                    <p className="text-slate-400">Use <strong>Embeddings</strong> (Textual Inversions) like <em>EasyNegative</em> or <em>BadHandV4</em> to replace long negative lists with a single token.</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleUnify}
+                                disabled={unifying}
+                                className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded hover:bg-indigo-500/20 disabled:opacity-50 transition-colors"
+                                title="Merge all sections into one cohesive prompt using AI"
+                            >
+                                {unifying ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                                {unifying ? 'Unifying...' : 'Unify to Single Prompt'}
+                            </button>
+                        </div>
                     </div>
+
                     <div className="space-y-4">
                         <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-light">
                             {positivePrompt || <span className="text-slate-600 italic">No positive prompt...</span>}
                         </div>
 
-                        {negativePrompt.trim() && (
+                        {targetModel !== 'dall-e-3' && negativePrompt.trim() && (
                             <div className="pt-3 border-t border-slate-700/50">
-                                <p className="text-xs text-red-400 mb-1 font-mono uppercase">Negative</p>
+                                <div className="flex items-center justify-between mb-1">
+                                    <p className="text-xs text-red-400 font-mono uppercase">Negative</p>
+                                    <div className="text-[10px] text-slate-600 font-mono">
+                                        {Math.round(negativePrompt.length / 4)} tokens
+                                    </div>
+                                </div>
                                 <p className="text-sm text-red-300/80 leading-relaxed font-light">
                                     {negativePrompt}
                                 </p>
