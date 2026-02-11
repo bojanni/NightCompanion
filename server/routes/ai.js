@@ -29,7 +29,15 @@ const SYSTEM_PROMPTS = {
 
     'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { "variations": [{ "type": "string", "prompt": "string", "negativePrompt": "string" }] }.\n\nCRITICAL: The 'prompt' field must be a SINGLE string containing the full image description. DO NOT include structure labels (e.g. 'Subject:', 'Style:'). Just the raw, ready-to-use prompt text.\nPut elements to avoid in 'negativePrompt'.\nLIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
 
-    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept. Return JSON: { "prompt": "string", "negativePrompt": "string" }. \n\nCRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Modifiers combined) without any field labels, markdown headers, or newlines. Put negative items in 'negativePrompt'.\nLIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
+    random: `You are an Avant-Garde AI Art Director. Your goal is to generate truly unique, diverse, and creative image prompts.
+    - AVOID generic "portrait of a woman" or "sunset landscape" unless highly stylized.
+    - MIX unexpected styles, subjects, and mediums (e.g., "Baroque Cyberpunk", "Origami Horror", "Pixel Art Renaissance").
+    - Focus on high-concept, atmospheric, or hyper-specific scenarios.
+
+    Task: Generate a unique, visually striking concept. Return JSON: { "prompt": "string", "negativePrompt": "string" }.
+
+    CRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Modifiers combined) without any field labels.
+    LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
 
     'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. Return ONLY the title text. No quotes.`,
 

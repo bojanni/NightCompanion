@@ -3,7 +3,7 @@ import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
   Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
 } from 'lucide-react';
-import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
+import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
 import { db, supabase } from '../lib/api';
@@ -64,6 +64,23 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
   const [copied, setCopied] = useState('');
   const [saving, setSaving] = useState('');
 
+  const [suggestedModel, setSuggestedModel] = useState<any>(null);
+
+  // Analyze prompt for model advice to conditionally hide negative prompt
+  useEffect(() => {
+    if (!improveInput.trim()) {
+      setSuggestedModel(null);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      const results = analyzePrompt(improveInput);
+      if (results && results.length > 0 && results[0]) {
+        setSuggestedModel(results[0].model);
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [improveInput]);
+
   // Persist state to localStorage
   useEffect(() => {
     const state = {
@@ -95,7 +112,19 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
     setNegativeResult('');
     try {
       const token = await getToken();
-      if (negativeInput.trim()) {
+
+      // If the suggested model doesn't support negative prompts (e.g. DALL-E 3, GPT),
+      // we should use the optimize-for-model endpoint which handles merging negatives/cleanup.
+      if (!supportsNegativePrompt(suggestedModel?.id)) {
+        const result = await optimizePromptForModel(
+          improveInput,
+          suggestedModel?.name || 'DALL-E 3',
+          token,
+          negativeInput
+        );
+        setImproveResult(result.optimizedPrompt);
+        setNegativeResult(result.negativePrompt || ''); // Should be empty typically
+      } else if (negativeInput.trim()) {
         const result = await improvePromptWithNegative(improveInput, negativeInput, token);
         setImproveResult(result.improved);
         setNegativeResult(result.negativePrompt);
@@ -280,6 +309,7 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
               onClear={() => { setImproveResult(''); setNegativeResult(''); }}
               generatedPrompt={generatedPrompt}
               generatedNegativePrompt={generatedNegativePrompt}
+              suggestedModel={suggestedModel}
             />
           )}
 
@@ -335,7 +365,7 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
 import { diffWords } from '../lib/diff-utils';
 
 function ImproveTab({
-  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt,
+  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt, suggestedModel,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -353,24 +383,9 @@ function ImproveTab({
   onClear: () => void;
   generatedPrompt?: string | undefined;
   generatedNegativePrompt?: string | undefined;
+  suggestedModel: any;
 }) {
   const [showDiff, setShowDiff] = useState(true);
-  const [suggestedModel, setSuggestedModel] = useState<any>(null);
-
-  // Analyze prompt for model advice to conditionally hide negative prompt
-  useEffect(() => {
-    if (!input.trim()) {
-      setSuggestedModel(null);
-      return;
-    }
-    const timeout = setTimeout(() => {
-      const results = analyzePrompt(input);
-      if (results && results.length > 0) {
-        setSuggestedModel(results[0].model);
-      }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [input]);
 
   const diff = result ? diffWords(input, result) : [];
   const negativeDiff = negativeResult ? diffWords(negativeInput, negativeResult) : [];
@@ -577,6 +592,14 @@ function ImproveTab({
             >
               {copied === 'improve' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
               {copied === 'improve' ? 'Copied' : 'Copy Result'}
+            </button>
+            <button
+              onClick={onUse}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-teal-400 text-xs rounded-lg hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
+              title="Use result in main generator"
+            >
+              <ArrowUp size={11} />
+              Use
             </button>
           </>
         )}

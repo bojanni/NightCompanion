@@ -50,10 +50,14 @@ export default function Generator({ }: GeneratorProps) {
   }, [saveCount]);
 
   // Save state to localStorage when it changes
+  // Save state to localStorage when it changes
   useEffect(() => {
-    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, manualInitial };
+    // We don't persist manualInitial because ManualGenerator handles its own persistence.
+    // If we persist it here, it would overwrite the user's latest edits in ManualGenerator
+    // with the stale "initial" state on refresh.
+    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, manualInitial]);
+  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt]);
 
   async function loadRecentPrompts() {
     const { data } = await db
