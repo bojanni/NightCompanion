@@ -209,7 +209,8 @@ export default function Generator({ }: GeneratorProps) {
 
       {mode === 'manual' && (
         <ManualGenerator
-          key={resetKey} // Force remount to reset internal state
+          key={resetKey} // Force remount to read fresh storage/props
+          resetKey={resetKey} // Explicit signal
           onSaved={() => setSaveCount((c) => c + 1)}
           maxWords={maxWords}
           initialPrompts={manualInitial.prompts.length > 0 ? manualInitial.prompts : undefined}

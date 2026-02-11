@@ -11,11 +11,12 @@ interface ManualGeneratorProps {
     maxWords: number;
     initialPrompts?: string[] | undefined;
     initialNegativePrompt?: string | undefined;
+    resetKey?: number;
 }
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '' }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', resetKey = 0 }: ManualGeneratorProps) {
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -46,6 +47,14 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     ].filter(Boolean).join('\n');
 
     const positivePrompt = prompts.filter(p => p.trim()).join('\n');
+
+    // Reset state when resetKey changes (from parent Clear All)
+    useEffect(() => {
+        if (resetKey > 0) {
+            setPrompts(['']);
+            setNegativePrompt('');
+        }
+    }, [resetKey]);
 
     // Analyze prompt for model advice
     useEffect(() => {

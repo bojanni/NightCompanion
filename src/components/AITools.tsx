@@ -77,7 +77,7 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
       if (results && results.length > 0 && results[0]) {
         setSuggestedModel(results[0].model);
       }
-    }, 500);
+    }, 100);
     return () => clearTimeout(timeout);
   }, [improveInput]);
 
