@@ -36,9 +36,9 @@ const SYSTEM_PROMPTS = {
     'suggest-tags': `Suggest 5-10 comma-separated tags for the image prompt. Return ONLY the tags. Example: "nature, landscape, mountain, blue sky".`,
 
     'optimize-for-model': `You are an expert AI prompt engineer. Optimize the user's prompt for a specific AI model.
-    - If the model is DALL-E 3: It does NOT support negative prompts. You MUST merge any key negative constraints (e.g. "no blur", "no text") naturally into the positive prompt formulation or ignore them if minor. Return ONLY the optimized positive prompt.
-    - If the model is Stable Diffusion / SDXL / Flux: You can keep negative constraints separate if provided, or refine the positive prompt to better suit the model's strengths (e.g. lighting, composition).
-    CRITICAL: Return ONLY valid JSON: { "optimizedPrompt": "...", "negativePrompt": "..." (optional, empty if DALL-E 3) }.
+    - If the model is DALL-E 3 or any GPT-Image model (e.g. GPT1.5, GPT-4o): These do NOT support negative prompts. You MUST merge any key negative constraints (e.g. "no blur", "no text") naturally into the positive prompt formulation or ignore them if minor. Return ONLY the optimized positive prompt.
+    - If the model is Stable Diffusion / SDXL / Flux / Ideogram: You can keep negative constraints separate if provided, or refine the positive prompt to better suit the model's strengths (e.g. lighting, composition).
+    CRITICAL: Return ONLY valid JSON: { "optimizedPrompt": "...", "negativePrompt": "..." (optional, empty if DALL-E 3/GPT) }.
     LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`
 };
 

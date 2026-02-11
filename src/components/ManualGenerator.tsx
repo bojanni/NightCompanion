@@ -42,7 +42,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
     const fullPrompt = [
         ...prompts.filter(p => p.trim()),
-        (suggestedModel?.id !== 'dalle3' && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
+        (suggestedModel?.id !== 'dalle3' && !suggestedModel?.id.startsWith('gpt') && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
     ].filter(Boolean).join('\n');
 
     const positivePrompt = prompts.filter(p => p.trim()).join('\n');
@@ -178,9 +178,10 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             if (result.optimizedPrompt) {
                 setPrompts([result.optimizedPrompt]);
                 // If DALL-E 3, clear negative prompt as it's merged or ignored
-                if (suggestedModel?.id === 'dalle3') {
+                // If DALL-E 3 or GPT, clear negative prompt as it's merged or ignored
+                if (suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) {
                     setNegativePrompt('');
-                    toast.success('Optimized for DALL-E 3 (Negative merged)');
+                    toast.success(`Optimized for ${suggestedModel?.name} (Negative merged)`);
                 } else if (result.negativePrompt) {
                     setNegativePrompt(result.negativePrompt);
                     toast.success(`Optimized for ${suggestedModel?.name}`);
@@ -340,14 +341,14 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 </div>
 
                 <div className="pt-2 border-t border-slate-700/50">
-                    {suggestedModel?.id === 'dalle3' ? (
+                    {(suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) ? (
                         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                             <div className="flex items-center gap-3 text-emerald-400 mb-3">
                                 <Sparkles size={16} />
-                                <p className="text-sm font-medium">Model Advice: DALL-E 3 Recommended</p>
+                                <p className="text-sm font-medium">Model Advice: {suggestedModel?.name} Recommended</p>
                             </div>
                             <p className="text-xs text-slate-400 mb-3">
-                                This prompt style works best with DALL-E 3, which handles complex text and instructions well without needing a negative prompt.
+                                This prompt style works best with {suggestedModel?.name}, which handles complex text and instructions well without needing a negative prompt.
                             </p>
                             <button
                                 onClick={handleOptimize}
@@ -355,7 +356,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                 className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/20 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
                             >
                                 {optimizing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                                Optimize for DALL-E 3
+                                Optimize for {suggestedModel?.name}
                             </button>
                         </div>
                     ) : (
@@ -421,7 +422,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                     {copiedPrompt ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                     {copiedPrompt ? 'Copied' : 'Copy Prompt'}
                 </button>
-                {negativePrompt.trim() && (
+                {!(suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) && negativePrompt.trim() && (
                     <button
                         onClick={handleCopyNegative}
                         className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-red-300 text-sm font-medium rounded-xl hover:bg-slate-700 hover:text-red-200 transition-all border border-slate-700"
@@ -503,7 +504,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             {positivePrompt || <span className="text-slate-600 italic">No positive prompt...</span>}
                         </div>
 
-                        {suggestedModel?.id !== 'dalle3' && negativePrompt.trim() && (
+                        {!(suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) && negativePrompt.trim() && (
                             <div className="pt-3 border-t border-slate-700/50">
                                 <div className="flex items-center justify-between mb-1">
                                     <p className="text-xs text-red-400 font-mono uppercase">Negative</p>
