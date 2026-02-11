@@ -84,6 +84,8 @@ export default function Generator({ }: GeneratorProps) {
     setMode('guided');
   }
 
+  const [resetKey, setResetKey] = useState(0);
+
   function handleClearAll() {
     setGuidedInitial('');
     setRandomPrompt('');
@@ -91,7 +93,10 @@ export default function Generator({ }: GeneratorProps) {
     setManualInitial({ prompts: [], negative: '' });
     setMode('random');
     setMaxWords(70);
+    setResetKey(prev => prev + 1); // Force ManualGenerator to reset
     localStorage.removeItem(STORAGE_KEY);
+    // Also clear manual generator specific storage
+    localStorage.removeItem('nightcompanion_manual_generator');
   }
 
   const modes = [
@@ -204,6 +209,7 @@ export default function Generator({ }: GeneratorProps) {
 
       {mode === 'manual' && (
         <ManualGenerator
+          key={resetKey} // Force remount to reset internal state
           onSaved={() => setSaveCount((c) => c + 1)}
           maxWords={maxWords}
           initialPrompts={manualInitial.prompts.length > 0 ? manualInitial.prompts : undefined}
