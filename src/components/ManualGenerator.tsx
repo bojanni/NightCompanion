@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Copy, Save, Check, Plus, Minus, Info } from 'lucide-react';
+import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2 } from 'lucide-react';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
+import { generateRandomPrompt } from '../lib/prompt-fragments';
+import { generateRandomPromptAI } from '../lib/ai-service';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
+    maxWords: number;
     initialPrompts?: string[] | undefined;
     initialNegativePrompt?: string | undefined;
 }
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, initialPrompts, initialNegativePrompt }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt }: ManualGeneratorProps) {
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -31,6 +34,7 @@ export default function ManualGenerator({ onSaved, initialPrompts, initialNegati
     const [copiedPrompt, setCopiedPrompt] = useState(false);
     const [copiedNeg, setCopiedNeg] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [generating, setGenerating] = useState(false);
 
     // Persist manual generator state
     useEffect(() => {
@@ -100,6 +104,39 @@ export default function ManualGenerator({ onSaved, initialPrompts, initialNegati
         }
     }
 
+    function handleStandardGenerate() {
+        const generated = generateRandomPrompt({ dreamy: false, characters: false, cinematic: false });
+        const newPrompts = [...prompts];
+        newPrompts[0] = generated;
+        setPrompts(newPrompts);
+    }
+
+    async function handleAIGenerate() {
+        setGenerating(true);
+        try {
+            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const result = await generateRandomPromptAI(token, undefined, maxWords);
+            if (result && typeof result === 'object' && 'prompt' in result) {
+                const newPrompts = [...prompts];
+                newPrompts[0] = result.prompt || '';
+                setPrompts(newPrompts);
+                if (result.negativePrompt) {
+                    setNegativePrompt(result.negativePrompt);
+                }
+            } else if (typeof result === 'string') {
+                const newPrompts = [...prompts];
+                newPrompts[0] = result;
+                setPrompts(newPrompts);
+            }
+        } catch (err) {
+            console.error('AI generation failed:', err);
+            toast.error('AI generation failed, using standard generation');
+            handleStandardGenerate();
+        } finally {
+            setGenerating(false);
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 space-y-4">
@@ -115,6 +152,25 @@ export default function ManualGenerator({ onSaved, initialPrompts, initialNegati
                     >
                         <Plus size={14} />
                         Add Prompt Section
+                    </button>
+                </div>
+
+                <div className="flex gap-2 mb-2">
+                    <button
+                        onClick={handleStandardGenerate}
+                        disabled={generating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-700/50 text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
+                    >
+                        <Shuffle size={12} />
+                        Generate
+                    </button>
+                    <button
+                        onClick={handleAIGenerate}
+                        disabled={generating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-teal-500/10 to-cyan-500/10 text-teal-400 border border-teal-500/20 rounded-lg hover:from-teal-500/20 hover:to-cyan-500/20 transition-all disabled:opacity-50"
+                    >
+                        {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                        {generating ? 'Generating...' : 'Generate with AI'}
                     </button>
                 </div>
 

@@ -196,6 +196,7 @@ export default function Generator({ }: GeneratorProps) {
       {mode === 'manual' && (
         <ManualGenerator
           onSaved={() => setSaveCount((c) => c + 1)}
+          maxWords={maxWords}
           initialPrompts={manualInitial.prompts.length > 0 ? manualInitial.prompts : undefined}
           initialNegativePrompt={manualInitial.negative || undefined}
         />
