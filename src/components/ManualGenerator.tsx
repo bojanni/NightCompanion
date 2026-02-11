@@ -356,9 +356,20 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             {unifying ? 'Unifying...' : 'Unify to Single Prompt'}
                         </button>
                     </div>
-                    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-light">
-                        {fullPrompt}
-                    </p>
+                    <div className="space-y-4">
+                        <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-light">
+                            {positivePrompt || <span className="text-slate-600 italic">No positive prompt...</span>}
+                        </div>
+
+                        {negativePrompt.trim() && (
+                            <div className="pt-3 border-t border-slate-700/50">
+                                <p className="text-xs text-red-400 mb-1 font-mono uppercase">Negative</p>
+                                <p className="text-sm text-red-300/80 leading-relaxed font-light">
+                                    {negativePrompt}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
