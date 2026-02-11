@@ -6,6 +6,7 @@ import {
 import { recommendModels } from '../lib/ai-service';
 import type { ModelRecommendation } from '../lib/ai-service';
 import { db } from '../lib/api';
+import { MODELS } from '../lib/models-data';
 
 const BUDGET_OPTIONS = [
   { value: 'low', label: 'Budget', desc: 'Cheap & fast' },
@@ -39,8 +40,17 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
     try {
       const { data } = await db.auth.getSession();
       const token = data.session?.access_token ?? '';
-      const result = await recommendModels(prompt, { budget }, token);
-      setResults(result.recommendations ?? []);
+      const result = await recommendModels(prompt, { ...(budget ? { budget } : {}) }, token);
+
+      const augmentedResults: ModelRecommendation[] = (result.recommendations ?? []).map(rec => {
+        const modelInfo = MODELS.find(m => m.id === rec.modelId || m.name === rec.modelName);
+        return {
+          ...rec,
+          recommendedPreset: modelInfo?.recommendedPreset || undefined
+        };
+      });
+
+      setResults(augmentedResults);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to get recommendations');
     } finally {
@@ -136,7 +146,7 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
           {results && results.length > 0 && (
             <div className="space-y-3">
               {results.map((rec, i) => {
-                const medal = MEDAL_COLORS[i] ?? MEDAL_COLORS[2];
+                const medal = MEDAL_COLORS[i] || MEDAL_COLORS[2]!;
                 return (
                   <div
                     key={rec.modelId}
@@ -173,6 +183,11 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
                             {tip}
                           </div>
                         ))}
+                      </div>
+                    )}
+                    {rec.recommendedPreset && (
+                      <div className="mt-2 pt-2 border-t border-slate-800">
+                        <span className="text-xs font-medium text-teal-400">Recommended NightCafe Preset: {rec.recommendedPreset}</span>
                       </div>
                     )}
                   </div>

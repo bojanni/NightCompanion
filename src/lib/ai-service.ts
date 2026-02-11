@@ -104,6 +104,7 @@ export interface ModelRecommendation {
   matchScore: number;
   reasoning: string;
   tips: string[];
+  recommendedPreset?: string | undefined;
 }
 
 export interface RecommendModelsResult {

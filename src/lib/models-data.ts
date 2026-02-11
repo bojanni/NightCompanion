@@ -11,7 +11,22 @@ export interface ModelInfo {
   qualityRating: number;
   speedRating: number;
   keywords: string[];
+  recommendedPreset?: string;
 }
+
+export const PRESET_OPTIONS = [
+  'NightCafe', 'Cinematic', 'Realistic Anime', 'Artistic Portrait',
+  'Detailed Gouache', 'Neo Impressionist', 'Pop Art', 'Anime',
+  'Striking', '2.5D Anime', 'Anime v2', 'Hyperreal',
+  'Candy v2', 'Photo', 'B&W Portrait', 'Color Portrait',
+  'Vibrant', 'Epic Origami', '3D Game v2', 'Color Painting',
+  'Oil Painting', 'Cosmic', 'Sinister', 'Candy',
+  'Mecha', 'CGI Character', 'Epic', 'Dark Fantasy',
+  'Cubist', '3D Game', 'Fantasy', 'Gouache',
+  'Modern Comic', 'Abstract Curves', 'Bon Voyage', 'Cubist v2',
+  'Matte', 'Charcoal', 'Horror', 'Surreal',
+  'Steampunk', 'Cyberpunk', 'Synthwave', 'Heavenly'
+] as const;
 
 export const STYLE_FILTERS = [
   'photorealistic',
@@ -55,6 +70,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 2,
     keywords: ['complex', 'detailed', 'text', 'typography', 'sign', 'creative', 'professional', 'portrait', 'scene', 'character'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'gpt15-medium',
@@ -69,6 +85,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['creative', 'balanced', 'text', 'sign', 'portrait', 'character', 'scene'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'gpt15-low',
@@ -83,6 +100,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 3,
     speedRating: 5,
     keywords: ['quick', 'fast', 'draft', 'prototype', 'test', 'simple'],
+    recommendedPreset: 'NightCafe',
   },
   {
     id: 'gpt1-high',
@@ -97,6 +115,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 2,
     keywords: ['complex', 'scene', 'story', 'narrative', 'character', 'creative', 'detailed', 'professional'],
+    recommendedPreset: 'Cinematic',
   },
   {
     id: 'gpt1-medium',
@@ -111,6 +130,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['creative', 'balanced', 'scene', 'character', 'concept'],
+    recommendedPreset: 'Cinematic',
   },
   {
     id: 'gpt1-low',
@@ -125,6 +145,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 3,
     speedRating: 5,
     keywords: ['quick', 'fast', 'draft', 'prototype', 'test'],
+    recommendedPreset: 'NightCafe',
   },
   {
     id: 'dalle3',
@@ -139,8 +160,8 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 3,
     keywords: ['complex', 'scene', 'story', 'narrative', 'character', 'illustration', 'creative', 'whimsical', 'text', 'sign', 'poster', 'infographic'],
+    recommendedPreset: 'NightCafe',
   },
-
   // === Google Imagen Models ===
   {
     id: 'imagen-4-ultra',
@@ -155,6 +176,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 2,
     keywords: ['photorealistic', 'photo', 'realistic', 'text', 'typography', 'professional', 'detailed', 'sharp', 'landscape', 'portrait'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'imagen-4',
@@ -169,6 +191,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['photorealistic', 'photo', 'realistic', 'text', 'typography', 'professional', 'portrait'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'imagen-4-fast',
@@ -183,6 +206,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 3,
     speedRating: 4,
     keywords: ['fast', 'quick', 'photo', 'realistic', 'portrait', 'balanced'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'imagen-3',
@@ -197,6 +221,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['photo', 'realistic', 'text', 'typography', 'portrait', 'professional'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'imagen-3-fast',
@@ -211,8 +236,8 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 3,
     speedRating: 4,
     keywords: ['fast', 'quick', 'photo', 'realistic', 'balanced'],
+    recommendedPreset: 'Photo',
   },
-
   // === Black Forest Labs Flux Models ===
   {
     id: 'flux-pro-ultra',
@@ -227,6 +252,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 2,
     keywords: ['ultra', 'high resolution', 'detailed', 'creative', 'artistic', 'beautiful', 'concept', 'illustration'],
+    recommendedPreset: 'Cinematic',
   },
   {
     id: 'flux-pro',
@@ -241,6 +267,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 3,
     keywords: ['creative', 'artistic', 'beautiful', 'aesthetic', 'concept', 'illustration', 'fantasy', 'character', 'vibrant', 'colorful'],
+    recommendedPreset: 'Cinematic',
   },
   {
     id: 'flux-2-pro',
@@ -255,6 +282,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 3,
     keywords: ['photorealistic', 'photo', 'realistic', 'detailed', 'creative', 'artistic', 'portrait'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'flux-2-flex',
@@ -269,6 +297,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['typography', 'text', 'design', 'sign', 'creative', 'flexible'],
+    recommendedPreset: 'NightCafe',
   },
   {
     id: 'flux-2-max',
@@ -283,6 +312,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 2,
     keywords: ['maximum', 'quality', 'grounded', 'realistic', 'complex', 'detailed', 'professional'],
+    recommendedPreset: 'Hyperreal',
   },
   {
     id: 'flux-schnell',
@@ -297,6 +327,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 3,
     speedRating: 5,
     keywords: ['fast', 'quick', 'cheap', 'iteration', 'draft', 'prototype', 'artistic'],
+    recommendedPreset: 'NightCafe',
   },
   {
     id: 'flux-krea',
@@ -311,6 +342,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['anatomy', 'human', 'person', 'portrait', 'character', 'realistic', 'body', 'face', 'hands'],
+    recommendedPreset: 'Photo',
   },
   {
     id: 'flux-kontext-pro',
@@ -383,6 +415,7 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 5,
     speedRating: 3,
     keywords: ['text', 'typography', 'sign', 'poster', 'logo', 'creative', 'artistic', 'detailed'],
+    recommendedPreset: 'Pop Art',
   },
   {
     id: 'ideogram-v3',
@@ -586,8 +619,8 @@ export const MODELS: ModelInfo[] = [
       'dream', 'dreamy', 'fantasy', 'character', 'anime', 'manga', 'elf', 'warrior', 'magical', 'enchanted',
       'fairy', 'mythical', 'dragon', 'creature', 'fast', 'cheap', 'landscape', 'art',
     ],
+    recommendedPreset: 'Fantasy',
   },
-
   // === Recraft ===
   {
     id: 'recraft-v3',
@@ -602,8 +635,8 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['text', 'typography', 'sign', 'vector', 'logo', 'spelling', 'graphic', 'design', 'poster'],
+    recommendedPreset: 'NightCafe',
   },
-
   // === HiDream ===
   {
     id: 'hidream-i1',
@@ -618,8 +651,8 @@ export const MODELS: ModelInfo[] = [
     qualityRating: 4,
     speedRating: 3,
     keywords: ['creative', 'artistic', 'detailed', 'fantasy', 'concept', 'character'],
+    recommendedPreset: 'Cinematic',
   },
-
   // === Juggernaut ===
   {
     id: 'juggernaut-flux',
@@ -637,8 +670,8 @@ export const MODELS: ModelInfo[] = [
       'cinematic', 'epic', 'detailed', 'dramatic', 'movie', 'film', 'scene', 'landscape', 'cityscape',
       'architecture', 'sci-fi', 'cyberpunk', 'futuristic', 'dark', 'moody', 'atmospheric', 'volumetric',
     ],
+    recommendedPreset: 'Cinematic',
   },
-
   // === Additional Juggernaut Variants ===
   { id: 'juggernaut-flux-pro', name: 'Juggernaut Flux Pro', provider: 'Rundiffusion', description: 'The best version of Juggernaut, a Flux-based model trained on high-quality images.', strengths: ['Highest quality Juggernaut', 'Excellent detail', 'Great cinematic output'], weaknesses: ['High credit cost'], bestFor: ['portrait', 'landscape', 'concept art', 'photography'], styleTags: ['photorealistic', 'cinematic', 'artistic'], creditCost: 'high', qualityRating: 5, speedRating: 3, keywords: ['cinematic', 'epic', 'detailed', 'dramatic', 'portrait', 'landscape', 'realistic'] },
   { id: 'juggernaut-plus-lightning', name: 'Juggernaut Plus Lightning', provider: 'Rundiffusion', description: 'A faster, lighter Juggernaut. Still high quality but with much faster generation.', strengths: ['Fast generation', 'Good quality for speed'], weaknesses: ['Less detail than Pro'], bestFor: ['portrait', 'landscape', 'general'], styleTags: ['photorealistic', 'cinematic'], creditCost: 'medium', qualityRating: 4, speedRating: 4, keywords: ['fast', 'cinematic', 'portrait', 'landscape', 'lightning'] },
@@ -651,22 +684,22 @@ export const MODELS: ModelInfo[] = [
   { id: 'seedream-3-pro', name: 'Seedream 3.0 Pro', provider: 'ByteDance', description: 'The pro variant of Seedream 3.0 with higher quality output.', strengths: ['Higher quality', 'Better detail'], weaknesses: ['Higher cost'], bestFor: ['portrait', 'illustration', 'concept art'], styleTags: ['artistic', 'photorealistic', 'cinematic'], creditCost: 'high', qualityRating: 5, speedRating: 3, keywords: ['pro', 'detailed', 'creative', 'portrait', 'quality'] },
 
   // === Community SDXL Checkpoint Models ===
-  { id: 'animagine-xl', name: 'Animagine XL v4 Lightning', provider: 'Community', description: 'A fast anime-focused SDXL model with excellent anime art generation.', strengths: ['Excellent anime art', 'Fast generation', 'Low cost'], weaknesses: ['Limited to anime styles'], bestFor: ['anime', 'character', 'illustration'], styleTags: ['anime', 'illustration'], creditCost: 'low', qualityRating: 4, speedRating: 5, keywords: ['anime', 'manga', 'character', 'japanese', 'waifu', 'chibi', 'kawaii'] },
-  { id: 'atomix-xl', name: 'Atomix XL v4 Lightning', provider: 'Community', description: 'A fast, versatile SDXL checkpoint model.', strengths: ['Fast generation', 'Versatile'], weaknesses: ['Less specialized'], bestFor: ['general', 'illustration', 'fantasy'], styleTags: ['artistic', 'illustration', 'fantasy'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['fast', 'versatile', 'artistic', 'fantasy', 'lightning'] },
-  { id: 'movie-diffusion', name: 'Movie Diffusion v1 v4 Lightning', provider: 'Community', description: 'Optimized for cinematic, movie-like image generation.', strengths: ['Cinematic aesthetic', 'Movie-like quality'], weaknesses: ['Narrow style range'], bestFor: ['photography', 'portrait', 'landscape'], styleTags: ['cinematic', 'photorealistic'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['movie', 'cinematic', 'film', 'dramatic', 'scene', 'lightning'] },
-  { id: 'realvisxl-v5', name: 'RealVisXL v5', provider: 'Community', description: 'Extremely photorealistic SDXL model. Latest version with best realism.', strengths: ['Extremely photorealistic', 'Natural skin textures', 'Great lighting'], weaknesses: ['Limited to photorealistic style'], bestFor: ['portrait', 'photography', 'nature'], styleTags: ['photorealistic'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['photo', 'realistic', 'portrait', 'person', 'face', 'skin', 'natural', 'stock photo'] },
-  { id: 'realvisxl-v4-lightning', name: 'RealVisXL v4 Lightning', provider: 'Community', description: 'Fast photorealistic model based on RealVisXL v4.', strengths: ['Fast photorealism', 'Low cost'], weaknesses: ['Slightly lower quality than v5'], bestFor: ['portrait', 'photography'], styleTags: ['photorealistic'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['photo', 'realistic', 'fast', 'portrait', 'lightning'] },
-  { id: 'realvisxl-v3', name: 'RealVisXL v3', provider: 'Community', description: 'A reliable photorealistic SDXL checkpoint model.', strengths: ['Good photorealism', 'Proven quality'], weaknesses: ['Older generation'], bestFor: ['portrait', 'photography'], styleTags: ['photorealistic'], creditCost: 'low', qualityRating: 3, speedRating: 3, keywords: ['photo', 'realistic', 'portrait', 'natural'] },
-  { id: 'stable-kitsune', name: 'Stable Kitsune', provider: 'Community', description: 'A creative model enabling stunning stylized and anime-inspired images.', strengths: ['Stylized output', 'Creative aesthetic'], weaknesses: ['Niche style'], bestFor: ['anime', 'illustration', 'fantasy'], styleTags: ['anime', 'artistic', 'fantasy'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['anime', 'stylized', 'creative', 'fantasy', 'kitsune'] },
-  { id: 'stable-kino', name: 'Stable Kino', provider: 'Community', description: 'A model good at realistic photographic output.', strengths: ['Good photographic quality'], weaknesses: ['Limited style range'], bestFor: ['photography', 'portrait'], styleTags: ['photorealistic', 'cinematic'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['photo', 'cinematic', 'kino', 'realistic'] },
-  { id: 'cherry-picker-xl', name: 'Cherry Picker XL v2', provider: 'Community', description: 'A carefully curated SDXL model optimized for quality output.', strengths: ['Great quality', 'Well curated'], weaknesses: ['Medium speed'], bestFor: ['general', 'illustration', 'portrait'], styleTags: ['artistic', 'photorealistic'], creditCost: 'low', qualityRating: 4, speedRating: 3, keywords: ['quality', 'curated', 'artistic', 'portrait'] },
-  { id: 'virtual-vivid-xl', name: 'Virtual Vivid XL v6', provider: 'Community', description: 'Vibrant and vivid imagery with strong color output.', strengths: ['Vibrant colors', 'Strong aesthetic'], weaknesses: ['Can oversaturate'], bestFor: ['illustration', 'fantasy', 'landscape'], styleTags: ['artistic', 'fantasy', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 3, keywords: ['vivid', 'vibrant', 'colorful', 'bright', 'fantasy'] },
-  { id: 'sdxl-spo', name: 'SDXL SPO', provider: 'Stability AI', description: 'SDXL model with self-play optimization for improved quality.', strengths: ['Improved SDXL quality', 'Good all-rounder'], weaknesses: ['Medium cost'], bestFor: ['general', 'portrait', 'landscape'], styleTags: ['photorealistic', 'artistic', 'cinematic'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['landscape', 'portrait', 'cinematic', 'detailed', 'realistic'] },
-  { id: 'sdxl-1', name: 'SDXL 1.0', provider: 'Stability AI', description: 'The flagship Stable Diffusion XL model from Stability AI.', strengths: ['Strong all-rounder', 'Wide style range', 'Good composition'], weaknesses: ['Not the newest'], bestFor: ['landscape', 'portrait', 'concept art', 'photography'], styleTags: ['photorealistic', 'artistic', 'cinematic', 'fantasy'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['landscape', 'portrait', 'cinematic', 'realistic', 'natural', 'atmospheric'] },
-  { id: 'dreamshaper-v8', name: 'DreamShaper v8', provider: 'Community', description: 'Classic DreamShaper model, versatile across many styles.', strengths: ['Versatile', 'Great fantasy art', 'Low cost'], weaknesses: ['Lower resolution than XL'], bestFor: ['fantasy', 'character', 'illustration', 'anime'], styleTags: ['fantasy', 'artistic', 'anime', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['dream', 'fantasy', 'character', 'anime', 'magical'] },
-  { id: 'blue-pencil-v9', name: 'Blue Pencil v9', provider: 'Community', description: 'A model optimized for clean, pencil-drawing style art.', strengths: ['Clean line art', 'Good for sketches'], weaknesses: ['Narrow style'], bestFor: ['illustration', 'character'], styleTags: ['artistic', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['pencil', 'sketch', 'drawing', 'line art', 'clean'] },
-  { id: 'rpg-v5', name: 'RPG v5', provider: 'Community', description: 'A model specializing in RPG-style fantasy art.', strengths: ['Great RPG/fantasy aesthetic', 'Good characters'], weaknesses: ['Limited to fantasy style'], bestFor: ['fantasy', 'character', 'concept art'], styleTags: ['fantasy', 'artistic', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['rpg', 'fantasy', 'character', 'warrior', 'medieval', 'game', 'adventure'] },
-  { id: 'christy-updates', name: 'Christy Updates', provider: 'Community', description: 'Updated model with improved realism and detail.', strengths: ['Good realism', 'Detailed output'], weaknesses: ['Niche'], bestFor: ['portrait', 'photography'], styleTags: ['photorealistic', 'artistic'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['portrait', 'realistic', 'detailed', 'person'] },
+  { id: 'animagine-xl', name: 'Animagine XL v4 Lightning', provider: 'Community', description: 'A fast anime-focused SDXL model with excellent anime art generation.', strengths: ['Excellent anime art', 'Fast generation', 'Low cost'], weaknesses: ['Limited to anime styles'], bestFor: ['anime', 'character', 'illustration'], styleTags: ['anime', 'illustration'], creditCost: 'low', qualityRating: 4, speedRating: 5, keywords: ['anime', 'manga', 'character', 'japanese', 'waifu', 'chibi', 'kawaii'], recommendedPreset: 'Anime v2' },
+  { id: 'atomix-xl', name: 'Atomix XL v4 Lightning', provider: 'Community', description: 'A fast, versatile SDXL checkpoint model.', strengths: ['Fast generation', 'Versatile'], weaknesses: ['Less specialized'], bestFor: ['general', 'illustration', 'fantasy'], styleTags: ['artistic', 'illustration', 'fantasy'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['fast', 'versatile', 'artistic', 'fantasy', 'lightning'], recommendedPreset: 'NightCafe' },
+  { id: 'movie-diffusion', name: 'Movie Diffusion v1 v4 Lightning', provider: 'Community', description: 'Optimized for cinematic, movie-like image generation.', strengths: ['Cinematic aesthetic', 'Movie-like quality'], weaknesses: ['Narrow style range'], bestFor: ['photography', 'portrait', 'landscape'], styleTags: ['cinematic', 'photorealistic'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['movie', 'cinematic', 'film', 'dramatic', 'scene', 'lightning'], recommendedPreset: 'Cinematic' },
+  { id: 'realvisxl-v5', name: 'RealVisXL v5', provider: 'Community', description: 'Extremely photorealistic SDXL model. Latest version with best realism.', strengths: ['Extremely photorealistic', 'Natural skin textures', 'Great lighting'], weaknesses: ['Limited to photorealistic style'], bestFor: ['portrait', 'photography', 'nature'], styleTags: ['photorealistic'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['photo', 'realistic', 'portrait', 'person', 'face', 'skin', 'natural', 'stock photo'], recommendedPreset: 'Photo' },
+  { id: 'realvisxl-v4-lightning', name: 'RealVisXL v4 Lightning', provider: 'Community', description: 'Fast photorealistic model based on RealVisXL v4.', strengths: ['Fast photorealism', 'Low cost'], weaknesses: ['Slightly lower quality than v5'], bestFor: ['portrait', 'photography'], styleTags: ['photorealistic'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['photo', 'realistic', 'fast', 'portrait', 'lightning'], recommendedPreset: 'Photo' },
+  { id: 'realvisxl-v3', name: 'RealVisXL v3', provider: 'Community', description: 'A reliable photorealistic SDXL checkpoint model.', strengths: ['Good photorealism', 'Proven quality'], weaknesses: ['Older generation'], bestFor: ['portrait', 'photography'], styleTags: ['photorealistic'], creditCost: 'low', qualityRating: 3, speedRating: 3, keywords: ['photo', 'realistic', 'portrait', 'natural'], recommendedPreset: 'Photo' },
+  { id: 'stable-kitsune', name: 'Stable Kitsune', provider: 'Community', description: 'A creative model enabling stunning stylized and anime-inspired images.', strengths: ['Stylized output', 'Creative aesthetic'], weaknesses: ['Niche style'], bestFor: ['anime', 'illustration', 'fantasy'], styleTags: ['anime', 'artistic', 'fantasy'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['anime', 'stylized', 'creative', 'fantasy', 'kitsune'], recommendedPreset: 'Waifu' },
+  { id: 'stable-kino', name: 'Stable Kino', provider: 'Community', description: 'A model good at realistic photographic output.', strengths: ['Good photographic quality'], weaknesses: ['Limited style range'], bestFor: ['photography', 'portrait'], styleTags: ['photorealistic', 'cinematic'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['photo', 'cinematic', 'kino', 'realistic'], recommendedPreset: 'Cinematic' },
+  { id: 'cherry-picker-xl', name: 'Cherry Picker XL v2', provider: 'Community', description: 'A carefully curated SDXL model optimized for quality output.', strengths: ['Great quality', 'Well curated'], weaknesses: ['Medium speed'], bestFor: ['general', 'illustration', 'portrait'], styleTags: ['artistic', 'photorealistic'], creditCost: 'low', qualityRating: 4, speedRating: 3, keywords: ['quality', 'curated', 'artistic', 'portrait'], recommendedPreset: 'NightCafe' },
+  { id: 'virtual-vivid-xl', name: 'Virtual Vivid XL v6', provider: 'Community', description: 'Vibrant and vivid imagery with strong color output.', strengths: ['Vibrant colors', 'Strong aesthetic'], weaknesses: ['Can oversaturate'], bestFor: ['illustration', 'fantasy', 'landscape'], styleTags: ['artistic', 'fantasy', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 3, keywords: ['vivid', 'vibrant', 'colorful', 'bright', 'fantasy'], recommendedPreset: 'Vibrant' },
+  { id: 'sdxl-spo', name: 'SDXL SPO', provider: 'Stability AI', description: 'SDXL model with self-play optimization for improved quality.', strengths: ['Improved SDXL quality', 'Good all-rounder'], weaknesses: ['Medium cost'], bestFor: ['general', 'portrait', 'landscape'], styleTags: ['photorealistic', 'artistic', 'cinematic'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['landscape', 'portrait', 'cinematic', 'detailed', 'realistic'], recommendedPreset: 'NightCafe' },
+  { id: 'sdxl-1', name: 'SDXL 1.0', provider: 'Stability AI', description: 'The flagship Stable Diffusion XL model from Stability AI.', strengths: ['Strong all-rounder', 'Wide style range', 'Good composition'], weaknesses: ['Not the newest'], bestFor: ['landscape', 'portrait', 'concept art', 'photography'], styleTags: ['photorealistic', 'artistic', 'cinematic', 'fantasy'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['landscape', 'portrait', 'cinematic', 'realistic', 'natural', 'atmospheric'], recommendedPreset: 'NightCafe' },
+  { id: 'dreamshaper-v8', name: 'DreamShaper v8', provider: 'Community', description: 'Classic DreamShaper model, versatile across many styles.', strengths: ['Versatile', 'Great fantasy art', 'Low cost'], weaknesses: ['Lower resolution than XL'], bestFor: ['fantasy', 'character', 'illustration', 'anime'], styleTags: ['fantasy', 'artistic', 'anime', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['dream', 'fantasy', 'character', 'anime', 'magical'], recommendedPreset: 'Fantasy' },
+  { id: 'blue-pencil-v9', name: 'Blue Pencil v9', provider: 'Community', description: 'A model optimized for clean, pencil-drawing style art.', strengths: ['Clean line art', 'Good for sketches'], weaknesses: ['Narrow style'], bestFor: ['illustration', 'character'], styleTags: ['artistic', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['pencil', 'sketch', 'drawing', 'line art', 'clean'], recommendedPreset: 'Abstract Curves' },
+  { id: 'rpg-v5', name: 'RPG v5', provider: 'Community', description: 'A model specializing in RPG-style fantasy art.', strengths: ['Great RPG/fantasy aesthetic', 'Good characters'], weaknesses: ['Limited to fantasy style'], bestFor: ['fantasy', 'character', 'concept art'], styleTags: ['fantasy', 'artistic', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['rpg', 'fantasy', 'character', 'warrior', 'medieval', 'game', 'adventure'], recommendedPreset: 'Dark Fantasy' },
+  { id: 'christy-updates', name: 'Christy Updates', provider: 'Community', description: 'Updated model with improved realism and detail.', strengths: ['Good realism', 'Detailed output'], weaknesses: ['Niche'], bestFor: ['portrait', 'photography'], styleTags: ['photorealistic', 'artistic'], creditCost: 'low', qualityRating: 3, speedRating: 4, keywords: ['portrait', 'realistic', 'detailed', 'person'], recommendedPreset: 'Photo' },
 
   // === Nano Banana ===
   { id: 'nano-banana-pro', name: 'Nano Banana Pro', provider: 'Nano Banana', description: 'A high-quality image model from Nano Banana.', strengths: ['Good quality', 'Creative output'], weaknesses: ['Medium cost'], bestFor: ['general', 'illustration', 'portrait'], styleTags: ['artistic', 'illustration', 'photorealistic'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['creative', 'artistic', 'portrait', 'quality'] },
@@ -678,9 +711,9 @@ export const MODELS: ModelInfo[] = [
   { id: 'fooocus-genesis-pro', name: 'Fooocus Genesis Pro', provider: 'Community', description: 'A Fooocus-based model with great default quality.', strengths: ['Great defaults', 'Easy to prompt'], weaknesses: ['Less control'], bestFor: ['general', 'portrait', 'illustration'], styleTags: ['artistic', 'photorealistic', 'cinematic'], creditCost: 'medium', qualityRating: 4, speedRating: 3, keywords: ['easy', 'creative', 'portrait', 'artistic'] },
 
   // === Flux 2 Klein Models ===
-  { id: 'flux-2-klein-9b', name: 'Flux 2 Klein 9B', provider: 'Black Forest Labs', description: 'The largest Flux 2 Klein model with best detail and aesthetics.', strengths: ['Best Klein quality', 'Great aesthetics'], weaknesses: ['Slower'], bestFor: ['concept art', 'illustration', 'portrait'], styleTags: ['artistic', 'cinematic', 'illustration'], creditCost: 'high', qualityRating: 4, speedRating: 3, keywords: ['detailed', 'aesthetic', 'creative', 'artistic'] },
-  { id: 'flux-2-klein-4b', name: 'Flux 2 Klein 4B', provider: 'Black Forest Labs', description: 'Mid-size Flux 2 Klein model with balanced quality and speed.', strengths: ['Balanced quality', 'Good speed'], weaknesses: ['Less detail than 9B'], bestFor: ['general', 'illustration', 'portrait'], styleTags: ['artistic', 'illustration'], creditCost: 'medium', qualityRating: 3, speedRating: 4, keywords: ['balanced', 'artistic', 'creative'] },
-  { id: 'flux-2-klein-4b-fast', name: 'Flux 2 Klein 4B Fast', provider: 'Black Forest Labs', description: 'The fastest Flux 2 Klein model for quick iterations.', strengths: ['Very fast', 'Low cost'], weaknesses: ['Lower quality'], bestFor: ['general', 'illustration'], styleTags: ['artistic'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['fast', 'quick', 'draft', 'iteration'] },
+  { id: 'flux-2-klein-9b', name: 'Flux 2 Klein 9B', provider: 'Black Forest Labs', description: 'The largest Flux 2 Klein model with best detail and aesthetics.', strengths: ['Best Klein quality', 'Great aesthetics'], weaknesses: ['Slower'], bestFor: ['concept art', 'illustration', 'portrait'], styleTags: ['artistic', 'cinematic', 'illustration'], creditCost: 'high', qualityRating: 4, speedRating: 3, keywords: ['detailed', 'aesthetic', 'creative', 'artistic'], recommendedPreset: 'Cinematic' },
+  { id: 'flux-2-klein-4b', name: 'Flux 2 Klein 4B', provider: 'Black Forest Labs', description: 'Mid-size Flux 2 Klein model with balanced quality and speed.', strengths: ['Balanced quality', 'Good speed'], weaknesses: ['Less detail than 9B'], bestFor: ['general', 'illustration', 'portrait'], styleTags: ['artistic', 'illustration'], creditCost: 'medium', qualityRating: 3, speedRating: 4, keywords: ['balanced', 'artistic', 'creative'], recommendedPreset: 'Cinematic' },
+  { id: 'flux-2-klein-4b-fast', name: 'Flux 2 Klein 4B Fast', provider: 'Black Forest Labs', description: 'The fastest Flux 2 Klein model for quick iterations.', strengths: ['Very fast', 'Low cost'], weaknesses: ['Lower quality'], bestFor: ['general', 'illustration'], styleTags: ['artistic'], creditCost: 'low', qualityRating: 3, speedRating: 5, keywords: ['fast', 'quick', 'draft', 'iteration'], recommendedPreset: 'NightCafe' },
 
   // === HiDream Fast ===
   { id: 'hidream-i1-fast', name: 'HiDream I1 Fast', provider: 'HiDream', description: 'A faster, more affordable version of HiDream I1.', strengths: ['Fast generation', 'Lower cost'], weaknesses: ['Lower quality than Full'], bestFor: ['general', 'illustration'], styleTags: ['artistic', 'illustration'], creditCost: 'medium', qualityRating: 3, speedRating: 4, keywords: ['fast', 'creative', 'artistic', 'draft'] },

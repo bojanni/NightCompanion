@@ -246,12 +246,18 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                     {!supportsNegativePrompt(topSuggestion.model.id) && (
                       <span className="block text-red-400 mt-0.5">Note: Negative prompts disabled for this model.</span>
                     )}
+                    {topSuggestion.model.recommendedPreset && (
+                      <span className="block text-teal-400 mt-0.5 font-medium">
+                        Recommended Preset: {topSuggestion.model.recommendedPreset}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>

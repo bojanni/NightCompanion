@@ -358,6 +358,11 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             </div>
                             <p className="text-xs text-slate-400 mb-3">
                                 This prompt style works best with {suggestedModel?.name}, which handles complex text and instructions well without needing a negative prompt.
+                                {suggestedModel?.recommendedPreset && (
+                                    <span className="block text-teal-400 mt-1 font-medium">
+                                        Recommended Preset: {suggestedModel.recommendedPreset}
+                                    </span>
+                                )}
                             </p>
                             <button
                                 onClick={handleOptimize}

@@ -431,6 +431,9 @@ function ImproveTab({
                 <div>
                   <p className="text-xs font-medium text-slate-300">Optimized for {suggestedModel?.name}</p>
                   <p className="text-[10px] text-slate-500">Negative prompts are automatically disabled for this model type.</p>
+                  {suggestedModel?.recommendedPreset && (
+                    <p className="text-[11px] text-teal-400 mt-1 font-medium">Recommended Preset: {suggestedModel.recommendedPreset}</p>
+                  )}
                 </div>
               </div>
             )}
