@@ -4,6 +4,7 @@ import {
   Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
 } from 'lucide-react';
 import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt } from '../lib/ai-service';
+import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
 import { db, supabase } from '../lib/api';
 import { saveStyleProfile } from '../lib/style-analysis';
@@ -297,7 +298,6 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
               onUse={() => onPromptGenerated(generateResult)}
               onSave={(text) => handleSavePrompt(text, 'AI Generated: ' + generateInput.slice(0, 40))}
               generatedPrompt={generatedPrompt}
-              maxWords={maxWords}
             />
           )}
 
@@ -355,6 +355,22 @@ function ImproveTab({
   generatedNegativePrompt?: string | undefined;
 }) {
   const [showDiff, setShowDiff] = useState(true);
+  const [suggestedModel, setSuggestedModel] = useState<any>(null);
+
+  // Analyze prompt for model advice to conditionally hide negative prompt
+  useEffect(() => {
+    if (!input.trim()) {
+      setSuggestedModel(null);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      const results = analyzePrompt(input);
+      if (results && results.length > 0) {
+        setSuggestedModel(results[0].model);
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [input]);
 
   const diff = result ? diffWords(input, result) : [];
   const negativeDiff = negativeResult ? diffWords(negativeInput, negativeResult) : [];
@@ -376,19 +392,33 @@ function ImproveTab({
             className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
           />
           <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="text-[11px] font-medium text-slate-400 block">Negative Prompt <span className="text-slate-600">(optional)</span></label>
-              <span className={`text-[10px] font-mono ${negativeInput.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
-                {negativeInput.length}/600
-              </span>
-            </div>
-            <textarea
-              value={negativeInput}
-              onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
-              maxLength={600}
-              placeholder="Things to avoid, e.g. blurry, deformed, low quality, extra limbs..."
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
-            />
+            {supportsNegativePrompt(suggestedModel?.id || '') ? (
+              <>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-[11px] font-medium text-slate-400 block">Negative Prompt <span className="text-slate-600">(optional)</span></label>
+                  <span className={`text-[10px] font-mono ${negativeInput.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                    {negativeInput.length}/600
+                  </span>
+                </div>
+                <textarea
+                  value={negativeInput}
+                  onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
+                  maxLength={600}
+                  placeholder="Things to avoid, e.g. blurry, deformed, low quality, extra limbs..."
+                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
+                />
+              </>
+            ) : (
+              <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-3 flex items-center gap-3">
+                <div className="p-2 bg-teal-500/10 rounded-lg">
+                  <Sparkles size={14} className="text-teal-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-300">Optimized for {suggestedModel?.name}</p>
+                  <p className="text-[10px] text-slate-500">Negative prompts are automatically disabled for this model type.</p>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -506,7 +536,7 @@ function ImproveTab({
               </button>
             )}
 
-            {(input || negativeInput) && (
+            {(input || (supportsNegativePrompt(suggestedModel?.id) && negativeInput)) && (
               <button
                 onClick={() => { setInput(''); setNegativeInput(''); }}
                 className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700 ml-auto sm:ml-0"
@@ -575,7 +605,7 @@ const SUBJECT_OPTIONS = [
 ];
 
 function GenerateTab({
-  input, setInput, preferences, setPreferences, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, generatedPrompt, maxWords,
+  input, setInput, preferences, setPreferences, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, generatedPrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -590,7 +620,6 @@ function GenerateTab({
   onUse: () => void;
   onSave: (text: string) => void;
   generatedPrompt?: string | undefined;
-  maxWords: number;
 }) {
   const [showPrefs, setShowPrefs] = useState(false);
 

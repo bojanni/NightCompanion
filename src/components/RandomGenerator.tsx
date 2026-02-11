@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
-import { analyzePrompt } from '../lib/models-data';
+import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
 import { generateRandomPromptAI } from '../lib/ai-service';
 
@@ -165,25 +165,27 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 placeholder="Positive prompt..."
               />
 
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                <div className="flex justify-between items-center mb-1">
-                  <p className="text-[10px] text-red-300 font-bold uppercase">Negative Prompt</p>
-                  <span className={`text-[10px] font-mono ${negativePrompt.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
-                    {negativePrompt.length}/600
-                  </span>
+              {supportsNegativePrompt(topSuggestion?.model.id || '') && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="text-[10px] text-red-300 font-bold uppercase">Negative Prompt</p>
+                    <span className={`text-[10px] font-mono ${negativePrompt.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                      {negativePrompt.length}/600
+                    </span>
+                  </div>
+                  <textarea
+                    value={negativePrompt}
+                    onChange={(e) => {
+                      const val = e.target.value.slice(0, 600);
+                      setNegativePrompt(val);
+                      onNegativePromptChanged?.(val);
+                    }}
+                    maxLength={600}
+                    className="w-full bg-transparent border-0 p-0 text-xs text-red-200/80 leading-relaxed focus:outline-none focus:ring-0 placeholder-red-900/50 resize-none h-16"
+                    placeholder="blurred, low quality, watermark, distorted..."
+                  />
                 </div>
-                <textarea
-                  value={negativePrompt}
-                  onChange={(e) => {
-                    const val = e.target.value.slice(0, 600);
-                    setNegativePrompt(val);
-                    onNegativePromptChanged?.(val);
-                  }}
-                  maxLength={600}
-                  className="w-full bg-transparent border-0 p-0 text-xs text-red-200/80 leading-relaxed focus:outline-none focus:ring-0 placeholder-red-900/50 resize-none h-16"
-                  placeholder="blurred, low quality, watermark, distorted..."
-                />
-              </div>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -194,7 +196,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 {copiedPrompt ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                 {copiedPrompt ? 'Copied' : 'Copy Prompt'}
               </button>
-              {negativePrompt && (
+              {supportsNegativePrompt(topSuggestion?.model.id || '') && negativePrompt && (
                 <button
                   onClick={handleCopyNegative}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-red-300 text-xs rounded-lg hover:bg-slate-700 hover:text-red-200 transition-colors"
@@ -241,6 +243,9 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                   <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {topSuggestion.reasons[0]}
+                    {!supportsNegativePrompt(topSuggestion.model.id) && (
+                      <span className="block text-red-400 mt-0.5">Note: Negative prompts disabled for this model.</span>
+                    )}
                   </p>
                 </div>
                 <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>

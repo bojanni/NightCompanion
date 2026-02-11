@@ -4,7 +4,7 @@ import { db } from '../lib/api';
 import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForModel } from '../lib/ai-service';
-import { analyzePrompt } from '../lib/models-data';
+import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -42,7 +42,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
     const fullPrompt = [
         ...prompts.filter(p => p.trim()),
-        (suggestedModel?.id !== 'dalle3' && !suggestedModel?.id.startsWith('gpt') && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
+        (supportsNegativePrompt(suggestedModel?.id || '') && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
     ].filter(Boolean).join('\n');
 
     const positivePrompt = prompts.filter(p => p.trim()).join('\n');
@@ -178,8 +178,8 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             if (result.optimizedPrompt) {
                 setPrompts([result.optimizedPrompt]);
                 // If DALL-E 3, clear negative prompt as it's merged or ignored
-                // If DALL-E 3 or GPT, clear negative prompt as it's merged or ignored
-                if (suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) {
+                // If model doesn't support negative prompt (DALL-E 3, GPT, etc.)
+                if (!supportsNegativePrompt(suggestedModel?.id || '')) {
                     setNegativePrompt('');
                     toast.success(`Optimized for ${suggestedModel?.name} (Negative merged)`);
                 } else if (result.negativePrompt) {
@@ -341,7 +341,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 </div>
 
                 <div className="pt-2 border-t border-slate-700/50">
-                    {(suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) ? (
+                    {!supportsNegativePrompt(suggestedModel?.id || '') ? (
                         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
                             <div className="flex items-center gap-3 text-emerald-400 mb-3">
                                 <Sparkles size={16} />
@@ -422,7 +422,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                     {copiedPrompt ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
                     {copiedPrompt ? 'Copied' : 'Copy Prompt'}
                 </button>
-                {!(suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) && negativePrompt.trim() && (
+                {supportsNegativePrompt(suggestedModel?.id || '') && negativePrompt.trim() && (
                     <button
                         onClick={handleCopyNegative}
                         className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-red-300 text-sm font-medium rounded-xl hover:bg-slate-700 hover:text-red-200 transition-all border border-slate-700"
@@ -504,7 +504,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             {positivePrompt || <span className="text-slate-600 italic">No positive prompt...</span>}
                         </div>
 
-                        {!(suggestedModel?.id === 'dalle3' || suggestedModel?.id.startsWith('gpt')) && negativePrompt.trim() && (
+                        {supportsNegativePrompt(suggestedModel?.id || '') && negativePrompt.trim() && (
                             <div className="pt-3 border-t border-slate-700/50">
                                 <div className="flex items-center justify-between mb-1">
                                     <p className="text-xs text-red-400 font-mono uppercase">Negative</p>

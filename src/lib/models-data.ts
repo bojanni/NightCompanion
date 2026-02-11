@@ -696,6 +696,7 @@ export const MODELS: ModelInfo[] = [
   { id: 'monstronocity-v1-xl', name: 'MonstrousDiffusion v1 XL', provider: 'Community', description: 'A model specialized in generating quality art.', strengths: ['Good art generation', 'Detailed output'], weaknesses: ['Medium speed'], bestFor: ['illustration', 'fantasy'], styleTags: ['artistic', 'fantasy', 'illustration'], creditCost: 'low', qualityRating: 3, speedRating: 3, keywords: ['art', 'detailed', 'creative', 'fantasy'] },
 ];
 
+
 export function analyzePrompt(prompt: string): { model: ModelInfo; score: number; reasons: string[] }[] {
   const lower = prompt.toLowerCase();
   const words = lower.split(/\s+/);
@@ -759,9 +760,10 @@ export function analyzePrompt(prompt: string): { model: ModelInfo; score: number
       }
     }
 
+    // Boost OpenAI/DALL-E models for complex prompts
     const wordCount = words.length;
     if (wordCount > 30) {
-      if (model.id === 'dalle3' || model.id.startsWith('gpt1')) {
+      if (model.id === 'dalle3' || model.id.startsWith('gpt')) {
         score += 15;
         reasons.push('Handles complex, detailed prompts well');
       }
@@ -772,4 +774,11 @@ export function analyzePrompt(prompt: string): { model: ModelInfo; score: number
     return { model, score, reasons: reasons.length > 0 ? reasons : ['General-purpose model'] };
   })
     .sort((a, b) => b.score - a.score);
+}
+
+export function supportsNegativePrompt(modelId: string): boolean {
+  if (!modelId) return true; // Default to true if unsure
+  if (modelId === 'dalle3') return false;
+  if (modelId.startsWith('gpt')) return false;
+  return true;
 }
