@@ -10,6 +10,8 @@ import { testConnection } from '../lib/ai-service';
 import { ApiKeySchema } from '../lib/validation-schemas';
 import { DataManagement } from '../components/DataManagement';
 import { getModelsForProvider, getDefaultModelForProvider } from '../lib/provider-models';
+import type { ModelOption } from '../lib/provider-models';
+import { listModels } from '../lib/ai-service';
 
 interface SettingsProps { }
 
@@ -89,6 +91,9 @@ export default function Settings({ }: SettingsProps) {
   const [success, setSuccess] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Dynamic model lists state
+  const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>({});
 
   const getToken = useCallback(async () => {
     // Return a dummy token or empty string since auth is disabled
@@ -349,6 +354,35 @@ export default function Settings({ }: SettingsProps) {
                         setError(e instanceof Error ? e.message : 'Failed to update model');
                       }
                     }}
+                    onFetchModels={async (apiKey) => {
+                      // Only allow fetching for supported providers
+                      if (!['openrouter', 'together', 'openai', 'gemini'].includes(provider.id)) return;
+
+                      setActionLoading(`${provider.id}-fetch`);
+                      try {
+                        const token = await getToken();
+                        const fetched = await listModels(token, provider.id, apiKey);
+
+                        // Transform to ModelOption
+                        const options: ModelOption[] = fetched.map(m => ({
+                          id: m.id,
+                          name: m.name || m.id,
+                          description: m.description || undefined
+                        }));
+
+                        setDynamicModels(prev => ({
+                          ...prev,
+                          [provider.id]: options
+                        }));
+
+                        showSuccess(`Fetched ${options.length} models for ${provider.name}`);
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : 'Failed to fetch models');
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    dynamicModels={dynamicModels[provider.id]}
                   />
                 );
               })}
@@ -507,6 +541,8 @@ interface ProviderCardProps {
   onDelete: () => void;
   onSetActive: () => void;
   onModelChange: (modelName: string) => void;
+  onFetchModels: (apiKey: string) => void;
+  dynamicModels: ModelOption[] | undefined;
 }
 
 interface LocalEndpointCardProps {
@@ -518,12 +554,15 @@ interface LocalEndpointCardProps {
   onSetActive: () => void;
 }
 
-function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSetActive, onModelChange }: ProviderCardProps) {
+function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSetActive, onModelChange, onFetchModels, dynamicModels }: ProviderCardProps) {
   const [inputValue, setInputValue] = useState('');
   const [showInput, setShowInput] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
-  const models = getModelsForProvider(provider.id);
+  // Merge static and dynamic models
+  const staticModels = getModelsForProvider(provider.id);
+  const allModels = dynamicModels && dynamicModels.length > 0 ? dynamicModels : staticModels;
+
   const defaultModel = keyInfo?.model_name || getDefaultModelForProvider(provider.id);
   const [selectedModel, setSelectedModel] = useState(defaultModel);
 
@@ -537,6 +576,9 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
   const isSaving = actionLoading === provider.id;
   const isDeleting = actionLoading === `${provider.id}-delete`;
   const isSettingActive = actionLoading === `${provider.id}-active`;
+  const isFetching = actionLoading === `${provider.id}-fetch`;
+
+  const canFetch = ['openrouter', 'together', 'openai', 'gemini'].includes(provider.id);
 
   return (
     <div
@@ -585,9 +627,45 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
             </button>
           </div>
 
-          {models.length > 0 && (
+          {allModels.length > 0 && (
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Model</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs text-slate-400">Model</label>
+                {isConfigured && canFetch && (
+                  <button
+                    onClick={() => {
+                      // If we have an API key in the input (setup mode), use it.
+                      // If not, we might not have the full key in frontend state (security).
+                      // But usually on saving we reload keys. 
+                      // `ApiKeyInfo` from `listApiKeys` only has `key_hint`. 
+                      // So we cannot fetch models for an existing key unless we use the backend's ability to use the stored key.
+                      // The backend `list-models` implementation helps: 
+                      // `if (payload.provider && payload.apiKey) ... else { providerConfig = await getActiveProvider(); }`
+                      // This means we can only fetch for the ACTIVE provider if we don't send a key.
+                      // For now, let's only support fetching if we have the input value OR if it's the active provider?
+                      // No, simpler: prompt for key if not in input? Or just error if not active?
+                      // Let's rely on `inputValue` if present, otherwise try without key (backend uses active).
+                      // If provider is NOT active, backend will fail.
+
+                      if (inputValue) {
+                        onFetchModels(inputValue);
+                      } else if (isActive) {
+                        onFetchModels(''); // Signal to use active key
+                      } else {
+                        // Maybe show a toast that they need to enter key or activate first?
+                        // For now, let's just try with empty and let backend error if needed, 
+                        // but `onFetchModels` calls `listModels`.  
+                        onFetchModels('');
+                      }
+                    }}
+                    className="text-[10px] text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                    disabled={isFetching}
+                  >
+                    {isFetching ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                    {isFetching ? 'Fetching...' : 'Refresh List'}
+                  </button>
+                )}
+              </div>
               <select
                 value={selectedModel}
                 onChange={(e) => {
@@ -596,7 +674,7 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
                 }}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
               >
-                {models.map((model) => (
+                {allModels.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.name} {model.description && `— ${model.description}`}
                   </option>
@@ -636,15 +714,28 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
         </div>
       ) : (
         <div className="space-y-3">
-          {models.length > 0 && (
+          {allModels.length > 0 && (
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Model</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs text-slate-400">Model</label>
+                {/* In 'setup' mode (showInput=true), we definitely have the input value as the key! */}
+                {canFetch && inputValue.length > 10 && (
+                  <button
+                    onClick={() => onFetchModels(inputValue)}
+                    className="text-[10px] text-teal-400 hover:text-teal-300 flex items-center gap-1"
+                    disabled={isFetching}
+                  >
+                    {isFetching ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                    Fetch Models
+                  </button>
+                )}
+              </div>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
               >
-                {models.map((model) => (
+                {allModels.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.name} {model.description && `— ${model.description}`}
                   </option>

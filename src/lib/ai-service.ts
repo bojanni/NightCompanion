@@ -267,3 +267,23 @@ export async function optimizePromptForModel(
   return callAI('optimize-for-model', { prompt, targetModel, negativePrompt }, token);
 }
 
+export interface ModelListItem {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export async function listModels(
+  token: string,
+  provider?: string,
+  apiKey?: string,
+  endpointUrl?: string
+): Promise<ModelListItem[]> {
+  const payload: Record<string, any> = {};
+  if (provider) payload.provider = provider;
+  if (apiKey) payload.apiKey = apiKey;
+  if (endpointUrl) payload.endpointUrl = endpointUrl;
+
+  return callAI('list-models', payload, token);
+}
+

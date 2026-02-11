@@ -210,6 +210,69 @@ async function callTogether(apiKey, system, user, model, maxTokens = 1500) {
     return data.choices[0].message.content;
 }
 
+async function listModels(providerConfig) {
+    const { provider, apiKey, endpoint_url } = providerConfig;
+
+    if (provider === 'local' || providerConfig.type === 'local') {
+        // For local (Ollama/LM Studio), we might need different endpoints
+        // Ollama: GET /api/tags
+        // LM Studio: GET /v1/models
+
+        let url = endpoint_url.replace(/\/$/, '');
+        // Try standard OpenAI compatible endpoint first which both usually support now
+        try {
+            const res = await fetch(`${url}/v1/models`);
+            if (res.ok) {
+                const data = await res.json();
+                return data.data.map(m => ({ id: m.id, name: m.id }));
+            }
+        } catch (e) { /* ignore */ }
+
+        // Fallback for Ollama specific
+        try {
+            const res = await fetch(`${url}/api/tags`);
+            if (res.ok) {
+                const data = await res.json();
+                return data.models.map(m => ({ id: m.name, name: m.name }));
+            }
+        } catch (e) { /* ignore */ }
+
+        return [];
+    }
+
+    if (provider === 'openrouter') {
+        const res = await fetch('https://openrouter.ai/api/v1/models');
+        const data = await res.json();
+        return data.data.map(m => ({ id: m.id, name: m.name, description: m.description })); // OpenRouter returns proper list
+    }
+
+    if (provider === 'together') {
+        const res = await fetch('https://api.together.xyz/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        const data = await res.json();
+        // filter for chat/completion models if possible, but together returns all
+        return data.map(m => ({ id: m.id, name: m.display_name || m.id, description: m.description }));
+    }
+
+    if (provider === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        const data = await res.json();
+        // simple filter for gpt models
+        return data.data.filter(m => m.id.includes('gpt')).map(m => ({ id: m.id, name: m.id }));
+    }
+
+    if (provider === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const data = await res.json();
+        return data.models.map(m => ({ id: m.name.replace('models/', ''), name: m.displayName, description: m.description }));
+    }
+
+    return [];
+}
+
 async function callAI(providerConfig, system, user, maxTokens = 1500) {
     if (providerConfig.type === 'local') {
         // Local usually doesn't support vision easily via standard OpenAI endpoint unless specific model
@@ -347,6 +410,27 @@ router.post('/', async (req, res) => {
             const provider = await getActiveProvider();
             if (!provider) throw new Error('No active AI provider found');
             return res.json({ result: `Connection successful! Using ${provider.provider || provider.type}` });
+        } else if (action === 'list-models') {
+            // Dynamic model listing
+            // Payload might contain provider and key if we want to list for a specific non-active provider
+            // But for now let's reuse getActiveProvider OR allow passing credentials for setup time
+            let providerConfig = null;
+
+            if (payload.provider && payload.apiKey) {
+                providerConfig = { provider: payload.provider, apiKey: payload.apiKey, type: 'cloud' };
+            } else if (payload.provider === 'local' || payload.endpointUrl) {
+                providerConfig = { type: 'local', endpoint_url: payload.endpointUrl, provider: payload.subProvider };
+            } else {
+                providerConfig = await getActiveProvider();
+            }
+
+            if (!providerConfig) {
+                return res.status(400).json({ error: 'No provider configuration found to list models.' });
+            }
+
+            const models = await listModels(providerConfig);
+            return res.json({ result: models });
+
         } else {
             return res.status(400).json({ error: 'Invalid action' });
         }
