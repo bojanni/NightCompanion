@@ -38,8 +38,8 @@ export async function deleteApiKey(provider: string, _token: string): Promise<vo
   await callKeyService('DELETE', `/${provider}`);
 }
 
-export async function setActiveProvider(provider: string, modelName: string, _token: string): Promise<void> {
-  await callKeyService('POST', '', { action: 'set-active', provider, modelName });
+export async function setActiveProvider(provider: string, modelName: string, _token: string, active: boolean = true): Promise<void> {
+  await callKeyService('POST', '', { action: 'set-active', provider, modelName, active });
 }
 
 export async function updateModelSelection(provider: string, modelName: string, _token: string): Promise<void> {

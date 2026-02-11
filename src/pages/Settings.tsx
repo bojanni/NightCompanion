@@ -335,10 +335,14 @@ export default function Settings({ }: SettingsProps) {
                       try {
                         const token = await getToken();
                         const modelName = keyInfo?.model_name || getDefaultModelForProvider(provider.id);
-                        await setActiveProvider(provider.id, modelName, token);
+
+                        // Toggle logic: if already active, set to false. Otherwise true.
+                        const isCurrentlyActive = keyInfo?.is_active ?? false;
+                        await setActiveProvider(provider.id, modelName, token, !isCurrentlyActive);
+
                         await loadKeys();
                         await loadLocalEndpoints();
-                        showSuccess(`${provider.name} set as active provider`);
+                        showSuccess(isCurrentlyActive ? `${provider.name} deactivated` : `${provider.name} set as active provider`);
                       } catch (e) {
                         setError(e instanceof Error ? e.message : 'Failed to set active provider');
                       } finally {
@@ -367,7 +371,7 @@ export default function Settings({ }: SettingsProps) {
                         const options: ModelOption[] = fetched.map(m => ({
                           id: m.id,
                           name: m.name || m.id,
-                          description: m.description || undefined
+                          // Removed description as it's not part of ModelOption
                         }));
 
                         setDynamicModels(prev => ({
@@ -442,16 +446,27 @@ export default function Settings({ }: SettingsProps) {
                   setActionLoading('ollama-active');
                   setError('');
                   try {
-                    await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
-                    await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'ollama');
-                    const { error: updateError } = await supabase
-                      .from('user_local_endpoints')
-                      .update({ is_active: true })
-                      .eq('provider', 'ollama');
-                    if (updateError) throw updateError;
+                    const isCurrentlyActive = localEndpoints.find(e => e.provider === 'ollama')?.is_active;
+
+                    if (isCurrentlyActive) {
+                      // Deactivate
+                      await db.from('user_local_endpoints').update({ is_active: false }).eq('provider', 'ollama');
+                      showSuccess('Ollama deactivated');
+                    } else {
+                      // Activate (and deactivate others first)
+                      await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
+                      await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'ollama');
+                      const { error: updateError } = await supabase
+                        .from('user_local_endpoints')
+                        .update({ is_active: true })
+                        .eq('provider', 'ollama');
+                      if (updateError) throw updateError;
+                      showSuccess('Ollama set as active provider');
+                    }
+
                     await loadKeys();
                     await loadLocalEndpoints();
-                    showSuccess('Ollama set as active provider');
+
                   } catch (e) {
                     setError(e instanceof Error ? e.message : 'Failed to activate Ollama');
                   } finally {
@@ -506,16 +521,23 @@ export default function Settings({ }: SettingsProps) {
                   setActionLoading('lmstudio-active');
                   setError('');
                   try {
-                    await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
-                    await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'lmstudio');
-                    const { error: updateError } = await supabase
-                      .from('user_local_endpoints')
-                      .update({ is_active: true })
-                      .eq('provider', 'lmstudio');
-                    if (updateError) throw updateError;
+                    const isCurrentlyActive = localEndpoints.find(e => e.provider === 'lmstudio')?.is_active;
+
+                    if (isCurrentlyActive) {
+                      await db.from('user_local_endpoints').update({ is_active: false }).eq('provider', 'lmstudio');
+                      showSuccess('LM Studio deactivated');
+                    } else {
+                      await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
+                      await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'lmstudio');
+                      const { error: updateError } = await supabase
+                        .from('user_local_endpoints')
+                        .update({ is_active: true })
+                        .eq('provider', 'lmstudio');
+                      if (updateError) throw updateError;
+                      showSuccess('LM Studio set as active provider');
+                    }
                     await loadKeys();
                     await loadLocalEndpoints();
-                    showSuccess('LM Studio set as active provider');
                   } catch (e) {
                     setError(e instanceof Error ? e.message : 'Failed to activate LM Studio');
                   } finally {
@@ -686,9 +708,9 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
           <div className="flex items-center gap-2">
             <button
               onClick={onSetActive}
-              disabled={isSettingActive || isActive}
+              disabled={isSettingActive}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive
-                ? 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
+                ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
                 : `${provider.bgGlow} ${provider.textColor} hover:opacity-80`
                 } disabled:opacity-50`}
             >

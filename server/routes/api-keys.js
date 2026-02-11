@@ -73,15 +73,21 @@ router.post('/', async (req, res) => {
             await pool.query('UPDATE user_api_keys SET is_active = false');
             await pool.query('UPDATE user_local_endpoints SET is_active = false');
 
-            const updateResult = await pool.query(
-                'UPDATE user_api_keys SET is_active = true, model_name = COALESCE($1, model_name) WHERE provider = $2 RETURNING *',
-                [modelName, provider]
-            );
+            // Check if we are setting to active (default true)
+            // If explicit active=false is passed, we stop here (all inactive)
+            const isActive = req.body.active !== false; // Default to true if undefined
 
-            if (updateResult.rows.length === 0) {
-                return res.status(404).json({ error: 'Provider not found' });
+            if (isActive) {
+                const updateResult = await pool.query(
+                    'UPDATE user_api_keys SET is_active = true, model_name = COALESCE($1, model_name) WHERE provider = $2 RETURNING *',
+                    [modelName, provider]
+                );
+
+                if (updateResult.rows.length === 0) {
+                    return res.status(404).json({ error: 'Provider not found' });
+                }
             }
-            res.json({ success: true });
+            res.json({ success: true, active: isActive });
         } else if (action === 'update-model') {
             await pool.query(
                 'UPDATE user_api_keys SET model_name = $1 WHERE provider = $2',
