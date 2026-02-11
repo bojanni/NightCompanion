@@ -14,7 +14,7 @@ interface ManualGeneratorProps {
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '' }: ManualGeneratorProps) {
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -23,7 +23,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         }
         return [''];
     });
-    const [negativePrompt, setNegativePrompt] = useState(() => {
+    const [negativePrompt, setNegativePrompt] = useState<string>(() => {
         if (initialNegativePrompt) return initialNegativePrompt;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
         if (saved) {
@@ -41,34 +41,41 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify({ prompts, negativePrompt }));
     }, [prompts, negativePrompt]);
 
-    function handleStandardGenerate() {
+    function handleStandardGenerate(index: number) {
         const generated = generateRandomPrompt({ dreamy: false, characters: false, cinematic: false });
         const newPrompts = [...prompts];
-        newPrompts[0] = generated;
+        newPrompts[index] = generated;
         setPrompts(newPrompts);
     }
 
-    async function handleAIGenerate() {
+    async function handleAIGenerate(index: number) {
         setGenerating(true);
         try {
             const token = (await db.auth.getSession()).data.session?.access_token || '';
             const result = await generateRandomPromptAI(token, undefined, maxWords);
             if (result && typeof result === 'object' && 'prompt' in result) {
                 const newPrompts = [...prompts];
-                newPrompts[0] = result.prompt || '';
+                newPrompts[index] = result.prompt || '';
                 setPrompts(newPrompts);
                 if (result.negativePrompt) {
-                    setNegativePrompt(result.negativePrompt);
+                    setNegativePrompt((prev: string) => {
+                        const trimmed = result.negativePrompt?.trim();
+                        if (!trimmed) return prev;
+                        if (!prev.trim()) return trimmed;
+                        // Avoid exact duplicates
+                        if (prev.includes(trimmed)) return prev;
+                        return prev + ', ' + trimmed;
+                    });
                 }
             } else if (typeof result === 'string') {
                 const newPrompts = [...prompts];
-                newPrompts[0] = result;
+                newPrompts[index] = result;
                 setPrompts(newPrompts);
             }
         } catch (err) {
             console.error('AI generation failed:', err);
             toast.error('AI generation failed, using standard generation');
-            handleStandardGenerate();
+            handleStandardGenerate(index);
         } finally {
             setGenerating(false);
         }
@@ -157,24 +164,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                     </button>
                 </div>
 
-                <div className="flex gap-2 mb-2">
-                    <button
-                        onClick={handleStandardGenerate}
-                        disabled={generating}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-700/50 text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-white transition-colors disabled:opacity-50"
-                    >
-                        <Shuffle size={12} />
-                        Generate
-                    </button>
-                    <button
-                        onClick={handleAIGenerate}
-                        disabled={generating}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-teal-500/10 to-cyan-500/10 text-teal-400 border border-teal-500/20 rounded-lg hover:from-teal-500/20 hover:to-cyan-500/20 transition-all disabled:opacity-50"
-                    >
-                        {generating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                        {generating ? 'Generating...' : 'Generate with AI'}
-                    </button>
-                </div>
+
 
                 <div className="space-y-3">
                     {prompts.map((prompt, index) => (
@@ -186,8 +176,28 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                 value={prompt}
                                 onChange={(e) => handlePromptChange(index, e.target.value)}
                                 placeholder={`Enter prompt part ${index + 1}...`}
-                                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-10 pr-10 py-3 text-sm text-white placeholder-slate-600 resize-none h-24 focus:outline-none focus:border-teal-500/40"
+                                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-10 pr-10 pt-3 pb-10 text-sm text-white placeholder-slate-600 resize-none h-24 focus:outline-none focus:border-teal-500/40"
                             />
+
+                            <div className="absolute bottom-2 right-2 flex gap-1.5 transform scale-90 origin-bottom-right">
+                                <button
+                                    onClick={() => handleStandardGenerate(index)}
+                                    disabled={generating}
+                                    className="p-1.5 text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg transition-colors disabled:opacity-50"
+                                    title="Generate random fragment"
+                                >
+                                    <Shuffle size={14} />
+                                </button>
+                                <button
+                                    onClick={() => handleAIGenerate(index)}
+                                    disabled={generating}
+                                    className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-lg hover:bg-teal-500/20 transition-all disabled:opacity-50"
+                                    title="Generate with AI"
+                                >
+                                    {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                    <span className="hidden sm:inline">Generate with AI</span>
+                                </button>
+                            </div>
                             {prompts.length > 1 && (
                                 <button
                                     onClick={() => handleRemovePrompt(index)}
