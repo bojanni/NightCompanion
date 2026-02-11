@@ -41,6 +41,39 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify({ prompts, negativePrompt }));
     }, [prompts, negativePrompt]);
 
+    function handleStandardGenerate() {
+        const generated = generateRandomPrompt({ dreamy: false, characters: false, cinematic: false });
+        const newPrompts = [...prompts];
+        newPrompts[0] = generated;
+        setPrompts(newPrompts);
+    }
+
+    async function handleAIGenerate() {
+        setGenerating(true);
+        try {
+            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const result = await generateRandomPromptAI(token, undefined, maxWords);
+            if (result && typeof result === 'object' && 'prompt' in result) {
+                const newPrompts = [...prompts];
+                newPrompts[0] = result.prompt || '';
+                setPrompts(newPrompts);
+                if (result.negativePrompt) {
+                    setNegativePrompt(result.negativePrompt);
+                }
+            } else if (typeof result === 'string') {
+                const newPrompts = [...prompts];
+                newPrompts[0] = result;
+                setPrompts(newPrompts);
+            }
+        } catch (err) {
+            console.error('AI generation failed:', err);
+            toast.error('AI generation failed, using standard generation');
+            handleStandardGenerate();
+        } finally {
+            setGenerating(false);
+        }
+    }
+
     function handleAddPrompt() {
         if (prompts.length < 3) {
             setPrompts([...prompts, '']);
@@ -104,38 +137,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         }
     }
 
-    function handleStandardGenerate() {
-        const generated = generateRandomPrompt({ dreamy: false, characters: false, cinematic: false });
-        const newPrompts = [...prompts];
-        newPrompts[0] = generated;
-        setPrompts(newPrompts);
-    }
 
-    async function handleAIGenerate() {
-        setGenerating(true);
-        try {
-            const token = (await db.auth.getSession()).data.session?.access_token || '';
-            const result = await generateRandomPromptAI(token, undefined, maxWords);
-            if (result && typeof result === 'object' && 'prompt' in result) {
-                const newPrompts = [...prompts];
-                newPrompts[0] = result.prompt || '';
-                setPrompts(newPrompts);
-                if (result.negativePrompt) {
-                    setNegativePrompt(result.negativePrompt);
-                }
-            } else if (typeof result === 'string') {
-                const newPrompts = [...prompts];
-                newPrompts[0] = result;
-                setPrompts(newPrompts);
-            }
-        } catch (err) {
-            console.error('AI generation failed:', err);
-            toast.error('AI generation failed, using standard generation');
-            handleStandardGenerate();
-        } finally {
-            setGenerating(false);
-        }
-    }
 
     return (
         <div className="space-y-6">
