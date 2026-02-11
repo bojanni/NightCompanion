@@ -257,3 +257,13 @@ export async function generateTitle(prompt: string, token: string): Promise<stri
 export async function suggestTags(prompt: string, token: string): Promise<string> {
   return callAI('suggest-tags', { prompt }, token);
 }
+
+export async function optimizePromptForModel(
+  prompt: string,
+  targetModel: string,
+  token: string,
+  negativePrompt?: string
+): Promise<{ optimizedPrompt: string; negativePrompt?: string }> {
+  return callAI('optimize-for-model', { prompt, targetModel, negativePrompt }, token);
+}
+

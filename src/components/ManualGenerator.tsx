@@ -3,19 +3,19 @@ import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2, X, Wa
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
-import { generateRandomPromptAI, improvePromptWithNegative } from '../lib/ai-service';
+import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForModel } from '../lib/ai-service';
+import { analyzePrompt } from '../lib/models-data';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
     maxWords: number;
     initialPrompts?: string[] | undefined;
     initialNegativePrompt?: string | undefined;
-    targetModel?: 'sd' | 'dall-e-3';
 }
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', targetModel = 'sd' }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '' }: ManualGeneratorProps) {
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -37,6 +37,32 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     const [saving, setSaving] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [unifying, setUnifying] = useState(false);
+    const [optimizing, setOptimizing] = useState(false);
+    const [suggestedModel, setSuggestedModel] = useState<any>(null);
+
+    const fullPrompt = [
+        ...prompts.filter(p => p.trim()),
+        (suggestedModel?.id !== 'dalle3' && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
+    ].filter(Boolean).join('\n');
+
+    const positivePrompt = prompts.filter(p => p.trim()).join('\n');
+
+    // Analyze prompt for model advice
+    useEffect(() => {
+        if (!positivePrompt.trim()) {
+            setSuggestedModel(null);
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            const results = analyzePrompt(positivePrompt);
+            if (results && results.length > 0) {
+                setSuggestedModel(results[0].model);
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timeout);
+    }, [positivePrompt]);
 
     // Persist manual generator state
     useEffect(() => {
@@ -137,6 +163,39 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         }
     }
 
+    async function handleOptimize() {
+        if (!positivePrompt.trim()) return;
+        setOptimizing(true);
+        try {
+            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const result = await optimizePromptForModel(
+                positivePrompt,
+                suggestedModel?.name || 'DALL-E 3',
+                token,
+                negativePrompt
+            );
+
+            if (result.optimizedPrompt) {
+                setPrompts([result.optimizedPrompt]);
+                // If DALL-E 3, clear negative prompt as it's merged or ignored
+                if (suggestedModel?.id === 'dalle3') {
+                    setNegativePrompt('');
+                    toast.success('Optimized for DALL-E 3 (Negative merged)');
+                } else if (result.negativePrompt) {
+                    setNegativePrompt(result.negativePrompt);
+                    toast.success(`Optimized for ${suggestedModel?.name}`);
+                } else {
+                    toast.success(`Optimized for ${suggestedModel?.name}`);
+                }
+            }
+        } catch (err) {
+            console.error('Optimization failed:', err);
+            toast.error('Optimization failed');
+        } finally {
+            setOptimizing(false);
+        }
+    }
+
     function handleAddPrompt() {
         if (prompts.length < 3) {
             setPrompts([...prompts, '']);
@@ -161,12 +220,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         setPrompts(newPrompts);
     }
 
-    const fullPrompt = [
-        ...prompts.filter(p => p.trim()),
-        (targetModel !== 'dall-e-3' && negativePrompt.trim()) ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
-    ].filter(Boolean).join('\n');
 
-    const positivePrompt = prompts.filter(p => p.trim()).join('\n');
 
     async function handleCopyPrompt() {
         if (!positivePrompt) return;
@@ -286,20 +340,36 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 </div>
 
                 <div className="pt-2 border-t border-slate-700/50">
-                    {targetModel === 'dall-e-3' ? (
-                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex items-center gap-3 text-slate-500">
-                            <Info size={16} />
-                            <p className="text-sm">Negative prompts are not supported by DALL-E 3.</p>
+                    {suggestedModel?.id === 'dalle3' ? (
+                        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+                            <div className="flex items-center gap-3 text-emerald-400 mb-3">
+                                <Sparkles size={16} />
+                                <p className="text-sm font-medium">Model Advice: DALL-E 3 Recommended</p>
+                            </div>
+                            <p className="text-xs text-slate-400 mb-3">
+                                This prompt style works best with DALL-E 3, which handles complex text and instructions well without needing a negative prompt.
+                            </p>
+                            <button
+                                onClick={handleOptimize}
+                                disabled={optimizing}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/20 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                            >
+                                {optimizing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                                Optimize for DALL-E 3
+                            </button>
                         </div>
                     ) : (
                         <>
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs font-medium text-red-300 uppercase tracking-wide">Negative Prompt</span>
+                                    <span className={`text-[10px] font-mono ${negativePrompt.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                                        {negativePrompt.length}/600
+                                    </span>
                                     <div className="group relative">
                                         <Info size={12} className="text-slate-500 cursor-help" />
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-slate-700 rounded-lg text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                            What you want to avoid (e.g. blurry, deformed, text)
+                                            What you want to avoid (e.g. blurry, deformed, text). Max 600 characters.
                                         </div>
                                     </div>
                                 </div>
@@ -316,7 +386,8 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             <div className="relative">
                                 <textarea
                                     value={negativePrompt}
-                                    onChange={(e) => setNegativePrompt(e.target.value)}
+                                    onChange={(e) => setNegativePrompt(e.target.value.slice(0, 600))}
+                                    maxLength={600}
                                     placeholder="blurred, low quality, watermark, distorted..."
                                     className="w-full bg-slate-900/30 border border-red-900/30 focus:border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-50 placeholder-red-900/50 resize-none h-20 focus:outline-none pr-20"
                                 />
@@ -432,7 +503,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             {positivePrompt || <span className="text-slate-600 italic">No positive prompt...</span>}
                         </div>
 
-                        {targetModel !== 'dall-e-3' && negativePrompt.trim() && (
+                        {suggestedModel?.id !== 'dalle3' && negativePrompt.trim() && (
                             <div className="pt-3 border-t border-slate-700/50">
                                 <div className="flex items-center justify-between mb-1">
                                     <p className="text-xs text-red-400 font-mono uppercase">Negative</p>

@@ -166,10 +166,20 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               />
 
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                <p className="text-[10px] text-red-300 font-bold uppercase mb-1">Negative Prompt</p>
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[10px] text-red-300 font-bold uppercase">Negative Prompt</p>
+                  <span className={`text-[10px] font-mono ${negativePrompt.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                    {negativePrompt.length}/600
+                  </span>
+                </div>
                 <textarea
                   value={negativePrompt}
-                  onChange={(e) => { setNegativePrompt(e.target.value); onNegativePromptChanged?.(e.target.value); }}
+                  onChange={(e) => {
+                    const val = e.target.value.slice(0, 600);
+                    setNegativePrompt(val);
+                    onNegativePromptChanged?.(val);
+                  }}
+                  maxLength={600}
                   className="w-full bg-transparent border-0 p-0 text-xs text-red-200/80 leading-relaxed focus:outline-none focus:ring-0 placeholder-red-900/50 resize-none h-16"
                   placeholder="blurred, low quality, watermark, distorted..."
                 />

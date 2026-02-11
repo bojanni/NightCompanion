@@ -376,10 +376,16 @@ function ImproveTab({
             className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
           />
           <div>
-            <label className="text-[11px] font-medium text-slate-400 mb-1.5 block">Negative Prompt <span className="text-slate-600">(optional)</span></label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-[11px] font-medium text-slate-400 block">Negative Prompt <span className="text-slate-600">(optional)</span></label>
+              <span className={`text-[10px] font-mono ${negativeInput.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                {negativeInput.length}/600
+              </span>
+            </div>
             <textarea
               value={negativeInput}
-              onChange={(e) => setNegativeInput(e.target.value)}
+              onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
+              maxLength={600}
               placeholder="Things to avoid, e.g. blurry, deformed, low quality, extra limbs..."
               className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
             />

@@ -15,25 +15,31 @@ Key Elements of a Great Prompt:
 You must combine these elements into a single, flowing text description without using labels like 'Subject:' or lines.`;
 
 const SYSTEM_PROMPTS = {
-    improve: `You are an expert AI image prompt engineer. Improve the user's prompt by enhancing subject, style, details, and atmosphere. Return ONLY the improved prompt text.`,
+    improve: `You are an expert AI image prompt engineer. Improve the user's prompt by enhancing subject, style, details, and atmosphere. Return ONLY the improved prompt text. CRITICAL: Keep valid prompt response under 1500 characters.`,
 
-    'improve-with-negative': `You are an expert AI image prompt engineer. Improve both the positive prompt and the negative prompt. For the positive prompt, enhance subject, style, details, and atmosphere. For the negative prompt, refine it with better exclusion terms (e.g., deformed, blurry, low quality, extra limbs, bad anatomy). Return ONLY valid JSON: { "improved": "...", "negativePrompt": "..." }.`,
+    'improve-with-negative': `You are an expert AI image prompt engineer. Improve both the positive prompt and the negative prompt. For the positive prompt, enhance subject, style, details, and atmosphere. For the negative prompt, refine it with better exclusion terms (e.g., deformed, blurry, low quality, extra limbs, bad anatomy). Return ONLY valid JSON: { "improved": "...", "negativePrompt": "..." }. CRITICAL: Limit 'improved' positive prompt to 1500 characters. Limit 'negativePrompt' to 600 characters max.`,
 
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
-    generate: `${BASE_PERSONA}\n\nTask: Transform the description into a technical NightCafe prompt. Return ONLY the prompt text.`,
+    generate: `${BASE_PERSONA}\n\nTask: Transform the description into a technical NightCafe prompt. Return ONLY the prompt text.\nCRITICAL: Keep the generated prompt under 1500 characters.`,
 
-    diagnose: `You are an AI troubleshooting expert. Analyze failed prompts. Provide: 1. Likely cause. 2. 3 fixes. 3. Improved prompt. Format as JSON: { cause, fixes[], improvedPrompt }.`,
+    diagnose: `You are an AI troubleshooting expert. Analyze failed prompts. Provide: 1. Likely cause. 2. 3 fixes. 3. Improved prompt. Format as JSON: { cause, fixes[], improvedPrompt }. CRITICAL: Keep 'improvedPrompt' under 1500 characters.`,
 
     'recommend-models': `You are a model selection expert. Recommend NightCafe models based on prompt. Return JSON: { recommendations: [{ modelId, modelName, matchScore, reasoning, tips[] }] }.`,
 
-    'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { "variations": [{ "type": "string", "prompt": "string", "negativePrompt": "string" }] }.\n\nCRITICAL: The 'prompt' field must be a SINGLE string containing the full image description. DO NOT include structure labels (e.g. 'Subject:', 'Style:'). Just the raw, ready-to-use prompt text.\nPut elements to avoid in 'negativePrompt'.`,
+    'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { "variations": [{ "type": "string", "prompt": "string", "negativePrompt": "string" }] }.\n\nCRITICAL: The 'prompt' field must be a SINGLE string containing the full image description. DO NOT include structure labels (e.g. 'Subject:', 'Style:'). Just the raw, ready-to-use prompt text.\nPut elements to avoid in 'negativePrompt'.\nLIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
 
-    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept. Return JSON: { "prompt": "string", "negativePrompt": "string" }. \n\nCRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Modifiers combined) without any field labels, markdown headers, or newlines. Put negative items in 'negativePrompt'.`,
+    random: `${BASE_PERSONA}\n\nTask: Generate a unique, visually striking concept. Return JSON: { "prompt": "string", "negativePrompt": "string" }. \n\nCRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Modifiers combined) without any field labels, markdown headers, or newlines. Put negative items in 'negativePrompt'.\nLIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
 
     'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. Return ONLY the title text. No quotes.`,
 
-    'suggest-tags': `Suggest 5-10 comma-separated tags for the image prompt. Return ONLY the tags. Example: "nature, landscape, mountain, blue sky".`
+    'suggest-tags': `Suggest 5-10 comma-separated tags for the image prompt. Return ONLY the tags. Example: "nature, landscape, mountain, blue sky".`,
+
+    'optimize-for-model': `You are an expert AI prompt engineer. Optimize the user's prompt for a specific AI model.
+    - If the model is DALL-E 3: It does NOT support negative prompts. You MUST merge any key negative constraints (e.g. "no blur", "no text") naturally into the positive prompt formulation or ignore them if minor. Return ONLY the optimized positive prompt.
+    - If the model is Stable Diffusion / SDXL / Flux: You can keep negative constraints separate if provided, or refine the positive prompt to better suit the model's strengths (e.g. lighting, composition).
+    CRITICAL: Return ONLY valid JSON: { "optimizedPrompt": "...", "negativePrompt": "..." (optional, empty if DALL-E 3) }.
+    LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`
 };
 
 async function getActiveProvider() {
@@ -287,6 +293,14 @@ router.post('/', async (req, res) => {
             userPrompt = content; // Pass array for multimodal
             maxTokens = 1000;
 
+        } else if (action === 'optimize-for-model') {
+            userPrompt = `Optimize this prompt for model: "${payload.targetModel}".\nPositive Prompt: "${payload.prompt}"\n`;
+            if (payload.negativePrompt) {
+                userPrompt += `Negative Prompt: "${payload.negativePrompt}"\n`;
+            }
+            userPrompt += `\nTask: Rewrite the prompt to be optimal for ${payload.targetModel}.`;
+            maxTokens = 1500;
+
         } else if (action === 'test-connection') {
             // Bypass AI call for test, just check provider availability
             const provider = await getActiveProvider();
@@ -305,7 +319,7 @@ router.post('/', async (req, res) => {
 
         // Parse JSON if needed (for actions that return JSON)
         let parsedResult = result;
-        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'improve-with-negative', 'generate-variations', 'describe-character', 'random'].includes(action)) {
+        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'improve-with-negative', 'generate-variations', 'describe-character', 'random', 'optimize-for-model'].includes(action)) {
             try {
                 let jsonStr = result;
                 // Attempt to find JSON within markdown code blocks first
