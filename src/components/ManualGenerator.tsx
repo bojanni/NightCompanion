@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2 } from 'lucide-react';
+import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2, X, Wand2 } from 'lucide-react';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
-import { generateRandomPromptAI } from '../lib/ai-service';
+import { generateRandomPromptAI, improvePromptWithNegative } from '../lib/ai-service';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -35,6 +35,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     const [copiedNeg, setCopiedNeg] = useState(false);
     const [saving, setSaving] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [unifying, setUnifying] = useState(false);
 
     // Persist manual generator state
     useEffect(() => {
@@ -89,6 +90,52 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         }
     }
 
+    async function handleUnify() {
+        if (!fullPrompt.trim()) return;
+        setUnifying(true);
+        try {
+            // First, get the session token
+            const token = (await db.auth.getSession()).data.session?.access_token || '';
+
+            // Use just the positive prompts for unification context + negative for context if needed?
+            // improvePromptWithNegative takes (token, prompt, negativePrompt).
+            // We want to unify the *positive* parts into one, and potentially improve negative.
+            // If we treat the current combined prompts as the input prompt.
+            const combinedPositive = prompts.filter(p => p.trim()).join(' ');
+
+            const result = await improvePromptWithNegative(token, combinedPositive, negativePrompt);
+
+            if (result.improved) {
+                setPrompts([result.improved]);
+            }
+            if (result.negativePrompt) {
+                setNegativePrompt((prev: string) => {
+                    // Same merging logic
+                    const newTerms = result.negativePrompt
+                        ? result.negativePrompt.split(',').map(t => t.trim()).filter(Boolean)
+                        : [];
+
+                    if (newTerms.length === 0) return prev;
+                    if (!prev.trim()) return newTerms.join(', ');
+
+                    const existingTerms = prev.split(',').map(t => t.trim().toLowerCase());
+                    const uniqueNewTerms = newTerms.filter(term =>
+                        !existingTerms.includes(term.toLowerCase())
+                    );
+
+                    if (uniqueNewTerms.length === 0) return prev;
+                    return prev + ', ' + uniqueNewTerms.join(', ');
+                });
+            }
+            toast.success('Prompts unified!');
+        } catch (err) {
+            console.error('Unification failed:', err);
+            toast.error('Failed to unify prompts');
+        } finally {
+            setUnifying(false);
+        }
+    }
+
     function handleAddPrompt() {
         if (prompts.length < 3) {
             setPrompts([...prompts, '']);
@@ -101,6 +148,12 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         }
     }
 
+    function handleClearPrompt(index: number) {
+        const newPrompts = [...prompts];
+        newPrompts[index] = '';
+        setPrompts(newPrompts);
+    }
+
     function handlePromptChange(index: number, value: string) {
         const newPrompts = [...prompts];
         newPrompts[index] = value;
@@ -109,7 +162,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
     const fullPrompt = [
         ...prompts.filter(p => p.trim()),
-        negativePrompt.trim() ? `\n### Negative Prompt:\n${negativePrompt.trim()}` : ''
+        negativePrompt.trim() ? `\n### Negative Prompt: \n${negativePrompt.trim()} ` : ''
     ].filter(Boolean).join('\n');
 
     const positivePrompt = prompts.filter(p => p.trim()).join('\n');
@@ -187,6 +240,27 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                 className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-10 pr-10 pt-3 pb-10 text-sm text-white placeholder-slate-600 resize-none h-24 focus:outline-none focus:border-teal-500/40"
                             />
 
+                            <div className="absolute top-3 right-3 flex items-center gap-1">
+                                {prompt && (
+                                    <button
+                                        onClick={() => handleClearPrompt(index)}
+                                        className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                                        title="Clear text"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                                {prompts.length > 1 && (
+                                    <button
+                                        onClick={() => handleRemovePrompt(index)}
+                                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+                                        title="Remove section"
+                                    >
+                                        <Minus size={14} />
+                                    </button>
+                                )}
+                            </div>
+
                             <div className="absolute bottom-2 right-2 flex gap-1.5 transform scale-90 origin-bottom-right">
                                 <button
                                     onClick={() => handleStandardGenerate(index)}
@@ -206,28 +280,30 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                     <span className="hidden sm:inline">Generate with AI</span>
                                 </button>
                             </div>
-                            {prompts.length > 1 && (
-                                <button
-                                    onClick={() => handleRemovePrompt(index)}
-                                    className="absolute top-3 right-3 p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                    title="Remove section"
-                                >
-                                    <Minus size={14} />
-                                </button>
-                            )}
                         </div>
                     ))}
                 </div>
 
                 <div className="pt-2 border-t border-slate-700/50">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-medium text-red-300 uppercase tracking-wide">Negative Prompt</span>
-                        <div className="group relative">
-                            <Info size={12} className="text-slate-500 cursor-help" />
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-slate-700 rounded-lg text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                What you want to avoid (e.g. blurry, deformed, text)
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-red-300 uppercase tracking-wide">Negative Prompt</span>
+                            <div className="group relative">
+                                <Info size={12} className="text-slate-500 cursor-help" />
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-slate-700 rounded-lg text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    What you want to avoid (e.g. blurry, deformed, text)
+                                </div>
                             </div>
                         </div>
+                        {negativePrompt && (
+                            <button
+                                onClick={() => setNegativePrompt('')}
+                                className="p-1 text-slate-500 hover:text-red-300 transition-colors"
+                                title="Clear negative prompt"
+                            >
+                                <X size={12} />
+                            </button>
+                        )}
                     </div>
                     <textarea
                         value={negativePrompt}
@@ -267,8 +343,19 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             </div>
 
             {fullPrompt.trim() && (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-                    <p className="text-xs text-slate-500 mb-2 font-mono">PREVIEW</p>
+                <div className="relative bg-slate-900/50 border border-slate-800 rounded-xl p-4 group">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-slate-500 font-mono">PREVIEW</p>
+                        <button
+                            onClick={handleUnify}
+                            disabled={unifying}
+                            className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded hover:bg-indigo-500/20 disabled:opacity-50 transition-colors"
+                            title="Merge all sections into one cohesive prompt using AI"
+                        >
+                            {unifying ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                            {unifying ? 'Unifying...' : 'Unify to Single Prompt'}
+                        </button>
+                    </div>
                     <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-light">
                         {fullPrompt}
                     </p>
