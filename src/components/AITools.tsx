@@ -7,6 +7,8 @@ import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDes
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
 import { db, supabase } from '../lib/api';
+import { listApiKeys } from '../lib/api-keys-service';
+import { getDefaultModelForProvider } from '../lib/provider-models';
 import { saveStyleProfile } from '../lib/style-analysis';
 
 interface AIToolsProps {
@@ -86,6 +88,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   const [saving, setSaving] = useState('');
 
   const [suggestedModel, setSuggestedModel] = useState<any>(null);
+  const [activeModel, setActiveModel] = useState<string>('');
 
   useImperativeHandle(ref, () => ({
     hasContent: () => {
@@ -131,6 +134,44 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     };
     localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
   }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
+
+  // Fetch active model
+  useEffect(() => {
+    async function fetchActiveModel() {
+      try {
+        const token = await getToken();
+
+        // Check local endpoints first
+        const { data: localData } = await supabase
+          .from('user_local_endpoints')
+          .select('*')
+          .eq('is_active', true)
+          .single();
+
+        if (localData) {
+          setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${localData.model_name})`);
+          return;
+        }
+
+        // Check cloud providers
+        const keys = await listApiKeys(token);
+        const activeKey = keys.find(k => k.is_active);
+
+        if (activeKey) {
+          const model = activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+          // Format provider name nicely
+          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+          setActiveModel(`${providerName} ${model}`);
+        } else {
+          setActiveModel('');
+        }
+      } catch (e) {
+        console.error('Failed to fetch active model', e);
+      }
+    }
+    fetchActiveModel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
 
   async function getToken() {
     const { data } = await db.auth.getSession();
@@ -357,6 +398,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               generatedPrompt={generatedPrompt}
               generatedNegativePrompt={generatedNegativePrompt}
               suggestedModel={suggestedModel}
+              activeModel={activeModel}
             />
           )}
 
@@ -414,7 +456,7 @@ export default AITools;
 import { diffWords } from '../lib/diff-utils';
 
 function ImproveTab({
-  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt, suggestedModel,
+  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt, suggestedModel, activeModel,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -433,6 +475,7 @@ function ImproveTab({
   generatedPrompt?: string | undefined;
   generatedNegativePrompt?: string | undefined;
   suggestedModel: any;
+  activeModel?: string;
 }) {
   const [showDiff, setShowDiff] = useState(true);
 
@@ -449,6 +492,14 @@ function ImproveTab({
     <div className="space-y-3">
       {!result && (
         <>
+          {activeModel && (
+            <div className="flex items-center gap-2 px-1">
+              <Sparkles size={14} className="text-teal-400" />
+              <h3 className="text-xs font-medium text-slate-300">
+                Improve prompt with <span className="text-teal-400">{activeModel}</span>
+              </h3>
+            </div>
+          )}
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
