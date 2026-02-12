@@ -181,7 +181,11 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
         })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'OpenRouter error');
+    if (!res.ok) {
+        const errorMsg = data.error?.message || 'OpenRouter error';
+        console.error('OpenRouter API Error:', errorMsg);
+        throw new Error(`OpenRouter Provider Error: ${errorMsg}`);
+    }
     return data.choices[0].message.content;
 }
 
@@ -482,7 +486,8 @@ router.post('/', async (req, res) => {
         res.json({ result: parsedResult });
 
     } catch (err) {
-        console.error('AI Service Error:', err);
+        console.error('AI Service Error:', err.message);
+
         // Ensure we send a useful error message back to the client
         res.status(500).json({
             error: err.message || 'An unexpected error occurred',
