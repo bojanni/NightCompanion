@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { handleAIError } from '../lib/error-handler';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
@@ -15,9 +15,10 @@ interface RandomGeneratorProps {
   maxWords: number;
   initialPrompt?: string;
   initialNegativePrompt?: string;
+  onCheckExternalFields?: () => boolean;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
@@ -25,11 +26,23 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [copiedNeg, setCopiedNeg] = useState(false);
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [generatedStyle, setGeneratedStyle] = useState<string>('');
 
   function handleGenerate() {
+    if (prompt.trim()) {
+      if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
+        return;
+      }
+    }
+
+    if (onCheckExternalFields && !onCheckExternalFields()) {
+      return;
+    }
+
     const newPrompt = generateRandomPrompt(filters);
     setPrompt(newPrompt);
     setNegativePrompt('');
+    setGeneratedStyle('');
     onNegativePromptChanged?.('');
     setCopiedPrompt(false);
     onPromptGenerated(newPrompt);
@@ -60,6 +73,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       title: 'Random: ' + (prompt.split(',')[0] || 'Untitled').slice(0, 40),
       content: fullContent,
       notes: 'Generated with Random mode' +
+        (generatedStyle ? ` [Use Style: ${generatedStyle}]` : '') +
         (filters.dreamy ? ' [dreamy]' : '') +
         (filters.characters ? ' [characters]' : '') +
         (filters.cinematic ? ' [cinematic]' : ''),
@@ -74,23 +88,37 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const topSuggestion = (prompt && typeof prompt === 'string') ? analyzePrompt(prompt)[0] : null;
 
   async function handleMagicRandom() {
+    if (prompt.trim()) {
+      if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
+        return;
+      }
+    }
+
+    if (onCheckExternalFields && !onCheckExternalFields()) {
+      return;
+    }
+
     setRegenerating(true);
     try {
       const token = (await db.auth.getSession()).data.session?.access_token || '';
       const result = await generateRandomPromptAI(token, undefined, maxWords);
 
-      // result is { prompt: string, negativePrompt?: string }
+      // result is { prompt: string, negativePrompt?: string, style?: string }
       if (result && typeof result === 'object' && 'prompt' in result) {
         const promptText = result.prompt || '';
         const negText = result.negativePrompt || '';
+        const styleText = result.style || '';
+
         setPrompt(promptText);
         setNegativePrompt(negText);
+        setGeneratedStyle(styleText);
         onNegativePromptChanged?.(negText);
         setCopiedPrompt(false);
         onPromptGenerated(promptText);
       } else if (typeof result === 'string') {
         setPrompt(result);
         setNegativePrompt('');
+        setGeneratedStyle('');
         onNegativePromptChanged?.('');
         setCopiedPrompt(false);
         onPromptGenerated(result);
@@ -101,9 +129,9 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       const fallback = generateRandomPrompt(filters);
       setPrompt(fallback);
       setNegativePrompt('');
+      setGeneratedStyle('');
       onNegativePromptChanged?.('');
       onPromptGenerated(fallback);
-
     } finally {
       setRegenerating(false);
     }
@@ -161,6 +189,12 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         <div className="space-y-4">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5">
             <div className="flex flex-col gap-3 mb-4">
+              {generatedStyle && (
+                <div className="flex items-center gap-2 mb-1 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg w-fit">
+                  <Palette size={12} className="text-amber-400" />
+                  <span className="text-xs font-medium text-amber-300">Style: {generatedStyle}</span>
+                </div>
+              )}
               <textarea
                 value={prompt}
                 onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
