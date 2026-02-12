@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser, PenTool } from 'lucide-react';
 import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
 import ManualGenerator from '../components/ManualGenerator';
-import AITools from '../components/AITools';
+import AITools, { AIToolsRef } from '../components/AITools';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
@@ -19,6 +19,9 @@ export default function Generator({ }: GeneratorProps) {
   const [mode, setMode] = useState<Mode>(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).mode || 'random'; } catch { } return 'random';
   });
+
+  const aiToolsRef = useRef<AIToolsRef>(null);
+
   const [guidedInitial, setGuidedInitial] = useState(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).guidedInitial || ''; } catch { } return '';
   });
@@ -97,6 +100,17 @@ export default function Generator({ }: GeneratorProps) {
     localStorage.removeItem(STORAGE_KEY);
     // Also clear manual generator specific storage
     localStorage.removeItem('nightcompanion_manual_generator');
+  }
+
+  function handleCheckExternalFields() {
+    if (aiToolsRef.current?.hasContent()) {
+      if (window.confirm('The AI Improve prompt field is not empty. Do you want to clear it and generate a new random prompt?')) {
+        aiToolsRef.current.clearContent();
+        return true;
+      }
+      return false;
+    }
+    return true;
   }
 
   const modes = [
@@ -195,6 +209,7 @@ export default function Generator({ }: GeneratorProps) {
           maxWords={maxWords}
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
+          onCheckExternalFields={handleCheckExternalFields}
         />
       )}
 
@@ -261,6 +276,7 @@ export default function Generator({ }: GeneratorProps) {
       )}
 
       <AITools
+        ref={aiToolsRef}
         onPromptGenerated={(prompt) => {
           setGuidedInitial(prompt);
           setMode('guided');
