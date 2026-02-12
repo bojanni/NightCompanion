@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
   Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
@@ -16,6 +16,11 @@ interface AIToolsProps {
   generatedNegativePrompt?: string;
   maxWords: number;
   onSaved?: () => void;
+}
+
+export interface AIToolsRef {
+  hasContent: () => boolean;
+  clearContent: () => void;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -40,7 +45,7 @@ function loadAIToolsState<T>(key: string, fallback: T): T {
   return fallback;
 }
 
-export default function AITools({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved }: AIToolsProps) {
+const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved }, ref) => {
   const [tab, setTab] = useState<Tab>(() => loadAIToolsState('tab', 'improve'));
   const [expanded, setExpanded] = useState(() => loadAIToolsState('expanded', true));
   const [loading, setLoading] = useState(false);
@@ -65,6 +70,24 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
   const [saving, setSaving] = useState('');
 
   const [suggestedModel, setSuggestedModel] = useState<any>(null);
+
+  useImperativeHandle(ref, () => ({
+    hasContent: () => {
+      // Check if current Improve tab has content that might be lost
+      if (tab === 'improve') {
+        return !!improveInput.trim();
+      }
+      return false;
+    },
+    clearContent: () => {
+      if (tab === 'improve') {
+        setImproveInput('');
+        setNegativeInput('');
+        setImproveResult('');
+        setNegativeResult('');
+      }
+    }
+  }));
 
   // Analyze prompt for model advice to conditionally hide negative prompt
   useEffect(() => {
@@ -360,7 +383,9 @@ export default function AITools({ onPromptGenerated, onNegativePromptGenerated, 
       )}
     </div>
   );
-}
+});
+
+export default AITools;
 
 import { diffWords } from '../lib/diff-utils';
 

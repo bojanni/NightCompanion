@@ -41,6 +41,7 @@ const SYSTEM_PROMPTS = {
     - Be specific and descriptive
     - Include style, mood, lighting, composition
     - Add technical details (camera angle, art medium, etc.)
+    - Use clear technical specifications
 
     STEP 3: Generate a matching negative prompt (maximum 100 words)
     - Tailor to the chosen style (avoid elements that don't fit)
