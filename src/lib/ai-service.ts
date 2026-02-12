@@ -104,6 +104,10 @@ export async function generateRandomPromptAI(token: string, theme?: string, maxW
   return callAI('random', { theme, maxWords }, token);
 }
 
+export async function generateNegativePrompt(token: string): Promise<string> {
+  return callAI('generate-negative-prompt', {}, token);
+}
+
 export interface Diagnosis {
   cause: string;
   fixes: string[];

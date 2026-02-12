@@ -50,7 +50,24 @@ const SYSTEM_PROMPTS = {
     - If the model is DALL-E 3 or any GPT-Image model (e.g. GPT1.5, GPT-4o): These do NOT support negative prompts. You MUST merge any key negative constraints (e.g. "no blur", "no text") naturally into the positive prompt formulation or ignore them if minor. Return ONLY the optimized positive prompt.
     - If the model is Stable Diffusion / SDXL / Flux / Ideogram: You can keep negative constraints separate if provided, or refine the positive prompt to better suit the model's strengths (e.g. lighting, composition).
     CRITICAL: Return ONLY valid JSON: { "optimizedPrompt": "...", "negativePrompt": "..." (optional, empty if DALL-E 3/GPT) }.
-    LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`
+    LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
+
+    'generate-negative-prompt': `You are an AI assistant helping to generate negative prompts for AI art.
+    RULES:
+    1. Maximum 100 words
+    2. Comma-separated list of unwanted characteristics
+    3. Focus on technical quality issues (blurry, distorted, low quality, etc.)
+    4. Avoid extreme or repetitive terms
+    5. STOP once you have a complete list - NO repetition
+
+    Standard negative prompt structure:
+    - Quality issues: ugly, blurry, low quality, distorted, deformed, bad anatomy
+    - Artifacts: watermark, signature, text, grainy, jpeg artifacts
+    - Composition: cropped, out of frame, duplicate, bad proportions
+    - Rendering: oversaturated, underexposed, overexposed, amateur
+
+    Generate a negative prompt of maximum 100 words.
+    STOP after 100 words.`
 };
 
 async function getActiveProvider() {
@@ -444,7 +461,12 @@ router.post('/', async (req, res) => {
                 userPrompt += `Negative Prompt: "${payload.negativePrompt}"\n`;
             }
             userPrompt += `\nTask: Rewrite the prompt to be optimal for ${payload.targetModel}.`;
+            userPrompt += `\nTask: Rewrite the prompt to be optimal for ${payload.targetModel}.`;
             maxTokens = 1500;
+
+        } else if (action === 'generate-negative-prompt') {
+            userPrompt = "Generate a negative prompt based on the standard structure.";
+            maxTokens = 200;
 
         } else if (action === 'test-connection') {
             // Bypass AI call for test, just check provider availability
