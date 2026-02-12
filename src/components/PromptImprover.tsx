@@ -28,7 +28,18 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
         return;
       }
 
-      const result = await improvePromptDetailed(prompt, session.access_token);
+      // Check for feature specific preference
+      let apiPrefs = undefined;
+      try {
+        const savedPrefs = localStorage.getItem('promptImproverPrefs');
+        if (savedPrefs) {
+          apiPrefs = JSON.parse(savedPrefs);
+        }
+      } catch (e) {
+        console.error('Failed to load prompt improver prefs', e);
+      }
+
+      const result = await improvePromptDetailed(prompt, session.access_token, apiPrefs);
       setImprovement(result);
     } catch (err) {
       handleAIError(err);

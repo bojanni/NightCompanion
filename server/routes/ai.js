@@ -476,7 +476,54 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Invalid action' });
         }
 
-        const provider = await getActiveProvider();
+        async function getProviderCredentials(providerId) {
+            if (['ollama', 'lmstudio'].includes(providerId)) {
+                const local = await pool.query(
+                    'SELECT provider, endpoint_url, model_name FROM user_local_endpoints WHERE provider = $1',
+                    [providerId]
+                );
+                if (local.rows.length > 0) {
+                    return { type: 'local', ...local.rows[0] };
+                }
+            } else {
+                const cloud = await pool.query(
+                    'SELECT provider, encrypted_key, model_name FROM user_api_keys WHERE provider = $1',
+                    [providerId]
+                );
+                if (cloud.rows.length > 0) {
+                    return {
+                        type: 'cloud',
+                        provider: cloud.rows[0].provider,
+                        apiKey: decrypt(cloud.rows[0].encrypted_key),
+                        modelName: cloud.rows[0].model_name
+                    };
+                }
+            }
+            return null;
+        }
+
+        // ... (existing getActiveProvider and other functions)
+
+        // Determine which provider/model to use
+        let provider;
+
+        // If the client requested specific preferences (e.g. for Prompt Improver), try to use them
+        if (payload.apiPreferences && payload.apiPreferences.provider) {
+            // Fetch credentials for the requested provider
+            provider = await getProviderCredentials(payload.apiPreferences.provider);
+
+            // If a specific model was also requested, override the default one from DB
+            if (provider && payload.apiPreferences.model) {
+                provider.modelName = payload.apiPreferences.model; // For cloud
+                provider.model_name = payload.apiPreferences.model; // For local
+            }
+        }
+
+        // Fallback to active provider if no preference or preference failed to load
+        if (!provider) {
+            provider = await getActiveProvider();
+        }
+
         if (!provider) {
             return res.status(503).json({ error: 'No AI provider configured. Please add an API key in Settings.' });
         }

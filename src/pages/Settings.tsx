@@ -567,6 +567,21 @@ export default function Settings({ }: SettingsProps) {
         </>
       )}
 
+      {/* Feature Defaults Section */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles size={18} className="text-slate-400" />
+          <h2 className="text-lg font-semibold text-white">Feature Defaults</h2>
+        </div>
+        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
+          <FeatureDefaultSelector
+            keys={keys}
+            localEndpoints={localEndpoints}
+            dynamicModels={dynamicModels}
+          />
+        </div>
+      </div>
+
       <DataManagement />
     </div>
   );
@@ -991,3 +1006,120 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
     </div>
   );
 }
+
+function FeatureDefaultSelector({ keys, localEndpoints, dynamicModels }: {
+  keys: ApiKeyInfo[],
+  localEndpoints: LocalEndpoint[],
+  dynamicModels: Record<string, ModelOption[]>
+}) {
+  const [improverPref, setImproverPref] = useState<{ provider: string, model?: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem('promptImproverPrefs');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+
+  const [hasSaved, setHasSaved] = useState(false);
+
+  useEffect(() => {
+    if (improverPref) {
+      localStorage.setItem('promptImproverPrefs', JSON.stringify(improverPref));
+    } else {
+      localStorage.removeItem('promptImproverPrefs');
+    }
+  }, [improverPref]);
+
+  // Build list of valid options
+  const options: Array<{ value: string, label: string, provider: string, model?: string }> = [
+    { value: 'default', label: 'Use Active Provider (Default)', provider: '', model: '' }
+  ];
+
+  // Add Cloud Providers
+  keys.forEach(k => {
+    const providerName = PROVIDERS.find(p => p.id === k.provider)?.name || k.provider;
+
+    // If we have dynamic models for this provider, list them
+    const models = dynamicModels[k.provider] || getModelsForProvider(k.provider);
+
+    if (models.length > 0) {
+      models.forEach(m => {
+        options.push({
+          value: `${k.provider}:${m.id}`,
+          label: `${providerName} - ${m.name}`,
+          provider: k.provider,
+          model: m.id
+        });
+      });
+    } else {
+      // Fallback if no specific models found (shouldn't happen often)
+      options.push({
+        value: `${k.provider}:default`,
+        label: `${providerName} (Default Model)`,
+        provider: k.provider,
+        model: k.model_name
+      });
+    }
+  });
+
+  // Add Local Endpoints
+  localEndpoints.forEach(e => {
+    options.push({
+      value: `${e.provider}:${e.model_name}`,
+      label: `${e.provider === 'ollama' ? 'Ollama' : 'LM Studio'} - ${e.model_name}`,
+      provider: e.provider,
+      model: e.model_name
+    });
+  });
+
+  // Determine current value
+  const currentValue = improverPref
+    ? (improverPref.model ? `${improverPref.provider}:${improverPref.model}` : `${improverPref.provider}:default`)
+    : 'default';
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-1">
+          Prompt Improver AI
+        </label>
+        <p className="text-xs text-slate-500 mb-2">
+          Select specific AI model to use for "Improve Prompt", regardless of your active generator.
+        </p>
+        <div className="flex items-center gap-3">
+          <select
+            value={currentValue}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === 'default') {
+                setImproverPref(null);
+              } else {
+                const opt = options.find(o => o.value === val);
+                if (opt) {
+                  setImproverPref({ provider: opt.provider, model: opt.model });
+                }
+              }
+              setHasSaved(true);
+              setTimeout(() => setHasSaved(false), 2000);
+            }}
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600"
+          >
+            {options.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {hasSaved && (
+            <span className="text-xs text-emerald-400 flex items-center gap-1 animate-fadeIn">
+              <Check size={12} /> Saved
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Add imports if needed, but we share scope in same file
+import { Sparkles } from 'lucide-react';
+// Note: imports should be at top. I'll handle that in a separate op if needed,
+// strictly speaking Sparkles is already imported in Settings.tsx line 2.
+// getModelsForProvider is also imported.

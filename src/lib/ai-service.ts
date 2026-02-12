@@ -47,8 +47,21 @@ export interface DetailedImprovement {
   changesSummary: string;
 }
 
-export async function improvePromptDetailed(prompt: string, token: string): Promise<DetailedImprovement> {
-  return callAI('improve-detailed', { prompt }, token);
+export interface ApiPreferences {
+  provider: string;
+  model?: string;
+}
+
+export async function improvePromptDetailed(
+  prompt: string,
+  token: string,
+  apiPreferences?: ApiPreferences
+): Promise<DetailedImprovement> {
+  const payload: Record<string, any> = { prompt };
+  if (apiPreferences) {
+    payload.apiPreferences = apiPreferences;
+  }
+  return callAI('improve-detailed', payload, token);
 }
 
 export interface StyleAnalysis {
