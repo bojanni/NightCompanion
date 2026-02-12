@@ -93,7 +93,24 @@ export default function Settings({ }: SettingsProps) {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Dynamic model lists state
-  const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>({});
+  const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
+    try {
+      const saved = localStorage.getItem('cachedModels');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error('Failed to load cached models', e);
+      return {};
+    }
+  });
+
+  // Save to local storage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('cachedModels', JSON.stringify(dynamicModels));
+    } catch (e) {
+      console.error('Failed to save cached models', e);
+    }
+  }, [dynamicModels]);
 
   const getToken = useCallback(async () => {
     // Return a dummy token or empty string since auth is disabled
