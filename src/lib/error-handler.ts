@@ -124,16 +124,70 @@ export function handleAIError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const lowerMsg = message.toLowerCase();
 
-    // Check for OpenRouter / API Rate Limits
-    if (lowerMsg.includes('rate limit') || lowerMsg.includes('429') || lowerMsg.includes('insufficient credits')) {
+    // 1. Rate Limits / Quotas
+    if (lowerMsg.includes('rate limit') || lowerMsg.includes('429') || lowerMsg.includes('insufficient credits') || lowerMsg.includes('quota')) {
         toast.error('AI Service Busy or Limit Reached', {
-            description: 'The free AI model is currently overloaded or rate-limited. Please try again later, or switch to a different model in settings (e.g. Gemini 2.0 Flash or Llama 3).',
+            description: 'The AI provider is currently overloaded or you have run out of free credits. Please try again later, or switch to a different model in settings.',
             duration: 8000,
         });
         return;
     }
 
-    // Check for specific provider errors
+    // 2. Authentication / API Key Issues
+    if (lowerMsg.includes('401') || lowerMsg.includes('unauthorized') || lowerMsg.includes('invalid api key') || lowerMsg.includes('invalid_api_key')) {
+        toast.error('Authentication Failed', {
+            description: 'Your API key appears to be invalid or expired. Please check your key in Settings > Cloud Providers.',
+            duration: 8000,
+        });
+        return;
+    }
+
+    // 3. Model Not Found / Access
+    if (lowerMsg.includes('404') || lowerMsg.includes('model not found') || lowerMsg.includes('does not exist')) {
+        toast.error('Model Unavailable', {
+            description: 'The selected AI model is currently unavailable or deprecated. Please select a different model in Settings.',
+            duration: 6000,
+        });
+        return;
+    }
+
+    // 4. Content Safety / Policy
+    if (lowerMsg.includes('safety') || lowerMsg.includes('policy') || lowerMsg.includes('content filter') || lowerMsg.includes('harmful')) {
+        toast.error('Content Filter Triggered', {
+            description: 'The AI provider blocked the request due to safety filters. Please modify your prompt to be less explicit or graphic.',
+            duration: 6000,
+        });
+        return;
+    }
+
+    // 5. Context Length
+    if (lowerMsg.includes('context length') || lowerMsg.includes('token limit') || lowerMsg.includes('too long')) {
+        toast.error('Prompt Too Long', {
+            description: 'The input is too long for this model. Please reduce the length of your prompt or context.',
+            duration: 6000,
+        });
+        return;
+    }
+
+    // 6. Server Errors
+    if (lowerMsg.includes('500') || lowerMsg.includes('503') || lowerMsg.includes('service unavailable') || lowerMsg.includes('bad gateway')) {
+        toast.error('AI Service Error', {
+            description: 'The AI provider is experiencing server issues. Please try again in a few moments.',
+            duration: 5000,
+        });
+        return;
+    }
+
+    // 7. Local LLM Specific
+    if (lowerMsg.includes('connection refused') || lowerMsg.includes('fetch failed') && lowerMsg.includes('localhost')) {
+        toast.error('Local AI Disconnected', {
+            description: 'Could not connect to Local LLM. Ensure Ollama or LM Studio is running and the server is active.',
+            duration: 6000,
+        });
+        return;
+    }
+
+    // Check for specific provider errors if not caught above
     if (lowerMsg.includes('openrouter')) {
         toast.error('AI Provider Error', {
             description: 'OpenRouter reported an issue. ' + message.replace(/OpenRouter Provider Error:/gi, '').trim(),
@@ -142,9 +196,10 @@ export function handleAIError(error: unknown) {
         return;
     }
 
-    // Default error
+    // Default error fallback
     toast.error('AI Generation Failed', {
-        description: getUserFriendlyError(error),
+        description: message.length < 100 ? message : 'An unexpected error occurred. Check the console for details.',
         duration: 5000
     });
+    console.error('Unhandled AI Error:', error);
 }

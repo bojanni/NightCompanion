@@ -7,6 +7,7 @@ import { recommendModels } from '../lib/ai-service';
 import type { ModelRecommendation } from '../lib/ai-service';
 import { db } from '../lib/api';
 import { MODELS } from '../lib/models-data';
+import { handleAIError } from '../lib/error-handler';
 
 const BUDGET_OPTIONS = [
   { value: 'low', label: 'Budget', desc: 'Cheap & fast' },
@@ -51,8 +52,10 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
       });
 
       setResults(augmentedResults);
+      setResults(augmentedResults);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to get recommendations');
+      handleAIError(e);
+      setError(''); // Clear local error as toast handles it
     } finally {
       setLoading(false);
     }

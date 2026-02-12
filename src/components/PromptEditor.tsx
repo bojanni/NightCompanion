@@ -7,6 +7,7 @@ import { db, supabase } from '../lib/api';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
+import { handleAIError } from '../lib/error-handler';
 import ModelSelector from './ModelSelector';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
@@ -165,13 +166,8 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
         setSelectedTagIds(newTagIds);
       }
-    } catch (e: any) {
-      console.error('Failed to suggest tags:', e);
-      if (e.message?.includes('No AI provider')) {
-        toast.error('AI Auto-Tagging failed: No provider configured. Check Settings.');
-      } else {
-        toast.error('Failed to auto-generate tags. Please try again.');
-      }
+    } catch (e) {
+      handleAIError(e);
     } finally {
       setIsGeneratingTags(false);
     }
@@ -322,8 +318,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
                   const newTitle = await generateTitle(content, 'dummy-token');
                   if (newTitle) setTitle(newTitle.replace(/^"|"$/g, '').trim());
                 } catch (e) {
-                  console.error('Failed to regenerate title:', e);
-                  toast.error('Failed to regenerate title');
+                  handleAIError(e);
                 } finally {
                   setIsGeneratingTitle(false);
                 }

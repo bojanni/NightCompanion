@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
+import { handleAIError } from '../lib/error-handler';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -118,8 +119,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 setPrompts(newPrompts);
             }
         } catch (err) {
-            console.error('AI generation failed:', err);
-            toast.error('AI generation failed, using standard generation');
+            handleAIError(err);
             handleStandardGenerate(index);
         } finally {
             setGenerating(false);
@@ -165,8 +165,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             }
             toast.success('Prompts unified!');
         } catch (err) {
-            console.error('Unification failed:', err);
-            toast.error('Failed to unify prompts');
+            handleAIError(err);
         } finally {
             setUnifying(false);
         }
@@ -199,8 +198,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 }
             }
         } catch (err) {
-            console.error('Optimization failed:', err);
-            toast.error('Optimization failed');
+            handleAIError(err);
         } finally {
             setOptimizing(false);
         }

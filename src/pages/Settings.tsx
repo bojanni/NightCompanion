@@ -674,10 +674,11 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
                       } else if (isActive) {
                         onFetchModels(''); // Signal to use active key
                       } else {
-                        // Maybe show a toast that they need to enter key or activate first?
-                        // For now, let's just try with empty and let backend error if needed, 
-                        // but `onFetchModels` calls `listModels`.  
-                        onFetchModels('');
+                        // Provider is not active and no key entered
+                        // Show warning notification
+                        import('../lib/error-handler').then(({ showWarning }) => {
+                          showWarning(`Please activate ${provider.name} first or enter an API key to fetch models.`);
+                        });
                       }
                     }}
                     className="text-[10px] text-teal-400 hover:text-teal-300 flex items-center gap-1"
@@ -705,7 +706,7 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
             </div>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={onSetActive}
               disabled={isSettingActive}

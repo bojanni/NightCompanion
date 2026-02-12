@@ -10,6 +10,7 @@ import type { ImageAnalysisResult, BatchAnalysisResult } from '../lib/ai-service
 import { db } from '../lib/api';
 import SingleAnalysis from './analysis/SingleAnalysis';
 import ComparisonResults from './analysis/ComparisonResults';
+import { handleAIError } from '../lib/error-handler';
 
 import { AI_MODELS } from '../lib/types';
 
@@ -100,7 +101,8 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
         setBatchResult(result);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to analyze');
+      handleAIError(e);
+      setError(''); // Clear local error
     } finally {
       setLoading(false);
     }

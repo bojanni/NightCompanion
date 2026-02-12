@@ -3,6 +3,7 @@ import { Wand2, Copy, Check, Save, Sparkles, Loader2, Bot } from 'lucide-react';
 import { db } from '../lib/api';
 import { generatePromptVariations } from '../lib/ai-service';
 import { toast } from 'sonner';
+import { handleAIError } from '../lib/error-handler';
 
 interface VariationGeneratorProps {
   basePrompt: string;
@@ -96,11 +97,10 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
         if (aiVariations && aiVariations.length > 0) {
           setVariations(aiVariations.map(v => v.prompt));
         } else {
-          toast.error('AI failed to generate variations');
+          handleAIError(new Error('AI failed to generate variations (Empty response)'));
         }
       } catch (error) {
-        console.error('AI Generation error:', error);
-        toast.error('Failed to generate AI variations');
+        handleAIError(error);
       } finally {
         setIsGenerating(false);
       }
@@ -148,7 +148,7 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
         setVariations(newVariations);
       }
     } catch (error) {
-      console.error('Failed to regenerate with AI:', error);
+      handleAIError(error);
     } finally {
       setRegeneratingIdx(null);
     }
