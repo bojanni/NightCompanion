@@ -45,8 +45,8 @@ export default function Prompts({ }: PromptsProps) {
   const [optimizerPrompt, setOptimizerPrompt] = useState<Prompt | null>(null);
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [linkingPrompt, setLinkingPrompt] = useState<Prompt | null>(null);
-  const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string; rating: number } }>({});
-  const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number } | null>(null);
+  const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] }>({});
+  const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number; model?: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -71,7 +71,7 @@ export default function Prompts({ }: PromptsProps) {
 
     const [tagsRes, ptRes] = await Promise.all([
       db.from('tags').select('*').order('name').limit(5000),
-      promptsData ? db.from('prompt_tags').select('*').in('prompt_id', promptsData.map(p => p.id)) : Promise.resolve({ data: [] }),
+      promptsData ? db.from('prompt_tags').select('*').in('prompt_id', promptsData.map((p: Prompt) => p.id)) : Promise.resolve({ data: [] }),
     ]);
 
     setPrompts(promptsData ?? []);
@@ -79,9 +79,9 @@ export default function Prompts({ }: PromptsProps) {
     setTotalCount(count ?? 0);
 
     const map: Record<string, string[]> = {};
-    (ptRes.data ?? []).forEach((pt) => {
+    (ptRes.data ?? []).forEach((pt: any) => {
       if (!map[pt.prompt_id]) map[pt.prompt_id] = [];
-      map[pt.prompt_id].push(pt.tag_id);
+      map[pt.prompt_id]!.push(pt.tag_id);
     });
     setPromptTagMap(map);
 
@@ -89,13 +89,22 @@ export default function Prompts({ }: PromptsProps) {
     if (promptsData && promptsData.length > 0) {
       const { data: galleryData } = await db
         .from('gallery_items')
-        .select('id, image_url, title, prompt_id, rating')
+        .select('id, image_url, title, prompt_id, rating, model')
         .in('prompt_id', promptsData.map((p: Prompt) => p.id));
 
-      const imageMap: { [key: string]: { id: string; image_url: string; title: string; rating: number } } = {};
+      const imageMap: { [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] } = {};
       (galleryData ?? []).forEach((img: any) => {
         if (img.prompt_id) {
-          imageMap[img.prompt_id] = { id: img.id, image_url: img.image_url, title: img.title, rating: img.rating ?? 0 };
+          if (!imageMap[img.prompt_id]) {
+            imageMap[img.prompt_id] = [];
+          }
+          imageMap[img.prompt_id]!.push({
+            id: img.id,
+            image_url: img.image_url,
+            title: img.title,
+            rating: img.rating ?? 0,
+            model: img.model
+          });
         }
       });
       setLinkedImages(imageMap);
@@ -147,16 +156,10 @@ export default function Prompts({ }: PromptsProps) {
       const { error } = await db.from('prompts').update({ rating }).eq('id', id);
       if (error) throw error;
       setPrompts(prev => prev.map(p => p.id === id ? { ...p, rating } : p));
-      // Sync rating to linked gallery item
-      const linkedImage = linkedImages[id];
-      if (linkedImage) {
-        await db.from('gallery_items').update({ rating }).eq('id', linkedImage.id);
-        setLinkedImages(prev => {
-          const existing = prev[id];
-          if (!existing) return prev;
-          return { ...prev, [id]: { ...existing, rating } };
-        });
-      }
+
+      // Optionally sync rating to all linked images? 
+      // For now, let's NOT automatically sync prompt rating to all images as they might differ in quality.
+      // If we wanted to, we'd need to loop through all linkedImages[id] and update them.
     } catch (err) {
       handleError(err, 'RatePrompt', { promptId: id });
     }
@@ -255,8 +258,30 @@ export default function Prompts({ }: PromptsProps) {
   async function handleSelectImage(image: any) {
     if (!linkingPrompt) return;
     try {
+      // Check if already linked
+      const currentImages = linkedImages[linkingPrompt.id] || [];
+      if (currentImages.find(img => img.id === image.id)) {
+        setShowImageSelector(false);
+        setLinkingPrompt(null);
+        return;
+      }
+
       await db.from('gallery_items').update({ prompt_id: linkingPrompt.id }).eq('id', image.id);
-      setLinkedImages(prev => ({ ...prev, [linkingPrompt.id]: { id: image.id, image_url: image.image_url, title: image.title, rating: image.rating ?? 0 } }));
+
+      setLinkedImages(prev => ({
+        ...prev,
+        [linkingPrompt.id]: [
+          ...(prev[linkingPrompt.id] || []),
+          {
+            id: image.id,
+            image_url: image.image_url,
+            title: image.title,
+            rating: image.rating ?? 0,
+            model: image.model
+          }
+        ]
+      }));
+
       setShowImageSelector(false);
       setLinkingPrompt(null);
       showSuccess('Image linked successfully!');
@@ -270,7 +295,12 @@ export default function Prompts({ }: PromptsProps) {
       await db.from('gallery_items').update({ prompt_id: null }).eq('id', imageId);
       setLinkedImages(prev => {
         const newMap = { ...prev };
-        delete newMap[promptId];
+        if (newMap[promptId]) {
+          newMap[promptId] = newMap[promptId].filter(img => img.id !== imageId);
+          if (newMap[promptId].length === 0) {
+            delete newMap[promptId];
+          }
+        }
         return newMap;
       });
       showSuccess('Image unlinked successfully!');
@@ -288,8 +318,11 @@ export default function Prompts({ }: PromptsProps) {
       setLinkedImages(prev => {
         const newMap = { ...prev };
         for (const promptId in newMap) {
-          if (newMap[promptId].id === imageId) {
-            newMap[promptId] = { ...newMap[promptId], rating };
+          const imageIndex = newMap[promptId].findIndex(img => img.id === imageId);
+          if (imageIndex !== -1) {
+            const newImages = [...(newMap[promptId] || [])];
+            newImages[imageIndex] = { ...newImages[imageIndex]!, rating };
+            newMap[promptId] = newImages;
             break;
           }
         }
@@ -433,7 +466,7 @@ export default function Prompts({ }: PromptsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((prompt) => {
             const promptTags = getTagsForPrompt(prompt.id);
-            const linkedImage = linkedImages[prompt.id];
+            const promptImages = linkedImages[prompt.id];
             return (
               <div
                 key={prompt.id}
@@ -475,39 +508,48 @@ export default function Prompts({ }: PromptsProps) {
                   )}
                 </div>
 
-                {linkedImage && (
-                  <div className="relative group/img mb-3">
-                    <div
-                      className="relative w-full h-24 bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
-                      onClick={() => {
-                        setLightboxImage(linkedImage);
-                      }}
-                      title="View image"
-                    >
-                      <img
-                        src={linkedImage.image_url}
-                        alt={linkedImage.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUnlinkImage(prompt.id, linkedImage.id);
+                {promptImages && promptImages.length > 0 && (
+                  <div className={`grid gap-2 mb-3 ${promptImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                    {promptImages.map((img) => (
+                      <div key={img.id} className="relative group/img">
+                        <div
+                          className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
+                          onClick={() => {
+                            setLightboxImage(img);
                           }}
-                          className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100"
-                          title="Unlink image"
+                          title={`View ${img.title || 'Untitled'}`}
                         >
-                          <X size={12} />
-                        </button>
-                        <div className="absolute bottom-1 left-1 right-1">
-                          <p className="text-[10px] text-white truncate flex items-center gap-1">
-                            <Lock size={9} />
-                            Linked: {linkedImage.title}
-                          </p>
+                          <img
+                            src={img.image_url}
+                            alt={img.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnlinkImage(prompt.id, img.id);
+                              }}
+                              className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
+                              title="Unlink image"
+                            >
+                              <X size={12} />
+                            </button>
+                            <div className="absolute bottom-1 left-1 right-1">
+                              <p className="text-[10px] text-white truncate flex items-center gap-1">
+                                <Lock size={9} />
+                                {img.title || 'Linked Image'}
+                              </p>
+                            </div>
+                            {img.model && (
+                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
+                                {img.model}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 )}
 
@@ -527,8 +569,8 @@ export default function Prompts({ }: PromptsProps) {
                     </button>
                     <button
                       onClick={() => handleLinkImage(prompt)}
-                      className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${linkedImage ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
-                      title={linkedImage ? 'Linked to image' : 'Link to image'}
+                      className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
+                      title={promptImages?.length ? 'Linked to image' : 'Link to image'}
                     >
                       <Link size={14} />
                     </button>
@@ -537,9 +579,9 @@ export default function Prompts({ }: PromptsProps) {
                         setOptimizerPrompt(prompt);
                         setShowOptimizer(true);
                       }}
-                      disabled={!!linkedImage}
+                      disabled={!!promptImages?.length}
                       className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                      title={linkedImage ? 'Locked: linked to image' : 'Optimize prompt'}
+                      title={promptImages?.length ? 'Locked: linked to image' : 'Optimize prompt'}
                     >
                       <Zap size={14} />
                     </button>
@@ -548,9 +590,9 @@ export default function Prompts({ }: PromptsProps) {
                         setImproverPrompt(prompt);
                         setShowImprover(true);
                       }}
-                      disabled={!!linkedImage}
+                      disabled={!!promptImages?.length}
                       className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                      title={linkedImage ? 'Locked: linked to image' : 'Improve with AI'}
+                      title={promptImages?.length ? 'Locked: linked to image' : 'Improve with AI'}
                     >
                       <Sparkles size={14} />
                     </button>
@@ -580,9 +622,9 @@ export default function Prompts({ }: PromptsProps) {
                         setShowEditor(true);
                       }}
                       className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                      title={linkedImages[prompt.id] ? 'Edit (Restricted)' : 'Edit'}
+                      title={promptImages?.length ? 'Edit (Restricted)' : 'Edit'}
                     >
-                      {linkedImages[prompt.id] ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
+                      {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
                     </button>
                     <button
                       onClick={() => handleDelete(prompt.id)}
@@ -653,7 +695,7 @@ export default function Prompts({ }: PromptsProps) {
       >
         <PromptEditor
           prompt={editingPrompt}
-          isLinked={editingPrompt ? !!linkedImages[editingPrompt.id] : false}
+          isLinked={editingPrompt ? (linkedImages[editingPrompt.id]?.length ?? 0) > 0 : false}
           onSave={() => {
             setShowEditor(false);
             loadData();
