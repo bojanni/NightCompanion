@@ -10,12 +10,16 @@ import { db, supabase } from '../lib/api';
 import { saveStyleProfile } from '../lib/style-analysis';
 
 interface AIToolsProps {
-  onPromptGenerated: (prompt: string) => void;
+  onPromptGenerated?: (prompt: string) => void;
   onNegativePromptGenerated?: (neg: string) => void;
   generatedPrompt?: string;
   generatedNegativePrompt?: string;
   maxWords: number;
   onSaved?: () => void;
+  allowedTabs?: Tab[];
+  defaultTab?: Tab;
+  showHeader?: boolean;
+  initialExpanded?: boolean;
 }
 
 export interface AIToolsRef {
@@ -45,9 +49,21 @@ function loadAIToolsState<T>(key: string, fallback: T): T {
   return fallback;
 }
 
-const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved }, ref) => {
-  const [tab, setTab] = useState<Tab>(() => loadAIToolsState('tab', 'improve'));
-  const [expanded, setExpanded] = useState(() => loadAIToolsState('expanded', true));
+const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved, allowedTabs, defaultTab = 'improve', showHeader = true, initialExpanded = false }, ref) => {
+  const [tab, setTab] = useState<Tab>(() => {
+    // If allowedTabs is set, ensure we start on an allowed tab
+    if (allowedTabs && allowedTabs.length > 0 && !allowedTabs.includes(defaultTab)) {
+      return allowedTabs[0]!;
+    }
+    return defaultTab;
+  });
+
+  // Use initialExpanded prop if provided, otherwise check storage or default to true
+  const [expanded, setExpanded] = useState(() => {
+    if (initialExpanded) return true;
+    return loadAIToolsState('expanded', true);
+  });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -268,42 +284,50 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     }
   }
 
+  const visibleTabs = allowedTabs
+    ? TABS.filter(t => allowedTabs.includes(t.id))
+    : TABS;
+
   return (
     <div className="border border-slate-800 rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-900 to-slate-800/80 hover:from-slate-800/80 hover:to-slate-800/60 transition-all"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-teal-500/15 rounded-lg flex items-center justify-center">
-            <Brain size={16} className="text-teal-400" />
+      {showHeader && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-900 to-slate-800/80 hover:from-slate-800/80 hover:to-slate-800/60 transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-teal-500/15 rounded-lg flex items-center justify-center">
+              <Brain size={16} className="text-teal-400" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-sm font-semibold text-white">AI Tools</h3>
+              <p className="text-[11px] text-slate-500">Optional AI-powered features</p>
+            </div>
           </div>
-          <div className="text-left">
-            <h3 className="text-sm font-semibold text-white">AI Tools</h3>
-            <p className="text-[11px] text-slate-500">Optional AI-powered features</p>
-          </div>
-        </div>
-        {expanded ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
-      </button>
+          {expanded ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
+        </button>
+      )}
 
-      {expanded && (
+      {(expanded || !showHeader) && (
         <div className="p-5 bg-slate-900/50 space-y-5">
-          <div className="grid grid-cols-4 gap-2">
-            {TABS.map(({ id, label, icon: Icon, desc }) => (
-              <button
-                key={id}
-                onClick={() => { setTab(id); setError(''); }}
-                className={`p-3 rounded-xl text-left transition-all border ${tab === id
-                  ? 'bg-teal-500/10 border-teal-500/30'
-                  : 'bg-slate-800/30 border-slate-800 hover:border-slate-700'
-                  }`}
-              >
-                <Icon size={15} className={tab === id ? 'text-teal-400' : 'text-slate-500'} />
-                <p className={`text-xs font-medium mt-1.5 ${tab === id ? 'text-teal-300' : 'text-slate-300'}`}>{label}</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
-              </button>
-            ))}
-          </div>
+          {visibleTabs.length > 1 && (
+            <div className="grid grid-cols-4 gap-2">
+              {visibleTabs.map(({ id, label, icon: Icon, desc }) => (
+                <button
+                  key={id}
+                  onClick={() => { setTab(id); setError(''); }}
+                  className={`p-3 rounded-xl text-left transition-all border ${tab === id
+                    ? 'bg-teal-500/10 border-teal-500/30'
+                    : 'bg-slate-800/30 border-slate-800 hover:border-slate-700'
+                    }`}
+                >
+                  <Icon size={15} className={tab === id ? 'text-teal-400' : 'text-slate-500'} />
+                  <p className={`text-xs font-medium mt-1.5 ${tab === id ? 'text-teal-300' : 'text-slate-300'}`}>{label}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
+                </button>
+              ))}
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 text-xs text-red-400">
@@ -325,7 +349,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               onSubmit={handleImprove}
               onCopy={handleCopy}
               onUse={() => {
-                onPromptGenerated(improveResult);
+                if (onPromptGenerated) onPromptGenerated(improveResult);
                 if (negativeResult && onNegativePromptGenerated) onNegativePromptGenerated(negativeResult);
               }}
               onSave={(text) => handleSavePrompt(text, 'AI Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 40))}
@@ -348,7 +372,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               saving={saving}
               onSubmit={handleGenerate}
               onCopy={handleCopy}
-              onUse={() => onPromptGenerated(generateResult)}
+              onUse={() => { if (onPromptGenerated) onPromptGenerated(generateResult); }}
               onSave={(text) => handleSavePrompt(text, 'AI Generated: ' + generateInput.slice(0, 40))}
               generatedPrompt={generatedPrompt}
             />
@@ -374,7 +398,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               saving={saving}
               onSubmit={handleDiagnose}
               onCopy={handleCopy}
-              onUse={(p) => onPromptGenerated(p)}
+              onUse={(p) => { if (onPromptGenerated) onPromptGenerated(p); }}
               onSave={(text) => handleSavePrompt(text, 'AI Diagnosed: ' + (text.split(',')[0] || 'Untitled').slice(0, 40))}
               generatedPrompt={generatedPrompt}
             />

@@ -286,6 +286,10 @@ export default function Generator({ }: GeneratorProps) {
         generatedNegativePrompt={randomNegativePrompt}
         maxWords={maxWords}
         onSaved={() => setSaveCount((c) => c + 1)}
+        allowedTabs={['improve']}
+        defaultTab="improve"
+        showHeader={false}
+        initialExpanded={true}
       />
     </div>
   );
