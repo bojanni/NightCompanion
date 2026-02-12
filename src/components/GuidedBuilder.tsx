@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ChevronLeft, ChevronRight, Copy, Check, Save,
-  Loader2, RotateCcw, Compass, Sparkles,
+  Loader2, RotateCcw, Compass, Sparkles, Keyboard,
 } from 'lucide-react';
 import { GUIDED_STEPS, OPTIONAL_ADDITIONS, buildGuidedPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
@@ -23,6 +23,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [customInputs, setCustomInputs] = useState<Record<string, string>>({});
 
   // Load from localStorage
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
         if (!initialPrompt || initialPrompt === state.initialPrompt) {
           if (state.selections) setSelections(state.selections);
           if (state.additions) setAdditions(state.additions);
+          if (state.customInputs) setCustomInputs(state.customInputs);
           if (state.currentStep) setCurrentStep(state.currentStep);
           if (state.generatedPrompt) setGeneratedPrompt(state.generatedPrompt);
           if (state.showResult !== undefined) setShowResult(state.showResult);
@@ -50,13 +52,14 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
     const state = {
       selections,
       additions,
+      customInputs,
       currentStep,
       generatedPrompt,
       showResult,
       initialPrompt // Save this to compare later
     };
     localStorage.setItem('nightcompanion_guided_state', JSON.stringify(state));
-  }, [selections, additions, currentStep, generatedPrompt, showResult, initialPrompt]);
+  }, [selections, additions, customInputs, currentStep, generatedPrompt, showResult, initialPrompt]);
 
   const step = GUIDED_STEPS[currentStep] || GUIDED_STEPS[0];
 
@@ -70,12 +73,31 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
 
   const totalSteps = GUIDED_STEPS.length;
   const isLastStep = currentStep === totalSteps - 1;
-  const completedSteps = Object.keys(selections).length;
+  const completedSteps = Object.keys(selections).length + Object.keys(customInputs).length;
 
   function handleSelect(optionId: string) {
+    if (!step) return;
     setSelections((prev) => ({ ...prev, [step.id]: optionId }));
+    setCustomInputs((prev) => {
+      const next = { ...prev };
+      delete next[step.id]; // Clear custom input if selecting predefined
+      return next;
+    });
     if (!isLastStep) {
       setTimeout(() => setCurrentStep((s) => s + 1), 200);
+    }
+  }
+
+  function handleCustomInput(value: string) {
+    if (!step) return;
+    setCustomInputs(prev => ({ ...prev, [step.id]: value }));
+    // If user types, clear the selection for this step so we don't have conflict (though builder logic prioritizes custom)
+    if (value) {
+      setSelections(prev => {
+        const next = { ...prev };
+        delete next[step.id];
+        return next;
+      });
     }
   }
 
@@ -86,7 +108,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
   }
 
   function handleBuild() {
-    const prompt = buildGuidedPrompt(selections, additions);
+    const prompt = buildGuidedPrompt(selections, additions, customInputs);
     setGeneratedPrompt(prompt);
     setShowResult(true);
   }
@@ -94,7 +116,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
   async function handleAIFinish() {
     setAiLoading(true);
     try {
-      const currentPrompt = buildGuidedPrompt(selections, additions);
+      const currentPrompt = buildGuidedPrompt(selections, additions, customInputs);
       const token = (await db.auth.getSession()).data.session?.access_token || '';
 
       const improved = await generateFromDescription(
@@ -120,6 +142,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
   function handleReset() {
     setSelections({});
     setAdditions([]);
+    setCustomInputs({});
     setCurrentStep(0);
     setGeneratedPrompt('');
     setShowResult(false);
@@ -136,7 +159,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
     if (!generatedPrompt) return;
     setSaving(true);
     await db.from('prompts').insert({
-      title: 'Guided: ' + generatedPrompt.split(',')[0].slice(0, 40),
+      title: 'Guided: ' + (generatedPrompt.split(',')[0] || '').slice(0, 40),
       content: generatedPrompt,
       notes: 'Built with Guided mode',
       rating: 0,
@@ -205,7 +228,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
                   const newAdditions = additions.includes(add.id)
                     ? additions.filter((a) => a !== add.id)
                     : [...additions, add.id];
-                  setGeneratedPrompt(buildGuidedPrompt(selections, newAdditions));
+                  setGeneratedPrompt(buildGuidedPrompt(selections, newAdditions, customInputs));
                 }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${additions.includes(add.id)
                   ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
@@ -244,7 +267,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
           <button
             key={s.id}
             onClick={() => setCurrentStep(i)}
-            className={`flex-1 h-1.5 rounded-full transition-all ${selections[s.id]
+            className={`flex-1 h-1.5 rounded-full transition-all ${selections[s.id] || customInputs[s.id]
               ? 'bg-amber-500'
               : i === currentStep
                 ? 'bg-amber-500/40'
@@ -283,7 +306,48 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
             </button>
           );
         })}
+
+        {/* Manual Input Trigger (Only for Subject step initially) */}
+        {step.id === 'base' && (
+          <button
+            onClick={() => {
+              // Toggle mode essentially. For now, we rely on rendering the input below.
+              // We'll set a 'manual' key in selections to highlight this box, 
+              // but actual value stored in customInputs
+              setSelections(prev => ({ ...prev, [step.id]: 'manual' }));
+              setCustomInputs(prev => ({ ...prev, [step.id]: prev[step.id] || '' }));
+            }}
+            className={`p-4 rounded-xl text-left transition-all border ${selections[step.id] === 'manual'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 ring-1 ring-amber-500/20'
+              : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600'
+              }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Keyboard size={16} />
+              <span className="text-sm font-medium">Manual Input</span>
+            </div>
+            <span className="text-[10px] text-slate-500 block">
+              Type your own subject
+            </span>
+          </button>
+        )}
       </div>
+
+      {step.id === 'base' && selections[step.id] === 'manual' && (
+        <div className="animate-fadeIn">
+          <label className="block text-xs font-medium text-slate-400 mb-2">
+            Describe your subject:
+          </label>
+          <input
+            type="text"
+            value={customInputs[step.id] || ''}
+            onChange={(e) => handleCustomInput(e.target.value)}
+            placeholder="E.g. A futuristic cyberpunk cat sitting on a neon roof..."
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-amber-500/50 transition-colors"
+            autoFocus
+          />
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-2">
         <button
@@ -328,7 +392,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
       {completedSteps >= 2 && (
         <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-3">
           <p className="text-xs text-slate-500 mb-1">Preview</p>
-          <p className="text-xs text-slate-300 italic">{buildGuidedPrompt(selections, additions)}</p>
+          <p className="text-xs text-slate-300 italic">{buildGuidedPrompt(selections, additions, customInputs)}</p>
         </div>
       )}
     </div>

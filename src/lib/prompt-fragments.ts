@@ -254,41 +254,47 @@ export function generateRandomPrompt(filters: {
 }): string {
   const parts: string[] = [];
 
-  parts.push(pickRandom(SUBJECTS)[0]);
-  parts.push(pickRandom(SETTINGS)[0]);
-  parts.push(pickRandom(TIMES_OF_DAY)[0]);
-  parts.push(pickRandom(ATMOSPHERES)[0]);
-  parts.push(pickRandom(LIGHTING)[0]);
+  parts.push(pickRandom(SUBJECTS)[0] || '');
+  parts.push(pickRandom(SETTINGS)[0] || '');
+  parts.push(pickRandom(TIMES_OF_DAY)[0] || '');
+  parts.push(pickRandom(ATMOSPHERES)[0] || '');
+  parts.push(pickRandom(LIGHTING)[0] || '');
 
   if (filters.dreamy) {
-    parts.push(pickRandom(DREAMY_MODIFIERS)[0]);
+    parts.push(pickRandom(DREAMY_MODIFIERS)[0] || '');
   }
 
   if (filters.characters) {
-    parts.push('accompanied by ' + pickRandom(CHARACTER_ADDITIONS)[0]);
+    parts.push('accompanied by ' + (pickRandom(CHARACTER_ADDITIONS)[0] || ''));
   }
 
   if (filters.cinematic) {
-    parts.push(pickRandom(CINEMATIC_MODIFIERS)[0]);
+    parts.push(pickRandom(CINEMATIC_MODIFIERS)[0] || '');
   }
 
-  parts.push(pickRandom(STYLES)[0]);
-  parts.push(pickRandom(QUALITY_BOOSTERS)[0]);
+  parts.push(pickRandom(STYLES)[0] || '');
+  parts.push(pickRandom(QUALITY_BOOSTERS)[0] || '');
 
-  const raw = parts.join(', ');
+  const raw = parts.filter(p => p).join(', ');
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 export function buildGuidedPrompt(
   selections: Record<string, string>,
-  additions: string[]
+  additions: string[],
+  customInputs?: Record<string, string>
 ): string {
   const parts: string[] = [];
 
   GUIDED_STEPS.forEach((step) => {
-    const selected = step.options.find((o) => o.id === selections[step.id]);
-    if (selected) {
-      parts.push(pickRandom(selected.fragments)[0]);
+    // Check for custom input first
+    if (customInputs && customInputs[step.id]) {
+      parts.push(customInputs[step.id]);
+    } else {
+      const selected = step.options.find((o) => o.id === selections[step.id]);
+      if (selected) {
+        parts.push(pickRandom(selected.fragments)[0] || '');
+      }
     }
   });
 
@@ -299,6 +305,6 @@ export function buildGuidedPrompt(
     }
   });
 
-  const raw = parts.join(', ');
+  const raw = parts.filter(p => p).join(', ');
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
