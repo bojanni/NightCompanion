@@ -15,7 +15,9 @@ async function callAI(action: string, payload: Record<string, unknown>, token: s
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || 'AI request failed');
+    const errorMessage = data.error || 'AI request failed';
+    const errorDetails = data.details ? ` (${data.details})` : '';
+    throw new Error(`${errorMessage}${errorDetails}`);
   }
 
   return data.result;

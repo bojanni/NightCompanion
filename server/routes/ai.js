@@ -295,10 +295,19 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         const data = await res.json();
 
         if (!res.ok) {
-            throw new Error(data.error?.message || data.error || `Local AI Provider Error: ${res.statusText}`);
+            const errorText = await res.text();
+            let errorMsg = `Local AI Provider Error: ${res.status} ${res.statusText}`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                errorMsg = errorJson.error?.message || errorJson.error || errorMsg;
+            } catch (e) {
+                errorMsg += ` - ${errorText.substring(0, 200)}`;
+            }
+            throw new Error(errorMsg);
         }
 
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error('Invalid Local AI response:', JSON.stringify(data).substring(0, 500));
             throw new Error('Invalid response format from Local AI Provider: Missing choices/message');
         }
 
@@ -474,7 +483,11 @@ router.post('/', async (req, res) => {
 
     } catch (err) {
         console.error('AI Service Error:', err);
-        res.status(500).json({ error: err.message });
+        // Ensure we send a useful error message back to the client
+        res.status(500).json({
+            error: err.message || 'An unexpected error occurred',
+            details: err.stack ? err.stack.split('\n')[0] : undefined
+        });
     }
 });
 
