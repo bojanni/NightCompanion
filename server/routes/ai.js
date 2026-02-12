@@ -180,12 +180,22 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
             max_tokens: maxTokens
         })
     });
-    const data = await res.json();
+
     if (!res.ok) {
-        const errorMsg = data.error?.message || 'OpenRouter error';
-        console.error('OpenRouter API Error:', errorMsg);
+        let errorMsg = 'OpenRouter error';
+        try {
+            const errorData = await res.json();
+            console.error('OpenRouter API Error Details:', JSON.stringify(errorData, null, 2));
+            errorMsg = errorData.error?.message || JSON.stringify(errorData);
+        } catch (e) {
+            const text = await res.text();
+            console.error('OpenRouter API Error Text:', text);
+            errorMsg = text;
+        }
         throw new Error(`OpenRouter Provider Error: ${errorMsg}`);
     }
+
+    const data = await res.json();
     return data.choices[0].message.content;
 }
 
