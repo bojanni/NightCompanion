@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, Copy, Check, Loader2, ChevronRight, Lightbulb, Wand2 } from 'lucide-react';
 import { improvePromptDetailed, DetailedImprovement } from '../lib/ai-service';
+import { handleAIError } from '../lib/error-handler';
 import { db } from '../lib/api';
 
 interface PromptImproverProps {
@@ -30,7 +31,8 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
       const result = await improvePromptDetailed(prompt, session.access_token);
       setImprovement(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to improve prompt');
+      handleAIError(err);
+      setError(null); // Clear local error since we're using toast
     } finally {
       setLoading(false);
     }

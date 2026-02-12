@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { handleAIError } from '../lib/error-handler';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
@@ -95,12 +96,14 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         onPromptGenerated(result);
       }
     } catch (err) {
+      handleAIError(err);
       console.error('Failed to generate random prompt:', err);
       const fallback = generateRandomPrompt(filters);
       setPrompt(fallback);
       setNegativePrompt('');
       onNegativePromptChanged?.('');
       onPromptGenerated(fallback);
+
     } finally {
       setRegenerating(false);
     }

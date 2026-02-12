@@ -116,3 +116,35 @@ export function showLoading(message: string) {
 export function dismissToast(toastId: string | number) {
     toast.dismiss(toastId);
 }
+
+/**
+ * Handle AI-specific errors with richer feedback
+ */
+export function handleAIError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const lowerMsg = message.toLowerCase();
+
+    // Check for OpenRouter / API Rate Limits
+    if (lowerMsg.includes('rate limit') || lowerMsg.includes('429') || lowerMsg.includes('insufficient credits')) {
+        toast.error('AI Service Busy or Limit Reached', {
+            description: 'The free AI model is currently overloaded or rate-limited. Please try again later, or switch to a different model in settings (e.g. Gemini 2.0 Flash or Llama 3).',
+            duration: 8000,
+        });
+        return;
+    }
+
+    // Check for specific provider errors
+    if (lowerMsg.includes('openrouter')) {
+        toast.error('AI Provider Error', {
+            description: 'OpenRouter reported an issue. ' + message.replace(/OpenRouter Provider Error:/gi, '').trim(),
+            duration: 6000,
+        });
+        return;
+    }
+
+    // Default error
+    toast.error('AI Generation Failed', {
+        description: getUserFriendlyError(error),
+        duration: 5000
+    });
+}
