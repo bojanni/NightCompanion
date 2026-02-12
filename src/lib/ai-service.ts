@@ -100,7 +100,7 @@ export async function generateFromDescription(
   }, token);
 }
 
-export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number): Promise<{ prompt: string; negativePrompt?: string }> {
+export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
   return callAI('random', { theme, maxWords }, token);
 }
 

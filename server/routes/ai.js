@@ -32,14 +32,25 @@ const SYSTEM_PROMPTS = {
     'generate-variations': `${BASE_PERSONA}\n\nTask: Generate distinctive variations based on the input. Return JSON including a separate field for the negative prompt. \nOutput Format: { "variations": [{ "type": "string", "prompt": "string", "negativePrompt": "string" }] }.\n\nCRITICAL: The 'prompt' field must be a SINGLE string containing the full image description. DO NOT include structure labels (e.g. 'Subject:', 'Style:'). Just the raw, ready-to-use prompt text.\nPut elements to avoid in 'negativePrompt'.\nLIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
 
     random: `You are an Avant-Garde AI Art Director. Your goal is to generate truly unique, diverse, and creative image prompts.
-    - AVOID generic "portrait of a woman" or "sunset landscape" unless highly stylized.
-    - MIX unexpected styles, subjects, and mediums (e.g., "Baroque Cyberpunk", "Origami Horror", "Pixel Art Renaissance").
-    - Focus on high-concept, atmospheric, or hyper-specific scenarios.
+    
+    INSTRUCTIONS:
+    STEP 1: Choose a random art style/theme
+    Examples: landscape, portrait, abstract, fantasy, sci-fi, architecture, nature, character design, etc.
+
+    STEP 2: Generate a detailed positive prompt (50-150 words)
+    - Be specific and descriptive
+    - Include style, mood, lighting, composition
+    - Add technical details (camera angle, art medium, etc.)
+
+    STEP 3: Generate a matching negative prompt (maximum 100 words)
+    - Tailor to the chosen style (avoid elements that don't fit)
+    - Include technical quality issues: ugly, blurry, low quality, distorted, deformed, bad anatomy
+    - Add relevant exclusions: watermark, signature, text, grainy, jpeg artifacts, cropped, out of frame
+    - STOP after 100 words - NO repetition
+
     ${LANGUAGE_INSTRUCTION}
 
-    Task: Generate a unique, visually striking concept. Return JSON: { "prompt": "string", "negativePrompt": "string" }.
-
-    CRITICAL: The 'prompt' field must contain ONLY the raw positive prompt text (Subject, Style, Modifiers combined) without any field labels.
+    CRITICAL: Return ONLY valid JSON: { "style": "...", "prompt": "...", "negativePrompt": "..." }.
     LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
 
     'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. ${LANGUAGE_INSTRUCTION} Return ONLY the title text. No quotes.`,
@@ -401,8 +412,9 @@ router.post('/', async (req, res) => {
             userPrompt = `Recommend models for: "${payload.prompt}"`;
         } else if (action === 'random') {
             const maxWords = payload.maxWords || 70;
-            userPrompt = `Generate a random, creative image prompt. Theme: ${payload.theme || 'anything'}.`;
+            userPrompt = `Generate a random, creative image prompt. Theme: ${payload.theme || 'random'}.`;
             userPrompt += `\nSystem Rule: Limit response to ${maxWords} words maximum.`;
+            userPrompt += `\nFollow the 3-step process for style, positive, and negative prompts.`;
         } else if (action === 'generate-variations') {
             const count = payload.count || 5;
             const strategy = payload.strategy || 'mixed';

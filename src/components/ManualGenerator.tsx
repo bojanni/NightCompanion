@@ -113,6 +113,10 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                         return prev + ', ' + uniqueNewTerms.join(', ');
                     });
                 }
+
+                if (result.style) {
+                    toast.success(`Generated: ${result.style}`);
+                }
             } else if (typeof result === 'string') {
                 const newPrompts = [...prompts];
                 newPrompts[index] = result;
