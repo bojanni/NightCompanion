@@ -87,6 +87,11 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     }
 
     async function handleAIGenerate(index: number) {
+        if (prompts[index] && prompts[index].trim().length > 0) {
+            if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
+                return;
+            }
+        }
         setGenerating(true);
         try {
             const token = (await db.auth.getSession()).data.session?.access_token || '';
