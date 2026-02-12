@@ -186,11 +186,26 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
         try {
             const errorData = await res.json();
             console.error('OpenRouter API Error Details:', JSON.stringify(errorData, null, 2));
-            errorMsg = errorData.error?.message || JSON.stringify(errorData);
+
+            // OpenRouter errors can be nested in various ways
+            if (errorData.error && typeof errorData.error === 'object') {
+                errorMsg = errorData.error.message || errorData.error.code || JSON.stringify(errorData.error);
+                // specialized handling for common vague errors
+                if (typeof errorMsg === 'string' && errorMsg.includes('Provider returned error')) {
+                    // Try to dig deeper if possible or just provide a better fallback
+                    if (errorData.error.metadata) {
+                        errorMsg += ` (${JSON.stringify(errorData.error.metadata)})`;
+                    }
+                }
+            } else if (errorData.error && typeof errorData.error === 'string') {
+                errorMsg = errorData.error;
+            } else {
+                errorMsg = JSON.stringify(errorData);
+            }
         } catch (e) {
             const text = await res.text();
             console.error('OpenRouter API Error Text:', text);
-            errorMsg = text;
+            errorMsg = text.slice(0, 200); // Limit length
         }
         throw new Error(`OpenRouter Provider Error: ${errorMsg}`);
     }
@@ -499,9 +514,10 @@ router.post('/', async (req, res) => {
         console.error('AI Service Error:', err.message);
 
         // Ensure we send a useful error message back to the client
+        const isOperational = err.message.includes('Provider Error') || err.message.includes('safety') || err.message.includes('Rate limit');
         res.status(500).json({
             error: err.message || 'An unexpected error occurred',
-            details: err.stack ? err.stack.split('\n')[0] : undefined
+            details: isOperational ? undefined : (err.stack ? err.stack.split('\n')[0] : undefined)
         });
     }
 });

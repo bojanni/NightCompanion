@@ -16,7 +16,8 @@ async function callAI(action: string, payload: Record<string, unknown>, token: s
 
   if (!res.ok) {
     const errorMessage = data.error || 'AI request failed';
-    const errorDetails = data.details ? ` (${data.details})` : '';
+    // Only append details if they don't just repeat the error message
+    const errorDetails = data.details && !data.details.includes(errorMessage) ? ` (${data.details})` : '';
     throw new Error(`${errorMessage}${errorDetails}`);
   }
 

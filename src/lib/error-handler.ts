@@ -124,6 +124,15 @@ export function handleAIError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     const lowerMsg = message.toLowerCase();
 
+    // 0. Generic Upstream Provider Errors
+    if (lowerMsg.includes('provider returned error')) {
+        toast.error('AI Provider Issues', {
+            description: 'The upstream AI provider is reporting errors. This often happens with free models on OpenRouter. Please try a different model.',
+            duration: 8000,
+        });
+        return;
+    }
+
     // 1. Rate Limits / Quotas
     if (lowerMsg.includes('rate limit') || lowerMsg.includes('429') || lowerMsg.includes('insufficient credits') || lowerMsg.includes('quota')) {
         toast.error('AI Service Busy or Limit Reached', {
@@ -188,9 +197,21 @@ export function handleAIError(error: unknown) {
     }
 
     // Check for specific provider errors if not caught above
+    // Check for specific provider errors if not caught above
     if (lowerMsg.includes('openrouter')) {
+        let cleanMsg = message.replace(/OpenRouter Provider Error:/gi, '').trim();
+        // Remove generic "Error:" prefix if present
+        cleanMsg = cleanMsg.replace(/^Error:\s*/i, '');
+        // Remove trailing parenthetical errors if they are just tech noise
+        cleanMsg = cleanMsg.replace(/\(Error:.*\)$/i, '').trim();
+
+        // If the message is still very generic, give a hint
+        if (cleanMsg.toLowerCase() === 'provider returned error') {
+            cleanMsg = 'The AI provider (OpenRouter) encountered an upstream error. Please try a different model.';
+        }
+
         toast.error('AI Provider Error', {
-            description: 'OpenRouter reported an issue. ' + message.replace(/OpenRouter Provider Error:/gi, '').trim(),
+            description: cleanMsg,
             duration: 6000,
         });
         return;
