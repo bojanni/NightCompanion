@@ -179,10 +179,10 @@ export default function Generator() {
                 step="5"
                 value={maxWords}
                 onChange={(e) => setMaxWords(parseInt(e.target.value))}
-                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 dynamic-slider-gradient"
                 style={{
-                  background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
-                }}
+                  '--gradient-percent': `${((maxWords - 20) / 80) * 100}%`
+                } as React.CSSProperties}
                 title="Adjust max words"
               />
               <div className="flex justify-between mt-2">

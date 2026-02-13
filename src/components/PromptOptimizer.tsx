@@ -182,8 +182,8 @@ export default function PromptOptimizer({
           </div>
           <div className="mt-2 h-1.5 bg-slate-900 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-all"
-              style={{ width: `${result.improvements.clarity}%` }}
+              className="h-full bg-blue-500 rounded-full transition-all dynamic-width"
+              style={{ '--width-percent': `${result.improvements.clarity}%` } as React.CSSProperties}
             />
           </div>
         </div>
@@ -201,8 +201,8 @@ export default function PromptOptimizer({
           </div>
           <div className="mt-2 h-1.5 bg-slate-900 rounded-full overflow-hidden">
             <div
-              className="h-full bg-purple-500 rounded-full transition-all"
-              style={{ width: `${result.improvements.detail}%` }}
+              className="h-full bg-purple-500 rounded-full transition-all dynamic-width"
+              style={{ '--width-percent': `${result.improvements.detail}%` } as React.CSSProperties}
             />
           </div>
         </div>
@@ -220,8 +220,8 @@ export default function PromptOptimizer({
           </div>
           <div className="mt-2 h-1.5 bg-slate-900 rounded-full overflow-hidden">
             <div
-              className="h-full bg-amber-500 rounded-full transition-all"
-              style={{ width: `${result.improvements.specificity}%` }}
+              className="h-full bg-amber-500 rounded-full transition-all dynamic-width"
+              style={{ '--width-percent': `${result.improvements.specificity}%` } as React.CSSProperties}
             />
           </div>
         </div>

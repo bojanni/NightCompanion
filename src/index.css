@@ -138,6 +138,23 @@ body {
   align-items: center;
 }
 
+/* Dynamic style helpers */
+.dynamic-width {
+  width: var(--width-percent) !important;
+}
+
+.dynamic-slider-gradient {
+  background: linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) var(--gradient-percent), rgb(30 41 59) var(--gradient-percent), rgb(30 41 59) 100%) !important;
+}
+
+.dynamic-bg-color {
+  background-color: var(--bg-color) !important;
+}
+
+.dynamic-opacity {
+  opacity: var(--opacity-value) !important;
+}
+
 /* Container for Centered Pages */
 .page-content-centered {
   width: 100%;

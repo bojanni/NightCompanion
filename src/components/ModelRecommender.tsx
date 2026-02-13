@@ -161,8 +161,8 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
                       <div className="flex items-center gap-1.5">
                         <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all`}
-                            style={{ width: `${rec.matchScore}%` }}
+                            className={`h-full rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all dynamic-width`}
+                            style={{ '--width-percent': `${rec.matchScore}%` } as React.CSSProperties}
                           />
                         </div>
                         <span className="text-xs font-medium text-slate-300">{rec.matchScore}%</span>

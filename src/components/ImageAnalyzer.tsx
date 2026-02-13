@@ -233,6 +233,8 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
         <button
           onClick={onRemove}
           className="absolute top-2 right-2 z-10 w-5 h-5 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 transition-colors"
+          aria-label="Remove image"
+          title="Remove image"
         >
           <X size={10} />
         </button>

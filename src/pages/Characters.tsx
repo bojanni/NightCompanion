@@ -288,6 +288,7 @@ export default function Characters() {
                               className="text-sm px-3 py-2 bg-white border border-slate-200 rounded-md focus:outline-none focus:border-blue-500"
                               value={detailCategory}
                               onChange={(e) => setDetailCategory(e.target.value)}
+                              aria-label="Detail category"
                             >
                               <option value="general">General</option>
                               <option value="appearance">Appearance</option>
@@ -413,6 +414,7 @@ export default function Characters() {
               <button
                 onClick={() => setShowEditor(false)}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label="Close editor"
               >
                 <X className="w-5 h-5" />
               </button>

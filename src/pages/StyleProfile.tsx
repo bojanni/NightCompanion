@@ -13,9 +13,7 @@ import {
 } from '../lib/style-analysis';
 import type { StyleProfile as StyleProfileType, KeywordStat } from '../lib/style-analysis';
 
-interface Props { }
-
-export default function StyleProfile({ }: Props) {
+export default function StyleProfile() {
   const [profile, setProfile] = useState<StyleProfileType | null>(null);
   const [history, setHistory] = useState<StyleProfileType[]>([]);
   const [keywords, setKeywords] = useState<KeywordStat[]>([]);
@@ -302,11 +300,11 @@ function KeywordDashboard({ grouped }: { grouped: Record<string, KeywordStat[]> 
                     </span>
                     <div className="flex-1 h-4 bg-slate-800 rounded overflow-hidden">
                       <div
-                        className={`h-full ${barColor} rounded transition-all duration-500`}
+                        className={`h-full ${barColor} rounded transition-all duration-500 dynamic-width dynamic-opacity`}
                         style={{
-                          width: `${Math.max((kw.count / maxCount) * 100, 8)}%`,
-                          opacity: 0.3 + (kw.count / maxCount) * 0.7,
-                        }}
+                          '--width-percent': `${Math.max((kw.count / maxCount) * 100, 8)}%`,
+                          '--opacity-value': 0.3 + (kw.count / maxCount) * 0.7,
+                        } as React.CSSProperties}
                       />
                     </div>
                     <span className="text-[10px] text-slate-500 w-6 text-right shrink-0">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
@@ -70,11 +70,9 @@ export default function Gallery() {
     { id: 'together', name: 'Together AI', type: 'cloud' as const },
   ];
 
-  useEffect(() => {
-    loadData();
-  }, [currentPage, filterCollection, filterRating]);
 
-  async function loadData() {
+
+  const loadData = useCallback(async () => {
     setLoading(true);
 
     let query = supabase
@@ -124,9 +122,11 @@ export default function Gallery() {
     setAllPrompts(promptsRes.data as Prompt[] ?? []);
     setTotalCount(count ?? 0);
     setLoading(false);
-  }
+  }, [currentPage, filterCollection, filterRating, search, filterRating]);
 
-
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   function openItemEditor(item: GalleryItem | null) {
     setEditingItem(item);
@@ -360,11 +360,16 @@ export default function Gallery() {
   }, [items, search, filterCollection, filterRating]);
 
   function getCollectionName(id: string | null): string {
-    if (!id) return '';
     return collections.find((c) => c.id === id)?.name ?? '';
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   function handleFilterCollectionChange(collectionId: string | null) {
     setFilterCollection(collectionId);
@@ -454,17 +459,18 @@ export default function Gallery() {
               <button
                 onClick={() => handleFilterCollectionChange(filterCollection === coll.id ? null : coll.id)}
                 className={`px-3 py-1.5 rounded-l-xl text-xs font-medium transition-all border ${filterCollection === coll.id
-                  ? 'border-amber-500/30 text-amber-400'
+                  ? 'border-amber-500/30 text-amber-400 dynamic-bg-color-alpha'
                   : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
                   }`}
-                style={filterCollection === coll.id ? { backgroundColor: `${coll.color}15` } : {}}
+                style={filterCollection === coll.id ? { '--bg-color': coll.color } as React.CSSProperties : {}}
               >
-                <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: coll.color }} />
+                <span className="inline-block w-2 h-2 rounded-full mr-1.5 dynamic-bg-color" style={{ '--bg-color': coll.color } as React.CSSProperties} />
                 {coll.name}
               </button>
               <button
                 onClick={() => handleDeleteCollection(coll.id)}
                 className="px-1.5 py-1.5 rounded-r-xl text-xs border border-l-0 border-slate-700 text-slate-600 hover:text-red-400 transition-colors"
+                aria-label="Delete collection"
               >
                 <X size={11} />
               </button>
@@ -657,6 +663,7 @@ export default function Gallery() {
                 value={formCollectionId}
                 onChange={(e) => setFormCollectionId(e.target.value)}
                 className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                aria-label="Select collection"
               >
                 <option value="">No collection</option>
                 {collections.map((c) => (
@@ -821,8 +828,9 @@ export default function Gallery() {
                 <button
                   key={c}
                   onClick={() => setCollColor(c)}
-                  className={`w-7 h-7 rounded-full transition-all ${collColor === c ? 'ring-2 ring-white scale-110' : ''}`}
-                  style={{ backgroundColor: c }}
+                  className={`w-7 h-7 rounded-full transition-all dynamic-bg-color ${collColor === c ? 'ring-2 ring-white scale-110' : ''}`}
+                  style={{ '--bg-color': c } as React.CSSProperties}
+                  aria-label={`Select color ${c}`}
                 />
               ))}
             </div>
