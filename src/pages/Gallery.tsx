@@ -505,9 +505,9 @@ export default function Gallery({ }: GalleryProps) {
                 transition={{
                   duration: 0.3,
                   delay: Math.min(index * 0.05, 0.5),
-                  layout: { type: "spring", stiffness: 300, damping: 30 }
+                  layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
                 }}
-                className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all group"
+                className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className="aspect-square bg-slate-800 relative overflow-hidden cursor-pointer" onClick={() => openLightbox(item)}>
                   {item.image_url ? (

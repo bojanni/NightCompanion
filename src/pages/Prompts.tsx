@@ -486,171 +486,175 @@ export default function Prompts({ }: PromptsProps) {
                   transition={{
                     duration: 0.3,
                     delay: Math.min(index * 0.05, 0.5),
-                    layout: { type: "spring", stiffness: 300, damping: 30 }
+                    layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
                   }}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all group"
+                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col aspect-square overflow-hidden hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
-                      {prompt.is_template && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
-                          Template
-                        </span>
+                  <div className="flex-1 overflow-y-auto no-scrollbar p-5 pb-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
+                        {prompt.is_template && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
+                            Template
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleToggleFavorite(prompt)}
+                        className="flex-shrink-0 ml-2"
+                      >
+                        <Heart
+                          size={16}
+                          className={
+                            prompt.is_favorite
+                              ? 'fill-rose-400 text-rose-400'
+                              : 'text-slate-600 hover:text-rose-400 transition-colors'
+                          }
+                        />
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-slate-400 mb-3 leading-relaxed">{prompt.content}</p>
+
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {promptTags.length > 0 ? (
+                        promptTags.slice(0, 15).map((tag) => (
+                          <TagBadge key={tag.id} tag={tag} />
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleToggleFavorite(prompt)}
-                      className="flex-shrink-0 ml-2"
-                    >
-                      <Heart
-                        size={16}
-                        className={
-                          prompt.is_favorite
-                            ? 'fill-rose-400 text-rose-400'
-                            : 'text-slate-600 hover:text-rose-400 transition-colors'
-                        }
-                      />
-                    </button>
                   </div>
 
-                  <p className="text-xs text-slate-400 line-clamp-3 mb-3 leading-relaxed">{prompt.content}</p>
-
-                  <div className="flex flex-wrap gap-1 mb-3 min-h-[24px]">
-                    {promptTags.length > 0 ? (
-                      promptTags.slice(0, 10).map((tag) => (
-                        <TagBadge key={tag.id} tag={tag} />
-                      ))
-                    ) : (
-                      <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
-                    )}
-                  </div>
-
-                  {promptImages && promptImages.length > 0 && (
-                    <div className={`grid gap-2 mb-3 ${promptImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                      {promptImages.map((img) => (
-                        <div key={img.id} className="relative group/img">
-                          <div
-                            className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
-                            onClick={() => {
-                              setLightboxImage(img);
-                            }}
-                            title={`View ${img.title || 'Untitled'}`}
-                          >
-                            <img
-                              src={img.image_url}
-                              alt={img.title}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUnlinkImage(prompt.id, img.id);
-                                }}
-                                className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
-                                title="Unlink image"
-                              >
-                                <X size={12} />
-                              </button>
-                              <div className="absolute bottom-1 left-1 right-1">
-                                <p className="text-[10px] text-white truncate flex items-center gap-1">
-                                  <Lock size={9} />
-                                  {img.title || 'Linked Image'}
-                                </p>
-                              </div>
-                              {img.model && (
-                                <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
-                                  {img.model}
+                  <div className="px-5 pb-5">
+                    {promptImages && promptImages.length > 0 && (
+                      <div className={`grid gap-2 mb-3 ${promptImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        {promptImages.map((img) => (
+                          <div key={img.id} className="relative group/img">
+                            <div
+                              className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
+                              onClick={() => {
+                                setLightboxImage(img);
+                              }}
+                              title={`View ${img.title || 'Untitled'}`}
+                            >
+                              <img
+                                src={img.image_url}
+                                alt={img.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUnlinkImage(prompt.id, img.id);
+                                  }}
+                                  className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
+                                  title="Unlink image"
+                                >
+                                  <X size={12} />
+                                </button>
+                                <div className="absolute bottom-1 left-1 right-1">
+                                  <p className="text-[10px] text-white truncate flex items-center gap-1">
+                                    <Lock size={9} />
+                                    {img.title || 'Linked Image'}
+                                  </p>
                                 </div>
-                              )}
+                                {img.model && (
+                                  <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
+                                    {img.model}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
 
-                  <div className="flex items-center justify-between">
-                    <StarRating
-                      rating={prompt.rating}
-                      onChange={(newRating) => handleRatePrompt(prompt.id, newRating)}
-                      size={13}
-                    />
-                    <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleCopy(prompt.content, prompt.id)}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                        title="Copy prompt"
-                      >
-                        {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                      </button>
-                      <button
-                        onClick={() => handleLinkImage(prompt)}
-                        className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
-                        title={promptImages?.length ? 'Linked to image' : 'Link to image'}
-                      >
-                        <Link size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setOptimizerPrompt(prompt);
-                          setShowOptimizer(true);
-                        }}
-                        disabled={!!promptImages?.length}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                        title={promptImages?.length ? 'Locked: linked to image' : 'Optimize prompt'}
-                      >
-                        <Zap size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setImproverPrompt(prompt);
-                          setShowImprover(true);
-                        }}
-                        disabled={!!promptImages?.length}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                        title={promptImages?.length ? 'Locked: linked to image' : 'Improve with AI'}
-                      >
-                        <Sparkles size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setHistoryPrompt(prompt);
-                          setShowHistory(true);
-                        }}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-blue-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
-                        title="Version history"
-                      >
-                        <Clock size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setVariationBase(prompt.content);
-                          setShowVariations(true);
-                        }}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
-                        title="Generate variations"
-                      >
-                        <Wand2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingPrompt(prompt);
-                          setShowEditor(true);
-                        }}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                        title={promptImages?.length ? 'Edit (Restricted)' : 'Edit'}
-                      >
-                        {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(prompt.id)}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
-                        title="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                    <div className="flex items-center justify-between">
+                      <StarRating
+                        rating={prompt.rating}
+                        onChange={(newRating) => handleRatePrompt(prompt.id, newRating)}
+                        size={13}
+                      />
+                      <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleCopy(prompt.content, prompt.id)}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title="Copy prompt"
+                        >
+                          {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                        </button>
+                        <button
+                          onClick={() => handleLinkImage(prompt)}
+                          className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
+                          title={promptImages?.length ? 'Linked to image' : 'Link to image'}
+                        >
+                          <Link size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setOptimizerPrompt(prompt);
+                            setShowOptimizer(true);
+                          }}
+                          disabled={!!promptImages?.length}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={promptImages?.length ? 'Locked: linked to image' : 'Optimize prompt'}
+                        >
+                          <Zap size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setImproverPrompt(prompt);
+                            setShowImprover(true);
+                          }}
+                          disabled={!!promptImages?.length}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={promptImages?.length ? 'Locked: linked to image' : 'Improve with AI'}
+                        >
+                          <Sparkles size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setHistoryPrompt(prompt);
+                            setShowHistory(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-blue-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title="Version history"
+                        >
+                          <Clock size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setVariationBase(prompt.content);
+                            setShowVariations(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title="Generate variations"
+                        >
+                          <Wand2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingPrompt(prompt);
+                            setShowEditor(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title={promptImages?.length ? 'Edit (Restricted)' : 'Edit'}
+                        >
+                          {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(prompt.id)}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
