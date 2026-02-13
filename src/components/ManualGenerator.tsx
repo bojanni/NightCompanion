@@ -129,7 +129,6 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             }
         } catch (err) {
             handleAIError(err);
-            handleStandardGenerate(index);
         } finally {
             setGenerating(false);
         }
@@ -285,8 +284,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             toast.success('Prompt saved to library');
             onSaved();
         } catch (e) {
-            console.error('Failed to save prompt:', e);
-            toast.error('Failed to save prompt');
+            handleAIError(e);
         } finally {
             setSaving(false);
         }

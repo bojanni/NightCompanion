@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Flame, Mail, Lock, ArrowRight, Loader2, Play } from 'lucide-react';
+import { toast } from 'sonner';
 
 const DEMO_EMAIL = 'demo@nightcafe-companion.app';
 const DEMO_PASSWORD = 'demo123456';
@@ -13,25 +14,22 @@ export default function Auth({ onSignIn, onSignUp }: AuthProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
   const handleDemo = async () => {
-    setError('');
     setDemoLoading(true);
     const { error: signInError } = await onSignIn(DEMO_EMAIL, DEMO_PASSWORD);
     if (signInError) {
       await onSignUp(DEMO_EMAIL, DEMO_PASSWORD);
       const { error: retryError } = await onSignIn(DEMO_EMAIL, DEMO_PASSWORD);
-      if (retryError) setError(retryError.message);
+      if (retryError) toast.error(retryError.message);
     }
     setDemoLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     const { error: authError } = isLogin
@@ -39,7 +37,7 @@ export default function Auth({ onSignIn, onSignUp }: AuthProps) {
       : await onSignUp(email, password);
 
     if (authError) {
-      setError(authError.message);
+      toast.error(authError.message);
     }
     setLoading(false);
   };
@@ -64,17 +62,15 @@ export default function Auth({ onSignIn, onSignUp }: AuthProps) {
           <div className="flex bg-slate-800 rounded-xl p-1 mb-6">
             <button
               onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                isLogin ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${isLogin ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
             >
               Sign In
             </button>
             <button
               onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                !isLogin ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${!isLogin ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
             >
               Create Account
             </button>
@@ -112,11 +108,6 @@ export default function Auth({ onSignIn, onSignUp }: AuthProps) {
               </div>
             </div>
 
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"

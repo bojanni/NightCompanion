@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import {
   Compass, Loader2, ChevronDown, ChevronUp,
-  Trophy, Lightbulb, DollarSign, Eraser, ArrowUp,
+  Trophy, Lightbulb, Eraser, ArrowUp,
 } from 'lucide-react';
+
 import { recommendModels } from '../lib/ai-service';
 import type { ModelRecommendation } from '../lib/ai-service';
 import { db } from '../lib/api';
@@ -30,13 +31,11 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
   const [prompt, setPrompt] = useState('');
   const [budget, setBudget] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [results, setResults] = useState<ModelRecommendation[] | null>(null);
 
   async function handleRecommend() {
     if (!prompt.trim()) return;
     setLoading(true);
-    setError('');
     setResults(null);
     try {
       const { data } = await db.auth.getSession();
@@ -55,7 +54,6 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
       setResults(augmentedResults);
     } catch (e) {
       handleAIError(e);
-      setError(''); // Clear local error as toast handles it
     } finally {
       setLoading(false);
     }
@@ -140,11 +138,6 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
             )}
           </div>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 text-xs text-red-400">
-              {error}
-            </div>
-          )}
 
           {results && results.length > 0 && (
             <div className="space-y-3">

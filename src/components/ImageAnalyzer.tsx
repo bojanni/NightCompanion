@@ -43,7 +43,6 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
   const [slots, setSlots] = useState<ImageSlotState[]>([createSlot()]);
   const [promptUsed, setPromptUsed] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [singleResult, setSingleResult] = useState<ImageAnalysisResult | null>(null);
   const [batchResult, setBatchResult] = useState<BatchAnalysisResult | null>(null);
 
@@ -66,7 +65,6 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
   function resetResults() {
     setSingleResult(null);
     setBatchResult(null);
-    setError('');
   }
 
   async function handleAnalyze() {
@@ -102,7 +100,6 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
       }
     } catch (e) {
       handleAIError(e);
-      setError(''); // Clear local error
     } finally {
       setLoading(false);
     }
@@ -182,11 +179,6 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
             }
           </button>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 text-xs text-red-400">
-              {error}
-            </div>
-          )}
 
           {singleResult && (
             <SingleAnalysis result={singleResult} onUsePrompt={onPromptGenerated} />

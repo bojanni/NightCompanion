@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
   Fingerprint, Loader2, RefreshCw, BarChart3, Lightbulb,
-  Clock, TrendingUp, Cpu, AlertCircle, Database,
+  Clock, TrendingUp, Cpu, Database,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { analyzeStyle } from '../lib/ai-service';
 import { db, supabase } from '../lib/api';
 import {
@@ -22,7 +23,6 @@ export default function StyleProfile({ }: Props) {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -43,9 +43,7 @@ export default function StyleProfile({ }: Props) {
 
   async function handleAnalyze() {
     setAnalyzing(true);
-    setError('');
     try {
-      // Local auth doesn't really have tokens, but we keep this for compatibility structure
       const { data: session } = await db.auth.getSession();
       const token = session.session?.access_token ?? '';
 
@@ -56,7 +54,7 @@ export default function StyleProfile({ }: Props) {
         .limit(30);
 
       if (!prompts || prompts.length < 3) {
-        setError('Need at least 3 saved prompts to analyze your style.');
+        toast.error('Need at least 3 saved prompts to analyze your style.');
         setAnalyzing(false);
         return;
       }
@@ -65,7 +63,7 @@ export default function StyleProfile({ }: Props) {
       await saveStyleProfile(result, prompts.length);
       await loadData();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Analysis failed');
+      toast.error(e instanceof Error ? e.message : 'Analysis failed');
     } finally {
       setAnalyzing(false);
     }
@@ -78,7 +76,7 @@ export default function StyleProfile({ }: Props) {
       const fresh = await getKeywordStats();
       setKeywords(fresh);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Keyword rebuild failed');
+      toast.error(e instanceof Error ? e.message : 'Keyword rebuild failed');
     } finally {
       setRebuilding(false);
     }
@@ -123,12 +121,6 @@ export default function StyleProfile({ }: Props) {
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-red-400">
-          <AlertCircle size={16} /> {error}
-        </div>
-      )}
 
       {!profile && keywords.length === 0 && (
         <EmptyState promptCount={promptCount} onAnalyze={handleAnalyze} analyzing={analyzing} />
@@ -334,7 +326,7 @@ function KeywordDashboard({ grouped }: { grouped: Record<string, KeywordStat[]> 
 function ProfileSection({ title, items, icon: Icon, color, dotColor }: {
   title: string;
   items: string[];
-  icon: typeof TrendingUp;
+  icon: any;
   color: string;
   dotColor: string;
 }) {
@@ -373,8 +365,8 @@ function EvolutionTimeline({ history }: { history: StyleProfileType[] }) {
             return (
               <div key={snapshot.id} className="flex gap-4 pl-1">
                 <div className={`w-5 h-5 rounded-full border-2 shrink-0 mt-0.5 z-10 ${isLatest
-                    ? 'bg-teal-500 border-teal-400'
-                    : 'bg-slate-800 border-slate-600'
+                  ? 'bg-teal-500 border-teal-400'
+                  : 'bg-slate-800 border-slate-600'
                   }`} />
                 <div className={`flex-1 p-3 rounded-xl ${isLatest ? 'bg-teal-500/5 border border-teal-500/20' : 'bg-slate-800/30'
                   }`}>

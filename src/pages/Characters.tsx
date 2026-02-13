@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Search, Plus, Edit3, Trash2, X,
   MessageSquare, Image as ImageIcon, Save, Loader2,
-  ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown, AlertCircle
+  ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { supabase } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
@@ -34,7 +34,6 @@ export default function Characters({ }: CharactersProps) {
   const [formImage, setFormImage] = useState('');
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const [showDetailForm, setShowDetailForm] = useState<string | null>(null);
   const [detailCategory, setDetailCategory] = useState<string>('general');
@@ -64,7 +63,7 @@ export default function Characters({ }: CharactersProps) {
 
       if (error) throw error;
       setDetails((prev) => ({ ...prev, [characterId]: data ?? [] }));
-    } catch (err) {
+    } catch {
       // Silent error - details just won't show
     }
   }
@@ -107,7 +106,6 @@ export default function Characters({ }: CharactersProps) {
   async function handleAnalyzeImage() {
     if (!formImage) return;
     setAnalyzing(true);
-    setAnalysisError(null);
     try {
       // Mock token for local - in real app, get from context/store
       const token = 'mock-token';
@@ -116,50 +114,23 @@ export default function Characters({ }: CharactersProps) {
       if (typeof result === 'string') {
         // Fallback if string returned
         if (result) {
-          setFormDesc((prev: string) => prev ? prev + '\n\n' + result : result);
+          setFormDesc(prev => prev + '\n\n' + result);
         }
       } else {
         if (result.found && result.description) {
-          setFormDesc(prev => prev ? prev + '\n\n' + result.description : result.description);
+          setFormDesc(prev => prev + '\n\n' + result.description);
         } else {
-          setAnalysisError(result.reason || 'No person detected in the image.');
+          toast.error(result.reason || 'No person detected in the image.');
         }
       }
     } catch (err) {
       console.error("Analysis failed", err);
-      setAnalysisError('Failed to analyze image. Please try again.');
+      toast.error('Failed to analyze image. Please try again.');
     } finally {
       setAnalyzing(false);
     }
   }
 
-  async function handleOverrideAnalysis() {
-    if (!formImage) return;
-    setAnalyzing(true);
-    setAnalysisError(null);
-    try {
-      const token = 'mock-token';
-      const result = await describeCharacter(formImage, true, token);
-
-      let description = '';
-      if (typeof result === 'string') {
-        description = result;
-      } else {
-        description = result.description || '';
-      }
-
-      if (description) {
-        setFormDesc(prev => prev ? prev + '\n\n' + description : description);
-      } else {
-        setAnalysisError('Still could not generate a description.');
-      }
-
-    } catch (err) {
-      setAnalysisError('Override failed.');
-    } finally {
-      setAnalyzing(false);
-    }
-  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -501,22 +472,6 @@ export default function Characters({ }: CharactersProps) {
                   </div>
                 </div>
 
-                {analysisError && (
-                  <div className="mt-2 p-3 bg-red-50 border border-red-100 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-1">
-                    <div className="text-red-500 mt-0.5"><AlertCircle className="w-4 h-4" /></div>
-                    <div className="flex-1">
-                      <p className="text-sm text-red-800 font-medium">{analysisError}</p>
-                      <button
-                        onClick={handleOverrideAnalysis}
-                        disabled={analyzing}
-                        className="mt-2 text-xs font-medium text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                      >
-                        {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                        Override & Analyze Anyway
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {formImage && (
                   <div className="mt-2 relative aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-100">

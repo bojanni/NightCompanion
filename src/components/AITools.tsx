@@ -3,6 +3,9 @@ import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
   Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
 } from 'lucide-react';
+
+import { toast } from 'sonner';
+import { handleAIError } from '../lib/error-handler';
 import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
@@ -67,7 +70,6 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const [improveInput, setImproveInput] = useState(() => loadAIToolsState('improveInput', ''));
   const [improveResult, setImproveResult] = useState(() => loadAIToolsState('improveResult', ''));
@@ -139,7 +141,6 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   useEffect(() => {
     async function fetchActiveModel() {
       try {
-        const token = await getToken();
 
         // Check local endpoints first
         const { data: localData } = await supabase
@@ -155,7 +156,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         }
 
         // Check cloud providers
-        const keys = await listApiKeys(token);
+        const keys = await listApiKeys();
         const activeKey = keys.find(k => k.is_active);
 
         if (activeKey) {
@@ -175,6 +176,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   }, []); // Run once on mount
 
   async function getToken() {
+    await db.auth.getUser(); // Get user for later just in case, though usually not needed for local insert if RLS disabled
     const { data } = await db.auth.getSession();
     return data.session?.access_token ?? '';
   }
@@ -188,7 +190,6 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   async function handleImprove() {
     if (!improveInput.trim()) return;
     setLoading(true);
-    setError('');
     setImproveResult('');
     setNegativeResult('');
     try {
@@ -224,7 +225,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         setImproveResult(result);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to improve prompt');
+      handleAIError(e);
     } finally {
       setLoading(false);
     }
@@ -233,7 +234,6 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   async function handleGenerate() {
     if (!generateInput.trim()) return;
     setLoading(true);
-    setError('');
     setGenerateResult('');
     try {
       const token = await getToken();
@@ -269,7 +269,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       );
       setGenerateResult(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to generate prompt');
+      handleAIError(e);
     } finally {
       setLoading(false);
     }
@@ -277,7 +277,6 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
 
   async function handleAnalyze() {
     setLoading(true);
-    setError('');
     setStyleResult(null);
     try {
       const token = await getToken();
@@ -287,7 +286,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         .order('created_at', { ascending: false })
         .limit(20);
       if (!data || data.length < 3) {
-        setError('Need at least 3 saved prompts to analyze your style');
+        toast.error('Need at least 3 saved prompts to analyze your style');
         setLoading(false);
         return;
       }
@@ -295,7 +294,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       setStyleResult(result);
       saveStyleProfile(result, data.length).catch(() => { });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to analyze style');
+      handleAIError(e);
     } finally {
       setLoading(false);
     }
@@ -304,14 +303,13 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   async function handleDiagnose() {
     if (!diagnosePromptInput.trim() || !diagnoseIssue.trim()) return;
     setLoading(true);
-    setError('');
     setDiagnoseResult(null);
     try {
       const token = await getToken();
       const result = await diagnosePrompt(diagnosePromptInput, diagnoseIssue, token);
       setDiagnoseResult(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to diagnose');
+      handleAIError(e);
     } finally {
       setLoading(false);
     }
@@ -367,7 +365,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               {visibleTabs.map(({ id, label, icon: Icon, desc }) => (
                 <button
                   key={id}
-                  onClick={() => { setTab(id); setError(''); }}
+                  onClick={() => { setTab(id); }}
                   className={`p-3 rounded-xl text-left transition-all border ${tab === id
                     ? 'bg-teal-500/10 border-teal-500/30'
                     : 'bg-slate-800/30 border-slate-800 hover:border-slate-700'
@@ -381,11 +379,6 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
             </div>
           )}
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2.5 text-xs text-red-400">
-              {error}
-            </div>
-          )}
 
           {tab === 'improve' && (
             <ImproveTab

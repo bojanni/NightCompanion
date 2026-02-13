@@ -15,6 +15,7 @@ import type { ModelOption } from '../lib/provider-models';
 import { listModels } from '../lib/ai-service';
 import ModelSelector from '../components/ModelSelector';
 import { LocalEndpointCard } from '../components/LocalEndpointCard';
+import { toast } from 'sonner';
 
 
 // ... (Removing SettingsProps as it's unused now)
@@ -101,8 +102,6 @@ export default function Settings() {
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -138,7 +137,7 @@ export default function Settings() {
       const result = await listApiKeys();
       setKeys(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load API keys');
+      toast.error(e instanceof Error ? e.message : 'Failed to load API keys');
     } finally {
       setLoading(false);
     }
@@ -154,7 +153,7 @@ export default function Settings() {
       if (fetchError) throw fetchError;
       setLocalEndpoints(data || []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load local endpoints');
+      toast.error(e instanceof Error ? e.message : 'Failed to load local endpoints');
     }
   }, []);
 
@@ -163,17 +162,13 @@ export default function Settings() {
     loadLocalEndpoints();
   }, [loadKeys, loadLocalEndpoints]);
 
-  function showSuccess(msg: string) {
-    setSuccess(msg);
-    setTimeout(() => setSuccess(''), 3000);
-  }
 
   async function handleTestConnection() {
     setTesting(true);
     setTestResult(null);
-    setError('');
 
     try {
+      const token = await getToken();
       await testConnection(token);
       setTestResult({ success: true, message: 'Connection successful! Your AI provider is configured correctly.' });
     } catch (e) {
@@ -285,18 +280,6 @@ export default function Settings() {
         </div>
       )}
 
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-emerald-400 flex items-center gap-2">
-          <Check size={14} />
-          {success}
-        </div>
-      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -350,13 +333,11 @@ export default function Settings() {
                         keyInfo={keyInfo || null}
                         actionLoading={actionLoading}
                         setActionLoading={setActionLoading}
-                        setError={setError}
-                        showSuccess={showSuccess}
-                        getToken={getToken}
                         loadKeys={loadKeys}
                         loadLocalEndpoints={loadLocalEndpoints}
                         dynamicModels={dynamicModels[provider.id] || []}
                         setDynamicModels={setDynamicModels}
+                        getToken={getToken}
                         isGlobalActive={!!(keyInfo?.is_active_gen || keyInfo?.is_active_improve)}
                       />
                     </div>
@@ -379,7 +360,6 @@ export default function Settings() {
                 actionLoading={actionLoading}
                 onSave={async (endpointUrl, modelGen, modelImprove) => {
                   setActionLoading('ollama');
-                  setError('');
                   try {
                     const existing = localEndpoints.find(e => e.provider === 'ollama');
                     await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
@@ -397,39 +377,37 @@ export default function Settings() {
                       });
                     if (insertError) throw insertError;
                     await loadLocalEndpoints();
-                    showSuccess('Ollama configuration saved');
+                    toast.success('Ollama configuration saved');
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed to save Ollama config');
+                    toast.error(e instanceof Error ? e.message : 'Failed to save Ollama config');
                   } finally {
                     setActionLoading(null);
                   }
                 }}
                 onDelete={async () => {
                   setActionLoading('ollama-delete');
-                  setError('');
                   try {
                     await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
                     await loadLocalEndpoints();
-                    showSuccess('Ollama configuration removed');
+                    toast.success('Ollama configuration removed');
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed to delete Ollama config');
+                    toast.error(e instanceof Error ? e.message : 'Failed to delete Ollama config');
                   } finally {
                     setActionLoading(null);
                   }
                 }}
                 onSetActive={async (role) => {
                   setActionLoading(`ollama-${role}`);
-                  setError('');
                   try {
                     const endpoint = localEndpoints.find(e => e.provider === 'ollama');
                     const currentModel = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name || '') : (endpoint?.model_improve || endpoint?.model_name || '');
                     const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
                     await setActiveProvider('ollama', currentModel, !isRoleActive, role);
-                    showSuccess(`Ollama ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
+                    toast.success(`Ollama ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed to activate Ollama');
+                    toast.error(e instanceof Error ? e.message : 'Failed to activate Ollama');
                   } finally {
                     setActionLoading(null);
                   }
@@ -441,7 +419,6 @@ export default function Settings() {
                 actionLoading={actionLoading}
                 onSave={async (endpointUrl, modelGen, modelImprove) => {
                   setActionLoading('lmstudio');
-                  setError('');
                   try {
                     const existing = localEndpoints.find(e => e.provider === 'lmstudio');
                     await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
@@ -459,9 +436,9 @@ export default function Settings() {
                       });
                     if (insertError) throw insertError;
                     await loadLocalEndpoints();
-                    showSuccess('LM Studio configuration saved');
+                    toast.success('LM Studio configuration saved');
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed to save LM Studio config');
+                    toast.error(e instanceof Error ? e.message : 'Failed to save LM Studio config');
                   } finally {
                     setActionLoading(null);
                   }
@@ -471,9 +448,9 @@ export default function Settings() {
                   try {
                     await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
                     await loadLocalEndpoints();
-                    showSuccess('LM Studio configuration removed');
+                    toast.success('LM Studio configuration removed');
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed to delete config');
+                    toast.error(e instanceof Error ? e.message : 'Failed to delete config');
                   } finally {
                     setActionLoading(null);
                   }
@@ -485,11 +462,11 @@ export default function Settings() {
                     const currentModel = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name || '') : (endpoint?.model_improve || endpoint?.model_name || '');
                     const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
                     await setActiveProvider('lmstudio', currentModel, !isRoleActive, role);
-                    showSuccess(`LM Studio ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
+                    toast.success(`LM Studio ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Failed active toggle');
+                    toast.error(e instanceof Error ? e.message : 'Failed active toggle');
                   } finally {
                     setActionLoading(null);
                   }
@@ -516,18 +493,16 @@ interface ProviderConfigFormProps {
   keyInfo: ApiKeyInfo | null;
   actionLoading: string | null;
   setActionLoading: (id: string | null) => void;
-  setError: (err: string) => void;
-  showSuccess: (msg: string) => void;
-  getToken: () => Promise<string>;
   loadKeys: () => Promise<void>;
   loadLocalEndpoints: () => Promise<void>;
   dynamicModels: ModelOption[];
   setDynamicModels: React.Dispatch<React.SetStateAction<Record<string, ModelOption[]>>>;
+  getToken: () => Promise<string>;
   isGlobalActive: boolean;
 }
 
 function ProviderConfigForm({
-  provider, keyInfo, actionLoading, setActionLoading, setError, showSuccess, getToken, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels, isGlobalActive
+  provider, keyInfo, actionLoading, setActionLoading, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels, getToken, isGlobalActive
 }: ProviderConfigFormProps) {
   const [inputValue, setInputValue] = useState('');
   const [selectedModelGen, setSelectedModelGen] = useState(
@@ -591,7 +566,6 @@ function ProviderConfigForm({
 
   const handleSave = async () => {
     setActionLoading(provider.id);
-    setError('');
     try {
       const validated = ApiKeySchema.parse({
         provider: provider.id,
@@ -607,11 +581,11 @@ function ProviderConfigForm({
       await updateModels(provider.id, selectedModelGen, selectedModelImprove);
 
       await loadKeys();
-      showSuccess(`${provider.name} key saved successfully`);
+      toast.success(`${provider.name} key saved successfully`);
       setIsEditing(false);
       setInputValue('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save key');
+      toast.error(e instanceof Error ? e.message : 'Failed to save key');
     } finally {
       setActionLoading(null);
     }
@@ -619,13 +593,12 @@ function ProviderConfigForm({
 
   const handleDelete = async () => {
     setActionLoading(`${provider.id}-delete`);
-    setError('');
     try {
       await deleteApiKey(provider.id);
       await loadKeys();
-      showSuccess(`${provider.name} key removed`);
+      toast.success(`${provider.name} key removed`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete key');
+      toast.error(e instanceof Error ? e.message : 'Failed to delete key');
     } finally {
       setActionLoading(null);
     }
@@ -633,7 +606,6 @@ function ProviderConfigForm({
 
   const handleSetActive = async (role: 'generation' | 'improvement') => {
     setActionLoading(`${provider.id}-${role}`);
-    setError('');
     try {
       const currentModel = role === 'generation' ? selectedModelGen : selectedModelImprove;
 
@@ -643,11 +615,11 @@ function ProviderConfigForm({
         : (keyInfo?.is_active_improve && (keyInfo?.model_improve || keyInfo?.model_name) === selectedModelImprove);
 
       await setActiveProvider(provider.id, currentModel, !isActuallyActive, role);
-      showSuccess(`${provider.name} ${role} ${isActuallyActive ? 'deactivated' : 'activated'}`);
+      toast.success(`${provider.name} ${role} ${isActuallyActive ? 'deactivated' : 'activated'}`);
       await loadKeys();
       await loadLocalEndpoints();
     } catch (e) {
-      setError(e instanceof Error ? e.message : `Failed to update ${provider.name}`);
+      toast.error(e instanceof Error ? e.message : `Failed to update ${provider.name}`);
     } finally {
       setActionLoading(null);
     }
@@ -655,20 +627,19 @@ function ProviderConfigForm({
 
   const handleFetchModels = async () => {
     setActionLoading(`${provider.id}-fetch`);
-    setError('');
     try {
       // If editing, use input value. If configured, we can try without key (backend uses active)
       // If we are editing and have input, use it.
       const apiKeyToUse = (isEditing && inputValue) ? inputValue : undefined;
-
+      const token = await getToken();
       const models = await listModels(token, provider.id, apiKeyToUse);
       setDynamicModels((prev: Record<string, ModelOption[]>) => ({
         ...prev,
         [provider.id]: models
       }));
-      showSuccess('Models list updated');
+      toast.success('Models list updated');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch models');
+      toast.error(e instanceof Error ? e.message : 'Failed to fetch models');
     } finally {
       setActionLoading(null);
     }
@@ -680,7 +651,7 @@ function ProviderConfigForm({
     if (!isEditing && keyInfo) {
       try {
         await updateModels(provider.id, genId, improveId);
-        showSuccess('Model preferences updated');
+        toast.success('Model preferences updated');
         await loadKeys();
       } catch (e) {
         console.error(e);

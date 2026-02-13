@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sparkles, Copy, Check, Loader2, ChevronRight, Lightbulb, Wand2 } from 'lucide-react';
 import { improvePromptDetailed, DetailedImprovement } from '../lib/ai-service';
 import { handleAIError } from '../lib/error-handler';
+import { toast } from 'sonner';
 import { db } from '../lib/api';
 
 interface PromptImproverProps {
@@ -12,19 +13,17 @@ interface PromptImproverProps {
 export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
   const [loading, setLoading] = useState(false);
   const [improvement, setImprovement] = useState<DetailedImprovement | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [expandedAlternate, setExpandedAlternate] = useState<number | null>(null);
 
   const handleImprove = async () => {
     setLoading(true);
-    setError(null);
     setImprovement(null);
 
     try {
       const { data: { session } } = await db.auth.getSession();
       if (!session) {
-        setError('Please sign in to use AI improvements');
+        toast.error('Please sign in to use AI improvements');
         return;
       }
 
@@ -43,7 +42,6 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
       setImprovement(result);
     } catch (err) {
       handleAIError(err);
-      setError(null); // Clear local error since we're using toast
     } finally {
       setLoading(false);
     }
@@ -63,7 +61,7 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
 
   const handleSave = async (text: string) => {
     try {
-      const { data } = await db.auth.getUser(); // Get user for later just in case, though usually not needed for local insert if RLS disabled
+      await db.auth.getUser(); // Get user for later just in case
       // Local DB insert
       await db.from('prompts').insert({
         title: 'Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 30),
@@ -119,11 +117,6 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
         </div>
       )}
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-800">{error}</p>
-        </div>
-      )}
 
       {improvement && (
         <div className="space-y-6">
@@ -256,7 +249,6 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
             <button
               onClick={() => {
                 setImprovement(null);
-                setError(null);
               }}
               className="text-sm text-slate-600 hover:text-slate-900 underline transition-colors"
             >

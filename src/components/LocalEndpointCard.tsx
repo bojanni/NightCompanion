@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Server, Loader2, Check, Trash2, Zap, RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LocalEndpoint {
     id: string;
@@ -50,7 +51,10 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
 
     const handleSave = () => {
         // Basic validation
-        if (!url) return;
+        if (!url) {
+            toast.error('Endpoint URL is required');
+            return;
+        }
         onSave(url, modelGen || 'default', modelImprove || 'default');
         setIsEditing(false);
     };

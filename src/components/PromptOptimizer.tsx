@@ -4,6 +4,7 @@ import {
   RefreshCw, ArrowRight, Zap, Target, Eye, FileText, Copy, Check
 } from 'lucide-react';
 import { optimizePrompt, OptimizationResult, OptimizationSuggestion } from '../lib/prompt-optimizer';
+import { toast } from 'sonner';
 
 interface PromptOptimizerProps {
   prompt: string;
@@ -26,7 +27,7 @@ export default function PromptOptimizer({
 
   useEffect(() => {
     analyzePrompt();
-  }, [prompt]);
+  }, [prompt]); // analyzer is stable or doesn't need to be here
 
   useEffect(() => {
     setCustomPrompt(prompt);
@@ -35,9 +36,13 @@ export default function PromptOptimizer({
   async function analyzePrompt() {
     setLoading(true);
     try {
-      const optimization = await optimizePrompt(prompt, { modelId, category });
+      const optimization = await optimizePrompt(prompt, {
+        modelId: modelId || undefined,
+        category: category || undefined
+      });
       setResult(optimization);
     } catch (error) {
+      toast.error('Failed to optimize prompt');
       console.error('Optimization error:', error);
     } finally {
       setLoading(false);
@@ -268,11 +273,10 @@ export default function PromptOptimizer({
             return (
               <div
                 key={index}
-                className={`bg-slate-800/30 border rounded-xl p-4 transition-all ${
-                  isApplied
-                    ? 'border-green-500/30 bg-green-500/5'
-                    : 'border-slate-700/50 hover:border-slate-600'
-                }`}
+                className={`bg-slate-800/30 border rounded-xl p-4 transition-all ${isApplied
+                  ? 'border-green-500/30 bg-green-500/5'
+                  : 'border-slate-700/50 hover:border-slate-600'
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${getCategoryColor(suggestion.category)}`}>
@@ -317,11 +321,10 @@ export default function PromptOptimizer({
 
                   <button
                     onClick={() => applySuggestion(suggestion, index)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0 ${
-                      isApplied
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border border-slate-600'
-                    }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0 ${isApplied
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border border-slate-600'
+                      }`}
                   >
                     {isApplied ? (
                       <>
