@@ -71,11 +71,11 @@ export default function PromptDetailOverlay({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-full max-w-6xl max-h-full overflow-hidden flex flex-col md:flex-row"
+                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-full max-w-[1400px] max-h-full overflow-hidden flex flex-col md:flex-row"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Left Side: Image */}
-                <div className="w-full md:w-3/5 lg:w-2/3 bg-slate-800/50 relative overflow-hidden flex items-center justify-center p-4">
+                <div className="w-full md:w-[70%] bg-slate-800/50 relative overflow-hidden flex items-center justify-center p-4">
                     {mainImage ? (
                         <img
                             src={mainImage.image_url}
@@ -97,7 +97,7 @@ export default function PromptDetailOverlay({
                 </div>
 
                 {/* Right Side: Data */}
-                <div className="w-full md:w-2/5 lg:w-1/3 flex flex-col border-l border-slate-800 bg-slate-900/50">
+                <div className="w-full md:w-[30%] flex flex-col border-l border-slate-800 bg-slate-900/50">
                     <div className="p-8 border-b border-slate-800">
                         <h2 className="text-2xl font-bold text-white mb-2">{prompt.title || 'Untitled Prompt'}</h2>
                         <div className="flex items-center gap-2 text-slate-400 text-sm">
