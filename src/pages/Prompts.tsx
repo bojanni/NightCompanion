@@ -488,9 +488,9 @@ export default function Prompts({ }: PromptsProps) {
                     delay: Math.min(index * 0.05, 0.5),
                     layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
                   }}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col aspect-square overflow-hidden hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                 >
-                  <div className="flex-1 overflow-y-auto no-scrollbar p-5 pb-0">
+                  <div className="p-5 pb-0">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
