@@ -43,7 +43,6 @@ export async function deleteApiKey(provider: string, _token: string): Promise<vo
 }
 
 export async function setActiveProvider(provider: string, modelName: string, _token: string, active: boolean = true, role?: 'generation' | 'improvement'): Promise<void> {
-  // We keep modelName for backward compatibility in backend if needed, or just as a default
   await callKeyService('POST', '', { action: 'set-active', provider, modelName, active, role });
 }
 

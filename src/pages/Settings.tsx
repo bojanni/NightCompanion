@@ -425,8 +425,9 @@ export default function Settings() {
                   try {
                     const token = await getToken();
                     const endpoint = localEndpoints.find(e => e.provider === 'ollama');
+                    const currentModel = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name || '') : (endpoint?.model_improve || endpoint?.model_name || '');
                     const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
-                    await setActiveProvider('ollama', endpoint?.model_name || '', token, !isRoleActive, role);
+                    await setActiveProvider('ollama', currentModel, token, !isRoleActive, role);
                     showSuccess(`Ollama ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
@@ -485,8 +486,9 @@ export default function Settings() {
                   try {
                     const token = await getToken();
                     const endpoint = localEndpoints.find(e => e.provider === 'lmstudio');
+                    const currentModel = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name || '') : (endpoint?.model_improve || endpoint?.model_name || '');
                     const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
-                    await setActiveProvider('lmstudio', endpoint?.model_name || '', token, !isRoleActive, role);
+                    await setActiveProvider('lmstudio', currentModel, token, !isRoleActive, role);
                     showSuccess(`LM Studio ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
@@ -640,9 +642,15 @@ function ProviderConfigForm({
     setError('');
     try {
       const token = await getToken();
-      const isRoleActive = role === 'generation' ? (keyInfo?.is_active_gen ?? false) : (keyInfo?.is_active_improve ?? false);
-      await setActiveProvider(provider.id, keyInfo?.model_name || '', token, !isRoleActive, role);
-      showSuccess(`${provider.name} ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
+      const currentModel = role === 'generation' ? selectedModelGen : selectedModelImprove;
+
+      // Determine if this provider AND the selected model are currently active for this role
+      const isActuallyActive = role === 'generation'
+        ? (keyInfo?.is_active_gen && (keyInfo?.model_gen || keyInfo?.model_name) === selectedModelGen)
+        : (keyInfo?.is_active_improve && (keyInfo?.model_improve || keyInfo?.model_name) === selectedModelImprove);
+
+      await setActiveProvider(provider.id, currentModel, token, !isActuallyActive, role);
+      showSuccess(`${provider.name} ${role} ${isActuallyActive ? 'deactivated' : 'activated'}`);
       await loadKeys();
       await loadLocalEndpoints();
     } catch (e) {
@@ -832,25 +840,25 @@ function ProviderConfigForm({
             <button
               onClick={() => handleSetActive('generation')}
               disabled={actionLoading === `${provider.id}-generation`}
-              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_gen
+              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${(keyInfo?.is_active_gen && (keyInfo?.model_gen || keyInfo?.model_name) === selectedModelGen)
                 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
             >
               {actionLoading === `${provider.id}-generation` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-              {keyInfo?.is_active_gen ? 'Active Generator AI' : 'Set as Generator AI'}
+              {(keyInfo?.is_active_gen && (keyInfo?.model_gen || keyInfo?.model_name) === selectedModelGen) ? 'Active Generator AI' : 'Set as Generator AI'}
             </button>
 
             <button
               onClick={() => handleSetActive('improvement')}
               disabled={actionLoading === `${provider.id}-improvement`}
-              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_improve
+              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${(keyInfo?.is_active_improve && (keyInfo?.model_improve || keyInfo?.model_name) === selectedModelImprove)
                 ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                 }`}
             >
               {actionLoading === `${provider.id}-improvement` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-              {keyInfo?.is_active_improve ? 'Active Improvement AI' : 'Set as Improvement AI'}
+              {(keyInfo?.is_active_improve && (keyInfo?.model_improve || keyInfo?.model_name) === selectedModelImprove) ? 'Active Improvement AI' : 'Set as Improvement AI'}
             </button>
           </div>
 

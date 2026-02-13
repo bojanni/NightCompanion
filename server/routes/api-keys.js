@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
             await pool.query('DELETE FROM user_api_keys WHERE provider = $1', [provider]);
             res.json({ success: true });
         } else if (action === 'set-active') {
-            const { role } = req.body;
+            const { role, modelName } = req.body;
             const isActive = req.body.active !== false;
 
             if (role === 'generation') {
@@ -78,13 +78,13 @@ router.post('/', async (req, res) => {
                 await pool.query('UPDATE user_local_endpoints SET is_active_gen = false');
                 if (isActive) {
                     const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active_gen = true WHERE provider = $1 RETURNING *',
-                        [provider]
+                        'UPDATE user_api_keys SET is_active_gen = true, model_gen = COALESCE($2, model_gen, model_name) WHERE provider = $1 RETURNING *',
+                        [provider, modelName]
                     );
                     if (updateKeys.rows.length === 0) {
                         await pool.query(
-                            'UPDATE user_local_endpoints SET is_active_gen = true WHERE provider = $1',
-                            [provider]
+                            'UPDATE user_local_endpoints SET is_active_gen = true, model_gen = COALESCE($2, model_gen, model_name) WHERE provider = $1',
+                            [provider, modelName]
                         );
                     }
                 }
@@ -93,13 +93,13 @@ router.post('/', async (req, res) => {
                 await pool.query('UPDATE user_local_endpoints SET is_active_improve = false');
                 if (isActive) {
                     const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active_improve = true WHERE provider = $1 RETURNING *',
-                        [provider]
+                        'UPDATE user_api_keys SET is_active_improve = true, model_improve = COALESCE($2, model_improve, model_name) WHERE provider = $1 RETURNING *',
+                        [provider, modelName]
                     );
                     if (updateKeys.rows.length === 0) {
                         await pool.query(
-                            'UPDATE user_local_endpoints SET is_active_improve = true WHERE provider = $1',
-                            [provider]
+                            'UPDATE user_local_endpoints SET is_active_improve = true, model_improve = COALESCE($2, model_improve, model_name) WHERE provider = $1',
+                            [provider, modelName]
                         );
                     }
                 }
