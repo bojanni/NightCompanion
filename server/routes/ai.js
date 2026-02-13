@@ -82,10 +82,12 @@ const SYSTEM_PROMPTS = {
     STOP after 100 words.`
 };
 
-async function getActiveProvider() {
+async function getActiveProvider(role = 'generation') {
+    const column = role === 'generation' ? 'is_active_gen' : 'is_active_improve';
+
     // Check local endpoint first
     const local = await pool.query(
-        'SELECT provider, endpoint_url, model_name, model_gen, model_improve FROM user_local_endpoints WHERE is_active = true'
+        `SELECT provider, endpoint_url, model_name, model_gen, model_improve FROM user_local_endpoints WHERE ${column} = true`
     );
     if (local.rows.length > 0) {
         return {
@@ -96,7 +98,7 @@ async function getActiveProvider() {
 
     // Check cloud provider keys
     const cloud = await pool.query(
-        'SELECT provider, encrypted_key, model_name, model_gen, model_improve FROM user_api_keys WHERE is_active = true'
+        `SELECT provider, encrypted_key, model_name, model_gen, model_improve FROM user_api_keys WHERE ${column} = true`
     );
 
     if (cloud.rows.length > 0) {
@@ -556,21 +558,25 @@ router.post('/', async (req, res) => {
             }
         }
 
+        // Logic to select model_gen vs model_improve
+        // Determine which role we are fulfilling
+        const isImprovementAction = ['improve', 'improve-with-negative', 'improve-detailed', 'diagnose', 'optimize-for-model', 'recommend-models'].includes(action);
+        const role = isImprovementAction ? 'improvement' : 'generation';
+
         // Fallback to active provider if no preference or preference failed to load
         if (!provider) {
-            provider = await getActiveProvider();
+            provider = await getActiveProvider(role);
         }
 
         if (!provider) {
-            return res.status(503).json({ error: 'No AI provider configured. Please add an API key in Settings.' });
+            return res.status(503).json({ error: 'No AI provider configured for this action. Please check your Settings.' });
         }
 
-        // Logic to select model_gen vs model_improve
         // Default to model_gen (or legacy model_name if not set)
         let activeModel = provider.modelGen || provider.model_gen || provider.modelName || provider.model_name;
 
         // For improvement tasks, use model_improve if available
-        if (['improve', 'improve-with-negative', 'improve-detailed', 'diagnose', 'optimize-for-model', 'recommend-models'].includes(action)) {
+        if (isImprovementAction) {
             activeModel = provider.modelImprove || provider.model_improve || activeModel;
         }
 

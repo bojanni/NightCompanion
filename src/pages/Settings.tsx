@@ -189,8 +189,32 @@ export default function Settings() {
     }
   }
 
-  const activeProvider = keys.find((k) => k.is_active);
-  const activeLocalEndpoint = localEndpoints.find((e) => e.is_active);
+  const activeGenCloud = keys.find((k) => k.is_active_gen);
+  const activeGenLocal = localEndpoints.find((e) => e.is_active_gen);
+  const activeImproveCloud = keys.find((k) => k.is_active_improve);
+  const activeImproveLocal = localEndpoints.find((e) => e.is_active_improve);
+
+  const activeGen = activeGenCloud || activeGenLocal;
+  const activeImprove = activeImproveCloud || activeImproveLocal;
+
+  const getProviderDisplayName = (p: ApiKeyInfo | LocalEndpoint | undefined) => {
+    if (!p) return 'None';
+    if ('endpoint_url' in p) {
+      return `${p.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${p.model_gen || p.model_name})`;
+    }
+    const config = PROVIDERS.find(cp => cp.id === p.provider);
+    return `${config?.name || p.provider} (${p.model_gen || p.model_name})`;
+  };
+
+  const getImproverDisplayName = (p: ApiKeyInfo | LocalEndpoint | undefined) => {
+    if (!p) return 'None';
+    if ('endpoint_url' in p) {
+      return `${p.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${p.model_improve || p.model_name})`;
+    }
+    const config = PROVIDERS.find(cp => cp.id === p.provider);
+    return `${config?.name || p.provider} (${p.model_improve || p.model_name})`;
+  };
+
   const configuredCount = keys.length + localEndpoints.length;
 
   return (
@@ -217,28 +241,40 @@ export default function Settings() {
         </div>
       </div>
 
-      {(activeProvider || activeLocalEndpoint) && (
+      {(activeGen || activeImprove) && (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 bg-slate-900/40 border border-slate-800 rounded-xl px-4 py-3">
-            <Zap size={16} className="text-amber-400" />
-            <p className="text-sm text-slate-300">
-              Active provider: <span className="font-medium text-white">
-                {activeLocalEndpoint
-                  ? `${activeLocalEndpoint.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${activeLocalEndpoint.model_name})`
-                  : PROVIDERS.find((p) => p.id === activeProvider?.provider)?.name}
-              </span>
-            </p>
-            <span className="text-xs text-slate-500 ml-auto">{configuredCount} provider{configuredCount !== 1 ? 's' : ''} configured</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className={`flex items-center gap-3 bg-slate-900/40 border rounded-xl px-4 py-3 transition-all ${activeGen ? 'border-amber-500/30' : 'border-slate-800'}`}>
+              <Zap size={16} className={activeGen ? 'text-amber-400' : 'text-slate-500'} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Active Generator</p>
+                <p className="text-sm font-medium text-white truncate">
+                  {getProviderDisplayName(activeGen as any)}
+                </p>
+              </div>
+            </div>
+            <div className={`flex items-center gap-3 bg-slate-900/40 border rounded-xl px-4 py-3 transition-all ${activeImprove ? 'border-teal-500/30' : 'border-slate-800'}`}>
+              <Sparkles size={16} className={activeImprove ? 'text-teal-400' : 'text-slate-500'} />
+              <div className="min-w-0">
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Active Improver</p>
+                <p className="text-sm font-medium text-white truncate">
+                  {getImproverDisplayName(activeImprove as any)}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={handleTestConnection}
-            disabled={testing}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 text-sm rounded-lg transition-all disabled:opacity-50"
-          >
-            {testing ? <Loader2 size={14} className="animate-spin" /> : <TestTube2 size={14} />}
-            {testing ? 'Testing connection...' : 'Test Connection'}
-          </button>
+          <div className="flex items-center justify-between gap-4">
+            <button
+              onClick={handleTestConnection}
+              disabled={testing}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 text-sm rounded-lg transition-all disabled:opacity-50"
+            >
+              {testing ? <Loader2 size={14} className="animate-spin" /> : <TestTube2 size={14} />}
+              {testing ? 'Testing connection...' : 'Test Connection'}
+            </button>
+            <span className="text-xs text-slate-500">{configuredCount} provider{configuredCount !== 1 ? 's' : ''} configured</span>
+          </div>
 
           {testResult && (
             <div className={`border rounded-xl px-4 py-3 text-sm ${testResult.success ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
@@ -282,7 +318,8 @@ export default function Settings() {
               <div className="flex items-center overflow-x-auto border-b border-slate-800 no-scrollbar rounded-t-2xl">
                 {PROVIDERS.map(p => {
                   const isConfigured = keys.some(k => k.provider === p.id);
-                  const isActive = activeProvider?.provider === p.id;
+                  const providerKey = keys.find(k => k.provider === p.id);
+                  const isActive = providerKey?.is_active_gen || providerKey?.is_active_improve;
 
                   return (
                     <button
@@ -314,6 +351,11 @@ export default function Settings() {
                         <div>
                           <h3 className="text-base font-semibold text-white flex items-center gap-2">
                             {provider.name} Configuration
+                            {isGlobalActive && (
+                              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                <Zap size={10} /> Active
+                              </span>
+                            )}
                           </h3>
                           <p className="text-sm text-slate-400 mt-1">{provider.description}</p>
                           <a
@@ -339,7 +381,7 @@ export default function Settings() {
                         loadLocalEndpoints={loadLocalEndpoints}
                         dynamicModels={dynamicModels[provider.id]}
                         setDynamicModels={setDynamicModels}
-                        isGlobalActive={activeProvider?.provider === provider.id}
+                        isGlobalActive={keyInfo?.is_active_gen || keyInfo?.is_active_improve}
                       />
                     </div>
                   );
@@ -488,7 +530,7 @@ export default function Settings() {
 }
 
 interface ProviderConfigFormProps {
-  provider: any;
+  provider: { id: string; name: string; description: string;[key: string]: any };
   keyInfo?: ApiKeyInfo | null;
   actionLoading: string | null;
   setActionLoading: (id: string | null) => void;
@@ -499,21 +541,46 @@ interface ProviderConfigFormProps {
   loadLocalEndpoints: () => Promise<void>;
   dynamicModels?: ModelOption[];
   setDynamicModels: any;
-  isGlobalActive: boolean;
+  isGlobalActive?: boolean;
 }
 
 function ProviderConfigForm({
-  provider, keyInfo, actionLoading, setActionLoading, setError, showSuccess, getToken, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels
+  provider, keyInfo, actionLoading, setActionLoading, setError, showSuccess, getToken, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels, isGlobalActive
 }: ProviderConfigFormProps) {
   const [inputValue, setInputValue] = useState('');
-  const [selectedModelGen, setSelectedModelGen] = useState(
-    keyInfo?.model_gen || keyInfo?.model_name || getDefaultModelForProvider(provider.id)
-  );
-  const [selectedModelImprove, setSelectedModelImprove] = useState(
-    keyInfo?.model_improve || keyInfo?.model_name || getDefaultModelForProvider(provider.id)
-  );
-  const [showKey, setShowKey] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+
+  return (
+    <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h3 className="text-base font-semibold text-white flex items-center gap-2">
+            {provider.name} Configuration
+            {isGlobalActive && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                <Zap size={10} /> Active
+              </span>
+            )}
+          </h3>
+          <p className="text-sm text-slate-400 mt-1">{provider.description}</p>
+          <a
+            href={provider.docsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-teal-400 hover:text-teal-300 flex items-center gap-1 mt-2 transition-colors"
+          >
+            Get API Key <ExternalLink size={10} />
+          </a>
+        </div>
+      </div>
+
+      const [selectedModelGen, setSelectedModelGen] = useState(
+      keyInfo?.model_gen || keyInfo?.model_name || getDefaultModelForProvider(provider.id)
+      );
+      const [selectedModelImprove, setSelectedModelImprove] = useState(
+      keyInfo?.model_improve || keyInfo?.model_name || getDefaultModelForProvider(provider.id)
+      );
+      const [showKey, setShowKey] = useState(false);
+      const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (keyInfo) {
@@ -522,33 +589,33 @@ function ProviderConfigForm({
       setSelectedModelGen(serverGen);
       setSelectedModelImprove(serverImprove);
     } else {
-      // Reset if no key info (e.g. removed)
-      setSelectedModelGen(getDefaultModelForProvider(provider.id));
+        // Reset if no key info (e.g. removed)
+        setSelectedModelGen(getDefaultModelForProvider(provider.id));
       setSelectedModelImprove(getDefaultModelForProvider(provider.id));
     }
   }, [keyInfo?.model_gen, keyInfo?.model_improve, keyInfo?.model_name, provider.id, keyInfo]); // Added keyInfo to satisfy lint
 
-  const staticModels = getModelsForProvider(provider.id);
+      const staticModels = getModelsForProvider(provider.id);
   const allModels = dynamicModels && dynamicModels.length > 0 ? dynamicModels : staticModels;
 
-  // Create providerInfo for ModelSelector - we only pass THIS provider
-  const providersInfo = [{ id: provider.id, name: provider.name, type: 'cloud' as const }];
+      // Create providerInfo for ModelSelector - we only pass THIS provider
+      const providersInfo = [{id: provider.id, name: provider.name, type: 'cloud' as const }];
   // Filter models to only this provider's models (redundant if allModels is correct but safe)
-  const selectorModels = allModels.filter((m: any) => m.provider === provider.id || !m.provider).map((m: any) => ({ ...m, provider: provider.id }));
+  const selectorModels = allModels.filter((m: any) => m.provider === provider.id || !m.provider).map((m: any) => ({...m, provider: provider.id }));
 
-  const isSaving = actionLoading === provider.id;
-  const isDeleting = actionLoading === `${provider.id}-delete`;
-  const isFetching = actionLoading === `${provider.id}-fetch`;
-  const canFetch = ['openrouter', 'together', 'openai', 'gemini'].includes(provider.id);
+      const isSaving = actionLoading === provider.id;
+      const isDeleting = actionLoading === `${provider.id}-delete`;
+      const isFetching = actionLoading === `${provider.id}-fetch`;
+      const canFetch = ['openrouter', 'together', 'openai', 'gemini'].includes(provider.id);
 
   const handleSave = async () => {
-    setActionLoading(provider.id);
-    setError('');
-    try {
+        setActionLoading(provider.id);
+      setError('');
+      try {
       const validated = ApiKeySchema.parse({
         provider: provider.id,
-        api_key: inputValue,
-        is_active: true,
+      api_key: inputValue,
+      is_active: true,
       });
 
       const token = await getToken();
@@ -564,31 +631,31 @@ function ProviderConfigForm({
       setIsEditing(false);
       setInputValue('');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save key');
+        setError(e instanceof Error ? e.message : 'Failed to save key');
     } finally {
-      setActionLoading(null);
+        setActionLoading(null);
     }
   };
 
   const handleDelete = async () => {
-    setActionLoading(`${provider.id}-delete`);
-    setError('');
-    try {
+        setActionLoading(`${provider.id}-delete`);
+      setError('');
+      try {
       const token = await getToken();
       await deleteApiKey(provider.id, token);
       await loadKeys();
       showSuccess(`${provider.name} key removed`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to delete key');
+        setError(e instanceof Error ? e.message : 'Failed to delete key');
     } finally {
-      setActionLoading(null);
+        setActionLoading(null);
     }
   };
 
   const handleSetActive = async (role: 'generation' | 'improvement') => {
-    setActionLoading(`${provider.id}-${role}`);
-    setError('');
-    try {
+        setActionLoading(`${provider.id}-${role}`);
+      setError('');
+      try {
       const token = await getToken();
       const isRoleActive = role === 'generation' ? (keyInfo?.is_active_gen ?? false) : (keyInfo?.is_active_improve ?? false);
       await setActiveProvider(provider.id, keyInfo?.model_name || '', token, !isRoleActive, role);
@@ -596,16 +663,16 @@ function ProviderConfigForm({
       await loadKeys();
       await loadLocalEndpoints();
     } catch (e) {
-      setError(e instanceof Error ? e.message : `Failed to update ${provider.name}`);
+        setError(e instanceof Error ? e.message : `Failed to update ${provider.name}`);
     } finally {
-      setActionLoading(null);
+        setActionLoading(null);
     }
   }
 
   const handleFetchModels = async () => {
-    setActionLoading(`${provider.id}-fetch`);
-    setError('');
-    try {
+        setActionLoading(`${provider.id}-fetch`);
+      setError('');
+      try {
       // If editing, use input value. If configured, we can try without key (backend uses active)
       const token = await getToken();
       // If we are editing and have input, use it.
@@ -618,9 +685,9 @@ function ProviderConfigForm({
       }));
       showSuccess('Models list updated');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to fetch models');
+        setError(e instanceof Error ? e.message : 'Failed to fetch models');
     } finally {
-      setActionLoading(null);
+        setActionLoading(null);
     }
   }
 
@@ -630,16 +697,16 @@ function ProviderConfigForm({
     if (!isEditing && keyInfo) {
       try {
         const token = await getToken();
-        await updateModels(provider.id, genId, improveId, token);
-        showSuccess('Model preferences updated');
-        await loadKeys();
+      await updateModels(provider.id, genId, improveId, token);
+      showSuccess('Model preferences updated');
+      await loadKeys();
       } catch (e) {
         console.error(e);
       }
     }
   }
 
-  if (!keyInfo && !isEditing) {
+      if (!keyInfo && !isEditing) {
     // Initial state: Not configured
     return (
       <div className="text-center py-8">
@@ -657,154 +724,154 @@ function ProviderConfigForm({
           Configure {provider.name}
         </button>
       </div>
-    )
+      )
   }
 
-  return (
-    <div className="space-y-6 max-w-2xl">
-      {/* API Key Input */}
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">API Key</label>
-        {isEditing ? (
-          <div className="flex gap-2">
-            <input
-              type="password"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder={provider.placeholder}
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all"
-            />
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !inputValue}
-              className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Save Key'}
-            </button>
-            {keyInfo && (
+      return (
+      <div className="space-y-6 max-w-2xl">
+        {/* API Key Input */}
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-2">API Key</label>
+          {isEditing ? (
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={provider.placeholder}
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all"
+              />
               <button
-                onClick={() => { setIsEditing(false); setInputValue(''); }}
-                className="px-4 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+                onClick={handleSave}
+                disabled={isSaving || !inputValue}
+                className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Cancel
+                {isSaving ? <Loader2 size={18} className="animate-spin" /> : 'Save Key'}
               </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3">
-            <div className="flex-1 font-mono text-sm text-slate-400">
-              {showKey ? keyInfo?.key_hint : '••••••••••••••••••••••••'}
+              {keyInfo && (
+                <button
+                  onClick={() => { setIsEditing(false); setInputValue(''); }}
+                  className="px-4 py-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
-            <button onClick={() => setShowKey(!showKey)} className="text-slate-500 hover:text-slate-300 p-1">
-              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-            <div className="w-px h-4 bg-slate-700 mx-1" />
-            <button
-              onClick={() => { setIsEditing(true); setInputValue(''); }}
-              className="text-teal-400 hover:text-teal-300 text-xs font-medium px-2"
-            >
-              Change
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="text-red-400 hover:text-red-300 text-xs font-medium px-2 disabled:opacity-50"
-            >
-              {isDeleting ? <Loader2 size={14} className="animate-spin" /> : 'Remove'}
-            </button>
+          ) : (
+            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3">
+              <div className="flex-1 font-mono text-sm text-slate-400">
+                {showKey ? keyInfo?.key_hint : '••••••••••••••••••••••••'}
+              </div>
+              <button onClick={() => setShowKey(!showKey)} className="text-slate-500 hover:text-slate-300 p-1">
+                {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+              <div className="w-px h-4 bg-slate-700 mx-1" />
+              <button
+                onClick={() => { setIsEditing(true); setInputValue(''); }}
+                className="text-teal-400 hover:text-teal-300 text-xs font-medium px-2"
+              >
+                Change
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-red-400 hover:text-red-300 text-xs font-medium px-2 disabled:opacity-50"
+              >
+                {isDeleting ? <Loader2 size={14} className="animate-spin" /> : 'Remove'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Models Configuration */}
+        {(keyInfo || isEditing) && (
+          <div className="space-y-4 pt-4 border-t border-slate-800/50">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-white flex items-center gap-2">
+                <Server size={14} className="text-teal-500" />
+                Model Selection
+              </h4>
+
+              {canFetch && (
+                <button
+                  onClick={handleFetchModels}
+                  disabled={isFetching}
+                  className="text-xs text-slate-500 hover:text-teal-400 flex items-center gap-1.5 transition-colors"
+                >
+                  {isFetching ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                  Refresh Models
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-xs text-slate-400 mb-2">Generation Model</label>
+                <ModelSelector
+                  value={selectedModelGen}
+                  onChange={(id) => {
+                    setSelectedModelGen(id);
+                    handleModelChange(id, selectedModelImprove);
+                  }}
+                  models={selectorModels}
+                  providers={providersInfo}
+                  placeholder="Select generation model..."
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-2">Improvement Model</label>
+                <ModelSelector
+                  value={selectedModelImprove}
+                  onChange={(id) => {
+                    setSelectedModelImprove(id);
+                    handleModelChange(selectedModelGen, id);
+                  }}
+                  models={selectorModels}
+                  providers={providersInfo}
+                  placeholder="Select improvement model..."
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Split Active Buttons */}
+        {keyInfo && !isEditing && (
+          <div className="pt-6 mt-4 border-t border-slate-800/50 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => handleSetActive('generation')}
+                disabled={actionLoading === `${provider.id}-generation`}
+                className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_gen
+                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+              >
+                {actionLoading === `${provider.id}-generation` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+                {keyInfo?.is_active_gen ? 'Active Generator AI' : 'Set as Generator AI'}
+              </button>
+
+              <button
+                onClick={() => handleSetActive('improvement')}
+                disabled={actionLoading === `${provider.id}-improvement`}
+                className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_improve
+                  ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`}
+              >
+                {actionLoading === `${provider.id}-improvement` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+                {keyInfo?.is_active_improve ? 'Active Improvement AI' : 'Set as Improvement AI'}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-slate-500 text-center italic">
+              You can use one provider for generation and another for improvement.
+            </p>
           </div>
         )}
       </div>
-
-      {/* Models Configuration */}
-      {(keyInfo || isEditing) && (
-        <div className="space-y-4 pt-4 border-t border-slate-800/50">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-white flex items-center gap-2">
-              <Server size={14} className="text-teal-500" />
-              Model Selection
-            </h4>
-
-            {canFetch && (
-              <button
-                onClick={handleFetchModels}
-                disabled={isFetching}
-                className="text-xs text-slate-500 hover:text-teal-400 flex items-center gap-1.5 transition-colors"
-              >
-                {isFetching ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                Refresh Models
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs text-slate-400 mb-2">Generation Model</label>
-              <ModelSelector
-                value={selectedModelGen}
-                onChange={(id) => {
-                  setSelectedModelGen(id);
-                  handleModelChange(id, selectedModelImprove);
-                }}
-                models={selectorModels}
-                providers={providersInfo}
-                placeholder="Select generation model..."
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs text-slate-400 mb-2">Improvement Model</label>
-              <ModelSelector
-                value={selectedModelImprove}
-                onChange={(id) => {
-                  setSelectedModelImprove(id);
-                  handleModelChange(selectedModelGen, id);
-                }}
-                models={selectorModels}
-                providers={providersInfo}
-                placeholder="Select improvement model..."
-                className="w-full"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Split Active Buttons */}
-      {keyInfo && !isEditing && (
-        <div className="pt-6 mt-4 border-t border-slate-800/50 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button
-              onClick={() => handleSetActive('generation')}
-              disabled={actionLoading === `${provider.id}-generation`}
-              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_gen
-                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
-            >
-              {actionLoading === `${provider.id}-generation` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-              {keyInfo?.is_active_gen ? 'Active Generator AI' : 'Set as Generator AI'}
-            </button>
-
-            <button
-              onClick={() => handleSetActive('improvement')}
-              disabled={actionLoading === `${provider.id}-improvement`}
-              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_improve
-                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
-            >
-              {actionLoading === `${provider.id}-improvement` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-              {keyInfo?.is_active_improve ? 'Active Improvement AI' : 'Set as Improvement AI'}
-            </button>
-          </div>
-
-          <p className="text-[10px] text-slate-500 text-center italic">
-            You can use one provider for generation and another for improvement.
-          </p>
-        </div>
-      )}
-    </div>
-  );
+      );
 }
