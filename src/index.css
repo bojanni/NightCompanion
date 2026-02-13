@@ -68,18 +68,18 @@ body {
 .dynamic-grid {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(var(--cards-per-row, 4), 1fr);
+  grid-template-columns: repeat(var(--cards-per-row, 4), minmax(0, 1fr));
 }
 
 @media (max-width: 1024px) {
   .dynamic-grid {
-    grid-template-columns: repeat(min(var(--cards-per-row, 4), 3), 1fr);
+    grid-template-columns: repeat(min(var(--cards-per-row, 4), 3), minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
   .dynamic-grid {
-    grid-template-columns: repeat(min(var(--cards-per-row, 4), 2), 1fr);
+    grid-template-columns: repeat(min(var(--cards-per-row, 4), 2), minmax(0, 1fr));
   }
 }
 

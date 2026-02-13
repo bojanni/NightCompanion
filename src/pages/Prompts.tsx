@@ -488,7 +488,7 @@ export default function Prompts({ }: PromptsProps) {
                     delay: Math.min(index * 0.05, 0.5),
                     layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
                   }}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden"
                 >
                   <div className="p-5 pb-0">
                     <div className="flex items-start justify-between mb-2">
