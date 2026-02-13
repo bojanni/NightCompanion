@@ -1,6 +1,6 @@
 const API_URL = 'http://localhost:3000/api/user_api_keys';
 
-async function callKeyService(method: string, endpoint: string = '', body?: any) {
+async function callKeyService(method: string, endpoint: string = '', body?: Record<string, unknown>) {
   const res = await fetch(`${API_URL}${endpoint}`, {
     method,
     headers: {
@@ -28,24 +28,24 @@ export interface ApiKeyInfo {
   updated_at: string;
 }
 
-export async function listApiKeys(_token: string): Promise<ApiKeyInfo[]> {
+export async function listApiKeys(): Promise<ApiKeyInfo[]> {
   const { keys } = await callKeyService('GET');
   return keys;
 }
 
-export async function saveApiKey(provider: string, apiKey: string, modelName: string, _token: string): Promise<{ hint: string; is_active: boolean }> {
+export async function saveApiKey(provider: string, apiKey: string, modelName: string): Promise<{ hint: string; is_active: boolean }> {
   return callKeyService('POST', '', { action: 'save', provider, apiKey, modelName });
 }
 
-export async function deleteApiKey(provider: string, _token: string): Promise<void> {
+export async function deleteApiKey(provider: string): Promise<void> {
   // Try newer REST endpoint first, fallback to action-based if needed (but we implemented REST delete)
   await callKeyService('DELETE', `/${provider}`);
 }
 
-export async function setActiveProvider(provider: string, modelName: string, _token: string, active: boolean = true, role?: 'generation' | 'improvement'): Promise<void> {
+export async function setActiveProvider(provider: string, modelName: string, active: boolean = true, role?: 'generation' | 'improvement'): Promise<void> {
   await callKeyService('POST', '', { action: 'set-active', provider, modelName, active, role });
 }
 
-export async function updateModels(provider: string, modelGen: string, modelImprove: string, _token: string): Promise<void> {
+export async function updateModels(provider: string, modelGen: string, modelImprove: string): Promise<void> {
   await callKeyService('POST', '', { action: 'update-models', provider, modelGen, modelImprove });
 }

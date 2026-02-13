@@ -135,15 +135,14 @@ export default function Settings() {
 
   const loadKeys = useCallback(async () => {
     try {
-      const token = await getToken();
-      const result = await listApiKeys(token);
+      const result = await listApiKeys();
       setKeys(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load API keys');
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, []);
 
   const loadLocalEndpoints = useCallback(async () => {
     try {
@@ -175,7 +174,6 @@ export default function Settings() {
     setError('');
 
     try {
-      const token = await getToken();
       await testConnection(token);
       setTestResult({ success: true, message: 'Connection successful! Your AI provider is configured correctly.' });
     } catch (e) {
@@ -423,11 +421,10 @@ export default function Settings() {
                   setActionLoading(`ollama-${role}`);
                   setError('');
                   try {
-                    const token = await getToken();
                     const endpoint = localEndpoints.find(e => e.provider === 'ollama');
                     const currentModel = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name || '') : (endpoint?.model_improve || endpoint?.model_name || '');
                     const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
-                    await setActiveProvider('ollama', currentModel, token, !isRoleActive, role);
+                    await setActiveProvider('ollama', currentModel, !isRoleActive, role);
                     showSuccess(`Ollama ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
@@ -484,11 +481,10 @@ export default function Settings() {
                 onSetActive={async (role) => {
                   setActionLoading(`lmstudio-${role}`);
                   try {
-                    const token = await getToken();
                     const endpoint = localEndpoints.find(e => e.provider === 'lmstudio');
                     const currentModel = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name || '') : (endpoint?.model_improve || endpoint?.model_name || '');
                     const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
-                    await setActiveProvider('lmstudio', currentModel, token, !isRoleActive, role);
+                    await setActiveProvider('lmstudio', currentModel, !isRoleActive, role);
                     showSuccess(`LM Studio ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
@@ -603,13 +599,12 @@ function ProviderConfigForm({
         is_active: true,
       });
 
-      const token = await getToken();
-      await saveApiKey(validated.provider, validated.api_key, selectedModelGen, token); // Pass gen model as default for now
+      await saveApiKey(validated.provider, validated.api_key, selectedModelGen);
       // We also need to save the specific gen/improve preferences if the API supports it in one go, 
       // but `saveApiKey` might only take one model. 
       // We should call `updateModels` after saving key if needed, or update `saveApiKey` to handle both.
       // For now, let's assume saveApiKey handles the key and then we update models.
-      await updateModels(provider.id, selectedModelGen, selectedModelImprove, token);
+      await updateModels(provider.id, selectedModelGen, selectedModelImprove);
 
       await loadKeys();
       showSuccess(`${provider.name} key saved successfully`);
@@ -626,8 +621,7 @@ function ProviderConfigForm({
     setActionLoading(`${provider.id}-delete`);
     setError('');
     try {
-      const token = await getToken();
-      await deleteApiKey(provider.id, token);
+      await deleteApiKey(provider.id);
       await loadKeys();
       showSuccess(`${provider.name} key removed`);
     } catch (e) {
@@ -641,7 +635,6 @@ function ProviderConfigForm({
     setActionLoading(`${provider.id}-${role}`);
     setError('');
     try {
-      const token = await getToken();
       const currentModel = role === 'generation' ? selectedModelGen : selectedModelImprove;
 
       // Determine if this provider AND the selected model are currently active for this role
@@ -649,7 +642,7 @@ function ProviderConfigForm({
         ? (keyInfo?.is_active_gen && (keyInfo?.model_gen || keyInfo?.model_name) === selectedModelGen)
         : (keyInfo?.is_active_improve && (keyInfo?.model_improve || keyInfo?.model_name) === selectedModelImprove);
 
-      await setActiveProvider(provider.id, currentModel, token, !isActuallyActive, role);
+      await setActiveProvider(provider.id, currentModel, !isActuallyActive, role);
       showSuccess(`${provider.name} ${role} ${isActuallyActive ? 'deactivated' : 'activated'}`);
       await loadKeys();
       await loadLocalEndpoints();
@@ -665,7 +658,6 @@ function ProviderConfigForm({
     setError('');
     try {
       // If editing, use input value. If configured, we can try without key (backend uses active)
-      const token = await getToken();
       // If we are editing and have input, use it.
       const apiKeyToUse = (isEditing && inputValue) ? inputValue : undefined;
 
@@ -687,8 +679,7 @@ function ProviderConfigForm({
     // Only auto-save if we are NOT in editing mode (i.e. key is already saved)
     if (!isEditing && keyInfo) {
       try {
-        const token = await getToken();
-        await updateModels(provider.id, genId, improveId, token);
+        await updateModels(provider.id, genId, improveId);
         showSuccess('Model preferences updated');
         await loadKeys();
       } catch (e) {
