@@ -95,3 +95,25 @@ body {
   scrollbar-width: none;
   /* Firefox */
 }
+
+/* The Centered Layout Class */
+.standard-page-container {
+  width: 100%;
+  max-width: 1400px;
+  /* Optional cap to keep things tight */
+  min-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 40px;
+  /* Internal breathing room */
+  display: flex;
+  flex-direction: column;
+  items: center;
+  /* Ensures content inside is also centered */
+}
+
+/* Ensure children (like your Prompt Generator sections) take full container width */
+.standard-page-container>section,
+.standard-page-container>div {
+  width: 100%;
+}

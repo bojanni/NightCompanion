@@ -100,6 +100,9 @@ export default function Generator({ }: GeneratorProps) {
     localStorage.removeItem(STORAGE_KEY);
     // Also clear manual generator specific storage
     localStorage.removeItem('nightcompanion_manual_generator');
+    localStorage.removeItem('nightcompanion_guided_state');
+    localStorage.removeItem('nightcompanion_aitools_state');
+    aiToolsRef.current?.clearContent();
   }
 
   function handleCheckExternalFields() {
@@ -198,6 +201,7 @@ export default function Generator({ }: GeneratorProps) {
 
       {mode === 'random' && (
         <RandomGenerator
+          key={resetKey}
           onSwitchToGuided={handleSwitchToGuided}
           onSwitchToManual={handleSwitchToManual}
           onSaved={() => setSaveCount((c) => c + 1)}

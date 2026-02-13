@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Sparkles,
@@ -34,6 +34,12 @@ const navItems = [
 ];
 
 export default function Layout({ onSignOut }: LayoutProps) {
+  const location = useLocation();
+
+  // Define full-width pages (Dashboard, Prompts, Gallery)
+  // Dashboard is '/'
+  const isFullWidthPage = ['/', '/prompts', '/gallery'].includes(location.pathname);
+
   return (
     <div className="min-h-screen bg-slate-950 flex">
       <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col fixed h-full z-40">
@@ -80,7 +86,7 @@ export default function Layout({ onSignOut }: LayoutProps) {
       </aside>
 
       <main className="flex-1 ml-64">
-        <div className="p-8">
+        <div className={isFullWidthPage ? 'p-8' : 'py-8 standard-page-container'}>
           <Outlet />
         </div>
       </main>
