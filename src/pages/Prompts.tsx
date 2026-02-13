@@ -18,6 +18,7 @@ import ImageSelector from '../components/ImageSelector';
 import { handleError, showSuccess } from '../lib/error-handler';
 import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
+import PromptDetailOverlay from '../components/PromptDetailOverlay';
 
 const PAGE_SIZE = 20;
 
@@ -49,6 +50,7 @@ export default function Prompts({ }: PromptsProps) {
   const [linkingPrompt, setLinkingPrompt] = useState<Prompt | null>(null);
   const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] }>({});
   const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number; model?: string } | null>(null);
+  const [detailViewIndex, setDetailViewIndex] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -340,6 +342,14 @@ export default function Prompts({ }: PromptsProps) {
     }
   }
 
+  const navigateDetail = (direction: 'next' | 'prev') => {
+    if (detailViewIndex === null) return;
+    let newIndex = direction === 'next' ? detailViewIndex + 1 : detailViewIndex - 1;
+    if (newIndex < 0) newIndex = filtered.length - 1;
+    if (newIndex >= filtered.length) newIndex = 0;
+    setDetailViewIndex(newIndex);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -488,7 +498,8 @@ export default function Prompts({ }: PromptsProps) {
                     delay: Math.min(index * 0.05, 0.5),
                     layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
                   }}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden"
+                  onClick={() => setDetailViewIndex(index)}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden cursor-pointer"
                 >
                   <div className="p-5 pb-0">
                     <div className="flex items-start justify-between mb-2">
@@ -501,7 +512,7 @@ export default function Prompts({ }: PromptsProps) {
                         )}
                       </div>
                       <button
-                        onClick={() => handleToggleFavorite(prompt)}
+                        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(prompt); }}
                         className="flex-shrink-0 ml-2"
                       >
                         <Heart
@@ -515,16 +526,18 @@ export default function Prompts({ }: PromptsProps) {
                       </button>
                     </div>
 
-                    <p className="text-xs text-slate-400 mb-3 leading-relaxed">{prompt.content}</p>
+                    <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">{prompt.content}</p>
 
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {promptTags.length > 0 ? (
-                        promptTags.slice(0, 15).map((tag) => (
-                          <TagBadge key={tag.id} tag={tag} />
-                        ))
-                      ) : (
-                        <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
-                      )}
+                    <div className="h-20 overflow-hidden mb-4">
+                      <div className="flex flex-wrap gap-1">
+                        {promptTags.length > 0 ? (
+                          promptTags.slice(0, 15).map((tag) => (
+                            <TagBadge key={tag.id} tag={tag} />
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -535,7 +548,8 @@ export default function Prompts({ }: PromptsProps) {
                           <div key={img.id} className="relative group/img">
                             <div
                               className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setLightboxImage(img);
                               }}
                               title={`View ${img.title || 'Untitled'}`}
@@ -582,21 +596,22 @@ export default function Prompts({ }: PromptsProps) {
                       />
                       <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={() => handleCopy(prompt.content, prompt.id)}
+                          onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content, prompt.id); }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
                           title="Copy prompt"
                         >
                           {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                         </button>
                         <button
-                          onClick={() => handleLinkImage(prompt)}
+                          onClick={(e) => { e.stopPropagation(); handleLinkImage(prompt); }}
                           className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
                           title={promptImages?.length ? 'Linked to image' : 'Link to image'}
                         >
                           <Link size={14} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setOptimizerPrompt(prompt);
                             setShowOptimizer(true);
                           }}
@@ -607,7 +622,8 @@ export default function Prompts({ }: PromptsProps) {
                           <Zap size={14} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setImproverPrompt(prompt);
                             setShowImprover(true);
                           }}
@@ -618,7 +634,8 @@ export default function Prompts({ }: PromptsProps) {
                           <Sparkles size={14} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setHistoryPrompt(prompt);
                             setShowHistory(true);
                           }}
@@ -628,7 +645,8 @@ export default function Prompts({ }: PromptsProps) {
                           <Clock size={14} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setVariationBase(prompt.content);
                             setShowVariations(true);
                           }}
@@ -638,7 +656,8 @@ export default function Prompts({ }: PromptsProps) {
                           <Wand2 size={14} />
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setEditingPrompt(prompt);
                             setShowEditor(true);
                           }}
@@ -648,7 +667,7 @@ export default function Prompts({ }: PromptsProps) {
                           {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
                         </button>
                         <button
-                          onClick={() => handleDelete(prompt.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(prompt.id); }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
                           title="Delete"
                         >
@@ -800,6 +819,19 @@ export default function Prompts({ }: PromptsProps) {
         />
       </Modal>
 
+      <AnimatePresence>
+        {detailViewIndex !== null && filtered[detailViewIndex] && (
+          <PromptDetailOverlay
+            prompt={filtered[detailViewIndex]}
+            tags={getTagsForPrompt(filtered[detailViewIndex].id)}
+            images={linkedImages[filtered[detailViewIndex].id] || []}
+            onClose={() => setDetailViewIndex(null)}
+            onNext={() => navigateDetail('next')}
+            onPrev={() => navigateDetail('prev')}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Image Lightbox */}
       <Modal
         open={!!lightboxImage}
@@ -818,7 +850,7 @@ export default function Prompts({ }: PromptsProps) {
               <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
               <StarRating
                 rating={lightboxImage.rating}
-                onChange={(r) => handleUpdateGalleryItemRating(lightboxImage.id, r)}
+                onChange={(r) => handleUpdateGalleryItemRating(lightboxImage!.id, r)}
                 size={24}
               />
             </div>
