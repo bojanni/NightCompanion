@@ -283,7 +283,16 @@ class QueryBuilder {
     }
 
     upsert(data: any | any[], options?: { onConflict: string }) {
-        this.insert(data);
+        this.method = 'POST';
+        if (Array.isArray(data)) {
+            // Strip user_id from each item
+            this.body = data.map(({ user_id, ...rest }) => rest);
+        } else {
+            // Strip user_id
+            const { user_id, ...cleanData } = data;
+            this.body = cleanData;
+        }
+
         if (options?.onConflict) {
             this.filters['onConflict'] = options.onConflict;
         }

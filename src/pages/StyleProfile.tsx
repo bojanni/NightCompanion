@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   Fingerprint, Loader2, BarChart3, Lightbulb,
-  Clock, TrendingUp, Cpu, Database,
+  Clock, TrendingUp, Cpu, Database, Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { analyzeStyle } from '../lib/ai-service';
@@ -37,6 +37,20 @@ export default function StyleProfile() {
     setKeywords(keywordsRes);
     setPromptCount(countRes.count ?? 0);
     setLoading(false);
+  }
+
+  async function handleSaveSnapshot() {
+    if (!profile) return;
+    try {
+      setAnalyzing(true);
+      await saveStyleProfile(profile, promptCount);
+      toast.success('Snapshot succesvol opgeslagen');
+      await loadData();
+    } catch {
+      toast.error('Opslaan van snapshot mislukt');
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   async function handleAnalyze() {
@@ -102,6 +116,14 @@ export default function StyleProfile() {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={handleSaveSnapshot}
+            disabled={analyzing || !profile}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm rounded-xl hover:bg-emerald-600/30 transition-all disabled:opacity-50"
+          >
+            {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+            Save Snapshot
+          </button>
+          <button
             onClick={handleRebuildKeywords}
             disabled={rebuilding || promptCount === 0}
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl hover:bg-slate-700 transition-all disabled:opacity-50"
@@ -109,7 +131,14 @@ export default function StyleProfile() {
             {rebuilding ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
             Rebuild Keywords
           </button>
-
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing || promptCount < 5}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600/20 border border-amber-500/30 text-amber-400 text-sm rounded-xl hover:bg-amber-600/30 transition-all disabled:opacity-50"
+          >
+            {analyzing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            Re-analyze
+          </button>
         </div>
       </div>
 
@@ -128,21 +157,21 @@ export default function StyleProfile() {
             color="text-teal-400"
           />
           <QuickStat
-            label="Top Category"
-            value={topKeyword ? CATEGORY_LABELS[topKeyword.category] || topKeyword.category : '-'}
-            sub={topKeyword ? `"${topKeyword.keyword}" appears ${topKeyword.count}x` : ''}
+            label={topKeyword ? CATEGORY_LABELS[topKeyword.category] || topKeyword.category : 'Category'}
+            value={topKeyword ? topKeyword.keyword : '-'}
+            sub={topKeyword ? `appears ${topKeyword.count}x` : ''}
             color="text-amber-400"
           />
           <QuickStat
             label="Categories"
             value={Object.keys(grouped).length.toString()}
-            sub="distinct keyword types"
+            sub="distinct types"
             color="text-cyan-400"
           />
           <QuickStat
             label="Snapshots"
             value={history.length.toString()}
-            sub="style analyses saved"
+            sub="analyses saved"
             color="text-emerald-400"
           />
         </div>

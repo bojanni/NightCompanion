@@ -131,7 +131,7 @@ export async function trackKeywordsFromPrompt(promptContent: string) {
       keyword,
       category,
       count
-    }, { onConflict: 'keyword' });
+    }, { onConflict: 'keyword, category' });
   }
 }
 
@@ -143,9 +143,10 @@ export async function rebuildAllKeywords() {
   if (!prompts || prompts.length === 0) return;
 
   // Clear existing
-  await supabase.from('style_keywords').delete().neq('id', 0); // Hack to delete all if needed, or loop delete
+  // Clear existing - use a filter that works for integers to avoid UUID type errors
+  await supabase.from('style_keywords').delete().gt('count', -1);
 
-  const aggregated = aggregateKeywords(prompts.map((p) => p.content));
+  const aggregated = aggregateKeywords(prompts.map((p: { content: string }) => p.content));
 
   const updates = aggregated.map(stat => ({
     keyword: stat.keyword,
@@ -154,7 +155,7 @@ export async function rebuildAllKeywords() {
   }));
 
   if (updates.length > 0) {
-    await supabase.from('style_keywords').upsert(updates, { onConflict: 'keyword' });
+    await supabase.from('style_keywords').upsert(updates, { onConflict: 'keyword, category' });
   }
 }
 
