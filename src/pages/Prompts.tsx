@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
@@ -50,11 +50,7 @@ export default function Prompts() {
   const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number; model?: string } | null>(null);
   const [detailViewIndex, setDetailViewIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [currentPage, filterType, filterTag]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
 
     let query = supabase
@@ -81,7 +77,7 @@ export default function Prompts() {
     setTotalCount(count ?? 0);
 
     const map: Record<string, string[]> = {};
-    (ptRes.data ?? []).forEach((pt: any) => {
+    (ptRes.data ?? []).forEach((pt: { prompt_id: string; tag_id: string }) => {
       if (!map[pt.prompt_id]) map[pt.prompt_id] = [];
       map[pt.prompt_id]!.push(pt.tag_id);
     });
@@ -95,7 +91,7 @@ export default function Prompts() {
         .in('prompt_id', promptsData.map((p: Prompt) => p.id));
 
       const imageMap: { [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] } = {};
-      (galleryData ?? []).forEach((img: any) => {
+      (galleryData ?? []).forEach((img: { id: string; image_url: string; title: string; prompt_id: string | null; rating: number; model?: string }) => {
         if (img.prompt_id) {
           if (!imageMap[img.prompt_id]) {
             imageMap[img.prompt_id] = [];
@@ -105,7 +101,7 @@ export default function Prompts() {
             image_url: img.image_url,
             title: img.title,
             rating: img.rating ?? 0,
-            model: img.model
+            ...(img.model ? { model: img.model } : {})
           });
         }
       });
@@ -115,7 +111,11 @@ export default function Prompts() {
     }
 
     setLoading(false);
-  }
+  }, [currentPage, filterType]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const filtered = useMemo(() => {
     let result = prompts;
@@ -257,7 +257,7 @@ export default function Prompts() {
     setShowImageSelector(true);
   }
 
-  async function handleSelectImage(image: any) {
+  async function handleSelectImage(image: { id: string; image_url: string; title: string; rating: number; model?: string }) {
     if (!linkingPrompt) return;
     try {
       // Check if already linked
@@ -279,7 +279,7 @@ export default function Prompts() {
             image_url: image.image_url,
             title: image.title,
             rating: image.rating ?? 0,
-            model: image.model
+            ...(image.model ? { model: image.model } : {})
           }
         ]
       }));
@@ -320,7 +320,7 @@ export default function Prompts() {
       setLinkedImages(prev => {
         const newMap = { ...prev };
         for (const promptId in newMap) {
-          const imageIndex = newMap[promptId].findIndex(img => img.id === imageId);
+          const imageIndex = newMap[promptId]!.findIndex(img => img.id === imageId);
           if (imageIndex !== -1) {
             const newImages = [...(newMap[promptId] || [])];
             newImages[imageIndex] = { ...newImages[imageIndex]!, rating };

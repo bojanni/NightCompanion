@@ -51,7 +51,6 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
       });
 
       setResults(augmentedResults);
-      setResults(augmentedResults);
     } catch (e) {
       handleAIError(e);
     } finally {

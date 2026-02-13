@@ -103,10 +103,17 @@ export default function PromptOptimizer({
     setAppliedSuggestions(new Set());
   }
 
-  function handleCopy() {
-    navigator.clipboard.writeText(customPrompt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function handleCopy() {
+    if (!navigator.clipboard) return;
+    try {
+      window.focus();
+      await navigator.clipboard.writeText(customPrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+      toast.error('Failed to copy');
+    }
   }
 
   function handleApply() {

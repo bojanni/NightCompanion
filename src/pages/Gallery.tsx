@@ -106,7 +106,7 @@ export default function Gallery() {
           .in('id', itemsWithPrompts.map((item: GalleryItem) => item.prompt_id));
 
         const promptMap: { [key: string]: { id: string; content: string; title: string } } = {};
-        (promptsData ?? []).forEach((prompt: any) => {
+        (promptsData ?? []).forEach((prompt: Pick<Prompt, 'id' | 'content' | 'title'>) => {
           promptMap[prompt.id] = { id: prompt.id, content: prompt.content, title: prompt.title };
         });
         setLinkedPrompts(promptMap);
@@ -122,7 +122,7 @@ export default function Gallery() {
     setAllPrompts(promptsRes.data as Prompt[] ?? []);
     setTotalCount(count ?? 0);
     setLoading(false);
-  }, [currentPage, filterCollection, filterRating, search, filterRating]);
+  }, [currentPage, filterCollection, filterRating, search]);
 
   useEffect(() => {
     loadData();
@@ -299,7 +299,7 @@ export default function Gallery() {
     }
   }
 
-  async function handleSelectPrompt(prompt: any) {
+  async function handleSelectPrompt(prompt: Prompt) {
     if (!linkingImage) return;
     try {
       await db.from('gallery_items').update({ prompt_id: prompt.id }).eq('id', linkingImage.id);

@@ -4,7 +4,7 @@ import { db } from '../lib/api';
 import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForModel, generateNegativePrompt } from '../lib/ai-service';
-import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
+import { analyzePrompt, supportsNegativePrompt, ModelInfo } from '../lib/models-data';
 import { handleAIError } from '../lib/error-handler';
 
 interface ManualGeneratorProps {
@@ -40,7 +40,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     const [generating, setGenerating] = useState(false);
     const [unifying, setUnifying] = useState(false);
     const [optimizing, setOptimizing] = useState(false);
-    const [suggestedModel, setSuggestedModel] = useState<any>(null);
+    const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
 
     const fullPrompt = [
         ...prompts.filter(p => p.trim()),
@@ -66,8 +66,9 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
         const timeout = setTimeout(() => {
             const results = analyzePrompt(positivePrompt);
-            if (results && results.length > 0) {
-                setSuggestedModel(results[0].model);
+            if (results && results.length > 0 && results[0]) {
+                const bestMatch = results[0];
+                setSuggestedModel(bestMatch.model);
             }
         }, 500); // 500ms debounce
 

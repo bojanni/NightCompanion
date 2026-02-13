@@ -64,12 +64,13 @@ class LocalApiClient {
 
         try {
             switch (action) {
-                case 'list':
+                case 'list': {
                     const listRes = await fetch(`${API_URL}/user_api_keys`);
                     const keys = await listRes.json();
                     return { data: keys, error: null };
+                }
 
-                case 'save':
+                case 'save': {
                     const saveRes = await fetch(`${API_URL}/user_api_keys`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -77,16 +78,18 @@ class LocalApiClient {
                     });
                     const saved = await saveRes.json();
                     return { data: saved, error: null };
+                }
 
-                case 'delete':
+                case 'delete': {
                     const { provider } = body;
                     const deleteRes = await fetch(`${API_URL}/user_api_keys/${provider}`, {
                         method: 'DELETE'
                     });
                     const deleted = await deleteRes.json();
                     return { data: deleted, error: null };
+                }
 
-                case 'test':
+                case 'test': {
                     const testRes = await fetch(`${API_URL}/user_api_keys/test`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -94,6 +97,7 @@ class LocalApiClient {
                     });
                     const testResult = await testRes.json();
                     return { data: testResult, error: null };
+                }
 
                 default:
                     return { data: null, error: { message: 'Unknown action' } };
@@ -121,7 +125,7 @@ class QueryBuilder {
         this.url = `${API_URL}/${table}`;
     }
 
-    select(columns = '*', options?: any) {
+    select(_columns = '*', _options?: any) {
         if (this.method === 'POST' || this.method === 'PUT' || this.method === 'DELETE') {
             return this;
         }
@@ -216,7 +220,7 @@ class QueryBuilder {
         });
     }
 
-    async then(resolve: any, reject?: any) {
+    async then(resolve: any, _reject?: any) {
         try {
             let url = this.url;
             const params = new URLSearchParams();
@@ -283,10 +287,10 @@ class QueryBuilder {
         this.method = 'POST';
         if (Array.isArray(data)) {
             // Strip user_id from each item
-            this.body = data.map(({ user_id, ...rest }) => rest);
+            this.body = data.map(({ user_id: _user_id, ...rest }) => rest);
         } else {
             // Strip user_id
-            const { user_id, ...cleanData } = data;
+            const { user_id: _user_id, ...cleanData } = data;
             this.body = cleanData;
         }
         return this;
@@ -296,10 +300,10 @@ class QueryBuilder {
         this.method = 'POST';
         if (Array.isArray(data)) {
             // Strip user_id from each item
-            this.body = data.map(({ user_id, ...rest }) => rest);
+            this.body = data.map(({ user_id: _user_id, ...rest }) => rest);
         } else {
             // Strip user_id
-            const { user_id, ...cleanData } = data;
+            const { user_id: _user_id, ...cleanData } = data;
             this.body = cleanData;
         }
 
@@ -317,7 +321,7 @@ class QueryBuilder {
     update(data: any) {
         this.method = 'PUT';
         // Strip user_id
-        const { user_id, ...cleanData } = data;
+        const { user_id: _user_id, ...cleanData } = data;
         this.body = cleanData;
         return this;
     }
@@ -326,3 +330,4 @@ class QueryBuilder {
 
 export const db = new LocalApiClient() as any;
 export const supabase = db; // Alias for backward compatibility
+

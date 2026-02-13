@@ -163,7 +163,7 @@ export async function saveStyleProfile(
   analysis: StyleAnalysis,
   promptCount: number,
 ) {
-  await db.from('style_profiles').insert({
+  const { error } = await db.from('style_profiles').insert({
     profile: analysis.profile,
     signature: analysis.signature,
     themes: analysis.themes,
@@ -171,6 +171,7 @@ export async function saveStyleProfile(
     suggestions: analysis.suggestions,
     prompt_count: promptCount,
   });
+  if (error) throw error;
 }
 
 export interface StyleProfile {

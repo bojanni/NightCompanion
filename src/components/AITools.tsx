@@ -188,7 +188,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       }
     }
     fetchActiveModel();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchActiveModel();
   }, []); // Run once on mount
 
   async function getToken() {
@@ -198,9 +198,19 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   }
 
   async function handleCopy(text: string, id: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(id);
-    setTimeout(() => setCopied(''), 2000);
+    if (!navigator.clipboard) {
+      toast.error('Clipboard access not available');
+      return;
+    }
+    try {
+      window.focus();
+      await navigator.clipboard.writeText(text);
+      setCopied(id);
+      setTimeout(() => setCopied(''), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      toast.error('Failed to copy to clipboard');
+    }
   }
 
   async function handleImprove() {
@@ -222,10 +232,10 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
 
       // If the suggested model doesn't support negative prompts (e.g. DALL-E 3, GPT),
       // we should use the optimize-for-model endpoint which handles merging negatives/cleanup.
-      if (!supportsNegativePrompt(suggestedModel?.id)) {
+      if (!supportsNegativePrompt(suggestedModel?.id || '')) {
         const result = await optimizePromptForModel(
           improveInput,
-          suggestedModel?.name || 'DALL-E 3',
+          suggestedModel?.name ?? 'DALL-E 3',
           token,
           negativeInput,
           apiPreferences
@@ -238,7 +248,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         setNegativeResult(result.negativePrompt);
       } else {
         const result = await improvePrompt(improveInput, token, apiPreferences);
-        setImproveResult(result.improved);
+        setImproveResult(result);
       }
     } catch (e) {
       handleAIError(e);
@@ -674,7 +684,7 @@ function ImproveTab({
               </button>
             )}
 
-            {(input || (supportsNegativePrompt(suggestedModel?.id) && negativeInput)) && (
+            {(input || (supportsNegativePrompt(suggestedModel?.id || '') && negativeInput)) && (
               <button
                 onClick={() => { setInput(''); setNegativeInput(''); }}
                 className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700 ml-auto sm:ml-0"

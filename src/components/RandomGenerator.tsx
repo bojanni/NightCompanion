@@ -37,7 +37,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   useEffect(() => {
     async function fetchActiveModel() {
       try {
-        const { data: session } = await db.auth.getSession();
+        await db.auth.getSession();
 
         // Check local endpoints first
         const { data: localData } = await supabase
@@ -91,16 +91,27 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   }
 
   async function handleCopyPrompt() {
-    await navigator.clipboard.writeText(prompt);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 2000);
+    if (!navigator.clipboard) return;
+    try {
+      window.focus();
+      await navigator.clipboard.writeText(prompt);
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
   }
 
   async function handleCopyNegative() {
-    if (!negativePrompt) return;
-    await navigator.clipboard.writeText(negativePrompt);
-    setCopiedNeg(true);
-    setTimeout(() => setCopiedNeg(false), 2000);
+    if (!negativePrompt || !navigator.clipboard) return;
+    try {
+      window.focus();
+      await navigator.clipboard.writeText(negativePrompt);
+      setCopiedNeg(true);
+      setTimeout(() => setCopiedNeg(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy', err);
+    }
   }
 
   async function handleSave() {

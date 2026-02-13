@@ -178,18 +178,3 @@ body {
 .page-content-centered>div {
   width: 100%;
 }
-
-.utility-page-centered {
-  display: flex !important;
-  justify-content: center !important;
-  width: 100% !important;
-  min-height: 100vh;
-}
-
-.utility-page-centered>div {
-  width: 100%;
-  min-width: 1000px;
-  max-width: 1400px;
-  margin: 0 auto !important;
-  /* This centers the inner div if flex behavior allows */
-}

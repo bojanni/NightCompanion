@@ -214,7 +214,7 @@ function groupKeywordsByCategory(keywords: KeywordStat[]): Record<string, Keywor
   const grouped: Record<string, KeywordStat[]> = {};
   for (const kw of keywords) {
     if (!grouped[kw.category]) grouped[kw.category] = [];
-    grouped[kw.category].push(kw);
+    grouped[kw.category]!.push(kw);
   }
   return grouped;
 }
@@ -346,7 +346,7 @@ function KeywordDashboard({ grouped }: { grouped: Record<string, KeywordStat[]> 
 function ProfileSection({ title, items, icon: Icon, color, dotColor }: {
   title: string;
   items: string[];
-  icon: any;
+  icon: React.ElementType;
   color: string;
   dotColor: string;
 }) {
