@@ -71,7 +71,7 @@ export default function PromptDetailOverlay({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-full max-w-[1400px] max-h-full overflow-hidden flex flex-col md:flex-row"
+                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-[95%] md:w-[80%] max-h-full overflow-hidden flex flex-col md:flex-row"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Left Side: Image */}
