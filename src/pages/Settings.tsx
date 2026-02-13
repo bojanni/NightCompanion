@@ -14,7 +14,7 @@ import { getModelsForProvider, getDefaultModelForProvider } from '../lib/provide
 import type { ModelOption } from '../lib/provider-models';
 import { listModels } from '../lib/ai-service';
 import ModelSelector from '../components/ModelSelector';
-import { FeatureDefaultSelector } from '../components/FeatureDefaultSelector'; // Assuming this exists or will be kept
+import { LocalEndpointCard } from '../components/LocalEndpointCard';
 
 interface SettingsProps { }
 
@@ -309,7 +309,7 @@ export default function Settings({ }: SettingsProps) {
                       <div className="flex items-start justify-between mb-6">
                         <div>
                           <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                            {provider.name} 配置
+                            {provider.name} Configuration
                           </h3>
                           <p className="text-sm text-slate-400 mt-1">{provider.description}</p>
                           <a
@@ -321,9 +321,6 @@ export default function Settings({ }: SettingsProps) {
                             Get API Key <ExternalLink size={10} />
                           </a>
                         </div>
-
-                        {/* Actions: Save/Delete/Activate */}
-                        {/* We will render these inside the config component mainly, but global actions here? */}
                       </div>
 
                       <ProviderConfigForm
@@ -484,21 +481,6 @@ export default function Settings({ }: SettingsProps) {
           </div>
         </>
       )}
-
-      {/* Feature Defaults Section */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles size={18} className="text-slate-400" />
-          <h2 className="text-lg font-semibold text-white">Feature Defaults</h2>
-        </div>
-        <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
-          <FeatureDefaultSelector
-            keys={keys}
-            localEndpoints={localEndpoints}
-            dynamicModels={dynamicModels}
-          />
-        </div>
-      </div>
 
       <DataManagement />
     </div>
@@ -794,18 +776,3 @@ function ProviderConfigForm({
     </div>
   );
 }
-
-// LocalEndpointCard component remains largely unchanged but I'll include it to be safe
-// Wait, the prompt says "The following code has been modified..." which implies I should provide the FULL content if I am overwriting.
-// I need to include LocalEndpointCard and FeatureDefaultSelector (or imports).
-// I see I imported FeatureDefaultSelector at the top. I need to make sure LocalEndpointCard is defined or I can inline it too if it was inline before?
-// It was passed as props in the previous render but defined locally?
-// The previous code had `LocalEndpointCard` used in JSX but I don't see the definition in the previous `view_file` output (it was cut off or I missed it).
-// Ah, line 580 starts `interface ProviderCardProps`. `LocalEndpointCard` seems to have been defined further down or imported?
-// Wait, looking at the previous file content...
-// Line 405: `<LocalEndpointCard ... />`
-// I don't see `function LocalEndpointCard` in the previous snippet (1-800). It must be after line 800.
-// I should probably READ the file again to get `LocalEndpointCard` or just keep it if I am doing a replace?
-// NO, I am doing `write_to_file` OVERWRITE. So I MUST include `LocalEndpointCard`.
-// Use `view_file` to get the rest of the file first!
-
