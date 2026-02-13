@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Key, ExternalLink, Loader2, Check, Trash2, Shield, Zap, Sparkles,
   Eye, EyeOff, RefreshCw, Server, Globe, TestTube2,
-  Laptop, Cloud
+  Laptop, Cloud, Cpu
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModels } from '../lib/api-keys-service';
@@ -94,6 +94,18 @@ const PROVIDERS = [
     textColor: 'text-violet-400',
     borderColor: 'border-violet-500/20',
     icon: <Server size={18} />,
+  },
+  {
+    id: 'helixmind',
+    name: 'HelixMind',
+    description: 'Advanced reasoning models with deep context understanding.',
+    docsUrl: 'https://helixmind.ai/settings/api-keys',
+    placeholder: 'hm-sk-...',
+    gradient: 'from-violet-500 to-fuchsia-600',
+    bgGlow: 'bg-violet-500/10',
+    textColor: 'text-violet-400',
+    borderColor: 'border-violet-500/20',
+    icon: <Cpu size={18} />,
   },
 ];
 

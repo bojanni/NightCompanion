@@ -55,9 +55,17 @@ const createCrudRouter = (tableName) => {
                     conditions.push(`${key} >= $${currentIndex + 1}`);
                     values.push(value.substring(4));
                     currentIndex++;
+                } else if (value.startsWith('gt.')) {
+                    conditions.push(`${key} > $${currentIndex + 1}`);
+                    values.push(value.substring(3));
+                    currentIndex++;
                 } else if (value.startsWith('lte.')) {
                     conditions.push(`${key} <= $${currentIndex + 1}`);
                     values.push(value.substring(4));
+                    currentIndex++;
+                } else if (value.startsWith('lt.')) {
+                    conditions.push(`${key} < $${currentIndex + 1}`);
+                    values.push(value.substring(3));
                     currentIndex++;
                 } else {
                     conditions.push(`${key} = $${currentIndex + 1}`);
@@ -172,7 +180,9 @@ const createCrudRouter = (tableName) => {
 
             if (onConflict) {
                 // Generate ON CONFLICT (col) DO UPDATE SET ...
-                const updateColumns = columns.filter(c => c !== onConflict && c !== 'id' && c !== 'created_at');
+                const conflictCols = onConflict.split(',').map(s => s.trim());
+                const updateColumns = columns.filter(c => !conflictCols.includes(c) && c !== 'id' && c !== 'created_at');
+
                 if (updateColumns.length > 0) {
                     const updates = updateColumns.map(c => `${c} = EXCLUDED.${c}`).join(', ');
                     query += ` ON CONFLICT (${onConflict}) DO UPDATE SET ${updates}`;
