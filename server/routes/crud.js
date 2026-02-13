@@ -29,43 +29,58 @@ const createCrudRouter = (tableName) => {
         }
     };
 
+    // Helper to build WHERE conditions
+    const buildConditions = (filters, startValueIndex = 0) => {
+        const conditions = [];
+        const values = [];
+        let currentIndex = startValueIndex;
+
+        Object.entries(filters).forEach(([key, value]) => {
+            if (key === 'limit' || key === 'offset' || key === 'order' || key === 'on_conflict') return;
+
+            if (typeof value === 'string') {
+                if (value.startsWith('in.(') && value.endsWith(')')) {
+                    const list = value.slice(4, -1).split(',');
+                    if (list.length > 0) {
+                        const placeholders = list.map((_, i) => `$${currentIndex + i + 1}`).join(', ');
+                        conditions.push(`${key} IN (${placeholders})`);
+                        values.push(...list);
+                        currentIndex += list.length;
+                    }
+                } else if (value.startsWith('neq.')) {
+                    conditions.push(`${key} != $${currentIndex + 1}`);
+                    values.push(value.substring(4));
+                    currentIndex++;
+                } else if (value.startsWith('gte.')) {
+                    conditions.push(`${key} >= $${currentIndex + 1}`);
+                    values.push(value.substring(4));
+                    currentIndex++;
+                } else if (value.startsWith('lte.')) {
+                    conditions.push(`${key} <= $${currentIndex + 1}`);
+                    values.push(value.substring(4));
+                    currentIndex++;
+                } else {
+                    conditions.push(`${key} = $${currentIndex + 1}`);
+                    values.push(value);
+                    currentIndex++;
+                }
+            } else {
+                conditions.push(`${key} = $${currentIndex + 1}`);
+                values.push(value);
+                currentIndex++;
+            }
+        });
+
+        return { conditions, values, nextIndex: currentIndex };
+    };
+
     // GET all items with filtering, sorting, and pagination
     router.get('/', async (req, res) => {
         try {
             const { limit, offset, order, ...filters } = req.query;
-
             let queryText = `SELECT * FROM ${tableName}`;
-            const values = [];
-            const conditions = [];
 
-            // Build filters
-            Object.entries(filters).forEach(([key, value]) => {
-                if (value.startsWith('in.(') && value.endsWith(')')) {
-                    // Handle IN clause: ?col=in.(val1,val2)
-                    const list = value.slice(4, -1).split(',');
-                    if (list.length > 0) {
-                        const placeholders = list.map((_, i) => `$${values.length + i + 1}`).join(', ');
-                        conditions.push(`${key} IN (${placeholders})`);
-                        values.push(...list);
-                    }
-                } else if (value.startsWith('neq.')) {
-                    // Handle NOT EQUAL: ?col=neq.val
-                    conditions.push(`${key} != $${values.length + 1}`);
-                    values.push(value.substring(4));
-                } else if (value.startsWith('gte.')) {
-                    // Handle GREATER THAN OR EQUAL: ?col=gte.val
-                    conditions.push(`${key} >= $${values.length + 1}`);
-                    values.push(value.substring(4));
-                } else if (value.startsWith('lte.')) {
-                    // Handle LESS THAN OR EQUAL: ?col=lte.val
-                    conditions.push(`${key} <= $${values.length + 1}`);
-                    values.push(value.substring(4));
-                } else {
-                    // Handle Equality: ?col=val
-                    conditions.push(`${key} = $${values.length + 1}`);
-                    values.push(value);
-                }
-            });
+            const { conditions, values } = buildConditions(filters);
 
             if (conditions.length > 0) {
                 queryText += ` WHERE ${conditions.join(' AND ')}`;
@@ -77,7 +92,6 @@ const createCrudRouter = (tableName) => {
 
             if (order) {
                 const [col, dir] = order.split('.');
-                // Only sort if column exists to be safe, or trust client
                 queryText += ` ORDER BY ${col} ${dir === 'desc' ? 'DESC' : 'ASC'}`;
             } else if (hasCreatedAt) {
                 queryText += ` ORDER BY created_at DESC`;
@@ -121,10 +135,12 @@ const createCrudRouter = (tableName) => {
         }
     });
 
-    // CREATE item
+    // CREATE item (Supports UPSERT via onConflict=col)
     router.post('/', async (req, res) => {
         try {
             const data = req.body;
+            // Support both snake_case and camelCase param
+            const onConflict = req.query.on_conflict || req.query.onConflict;
             const schema = await getTableSchema(tableName);
 
             // Helper to process values based on schema
@@ -135,40 +151,42 @@ const createCrudRouter = (tableName) => {
                 return value;
             };
 
+            const insertItems = Array.isArray(data) ? data : [data];
+            if (insertItems.length === 0) return res.json([]);
+
+            const columns = Object.keys(insertItems[0]);
+            const values = [];
+            const rowPlaceholders = [];
+
+            insertItems.forEach((row) => {
+                const rowValues = Object.entries(row).map(([key, val]) => processValue(key, val));
+                const placeholders = rowValues.map((_, i) => `$${values.length + i + 1}`);
+                rowPlaceholders.push(`(${placeholders.join(', ')})`);
+                values.push(...rowValues);
+            });
+
+            let query = `
+                INSERT INTO ${tableName} (${columns.join(', ')})
+                VALUES ${rowPlaceholders.join(', ')}
+            `;
+
+            if (onConflict) {
+                // Generate ON CONFLICT (col) DO UPDATE SET ...
+                const updateColumns = columns.filter(c => c !== onConflict && c !== 'id' && c !== 'created_at');
+                if (updateColumns.length > 0) {
+                    const updates = updateColumns.map(c => `${c} = EXCLUDED.${c}`).join(', ');
+                    query += ` ON CONFLICT (${onConflict}) DO UPDATE SET ${updates}`;
+                } else {
+                    query += ` ON CONFLICT (${onConflict}) DO NOTHING`;
+                }
+            }
+
+            query += ` RETURNING *`;
+
+            const result = await pool.query(query, values);
             if (Array.isArray(data)) {
-                if (data.length === 0) return res.json([]);
-
-                const columns = Object.keys(data[0]);
-                const values = [];
-                const rowPlaceholders = [];
-
-                data.forEach((row, rowIndex) => {
-                    const rowValues = Object.entries(row).map(([key, val]) => processValue(key, val));
-                    const placeholders = rowValues.map((_, i) => `$${values.length + i + 1}`);
-                    rowPlaceholders.push(`(${placeholders.join(', ')})`);
-                    values.push(...rowValues);
-                });
-
-                const query = `
-                    INSERT INTO ${tableName} (${columns.join(', ')})
-                    VALUES ${rowPlaceholders.join(', ')}
-                    RETURNING *
-                `;
-
-                const result = await pool.query(query, values);
                 res.status(201).json(result.rows);
             } else {
-                const columns = Object.keys(data);
-                const values = Object.entries(data).map(([key, val]) => processValue(key, val));
-                const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
-
-                const query = `
-            INSERT INTO ${tableName} (${columns.join(', ')})
-            VALUES (${placeholders})
-            RETURNING *
-          `;
-
-                const result = await pool.query(query, values);
                 res.status(201).json(result.rows[0]);
             }
         } catch (err) {
@@ -237,13 +255,11 @@ const createCrudRouter = (tableName) => {
                 return res.status(400).json({ error: 'Delete operation requires filters' });
             }
 
-            const conditions = [];
-            const values = [];
+            const { conditions, values } = buildConditions(filters);
 
-            Object.entries(filters).forEach(([key, value]) => {
-                conditions.push(`${key} = $${values.length + 1}`);
-                values.push(value);
-            });
+            if (conditions.length === 0) {
+                return res.status(400).json({ error: 'Delete operation requires valid filters' });
+            }
 
             const query = `DELETE FROM ${tableName} WHERE ${conditions.join(' AND ')}`;
             await pool.query(query, values);

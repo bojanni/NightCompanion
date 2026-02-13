@@ -224,7 +224,7 @@ class QueryBuilder {
                 params.append(key, String(value));
             });
 
-            if (params.toString() && (this.method === 'GET' || this.method === 'DELETE')) {
+            if (params.toString()) {
                 url += '?' + params.toString();
             }
 
@@ -279,9 +279,14 @@ class QueryBuilder {
             const { user_id, ...cleanData } = data;
             this.body = cleanData;
         }
+        return this;
+    }
 
-        // Supabase allows .insert().select(), so we return this
-        // But if they await .insert(), it calls .then()
+    upsert(data: any | any[], options?: { onConflict: string }) {
+        this.insert(data);
+        if (options?.onConflict) {
+            this.filters['onConflict'] = options.onConflict;
+        }
         return this;
     }
 

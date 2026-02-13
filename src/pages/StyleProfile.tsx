@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Fingerprint, Loader2, RefreshCw, BarChart3, Lightbulb,
+  Fingerprint, Loader2, BarChart3, Lightbulb,
   Clock, TrendingUp, Cpu, Database,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -57,7 +57,7 @@ export default function StyleProfile() {
         return;
       }
 
-      const result = await analyzeStyle(prompts.map((p) => p.content), token);
+      const result = await analyzeStyle(prompts.map((p: { content: string }) => p.content), token);
       await saveStyleProfile(result, prompts.length);
       await loadData();
     } catch (e) {
@@ -109,14 +109,7 @@ export default function StyleProfile() {
             {rebuilding ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
             Rebuild Keywords
           </button>
-          <button
-            onClick={handleAnalyze}
-            disabled={analyzing || promptCount < 3}
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
-          >
-            {analyzing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-            {profile ? 'Re-analyze' : 'Analyze My Style'}
-          </button>
+
         </div>
       </div>
 
