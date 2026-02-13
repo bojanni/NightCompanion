@@ -13,6 +13,7 @@ import PromptSelector from '../components/PromptSelector';
 import ModelSelector from '../components/ModelSelector';
 import { generateFromDescription } from '../lib/ai-service';
 import { toast } from 'sonner';
+import GridDensitySelector from '../components/GridDensitySelector';
 
 const PAGE_SIZE = 24;
 
@@ -406,20 +407,23 @@ export default function Gallery({ }: GalleryProps) {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search gallery..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-          />
+      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search gallery..."
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl">
+            <Star size={14} className="text-slate-400" />
+            <StarRating rating={filterRating} onChange={handleFilterRatingChange} size={16} />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Star size={14} className="text-slate-400" />
-          <StarRating rating={filterRating} onChange={handleFilterRatingChange} size={16} />
-        </div>
+        <GridDensitySelector storageKey="gallery-grid-density" defaultValue={4} />
       </div>
 
       {collections.length > 0 && (
@@ -472,7 +476,7 @@ export default function Gallery({ }: GalleryProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="dynamic-grid">
           {filtered.map((item) => (
             <div
               key={item.id}

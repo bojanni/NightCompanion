@@ -16,6 +16,7 @@ import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
 import ImageSelector from '../components/ImageSelector';
 import { handleError, showSuccess } from '../lib/error-handler';
+import GridDensitySelector from '../components/GridDensitySelector';
 
 const PAGE_SIZE = 20;
 
@@ -387,43 +388,46 @@ export default function Prompts({ }: PromptsProps) {
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search prompts..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || filterTag
-              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-              : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-              }`}
-          >
-            <Filter size={14} />
-            Filters
-          </button>
-          {(['all', 'templates', 'favorites'] as const).map((type) => (
+      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search prompts..."
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
             <button
-              key={type}
-              onClick={() => handleFilterChange(type)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === type
-                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || filterTag
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
                 }`}
             >
-              {type === 'templates' && <BookTemplate size={13} />}
-              {type === 'favorites' && <Heart size={13} />}
-              {type === 'all' && <SlidersHorizontal size={13} />}
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              <Filter size={14} />
+              Filters
             </button>
-          ))}
+            {(['all', 'templates', 'favorites'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => handleFilterChange(type)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === type
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+              >
+                {type === 'templates' && <BookTemplate size={13} />}
+                {type === 'favorites' && <Heart size={13} />}
+                {type === 'all' && <SlidersHorizontal size={13} />}
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
+        <GridDensitySelector storageKey="prompts-grid-density" defaultValue={2} />
       </div>
 
       {showFilters && tags.length > 0 && (
@@ -463,7 +467,7 @@ export default function Prompts({ }: PromptsProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="dynamic-grid">
           {filtered.map((prompt) => {
             const promptTags = getTagsForPrompt(prompt.id);
             const promptImages = linkedImages[prompt.id];
