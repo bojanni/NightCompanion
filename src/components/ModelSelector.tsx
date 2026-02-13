@@ -218,7 +218,17 @@ export default function ModelSelector({
                     </div>
 
                     {/* List Content */}
-                    <div className="overflow-y-auto flex-1 p-2 space-y-4 dropdown-scroll" ref={listRef} role="listbox">
+                    <div
+                        className="overflow-y-auto flex-1 p-2 space-y-4 dropdown-scroll relative"
+                        ref={listRef}
+                        role="listbox"
+                        style={{
+                            // Mask bottom to show scroll hint if needed, though scrollbar is now visible
+                            // CSS mask to fade out bottom slightly
+                            maskImage: 'linear-gradient(to bottom, black calc(100% - 20px), transparent 100%)',
+                            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 20px), transparent 100%)'
+                        }}
+                    >
 
                         {/* Local Models (Pinned) */}
                         {localModels.length > 0 && (
