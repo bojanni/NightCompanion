@@ -504,14 +504,16 @@ function ProviderConfigForm({
   // Update local state when keyInfo changes
   useEffect(() => {
     if (keyInfo) {
-      setSelectedModelGen(keyInfo.model_gen || keyInfo.model_name || getDefaultModelForProvider(provider.id));
-      setSelectedModelImprove(keyInfo.model_improve || keyInfo.model_name || getDefaultModelForProvider(provider.id));
+      const serverGen = keyInfo.model_gen || keyInfo.model_name || getDefaultModelForProvider(provider.id);
+      const serverImprove = keyInfo.model_improve || keyInfo.model_name || getDefaultModelForProvider(provider.id);
+      setSelectedModelGen(serverGen);
+      setSelectedModelImprove(serverImprove);
     } else {
       // Reset if no key info (e.g. removed)
       setSelectedModelGen(getDefaultModelForProvider(provider.id));
       setSelectedModelImprove(getDefaultModelForProvider(provider.id));
     }
-  }, [keyInfo, provider.id]);
+  }, [keyInfo?.model_gen, keyInfo?.model_improve, keyInfo?.model_name, provider.id]);
 
   const staticModels = getModelsForProvider(provider.id);
   const allModels = dynamicModels && dynamicModels.length > 0 ? dynamicModels : staticModels;
