@@ -39,7 +39,7 @@ async function runTest() {
     await request('DELETE', '?keyword=test_upsert');
 
     // 2. Insert initial
-    const res1 = await request('POST', '?on_conflict=keyword', {
+    const res1 = await request('POST', '?onConflict=keyword', {
         keyword: 'test_upsert',
         category: 'test',
         count: 1
@@ -47,7 +47,7 @@ async function runTest() {
     console.log('Insert:', res1.status === 201 ? 'PASS' : 'FAIL', res1.data);
 
     // 3. Upsert (Update count)
-    const res2 = await request('POST', '?on_conflict=keyword', {
+    const res2 = await request('POST', '?onConflict=keyword', {
         keyword: 'test_upsert',
         category: 'test',
         count: 5 // Should update to 5
