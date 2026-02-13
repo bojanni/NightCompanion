@@ -27,10 +27,19 @@ interface AIToolsProps {
   initialExpanded?: boolean;
 }
 
+interface ModelInfo {
+  id: string;
+  name: string;
+  provider: string;
+  description?: string;
+  recommendedPreset?: string;
+}
+
 export interface AIToolsRef {
   hasContent: () => boolean;
   clearContent: () => void;
   setInputContent: (content: string) => void;
+  setNegativeInputContent: (content: string) => void;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -92,7 +101,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   const [copied, setCopied] = useState('');
   const [saving, setSaving] = useState('');
 
-  const [suggestedModel, setSuggestedModel] = useState<unknown>(null);
+  const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
   const [activeModel, setActiveModel] = useState<string>('');
 
   useImperativeHandle(ref, () => ({
@@ -126,7 +135,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     const timeout = setTimeout(() => {
       const results = analyzePrompt(improveInput);
       if (results && results.length > 0 && results[0]) {
-        setSuggestedModel(results[0].model);
+        setSuggestedModel(results[0].model as ModelInfo);
       }
     }, 100);
     return () => clearTimeout(timeout);
@@ -229,7 +238,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         setNegativeResult(result.negativePrompt);
       } else {
         const result = await improvePrompt(improveInput, token, apiPreferences);
-        setImproveResult(result);
+        setImproveResult(result.improved);
       }
     } catch (e) {
       handleAIError(e);
@@ -485,7 +494,7 @@ function ImproveTab({
   onClear: () => void;
   generatedPrompt?: string | undefined;
   generatedNegativePrompt?: string | undefined;
-  suggestedModel: any;
+  suggestedModel: ModelInfo | null;
   activeModel?: string;
 }) {
   const [showDiff, setShowDiff] = useState(true);

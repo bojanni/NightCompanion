@@ -36,7 +36,7 @@ const navItems = [
 export default function Layout({ onSignOut }: LayoutProps) {
   const location = useLocation();
 
-  // Define full-width pages (Dashboard, Prompts, Gallery)
+  // Define full-width pages (Dashboard, Gallery, Prompts)
   // Dashboard is '/'
   const isFullWidthPage = ['/', '/prompts', '/gallery'].includes(location.pathname);
 
@@ -85,11 +85,17 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </div>
       </aside>
 
-      <main className="flex-1 ml-64">
-        <div className="page-wrapper-full">
-          <div className={isFullWidthPage ? "w-full p-8" : "page-content-centered"}>
-            <Outlet />
-          </div>
+      <main className="flex-1 ml-64 flex flex-col h-full overflow-hidden">
+        <div className="antigravity-app-root flex-1 overflow-auto">
+          {isFullWidthPage ? (
+            <div className="w-full h-full p-8">{<Outlet />}</div>
+          ) : (
+            <div className="utility-page-centered p-8">
+              <div className="content-inner w-full">
+                {<Outlet />}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
