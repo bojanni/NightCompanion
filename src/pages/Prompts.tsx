@@ -735,15 +735,17 @@ export default function Prompts({ }: PromptsProps) {
         title={editingPrompt ? 'Edit Prompt' : 'New Prompt'}
         wide
       >
-        <PromptEditor
-          prompt={editingPrompt}
-          isLinked={editingPrompt ? (linkedImages[editingPrompt.id]?.length ?? 0) > 0 : false}
-          onSave={() => {
-            setShowEditor(false);
-            loadData();
-          }}
-          onCancel={() => setShowEditor(false)}
-        />
+        {editingPrompt && (
+          <PromptEditor
+            prompt={editingPrompt}
+            isLinked={editingPrompt ? (linkedImages[editingPrompt.id]?.length ?? 0) > 0 : false}
+            onSave={() => {
+              setShowEditor(false);
+              loadData();
+            }}
+            onCancel={() => setShowEditor(false)}
+          />
+        )}
       </Modal>
 
       <Modal
