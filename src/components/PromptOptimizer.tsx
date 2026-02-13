@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles, TrendingUp, AlertCircle, CheckCircle, Plus, Trash2,
   RefreshCw, ArrowRight, Zap, Target, Eye, FileText, Copy, Check
@@ -26,19 +26,16 @@ export default function PromptOptimizer({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    analyzePrompt();
-  }, [prompt]); // analyzer is stable or doesn't need to be here
-
-  useEffect(() => {
     setCustomPrompt(prompt);
   }, [prompt]);
 
-  async function analyzePrompt() {
+
+  const analyzePrompt = useCallback(async () => {
     setLoading(true);
     try {
       const optimization = await optimizePrompt(prompt, {
-        modelId: modelId || undefined,
-        category: category || undefined
+        ...(modelId !== undefined && { modelId }),
+        ...(category !== undefined && { category })
       });
       setResult(optimization);
     } catch (error) {
@@ -47,7 +44,11 @@ export default function PromptOptimizer({
     } finally {
       setLoading(false);
     }
-  }
+  }, [prompt, modelId, category]);
+
+  useEffect(() => {
+    analyzePrompt();
+  }, [analyzePrompt]);
 
   function toggleSuggestion(index: number, suggestion: OptimizationSuggestion) {
     const newApplied = new Set(appliedSuggestions);
@@ -370,6 +371,7 @@ export default function PromptOptimizer({
           onChange={(e) => setCustomPrompt(e.target.value)}
           className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none"
           rows={6}
+          title="Optimized Prompt"
         />
       </div>
 

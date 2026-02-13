@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,7 +11,6 @@ interface ModalProps {
 }
 
 export default function Modal({ open, onClose, title, children, wide }: ModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -54,6 +53,7 @@ export default function Modal({ open, onClose, title, children, wide }: ModalPro
               <button
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                title="Close"
               >
                 <X size={18} />
               </button>

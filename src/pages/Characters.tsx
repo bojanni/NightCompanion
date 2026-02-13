@@ -19,9 +19,7 @@ import { toast } from 'sonner';
 
 const PAGE_SIZE = 12;
 
-interface CharactersProps { }
-
-export default function Characters({ }: CharactersProps) {
+export default function Characters() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
@@ -363,6 +361,7 @@ export default function Characters({ }: CharactersProps) {
                                   .then(() => loadDetails(char.id));
                               }}
                               className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
+                              title="Delete detail"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>

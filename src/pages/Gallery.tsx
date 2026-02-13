@@ -19,9 +19,7 @@ import { PROVIDER_MODELS } from '../lib/provider-models';
 
 const PAGE_SIZE = 24;
 
-interface GalleryProps { }
-
-export default function Gallery({ }: GalleryProps) {
+export default function Gallery() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -529,6 +527,7 @@ export default function Gallery({ }: GalleryProps) {
                         openItemEditor(item);
                       }}
                       className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
+                      title="Edit item"
                     >
                       <Edit3 size={12} />
                     </button>
@@ -538,6 +537,7 @@ export default function Gallery({ }: GalleryProps) {
                         handleDeleteItem(item.id);
                       }}
                       className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-red-500/70 transition-colors"
+                      title="Delete item"
                     >
                       <Trash2 size={12} />
                     </button>

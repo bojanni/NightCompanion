@@ -78,6 +78,8 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
 
       if (filledSlots.length === 1) {
         const slot = filledSlots[0];
+        if (!slot) return; // Should not happen
+
         let imagePayload: { imageUrl?: string; imageBase64?: string; imageMimeType?: string };
         if (slot.file) {
           const resized = await resizeImageToBase64(slot.file);
@@ -110,6 +112,7 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-900 to-slate-800/80 hover:from-slate-800/80 hover:to-slate-800/60 transition-all"
+        title={expanded ? "Collapse Image Analyzer" : "Expand Image Analyzer"}
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-cyan-500/15 rounded-lg flex items-center justify-center">
@@ -144,6 +147,7 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
               <button
                 onClick={addSlot}
                 className="border-2 border-dashed border-slate-700/50 rounded-xl flex flex-col items-center justify-center gap-2 min-h-[160px] hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all group"
+                title="Add another image slot"
               >
                 <Plus size={20} className="text-slate-600 group-hover:text-cyan-400 transition-colors" />
                 <span className="text-[11px] text-slate-500 group-hover:text-slate-400">Add image to compare</span>
@@ -181,14 +185,14 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
 
 
           {singleResult && (
-            <SingleAnalysis result={singleResult} onUsePrompt={onPromptGenerated} />
+            <SingleAnalysis result={singleResult} onUsePrompt={onPromptGenerated || (() => { })} />
           )}
 
           {batchResult && (
             <ComparisonResults
               result={batchResult}
               slotPreviews={filledSlots.map((s) => s.previewUrl)}
-              onUsePrompt={onPromptGenerated}
+              onUsePrompt={onPromptGenerated || (() => { })}
             />
           )}
         </div>
@@ -255,13 +259,14 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
         </button>
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" title="Upload Image" />
 
       {!hasImage ? (
         slot.inputMode === 'upload' ? (
           <button
             onClick={() => fileRef.current?.click()}
             className="w-full border border-dashed border-slate-700 rounded-lg py-6 flex flex-col items-center gap-1 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all group"
+            title="Upload an image"
           >
             <Upload size={16} className="text-slate-600 group-hover:text-cyan-400" />
             <span className="text-[10px] text-slate-500">Upload image</span>
@@ -273,6 +278,7 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
             onChange={(e) => handleUrlChange(e.target.value)}
             placeholder="https://..."
             className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2 text-[10px] text-white placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500/40"
+            title="Image URL"
           />
         )
       ) : (
@@ -286,6 +292,7 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
           <button
             onClick={clearImage}
             className="absolute top-1 right-1 w-5 h-5 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-white"
+            title="Remove image"
           >
             <X size={9} />
           </button>
@@ -296,6 +303,7 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
         value={slot.model}
         onChange={(e) => onUpdate({ model: e.target.value })}
         className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500/40 appearance-none"
+        title="Select AI Model"
       >
         {AI_MODELS.map((m) => (
           <option key={m} value={m}>{m}</option>

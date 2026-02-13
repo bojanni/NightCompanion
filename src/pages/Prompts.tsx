@@ -22,9 +22,7 @@ import PromptDetailOverlay from '../components/PromptDetailOverlay';
 
 const PAGE_SIZE = 20;
 
-interface PromptsProps { }
-
-export default function Prompts({ }: PromptsProps) {
+export default function Prompts() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [promptTagMap, setPromptTagMap] = useState<Record<string, string[]>>({});
@@ -514,6 +512,7 @@ export default function Prompts({ }: PromptsProps) {
                       <button
                         onClick={(e) => { e.stopPropagation(); handleToggleFavorite(prompt); }}
                         className="flex-shrink-0 ml-2"
+                        title={prompt.is_favorite ? "Remove from favorites" : "Add to favorites"}
                       >
                         <Heart
                           size={16}

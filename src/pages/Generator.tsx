@@ -13,32 +13,32 @@ type Mode = 'random' | 'guided' | 'remix' | 'manual';
 
 const STORAGE_KEY = 'nightcompanion_generator_state';
 
-export default function Generator({ }: GeneratorProps) {
+export default function Generator() {
   // Use lazy state initializers to read from localStorage synchronously on mount.
   // This ensures child components receive the correct initial values immediately.
   const [mode, setMode] = useState<Mode>(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).mode || 'random'; } catch { } return 'random';
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).mode || 'random'; } catch { /* ignore */ } return 'random';
   });
 
   const aiToolsRef = useRef<AIToolsRef>(null);
 
   const [guidedInitial, setGuidedInitial] = useState(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).guidedInitial || ''; } catch { } return '';
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).guidedInitial || ''; } catch { /* ignore */ } return '';
   });
   const [lastPrompts, setLastPrompts] = useState<Prompt[]>([]);
   const [remixBase, setRemixBase] = useState('');
   const [saveCount, setSaveCount] = useState(0);
   const [maxWords, setMaxWords] = useState(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).maxWords || 70; } catch { } return 70;
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).maxWords || 70; } catch { /* ignore */ } return 70;
   });
   const [randomPrompt, setRandomPrompt] = useState(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomPrompt || ''; } catch { } return '';
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomPrompt || ''; } catch { /* ignore */ } return '';
   });
   const [randomNegativePrompt, setRandomNegativePrompt] = useState(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomNegativePrompt || ''; } catch { } return '';
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomNegativePrompt || ''; } catch { /* ignore */ } return '';
   });
   const [manualInitial, setManualInitial] = useState<{ prompts: string[], negative: string }>(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).manualInitial || { prompts: [], negative: '' }; } catch { } return { prompts: [], negative: '' };
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).manualInitial || { prompts: [], negative: '' }; } catch { /* ignore */ } return { prompts: [], negative: '' };
   });
 
 
@@ -165,10 +165,11 @@ export default function Generator({ }: GeneratorProps) {
           <div className="flex items-start gap-3">
             <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
+                <label htmlFor="max-words-slider" className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
                 <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
               </div>
               <input
+                id="max-words-slider"
                 type="range"
                 min="20"
                 max="100"
@@ -179,6 +180,7 @@ export default function Generator({ }: GeneratorProps) {
                 style={{
                   background: `linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) ${((maxWords - 20) / 80) * 100}%, rgb(30 41 59) 100%)`
                 }}
+                title="Adjust max words"
               />
               <div className="flex justify-between mt-2">
                 <span className="text-xs text-slate-500">Short (20)</span>
