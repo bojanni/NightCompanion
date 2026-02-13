@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Key, ExternalLink, Loader2, Check, Trash2, Shield, Zap, Sparkles,
-  Eye, EyeOff, RefreshCw, CircleDot, Server, Globe, TestTube2,
-  ChevronRight, Laptop, Cloud
+  Eye, EyeOff, RefreshCw, Server, Globe, TestTube2,
+  Laptop, Cloud
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModels } from '../lib/api-keys-service';
@@ -26,6 +26,8 @@ interface LocalEndpoint {
   model_gen?: string;
   model_improve?: string;
   is_active: boolean;
+  is_active_gen: boolean;
+  is_active_improve: boolean;
   updated_at: string;
 }
 
@@ -392,20 +394,15 @@ export default function Settings({ }: SettingsProps) {
                     setActionLoading(null);
                   }
                 }}
-                onSetActive={async () => {
-                  setActionLoading('ollama-active');
+                onSetActive={async (role) => {
+                  setActionLoading(`ollama-${role}`);
                   setError('');
                   try {
-                    const isCurrentlyActive = localEndpoints.find(e => e.provider === 'ollama')?.is_active;
-                    if (isCurrentlyActive) {
-                      await db.from('user_local_endpoints').update({ is_active: false }).eq('provider', 'ollama');
-                      showSuccess('Ollama deactivated');
-                    } else {
-                      await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
-                      await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'ollama');
-                      await db.from('user_local_endpoints').update({ is_active: true }).eq('provider', 'ollama');
-                      showSuccess('Ollama set as active provider');
-                    }
+                    const token = await getToken();
+                    const endpoint = localEndpoints.find(e => e.provider === 'ollama');
+                    const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
+                    await setActiveProvider('ollama', endpoint?.model_name || '', token, !isRoleActive, role);
+                    showSuccess(`Ollama ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
                   } catch (e) {
@@ -455,19 +452,14 @@ export default function Settings({ }: SettingsProps) {
                     setActionLoading(null);
                   }
                 }}
-                onSetActive={async () => {
-                  setActionLoading('lmstudio-active');
+                onSetActive={async (role) => {
+                  setActionLoading(`lmstudio-${role}`);
                   try {
-                    const isCurrentlyActive = localEndpoints.find(e => e.provider === 'lmstudio')?.is_active;
-                    if (isCurrentlyActive) {
-                      await db.from('user_local_endpoints').update({ is_active: false }).eq('provider', 'lmstudio');
-                      showSuccess('LM Studio deactivated');
-                    } else {
-                      await db.from('user_api_keys').update({ is_active: false }).neq('provider', '');
-                      await db.from('user_local_endpoints').update({ is_active: false }).neq('provider', 'lmstudio');
-                      await db.from('user_local_endpoints').update({ is_active: true }).eq('provider', 'lmstudio');
-                      showSuccess('LM Studio set as active provider');
-                    }
+                    const token = await getToken();
+                    const endpoint = localEndpoints.find(e => e.provider === 'lmstudio');
+                    const isRoleActive = role === 'generation' ? (endpoint?.is_active_gen ?? false) : (endpoint?.is_active_improve ?? false);
+                    await setActiveProvider('lmstudio', endpoint?.model_name || '', token, !isRoleActive, role);
+                    showSuccess(`LM Studio ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
                     await loadKeys();
                     await loadLocalEndpoints();
                   } catch (e) {
@@ -489,7 +481,7 @@ export default function Settings({ }: SettingsProps) {
 
 // Inline component for the selected provider configuration form
 function ProviderConfigForm({
-  provider, keyInfo, actionLoading, setActionLoading, setError, showSuccess, getToken, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels, isGlobalActive
+  provider, keyInfo, actionLoading, setActionLoading, setError, showSuccess, getToken, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels
 }: any) {
   const [inputValue, setInputValue] = useState('');
   const [selectedModelGen, setSelectedModelGen] = useState(
@@ -523,10 +515,8 @@ function ProviderConfigForm({
   // Filter models to only this provider's models (redundant if allModels is correct but safe)
   const selectorModels = allModels.filter((m: any) => m.provider === provider.id || !m.provider).map((m: any) => ({ ...m, provider: provider.id }));
 
-  const isActive = keyInfo?.is_active ?? false;
   const isSaving = actionLoading === provider.id;
   const isDeleting = actionLoading === `${provider.id}-delete`;
-  const isSettingActive = actionLoading === `${provider.id}-active`;
   const isFetching = actionLoading === `${provider.id}-fetch`;
   const canFetch = ['openrouter', 'together', 'openai', 'gemini'].includes(provider.id);
 
@@ -574,13 +564,14 @@ function ProviderConfigForm({
     }
   };
 
-  const handleSetActive = async () => {
-    setActionLoading(`${provider.id}-active`);
+  const handleSetActive = async (role: 'generation' | 'improvement') => {
+    setActionLoading(`${provider.id}-${role}`);
     setError('');
     try {
       const token = await getToken();
-      await setActiveProvider(provider.id, keyInfo?.model_name || '', token, !isActive);
-      showSuccess(`${provider.name} ${isActive ? 'deactivated' : 'activated'}`);
+      const isRoleActive = role === 'generation' ? (keyInfo?.is_active_gen ?? false) : (keyInfo?.is_active_improve ?? false);
+      await setActiveProvider(provider.id, keyInfo?.model_name || '', token, !isRoleActive, role);
+      showSuccess(`${provider.name} ${role} ${isRoleActive ? 'deactivated' : 'activated'}`);
       await loadKeys();
       await loadLocalEndpoints();
     } catch (e) {
@@ -759,20 +750,38 @@ function ProviderConfigForm({
         </div>
       )}
 
-      {/* Activate Button */}
+      {/* Split Active Buttons */}
       {keyInfo && !isEditing && (
-        <div className="pt-4 mt-4 border-t border-slate-800/50">
-          <button
-            onClick={handleSetActive}
-            disabled={isSettingActive}
-            className={`w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${isActive
-              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-              }`}
-          >
-            {isSettingActive ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
-            {isActive ? 'Currently Active Provider' : 'Set as Active Provider'}
-          </button>
+        <div className="pt-6 mt-4 border-t border-slate-800/50 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => handleSetActive('generation')}
+              disabled={actionLoading === `${provider.id}-generation`}
+              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_gen
+                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+            >
+              {actionLoading === `${provider.id}-generation` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+              {keyInfo?.is_active_gen ? 'Active Generator AI' : 'Set as Generator AI'}
+            </button>
+
+            <button
+              onClick={() => handleSetActive('improvement')}
+              disabled={actionLoading === `${provider.id}-improvement`}
+              className={`py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${keyInfo?.is_active_improve
+                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 hover:bg-teal-500/20'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                }`}
+            >
+              {actionLoading === `${provider.id}-improvement` ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
+              {keyInfo?.is_active_improve ? 'Active Improvement AI' : 'Set as Improvement AI'}
+            </button>
+          </div>
+
+          <p className="text-[10px] text-slate-500 text-center italic">
+            You can use one provider for generation and another for improvement.
+          </p>
         </div>
       )}
     </div>

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-    Server, Loader2, Check, Trash2, Zap, RefreshCw, Eye, EyeOff, Laptop
+    Server, Loader2, Check, Trash2, Zap, RefreshCw
 } from 'lucide-react';
-import { ApiKeySchema } from '../lib/validation-schemas'; // Using validation if applicable, or just simple check
 
 interface LocalEndpoint {
     id: string;
@@ -12,6 +11,8 @@ interface LocalEndpoint {
     model_gen?: string;
     model_improve?: string;
     is_active: boolean;
+    is_active_gen: boolean;
+    is_active_improve: boolean;
     updated_at: string;
 }
 
@@ -21,7 +22,7 @@ interface LocalEndpointCardProps {
     actionLoading: string | null;
     onSave: (endpointUrl: string, modelGen: string, modelImprove: string) => void;
     onDelete: () => void;
-    onSetActive: () => void;
+    onSetActive: (role: 'generation' | 'improvement') => void;
 }
 
 export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, onSetActive }: LocalEndpointCardProps) {
@@ -46,7 +47,6 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
     const isActive = endpoint?.is_active || false;
     const isSaving = actionLoading === type;
     const isDeleting = actionLoading === `${type}-delete`;
-    const isSettingActive = actionLoading === `${type}-active`;
 
     const handleSave = () => {
         // Basic validation
@@ -146,33 +146,49 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
                         )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={onSetActive}
-                            disabled={isSettingActive}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5 ${isActive
-                                    ? 'bg-violet-500/20 text-violet-300 pointer-events-none'
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => onSetActive('generation')}
+                                disabled={actionLoading === `${type}-generation`}
+                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 ${endpoint.is_active_gen
+                                    ? 'bg-amber-500/20 text-amber-300'
                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                                }`}
-                        >
-                            {isSettingActive ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-                            {isActive ? 'Active' : 'Activate'}
-                        </button>
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="p-1.5 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors"
-                            title="Edit"
-                        >
-                            <RefreshCw size={14} />
-                        </button>
-                        <button
-                            onClick={onDelete}
-                            disabled={isDeleting}
-                            className="p-1.5 text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50"
-                            title="Remove"
-                        >
-                            {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                        </button>
+                                    }`}
+                            >
+                                {actionLoading === `${type}-generation` ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
+                                {endpoint.is_active_gen ? 'Gen: Active' : 'Gen: Activate'}
+                            </button>
+                            <button
+                                onClick={() => onSetActive('improvement')}
+                                disabled={actionLoading === `${type}-improvement`}
+                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 ${endpoint.is_active_improve
+                                    ? 'bg-teal-500/20 text-teal-300'
+                                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                                    }`}
+                            >
+                                {actionLoading === `${type}-improvement` ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
+                                {endpoint.is_active_improve ? 'Imp: Active' : 'Imp: Activate'}
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="flex-1 p-1.5 text-center text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-[10px]"
+                                title="Edit"
+                            >
+                                <RefreshCw size={12} /> Edit
+                            </button>
+                            <button
+                                onClick={onDelete}
+                                disabled={isDeleting}
+                                className="flex-1 p-1.5 text-center text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 text-[10px]"
+                                title="Remove"
+                            >
+                                {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Remove
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -6,7 +6,7 @@ const { pool } = require('../db');
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, provider, endpoint_url, model_name, is_active, created_at, updated_at FROM user_local_endpoints ORDER BY created_at DESC'
+            'SELECT id, provider, endpoint_url, model_name, model_gen, model_improve, is_active, is_active_gen, is_active_improve, created_at, updated_at FROM user_local_endpoints ORDER BY created_at DESC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -21,9 +21,9 @@ router.post('/', async (req, res) => {
         const { provider, endpoint_url, model_name, is_active } = req.body;
 
         const result = await pool.query(
-            `INSERT INTO user_local_endpoints (provider, endpoint_url, model_name, is_active)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id, provider, endpoint_url, model_name, is_active, created_at, updated_at`,
+            `INSERT INTO user_local_endpoints (provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve)
+             VALUES ($1, $2, $3, $4, $4, $4)
+             RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, created_at, updated_at`,
             [provider, endpoint_url, model_name, is_active !== false]
         );
 
@@ -74,10 +74,12 @@ router.patch('/:id', async (req, res) => {
                  endpoint_url = COALESCE($2, endpoint_url),
                  model_name = COALESCE($3, model_name),
                  is_active = COALESCE($4, is_active),
+                 is_active_gen = COALESCE($5, is_active_gen),
+                 is_active_improve = COALESCE($6, is_active_improve),
                  updated_at = NOW()
-             WHERE id = $5
-             RETURNING id, provider, endpoint_url, model_name, is_active, created_at, updated_at`,
-            [provider, endpoint_url, model_name, is_active, id]
+             WHERE id = $7
+             RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, created_at, updated_at`,
+            [provider, endpoint_url, model_name, is_active, req.body.is_active_gen, req.body.is_active_improve, id]
         );
 
         res.json(result.rows[0]);

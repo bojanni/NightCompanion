@@ -6,7 +6,7 @@ const { encrypt, maskKey } = require('../lib/crypto');
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, provider, key_hint, model_name, is_active, created_at FROM user_api_keys ORDER BY provider'
+            'SELECT id, provider, key_hint, model_name, model_gen, model_improve, is_active, is_active_gen, is_active_improve, created_at FROM user_api_keys ORDER BY provider'
         );
         res.json({ keys: result.rows }); // Wrap in keys object to match expected format
     } catch (err) {
@@ -70,34 +70,58 @@ router.post('/', async (req, res) => {
             await pool.query('DELETE FROM user_api_keys WHERE provider = $1', [provider]);
             res.json({ success: true });
         } else if (action === 'set-active') {
-            await pool.query('UPDATE user_api_keys SET is_active = false');
-            await pool.query('UPDATE user_local_endpoints SET is_active = false');
+            const { role } = req.body;
+            const isActive = req.body.active !== false;
 
-            // Check if we are setting to active (default true)
-            // If explicit active=false is passed, we stop here (all inactive)
-            const isActive = req.body.active !== false; // Default to true if undefined
-
-            if (isActive) {
-                // Determine which table to update based on provider existence
-                // First try user_api_keys
-                const updateKeys = await pool.query(
-                    'UPDATE user_api_keys SET is_active = true WHERE provider = $1 RETURNING *',
-                    [provider]
-                );
-
-                if (updateKeys.rows.length === 0) {
-                    // Try user_local_endpoints if not found in keys
-                    const updateLocal = await pool.query(
-                        'UPDATE user_local_endpoints SET is_active = true WHERE provider = $1 RETURNING *',
+            if (role === 'generation') {
+                await pool.query('UPDATE user_api_keys SET is_active_gen = false');
+                await pool.query('UPDATE user_local_endpoints SET is_active_gen = false');
+                if (isActive) {
+                    const updateKeys = await pool.query(
+                        'UPDATE user_api_keys SET is_active_gen = true WHERE provider = $1 RETURNING *',
                         [provider]
                     );
+                    if (updateKeys.rows.length === 0) {
+                        await pool.query(
+                            'UPDATE user_local_endpoints SET is_active_gen = true WHERE provider = $1',
+                            [provider]
+                        );
+                    }
+                }
+            } else if (role === 'improvement') {
+                await pool.query('UPDATE user_api_keys SET is_active_improve = false');
+                await pool.query('UPDATE user_local_endpoints SET is_active_improve = false');
+                if (isActive) {
+                    const updateKeys = await pool.query(
+                        'UPDATE user_api_keys SET is_active_improve = true WHERE provider = $1 RETURNING *',
+                        [provider]
+                    );
+                    if (updateKeys.rows.length === 0) {
+                        await pool.query(
+                            'UPDATE user_local_endpoints SET is_active_improve = true WHERE provider = $1',
+                            [provider]
+                        );
+                    }
+                }
+            } else {
+                // FALLBACK: Legacy behavior (set both)
+                await pool.query('UPDATE user_api_keys SET is_active = false, is_active_gen = false, is_active_improve = false');
+                await pool.query('UPDATE user_local_endpoints SET is_active = false, is_active_gen = false, is_active_improve = false');
 
-                    if (updateLocal.rows.length === 0) {
-                        return res.status(404).json({ error: 'Provider not found' });
+                if (isActive) {
+                    const updateKeys = await pool.query(
+                        'UPDATE user_api_keys SET is_active = true, is_active_gen = true, is_active_improve = true WHERE provider = $1 RETURNING *',
+                        [provider]
+                    );
+                    if (updateKeys.rows.length === 0) {
+                        await pool.query(
+                            'UPDATE user_local_endpoints SET is_active = true, is_active_gen = true, is_active_improve = true WHERE provider = $1',
+                            [provider]
+                        );
                     }
                 }
             }
-            res.json({ success: true, active: isActive });
+            res.json({ success: true, active: isActive, role });
         } else if (action === 'update-models') {
             const { modelGen, modelImprove } = req.body;
 

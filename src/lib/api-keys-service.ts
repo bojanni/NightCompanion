@@ -20,6 +20,8 @@ export interface ApiKeyInfo {
   provider: string;
   key_hint: string;
   is_active: boolean;
+  is_active_gen: boolean;
+  is_active_improve: boolean;
   model_name?: string;
   model_gen?: string;
   model_improve?: string;
@@ -40,9 +42,9 @@ export async function deleteApiKey(provider: string, _token: string): Promise<vo
   await callKeyService('DELETE', `/${provider}`);
 }
 
-export async function setActiveProvider(provider: string, modelName: string, _token: string, active: boolean = true): Promise<void> {
+export async function setActiveProvider(provider: string, modelName: string, _token: string, active: boolean = true, role?: 'generation' | 'improvement'): Promise<void> {
   // We keep modelName for backward compatibility in backend if needed, or just as a default
-  await callKeyService('POST', '', { action: 'set-active', provider, modelName, active });
+  await callKeyService('POST', '', { action: 'set-active', provider, modelName, active, role });
 }
 
 export async function updateModels(provider: string, modelGen: string, modelImprove: string, _token: string): Promise<void> {
