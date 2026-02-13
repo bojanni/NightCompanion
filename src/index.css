@@ -96,24 +96,26 @@ body {
   /* Firefox */
 }
 
-/* The Centered Layout Class */
-.standard-page-container {
+/* Container for Centered Pages */
+.page-content-centered {
   width: 100%;
   max-width: 1400px;
-  /* Optional cap to keep things tight */
   min-width: 1000px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 40px;
-  /* Internal breathing room */
+  margin: 0 auto;
+  padding: 2rem;
+  /* Breathing room at the edges */
   display: flex;
   flex-direction: column;
-  items: center;
-  /* Ensures content inside is also centered */
+}
+
+/* Ensure the wrapper allows the background to fill the screen */
+.page-wrapper-full {
+  width: 100%;
+  min-height: 100vh;
 }
 
 /* Ensure children (like your Prompt Generator sections) take full container width */
-.standard-page-container>section,
-.standard-page-container>div {
+.page-content-centered>section,
+.page-content-centered>div {
   width: 100%;
 }

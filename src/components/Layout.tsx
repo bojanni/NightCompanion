@@ -86,8 +86,10 @@ export default function Layout({ onSignOut }: LayoutProps) {
       </aside>
 
       <main className="flex-1 ml-64">
-        <div className={isFullWidthPage ? 'p-8' : 'py-8 standard-page-container'}>
-          <Outlet />
+        <div className="page-wrapper-full">
+          <div className={isFullWidthPage ? "w-full p-8" : "page-content-centered"}>
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
