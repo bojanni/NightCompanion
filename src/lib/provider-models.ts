@@ -2,6 +2,7 @@ export interface ModelOption {
   id: string;
   name: string;
   description?: string;
+  provider?: string;
 }
 
 export const PROVIDER_MODELS: Record<string, ModelOption[]> = {
@@ -46,5 +47,5 @@ export function getModelsForProvider(provider: string): ModelOption[] {
 
 export function getDefaultModelForProvider(provider: string): string {
   const models = PROVIDER_MODELS[provider];
-  return models && models.length > 0 ? models[0].id : '';
+  return models?.[0]?.id || '';
 }
