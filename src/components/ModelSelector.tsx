@@ -38,7 +38,7 @@ export default function ModelSelector({
 
     const dropdownRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
-    const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     // Close on click outside
     useEffect(() => {
@@ -196,8 +196,8 @@ export default function ModelSelector({
                             <button
                                 onClick={() => setFilterProvider('all')}
                                 className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${filterProvider === 'all'
-                                        ? 'bg-slate-100 text-slate-900 border-slate-100'
-                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                                    ? 'bg-slate-100 text-slate-900 border-slate-100'
+                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
                                     }`}
                             >
                                 All Remote
@@ -207,8 +207,8 @@ export default function ModelSelector({
                                     key={p.id}
                                     onClick={() => setFilterProvider(p.id)}
                                     className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${filterProvider === p.id
-                                            ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
-                                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
+                                        ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
                                         }`}
                                 >
                                     {p.name}
@@ -218,7 +218,7 @@ export default function ModelSelector({
                     </div>
 
                     {/* List Content */}
-                    <div className="overflow-y-auto flex-1 p-2 space-y-4 dropdown-scroll" ref={listRef}>
+                    <div className="overflow-y-auto flex-1 p-2 space-y-4 dropdown-scroll" ref={listRef} role="listbox">
 
                         {/* Local Models (Pinned) */}
                         {localModels.length > 0 && (
@@ -278,9 +278,9 @@ export default function ModelSelector({
 }
 
 // ForwardRef for scrolling
-const ModelItem = forwardRef<HTMLButtonElement, {
+const ModelItem = forwardRef<HTMLDivElement, {
     model: ModelOption,
-    providerName?: string,
+    providerName: string | undefined,
     isSelected: boolean,
     isActive: boolean,
     onSelect: () => void
@@ -289,66 +289,63 @@ const ModelItem = forwardRef<HTMLButtonElement, {
 
     return (
         <div
-            className={`group rounded-lg transition-all border ${isActive ? 'ring-1 ring-teal-500/50 bg-slate-800' : ''
+            ref={ref}
+            role="option"
+            aria-selected={isSelected}
+            onClick={onSelect}
+            className={`group rounded-lg transition-all border cursor-pointer w-full text-left px-3 py-2.5 flex items-start gap-3 focus:outline-none ${isActive ? 'ring-1 ring-teal-500/50 bg-slate-800' : ''
                 } ${isSelected
                     ? 'bg-teal-500/10 border-teal-500/30'
                     : 'hover:bg-slate-800 border-transparent hover:border-slate-700'
                 }`}
         >
-            <button
-                ref={ref}
-                onClick={onSelect}
-                className="w-full text-left px-3 py-2.5 flex items-start gap-3 focus:outline-none"
-                tabIndex={-1} // Controlled by container arrow keys
-            >
-                {/* Icon */}
-                <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-teal-500/20 text-teal-300' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-300'
-                    }`}>
-                    <Cpu size={16} />
+            {/* Icon */}
+            <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-teal-500/20 text-teal-300' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-300'
+                }`}>
+                <Cpu size={16} />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <span className={`text-sm font-medium truncate ${isSelected ? 'text-teal-200' : 'text-slate-200'}`}>
+                        {model.name}
+                    </span>
+                    {isSelected && <Check size={14} className="text-teal-400 flex-shrink-0" />}
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <span className={`text-sm font-medium truncate ${isSelected ? 'text-teal-200' : 'text-slate-200'}`}>
-                            {model.name}
-                        </span>
-                        {isSelected && <Check size={14} className="text-teal-400 flex-shrink-0" />}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
-                            {providerName || model.provider}
-                        </span>
-                        {model.id.includes('free') && (
-                            <span className="text-emerald-400">Free</span>
-                        )}
-                    </div>
-
-                    {/* Description - Summary */}
-                    {model.description && (
-                        <div className="relative group/desc">
-                            <p
-                                className={`text-[11px] leading-relaxed text-slate-400 ${expanded ? '' : 'line-clamp-2'}`}
-                                title={!expanded ? model.description : undefined}
-                            >
-                                {model.description}
-                            </p>
-                            {model.description.length > 80 && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                                    className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors focus:underline focus:outline-none"
-                                    tabIndex={-1} // Prevent tabbing to this for now to keep nav simple
-                                >
-                                    {expanded ? 'Show less' : 'More info'}
-                                    <Info size={10} />
-                                </button>
-                            )}
-                        </div>
+                <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                        {providerName || model.provider}
+                    </span>
+                    {model.id.includes('free') && (
+                        <span className="text-emerald-400">Free</span>
                     )}
                 </div>
-            </button>
+
+                {/* Description - Summary */}
+                {model.description && (
+                    <div className="relative group/desc">
+                        <p
+                            className={`text-[11px] leading-relaxed text-slate-400 ${expanded ? '' : 'line-clamp-2'}`}
+                            title={!expanded ? model.description : undefined}
+                        >
+                            {model.description}
+                        </p>
+                        {model.description.length > 80 && (
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                                className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors focus:underline focus:outline-none"
+                                tabIndex={-1} // Prevent tabbing to this for now to keep nav simple
+                            >
+                                {expanded ? 'Show less' : 'More info'}
+                                <Info size={10} />
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 });
