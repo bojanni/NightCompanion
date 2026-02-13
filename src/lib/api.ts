@@ -299,6 +299,11 @@ class QueryBuilder {
         return this;
     }
 
+    delete() {
+        this.method = 'DELETE';
+        return this;
+    }
+
     update(data: any) {
         this.method = 'PUT';
         // Strip user_id
