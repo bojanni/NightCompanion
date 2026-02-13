@@ -273,9 +273,9 @@ export default function Settings({ }: SettingsProps) {
               <h2 className="text-lg font-semibold text-white">Cloud Providers</h2>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl relative z-10">
               {/* Provider Selector Tabs */}
-              <div className="flex items-center overflow-x-auto border-b border-slate-800 no-scrollbar">
+              <div className="flex items-center overflow-x-auto border-b border-slate-800 no-scrollbar rounded-t-2xl">
                 {PROVIDERS.map(p => {
                   const isConfigured = keys.some(k => k.provider === p.id);
                   const isActive = activeProvider?.provider === p.id;
@@ -285,8 +285,8 @@ export default function Settings({ }: SettingsProps) {
                       key={p.id}
                       onClick={() => setSelectedProviderId(p.id)}
                       className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${selectedProviderId === p.id
-                          ? 'text-teal-400 border-teal-500 bg-slate-800/50'
-                          : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/30'
+                        ? 'text-teal-400 border-teal-500 bg-slate-800/50'
+                        : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/30'
                         }`}
                     >
                       <span className={isActive ? 'text-amber-400' : ''}>{p.name}</span>
@@ -764,8 +764,8 @@ function ProviderConfigForm({
             onClick={handleSetActive}
             disabled={isSettingActive}
             className={`w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${isActive
-                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
               }`}
           >
             {isSettingActive ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
