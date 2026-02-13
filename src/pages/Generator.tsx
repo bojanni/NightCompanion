@@ -7,7 +7,6 @@ import AITools, { AIToolsRef } from '../components/AITools';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
-interface GeneratorProps { }
 
 type Mode = 'random' | 'guided' | 'remix' | 'manual';
 
@@ -41,6 +40,10 @@ export default function Generator() {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).manualInitial || { prompts: [], negative: '' }; } catch { /* ignore */ } return { prompts: [], negative: '' };
   });
 
+  const [isAutofillEnabled, setIsAutofillEnabled] = useState(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).isAutofillEnabled ?? false; } catch { /* ignore */ } return false;
+  });
+
 
   // Load recent prompts on mount
   useEffect(() => {
@@ -58,9 +61,9 @@ export default function Generator() {
     // We don't persist manualInitial because ManualGenerator handles its own persistence.
     // If we persist it here, it would overwrite the user's latest edits in ManualGenerator
     // with the stale "initial" state on refresh.
-    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt };
+    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, isAutofillEnabled };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt]);
+  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, isAutofillEnabled]);
 
   async function loadRecentPrompts() {
     const { data } = await db
@@ -210,12 +213,22 @@ export default function Generator() {
           onPromptGenerated={(prompt) => {
             setGuidedInitial(prompt);
             setRandomPrompt(prompt);
+            if (isAutofillEnabled && aiToolsRef.current) {
+              aiToolsRef.current.setInputContent(prompt);
+            }
           }}
-          onNegativePromptChanged={setRandomNegativePrompt}
+          onNegativePromptChanged={(neg) => {
+            setRandomNegativePrompt(neg);
+            if (isAutofillEnabled && aiToolsRef.current) {
+              aiToolsRef.current.setNegativeInputContent(neg);
+            }
+          }}
           maxWords={maxWords}
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
           onCheckExternalFields={handleCheckExternalFields}
+          isAutofillEnabled={isAutofillEnabled}
+          setIsAutofillEnabled={setIsAutofillEnabled}
         />
       )}
 

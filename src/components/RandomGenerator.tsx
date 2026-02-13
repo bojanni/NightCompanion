@@ -18,9 +18,11 @@ interface RandomGeneratorProps {
   initialPrompt?: string;
   initialNegativePrompt?: string;
   onCheckExternalFields?: () => boolean;
+  isAutofillEnabled: boolean;
+  setIsAutofillEnabled: (v: boolean) => void;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, isAutofillEnabled, setIsAutofillEnabled }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
@@ -36,7 +38,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     async function fetchActiveModel() {
       try {
         const { data: session } = await db.auth.getSession();
-        const token = session.session?.access_token || '';
 
         // Check local endpoints first
         const { data: localData } = await supabase
@@ -52,7 +53,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         }
 
         // Check cloud providers
-        const keys = await listApiKeys(token);
+        const keys = await listApiKeys();
         const activeKey = keys.find(k => k.is_active);
 
         if (activeKey) {
@@ -188,14 +189,14 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         <p className="text-sm text-slate-400 mb-5">Generate a random prompt based on your preferences</p>
 
         <div className="flex flex-wrap justify-center gap-3 mb-5">
-          {[
-            { key: 'dreamy' as const, label: 'Keep it dreamy' },
-            { key: 'characters' as const, label: 'Include characters' },
-            { key: 'cinematic' as const, label: 'Cinematic style' },
-          ].map(({ key, label }) => (
+          {([
+            { key: 'dreamy', label: 'Keep it dreamy' },
+            { key: 'characters', label: 'Include characters' },
+            { key: 'cinematic', label: 'Cinematic style' },
+          ] as const).map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setFilters((f: any) => ({ ...f, [key]: !f[key] }))}
+              onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${filters[key]
                 ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
                 : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
@@ -206,23 +207,35 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
           ))}
         </div>
 
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={handleGenerate}
-            disabled={saving || regenerating}
-            className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
-          >
-            Standard Random
-          </button>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={handleGenerate}
+              disabled={saving || regenerating}
+              className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
+            >
+              Standard Random
+            </button>
 
-          <button
-            onClick={handleMagicRandom}
-            disabled={saving || regenerating}
-            className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
-          >
-            {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {regenerating ? 'Generating...' : 'Magic Random (AI)'}
-          </button>
+            <button
+              onClick={handleMagicRandom}
+              disabled={saving || regenerating}
+              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
+            >
+              {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {regenerating ? 'Generating...' : 'Magic Random (AI)'}
+            </button>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isAutofillEnabled}
+              onChange={(e) => setIsAutofillEnabled(e.target.checked)}
+              className="w-4 h-4 rounded-md border-slate-600 bg-slate-800/50 text-amber-500 focus:ring-amber-500/50"
+            />
+            Auto-fill Improvement AI
+          </label>
         </div>
       </div>
 

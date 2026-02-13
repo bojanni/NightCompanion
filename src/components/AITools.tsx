@@ -30,6 +30,7 @@ interface AIToolsProps {
 export interface AIToolsRef {
   hasContent: () => boolean;
   clearContent: () => void;
+  setInputContent: (content: string) => void;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -50,7 +51,9 @@ function loadAIToolsState<T>(key: string, fallback: T): T {
       const parsed = JSON.parse(s);
       return parsed[key] !== undefined ? parsed[key] : fallback;
     }
-  } catch { }
+  } catch {
+    // ignore
+  }
   return fallback;
 }
 
@@ -89,7 +92,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   const [copied, setCopied] = useState('');
   const [saving, setSaving] = useState('');
 
-  const [suggestedModel, setSuggestedModel] = useState<any>(null);
+  const [suggestedModel, setSuggestedModel] = useState<unknown>(null);
   const [activeModel, setActiveModel] = useState<string>('');
 
   useImperativeHandle(ref, () => ({
@@ -101,12 +104,16 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       return false;
     },
     clearContent: () => {
-      if (tab === 'improve') {
-        setImproveInput('');
-        setNegativeInput('');
-        setImproveResult('');
-        setNegativeResult('');
-      }
+      setImproveInput('');
+      setNegativeInput('');
+      setImproveResult('');
+      setNegativeResult('');
+    },
+    setInputContent: (content: string) => {
+      setImproveInput(content);
+    },
+    setNegativeInputContent: (content: string) => {
+      setNegativeInput(content);
     }
   }));
 
