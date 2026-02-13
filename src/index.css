@@ -191,4 +191,5 @@ body {
   min-width: 1000px;
   max-width: 1400px;
   margin: 0 auto !important;
+  /* This centers the inner div if flex behavior allows */
 }

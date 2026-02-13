@@ -151,8 +151,18 @@ class QueryBuilder {
         return this;
     }
 
+    gt(column: string, value: any) {
+        this.filters[column] = `gt.${value}`;
+        return this;
+    }
+
     lte(column: string, value: any) {
         this.filters[column] = `lte.${value}`;
+        return this;
+    }
+
+    lt(column: string, value: any) {
+        this.filters[column] = `lt.${value}`;
         return this;
     }
 
@@ -312,10 +322,6 @@ class QueryBuilder {
         return this;
     }
 
-    delete() {
-        this.method = 'DELETE';
-        return this;
-    }
 }
 
 export const db = new LocalApiClient() as any;
