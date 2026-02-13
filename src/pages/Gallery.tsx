@@ -437,7 +437,7 @@ export default function Gallery({ }: GalleryProps) {
             <StarRating rating={filterRating} onChange={handleFilterRatingChange} size={16} />
           </div>
         </div>
-        <GridDensitySelector storageKey="gallery-grid-density" defaultValue={4} />
+        <GridDensitySelector storageKey="gallery-grid-density" defaultValue={3} />
       </div>
 
       {collections.length > 0 && (

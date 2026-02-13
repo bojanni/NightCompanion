@@ -438,7 +438,7 @@ export default function Prompts({ }: PromptsProps) {
             ))}
           </div>
         </div>
-        <GridDensitySelector storageKey="prompts-grid-density" defaultValue={2} />
+        <GridDensitySelector storageKey="prompts-grid-density" defaultValue={3} />
       </div>
 
       {showFilters && tags.length > 0 && (

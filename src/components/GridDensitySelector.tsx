@@ -7,7 +7,7 @@ interface GridDensitySelectorProps {
     defaultValue?: number;
 }
 
-export default function GridDensitySelector({ storageKey, defaultValue = 4 }: GridDensitySelectorProps) {
+export default function GridDensitySelector({ storageKey, defaultValue = 3 }: GridDensitySelectorProps) {
     const [density, setDensity] = useState(() => {
         const saved = localStorage.getItem(storageKey);
         return saved ? parseInt(saved, 10) : defaultValue;

@@ -28,7 +28,14 @@ export default function PromptDetailOverlay({
             if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = 'unset';
+        };
     }, [onNext, onPrev, onClose]);
 
     const mainImage = images && images.length > 0 ? images[0] : null;
