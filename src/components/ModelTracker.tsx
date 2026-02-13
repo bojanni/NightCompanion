@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus, Trash2, Trophy, TrendingUp, BarChart3,
   Save, Loader2, CheckCircle2,
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
 import { MODELS, CATEGORY_OPTIONS, type ModelInfo } from '../lib/models-data';
+import type { GalleryItem } from '../lib/types';
 import StarRating from './StarRating';
 
-interface ModelTrackerProps { }
-
+// Define interfaces before component
 interface UsageEntry {
   id: string;
   model_id: string;
@@ -29,7 +29,7 @@ interface ModelStats {
   topCategory: string;
 }
 
-export default function ModelTracker({ }: ModelTrackerProps) {
+export default function ModelTracker() {
   const [entries, setEntries] = useState<UsageEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -42,17 +42,73 @@ export default function ModelTracker({ }: ModelTrackerProps) {
   const [formKeeper, setFormKeeper] = useState(false);
   const [formNotes, setFormNotes] = useState('');
 
-  useEffect(() => {
-    loadEntries();
+  const loadEntries = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [usageRes, galleryRes] = await Promise.all([
+        supabase
+          .from('model_usage')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('gallery_items')
+          .select('*')
+          .not('model', 'is', null) // Only items with a model
+          .order('created_at', { ascending: false })
+      ]);
+
+      const usageData = (usageRes.data as UsageEntry[]) ?? [];
+      const galleryData = (galleryRes.data as GalleryItem[]) ?? [];
+
+      // Convert gallery items to UsageEntry format
+      const galleryEntries: UsageEntry[] = galleryData.map((item) => {
+        // Try to find model ID from name if stored as name
+        const modelId = findModelId(item.model || '');
+
+        return {
+          id: `gallery-${item.id}`, // Prefix to avoid collision
+          model_id: modelId,
+          prompt_used: item.prompt_used || '',
+          category: 'gallery', // Default category for gallery items
+          rating: item.rating || 0,
+          is_keeper: true, // Gallery items are keepers by definition
+          notes: item.notes || '',
+          created_at: item.created_at
+        };
+      }).filter(e => e.model_id); // Filter out items where model couldn't be identified
+
+      // Merge and sort
+      const allEntries = [...usageData, ...galleryEntries].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setEntries(allEntries);
+    } catch (e) {
+      console.error('Failed to load stats:', e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  async function loadEntries() {
-    const { data } = await supabase
-      .from('model_usage')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setEntries(data ?? []);
-    setLoading(false);
+  useEffect(() => {
+    loadEntries();
+  }, [loadEntries]);
+
+  function findModelId(modelNameOrId: string): string {
+    if (!modelNameOrId) return '';
+    // Check if it's already a valid ID
+    const directMatch = MODELS.find(m => m.id === modelNameOrId);
+    if (directMatch) return directMatch.id;
+
+    // Check if it's a name
+    const nameMatch = MODELS.find(m => m.name.toLowerCase() === modelNameOrId.toLowerCase());
+    if (nameMatch) return nameMatch.id;
+
+    // Try partial match on name
+    const partialMatch = MODELS.find(m => m.name.toLowerCase().includes(modelNameOrId.toLowerCase()));
+    if (partialMatch) return partialMatch.id;
+
+    return '';
   }
 
   async function handleSave() {
@@ -165,7 +221,7 @@ export default function ModelTracker({ }: ModelTrackerProps) {
               </div>
               <p className="text-base font-semibold text-white">{mostUsed.model.name}</p>
               <p className="text-xs text-slate-400 mt-0.5">
-                {mostUsed.totalUses} generations, mainly {mostUsed.topCategory}
+                {mostUsed.totalUses} generations, mainly {mostUsed.topCategory || 'general'}
               </p>
             </div>
           )}
@@ -203,6 +259,7 @@ export default function ModelTracker({ }: ModelTrackerProps) {
             <div>
               <label className="block text-xs text-slate-400 mb-1">Model</label>
               <select
+                aria-label="Select Model"
                 value={formModelId}
                 onChange={(e) => setFormModelId(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/40"
@@ -216,6 +273,7 @@ export default function ModelTracker({ }: ModelTrackerProps) {
             <div>
               <label className="block text-xs text-slate-400 mb-1">Category</label>
               <select
+                aria-label="Select Category"
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm focus:outline-none"
@@ -348,6 +406,7 @@ export default function ModelTracker({ }: ModelTrackerProps) {
                 )}
                 <span className="text-slate-500 truncate flex-1">{entry.prompt_used || entry.notes || ''}</span>
                 <button
+                  title="Delete entry"
                   onClick={() => handleDelete(entry.id)}
                   className="opacity-0 group-hover:opacity-100 p-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0"
                 >

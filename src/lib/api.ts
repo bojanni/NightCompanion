@@ -20,7 +20,7 @@ class LocalApiClient {
                 error: null
             };
         },
-        onAuthStateChange: (callback: any) => {
+        onAuthStateChange: (callback: (event: string, session: any) => void) => {
             this.auth.getSession().then(({ data }) => {
                 if (data.session) {
                     callback('SIGNED_IN', data.session);
@@ -47,7 +47,7 @@ class LocalApiClient {
 
     // Mock functions object for edge function calls
     functions = {
-        invoke: async (functionName: string, options?: any) => {
+        invoke: async (functionName: string, options?: { body?: Record<string, unknown> }) => {
             console.log(`🔄 Edge function call intercepted: ${functionName}`);
 
             // Redirect edge function calls to local API
@@ -112,7 +112,7 @@ class LocalApiClient {
 class QueryBuilder {
     table: string;
     url: string;
-    filters: Record<string, any> = {};
+    filters: Record<string, string | number | boolean | null> = {};
     orderBy: { column: string; ascending: boolean } | null = null;
     limitValue: number | null = null;
     offsetValue: number | null = null;
@@ -125,15 +125,18 @@ class QueryBuilder {
         this.url = `${API_URL}/${table}`;
     }
 
-    select(_columns = '*', _options?: any) {
+    select(_columns = '*', _options?: unknown) {
         if (this.method === 'POST' || this.method === 'PUT' || this.method === 'DELETE') {
             return this;
         }
         this.method = 'GET';
+        // Suppress unused vars
+        void _columns;
+        void _options;
         return this;
     }
 
-    eq(column: string, value: any) {
+    eq(column: string, value: string | number | boolean | null) {
         if (column === 'user_id') {
             // Ignore user_id filters for local mode
             return this;
@@ -144,33 +147,33 @@ class QueryBuilder {
         return this;
     }
 
-    neq(column: string, value: any) {
+    neq(column: string, value: string | number | boolean | null) {
         if (column === 'user_id') return this;
         this.filters[column] = `neq.${value}`;
         return this;
     }
 
-    gte(column: string, value: any) {
+    gte(column: string, value: string | number | boolean | null) {
         this.filters[column] = `gte.${value}`;
         return this;
     }
 
-    gt(column: string, value: any) {
+    gt(column: string, value: string | number | boolean | null) {
         this.filters[column] = `gt.${value}`;
         return this;
     }
 
-    lte(column: string, value: any) {
+    lte(column: string, value: string | number | boolean | null) {
         this.filters[column] = `lte.${value}`;
         return this;
     }
 
-    lt(column: string, value: any) {
+    lt(column: string, value: string | number | boolean | null) {
         this.filters[column] = `lt.${value}`;
         return this;
     }
 
-    in(column: string, values: any[]) {
+    in(column: string, values: (string | number)[]) {
         if (column === 'user_id') return this;
         if (values && values.length > 0) {
             this.filters[column] = `in.(${values.join(',')})`;
@@ -220,7 +223,7 @@ class QueryBuilder {
         });
     }
 
-    async then(resolve: any, _reject?: any) {
+    async then(resolve: (value: any) => void, _reject?: (reason?: any) => void) {
         try {
             let url = this.url;
             const params = new URLSearchParams();
@@ -283,27 +286,37 @@ class QueryBuilder {
         }
     }
 
-    insert(data: any | any[]) {
+    insert(data: Record<string, unknown> | Record<string, unknown>[]) {
         this.method = 'POST';
         if (Array.isArray(data)) {
             // Strip user_id from each item
-            this.body = data.map(({ user_id: _user_id, ...rest }) => rest);
+            this.body = data.map((item) => {
+                const clean = { ...item };
+                delete clean.user_id;
+                return clean;
+            });
         } else {
             // Strip user_id
-            const { user_id: _user_id, ...cleanData } = data;
+            const cleanData = { ...data };
+            delete cleanData.user_id;
             this.body = cleanData;
         }
         return this;
     }
 
-    upsert(data: any | any[], options?: { onConflict: string }) {
+    upsert(data: Record<string, unknown> | Record<string, unknown>[], options?: { onConflict: string }) {
         this.method = 'POST';
         if (Array.isArray(data)) {
             // Strip user_id from each item
-            this.body = data.map(({ user_id: _user_id, ...rest }) => rest);
+            this.body = data.map((item) => {
+                const clean = { ...item };
+                delete clean.user_id;
+                return clean;
+            });
         } else {
             // Strip user_id
-            const { user_id: _user_id, ...cleanData } = data;
+            const cleanData = { ...data };
+            delete cleanData.user_id;
             this.body = cleanData;
         }
 
@@ -318,10 +331,11 @@ class QueryBuilder {
         return this;
     }
 
-    update(data: any) {
+    update(data: Record<string, unknown>) {
         this.method = 'PUT';
         // Strip user_id
-        const { user_id: _user_id, ...cleanData } = data;
+        const cleanData = { ...data };
+        delete cleanData.user_id;
         this.body = cleanData;
         return this;
     }
