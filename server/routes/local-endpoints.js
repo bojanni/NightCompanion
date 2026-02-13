@@ -66,8 +66,7 @@ router.put('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { provider, endpoint_url, model_name, is_active } = req.body;
-
+        const isActiveVal = is_active !== false;
         const result = await pool.query(
             `UPDATE user_local_endpoints 
              SET provider = COALESCE($1, provider),
@@ -81,6 +80,15 @@ router.patch('/:id', async (req, res) => {
              RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, created_at, updated_at`,
             [provider, endpoint_url, model_name, is_active, req.body.is_active_gen, req.body.is_active_improve, id]
         );
+
+        // Sync legacy is_active if role flags were provided
+        if (req.body.is_active_gen !== undefined || req.body.is_active_improve !== undefined) {
+            await pool.query(`
+                UPDATE user_local_endpoints 
+                SET is_active = (is_active_gen OR is_active_improve)
+                WHERE id = $1
+            `, [id]);
+        }
 
         res.json(result.rows[0]);
     } catch (err) {

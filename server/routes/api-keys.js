@@ -58,8 +58,8 @@ router.post('/', async (req, res) => {
             const isFirst = existing.rows.length === 0;
 
             await pool.query(
-                `INSERT INTO user_api_keys (provider, encrypted_key, key_hint, model_name, is_active)
-                  VALUES ($1, $2, $3, $4, $5)
+                `INSERT INTO user_api_keys (provider, encrypted_key, key_hint, model_name, is_active, is_active_gen, is_active_improve)
+                  VALUES ($1, $2, $3, $4, $5, $5, $5)
                   ON CONFLICT (provider) 
                   DO UPDATE SET encrypted_key = $2, key_hint = $3, model_name = $4, updated_at = NOW()`,
                 [provider, encrypted, hint, modelName || null, isFirst]
@@ -109,18 +109,20 @@ router.post('/', async (req, res) => {
                 await pool.query('UPDATE user_local_endpoints SET is_active = false, is_active_gen = false, is_active_improve = false');
 
                 if (isActive) {
-                    const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active = true, is_active_gen = true, is_active_improve = true WHERE provider = $1 RETURNING *',
+                    await pool.query(
+                        'UPDATE user_api_keys SET is_active = true, is_active_gen = true, is_active_improve = true WHERE provider = $1',
                         [provider]
                     );
-                    if (updateKeys.rows.length === 0) {
-                        await pool.query(
-                            'UPDATE user_local_endpoints SET is_active = true, is_active_gen = true, is_active_improve = true WHERE provider = $1',
-                            [provider]
-                        );
-                    }
+                    await pool.query(
+                        'UPDATE user_local_endpoints SET is_active = true, is_active_gen = true, is_active_improve = true WHERE provider = $1',
+                        [provider]
+                    );
                 }
             }
+
+            // ✨ CRITICAL: Sync legacy is_active flag with new roles (is_active = gen OR improve)
+            await pool.query('UPDATE user_api_keys SET is_active = (is_active_gen OR is_active_improve)');
+            await pool.query('UPDATE user_local_endpoints SET is_active = (is_active_gen OR is_active_improve)');
             res.json({ success: true, active: isActive, role });
         } else if (action === 'update-models') {
             const { modelGen, modelImprove } = req.body;

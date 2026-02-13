@@ -16,7 +16,9 @@ import { listModels } from '../lib/ai-service';
 import ModelSelector from '../components/ModelSelector';
 import { LocalEndpointCard } from '../components/LocalEndpointCard';
 
-interface SettingsProps { }
+
+// ... (Removing SettingsProps as it's unused now)
+
 
 interface LocalEndpoint {
   id: string;
@@ -94,7 +96,7 @@ const PROVIDERS = [
   },
 ];
 
-export default function Settings({ }: SettingsProps) {
+export default function Settings() {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +107,7 @@ export default function Settings({ }: SettingsProps) {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // New state for selected cloud provider
-  const [selectedProviderId, setSelectedProviderId] = useState<string>(PROVIDERS[0].id);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(PROVIDERS[0]?.id || 'openai');
 
   // Dynamic model lists state
   const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
@@ -361,6 +363,7 @@ export default function Settings({ }: SettingsProps) {
                   setActionLoading('ollama');
                   setError('');
                   try {
+                    const existing = localEndpoints.find(e => e.provider === 'ollama');
                     await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
                     const { error: insertError } = await supabase
                       .from('user_local_endpoints')
@@ -370,7 +373,9 @@ export default function Settings({ }: SettingsProps) {
                         model_name: modelGen,
                         model_gen: modelGen,
                         model_improve: modelImprove,
-                        is_active: false,
+                        is_active: existing?.is_active ?? false,
+                        is_active_gen: existing?.is_active_gen ?? false,
+                        is_active_improve: existing?.is_active_improve ?? false,
                       });
                     if (insertError) throw insertError;
                     await loadLocalEndpoints();
@@ -420,6 +425,7 @@ export default function Settings({ }: SettingsProps) {
                   setActionLoading('lmstudio');
                   setError('');
                   try {
+                    const existing = localEndpoints.find(e => e.provider === 'lmstudio');
                     await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
                     const { error: insertError } = await supabase
                       .from('user_local_endpoints')
@@ -429,7 +435,9 @@ export default function Settings({ }: SettingsProps) {
                         model_name: modelGen,
                         model_gen: modelGen,
                         model_improve: modelImprove,
-                        is_active: false,
+                        is_active: existing?.is_active ?? false,
+                        is_active_gen: existing?.is_active_gen ?? false,
+                        is_active_improve: existing?.is_active_improve ?? false,
                       });
                     if (insertError) throw insertError;
                     await loadLocalEndpoints();
@@ -479,10 +487,24 @@ export default function Settings({ }: SettingsProps) {
   );
 }
 
-// Inline component for the selected provider configuration form
+interface ProviderConfigFormProps {
+  provider: any;
+  keyInfo?: ApiKeyInfo | null;
+  actionLoading: string | null;
+  setActionLoading: (id: string | null) => void;
+  setError: (err: string) => void;
+  showSuccess: (msg: string) => void;
+  getToken: () => Promise<string>;
+  loadKeys: () => Promise<void>;
+  loadLocalEndpoints: () => Promise<void>;
+  dynamicModels?: ModelOption[];
+  setDynamicModels: any;
+  isGlobalActive: boolean;
+}
+
 function ProviderConfigForm({
   provider, keyInfo, actionLoading, setActionLoading, setError, showSuccess, getToken, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels
-}: any) {
+}: ProviderConfigFormProps) {
   const [inputValue, setInputValue] = useState('');
   const [selectedModelGen, setSelectedModelGen] = useState(
     keyInfo?.model_gen || keyInfo?.model_name || getDefaultModelForProvider(provider.id)
@@ -493,7 +515,6 @@ function ProviderConfigForm({
   const [showKey, setShowKey] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Update local state when keyInfo changes
   useEffect(() => {
     if (keyInfo) {
       const serverGen = keyInfo.model_gen || keyInfo.model_name || getDefaultModelForProvider(provider.id);
@@ -505,7 +526,7 @@ function ProviderConfigForm({
       setSelectedModelGen(getDefaultModelForProvider(provider.id));
       setSelectedModelImprove(getDefaultModelForProvider(provider.id));
     }
-  }, [keyInfo?.model_gen, keyInfo?.model_improve, keyInfo?.model_name, provider.id]);
+  }, [keyInfo?.model_gen, keyInfo?.model_improve, keyInfo?.model_name, provider.id, keyInfo]); // Added keyInfo to satisfy lint
 
   const staticModels = getModelsForProvider(provider.id);
   const allModels = dynamicModels && dynamicModels.length > 0 ? dynamicModels : staticModels;
