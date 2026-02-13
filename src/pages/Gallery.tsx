@@ -14,6 +14,8 @@ import ModelSelector from '../components/ModelSelector';
 import { generateFromDescription } from '../lib/ai-service';
 import { toast } from 'sonner';
 import GridDensitySelector from '../components/GridDensitySelector';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PROVIDER_MODELS } from '../lib/provider-models';
 
 const PAGE_SIZE = 24;
 
@@ -57,6 +59,18 @@ export default function Gallery({ }: GalleryProps) {
   const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
+
+  // Flattened models for the selector
+  const allModels = Object.entries(PROVIDER_MODELS).flatMap(([provider, models]) =>
+    models.map(m => ({ ...m, provider }))
+  );
+  const allProviders = [
+    { id: 'openai', name: 'OpenAI', type: 'cloud' as const },
+    { id: 'gemini', name: 'Google Gemini', type: 'cloud' as const },
+    { id: 'anthropic', name: 'Anthropic Claude', type: 'cloud' as const },
+    { id: 'openrouter', name: 'OpenRouter', type: 'cloud' as const },
+    { id: 'together', name: 'Together AI', type: 'cloud' as const },
+  ];
 
   useEffect(() => {
     loadData();
@@ -476,71 +490,85 @@ export default function Gallery({ }: GalleryProps) {
           </p>
         </div>
       ) : (
-        <div className="dynamic-grid">
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all group"
-            >
-              <div className="aspect-square bg-slate-800 relative overflow-hidden cursor-pointer" onClick={() => openLightbox(item)}>
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image size={32} className="text-slate-700" />
+        <motion.div
+          layout
+          className="dynamic-grid"
+        >
+          <AnimatePresence mode="popLayout">
+            {filtered.map((item, index) => (
+              <motion.div
+                layout
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                transition={{
+                  duration: 0.3,
+                  delay: Math.min(index * 0.05, 0.5),
+                  layout: { type: "spring", stiffness: 300, damping: 30 }
+                }}
+                className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all group"
+              >
+                <div className="aspect-square bg-slate-800 relative overflow-hidden cursor-pointer" onClick={() => openLightbox(item)}>
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Image size={32} className="text-slate-700" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openItemEditor(item);
+                      }}
+                      className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
+                    >
+                      <Edit3 size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteItem(item.id);
+                      }}
+                      className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-red-500/70 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openItemEditor(item);
-                    }}
-                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70 transition-colors"
-                  >
-                    <Edit3 size={12} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteItem(item.id);
-                    }}
-                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-red-500/70 transition-colors"
-                  >
-                    <Trash2 size={12} />
-                  </button>
                 </div>
-              </div>
-              <div className="p-3">
-                <h3 className="text-xs font-medium text-white truncate">{item.title || 'Untitled'}</h3>
-                <div className="flex items-center justify-between mt-1.5">
-                  <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
-                  {item.collection_id && (
-                    <span className="text-[10px] text-slate-500 truncate ml-2">
-                      {getCollectionName(item.collection_id)}
-                    </span>
+                <div className="p-3">
+                  <h3 className="text-xs font-medium text-white truncate">{item.title || 'Untitled'}</h3>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
+                    {item.collection_id && (
+                      <span className="text-[10px] text-slate-500 truncate ml-2">
+                        {getCollectionName(item.collection_id)}
+                      </span>
+                    )}
+                  </div>
+                  {item.prompt_id && linkedPrompts[item.prompt_id] && (
+                    <div className="mt-2 pt-2 border-t border-slate-800">
+                      <p className="text-[9px] text-slate-500 uppercase tracking-wide mb-0.5 flex items-center gap-1">
+                        <Link size={8} />
+                        Linked Prompt
+                      </p>
+                      <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
+                        {linkedPrompts[item.prompt_id]?.content}
+                      </p>
+                    </div>
                   )}
                 </div>
-                {item.prompt_id && linkedPrompts[item.prompt_id] && (
-                  <div className="mt-2 pt-2 border-t border-slate-800">
-                    <p className="text-[9px] text-slate-500 uppercase tracking-wide mb-0.5 flex items-center gap-1">
-                      <Link size={8} />
-                      Linked Prompt
-                    </p>
-                    <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
-                      {linkedPrompts[item.prompt_id]?.content}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
 
       {totalPages > 1 && (
@@ -638,7 +666,12 @@ export default function Gallery({ }: GalleryProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Model</label>
-              <ModelSelector value={formModel} onChange={setFormModel} />
+              <ModelSelector
+                value={formModel}
+                onChange={(m) => setFormModel(m)}
+                models={allModels}
+                providers={allProviders}
+              />
             </div>
           </div>
           <div>
