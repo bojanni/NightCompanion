@@ -48,9 +48,14 @@ const createCrudRouter = (tableName) => {
                         currentIndex += list.length;
                     }
                 } else if (value.startsWith('neq.')) {
-                    conditions.push(`${key} != $${currentIndex + 1}`);
-                    values.push(value.substring(4));
-                    currentIndex++;
+                    const val = value.substring(4);
+                    if (val === 'null') {
+                        conditions.push(`${key} IS NOT NULL`);
+                    } else {
+                        conditions.push(`${key} != $${currentIndex + 1}`);
+                        values.push(val);
+                        currentIndex++;
+                    }
                 } else if (value.startsWith('gte.')) {
                     conditions.push(`${key} >= $${currentIndex + 1}`);
                     values.push(value.substring(4));

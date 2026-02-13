@@ -53,7 +53,7 @@ export default function ModelTracker() {
         supabase
           .from('gallery_items')
           .select('*')
-          .not('model', 'is', null) // Only items with a model
+          .neq('model', null) // Only items with a model
           .order('created_at', { ascending: false })
       ]);
 
