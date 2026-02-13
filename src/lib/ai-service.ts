@@ -24,16 +24,21 @@ async function callAI(action: string, payload: Record<string, unknown>, token: s
   return data.result;
 }
 
-export async function improvePrompt(prompt: string, token: string): Promise<string> {
-  return callAI('improve', { prompt }, token);
+export async function improvePrompt(prompt: string, token: string, apiPreferences?: ApiPreferences): Promise<string> {
+  const payload: Record<string, any> = { prompt };
+  if (apiPreferences) payload.apiPreferences = apiPreferences;
+  return callAI('improve', payload, token);
 }
 
 export async function improvePromptWithNegative(
   prompt: string,
   negativePrompt: string,
-  token: string
+  token: string,
+  apiPreferences?: ApiPreferences
 ): Promise<{ improved: string; negativePrompt: string }> {
-  return callAI('improve-with-negative', { prompt, negativePrompt }, token);
+  const payload: Record<string, any> = { prompt, negativePrompt };
+  if (apiPreferences) payload.apiPreferences = apiPreferences;
+  return callAI('improve-with-negative', payload, token);
 }
 
 export interface DetailedImprovement {
@@ -283,9 +288,12 @@ export async function optimizePromptForModel(
   prompt: string,
   targetModel: string,
   token: string,
-  negativePrompt?: string
+  negativePrompt?: string,
+  apiPreferences?: ApiPreferences
 ): Promise<{ optimizedPrompt: string; negativePrompt?: string }> {
-  return callAI('optimize-for-model', { prompt, targetModel, negativePrompt }, token);
+  const payload: Record<string, any> = { prompt, targetModel, negativePrompt };
+  if (apiPreferences) payload.apiPreferences = apiPreferences;
+  return callAI('optimize-for-model', payload, token);
 }
 
 export interface ModelListItem {

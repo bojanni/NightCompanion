@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { handleAIError } from '../lib/error-handler';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
-import { db } from '../lib/api';
+import { db, supabase } from '../lib/api';
 import { generateRandomPromptAI } from '../lib/ai-service';
+import { listApiKeys } from '../lib/api-keys-service';
+import { getDefaultModelForProvider } from '../lib/provider-models';
 
 interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
@@ -27,6 +29,45 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [saving, setSaving] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [generatedStyle, setGeneratedStyle] = useState<string>('');
+  const [activeModel, setActiveModel] = useState<string>('');
+
+  // Fetch active model (similar to AITools)
+  useEffect(() => {
+    async function fetchActiveModel() {
+      try {
+        const { data: session } = await db.auth.getSession();
+        const token = session.session?.access_token || '';
+
+        // Check local endpoints first
+        const { data: localData } = await supabase
+          .from('user_local_endpoints')
+          .select('*')
+          .eq('is_active', true)
+          .single();
+
+        if (localData) {
+          const modelName = localData.model_gen || localData.model_name;
+          setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
+          return;
+        }
+
+        // Check cloud providers
+        const keys = await listApiKeys(token);
+        const activeKey = keys.find(k => k.is_active);
+
+        if (activeKey) {
+          const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+          setActiveModel(`${providerName} ${model}`);
+        } else {
+          setActiveModel('');
+        }
+      } catch (e) {
+        console.error('Failed to fetch active model', e);
+      }
+    }
+    fetchActiveModel();
+  }, []);
 
   function handleGenerate() {
     if (prompt.trim()) {
@@ -193,6 +234,12 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 <div className="flex items-center gap-2 mb-1 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg w-fit">
                   <Palette size={12} className="text-amber-400" />
                   <span className="text-xs font-medium text-amber-300">Style: {generatedStyle}</span>
+                </div>
+              )}
+              {activeModel && (
+                <div className="flex items-center gap-2 mb-1 px-1">
+                  <Sparkles size={12} className="text-amber-400" />
+                  <span className="text-xs font-medium text-slate-400">Generated with <span className="text-amber-400">{activeModel}</span></span>
                 </div>
               )}
               <textarea

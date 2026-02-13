@@ -149,7 +149,8 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
           .single();
 
         if (localData) {
-          setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${localData.model_name})`);
+          const modelName = localData.model_improve || localData.model_name;
+          setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
           return;
         }
 
@@ -158,7 +159,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         const activeKey = keys.find(k => k.is_active);
 
         if (activeKey) {
-          const model = activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+          const model = activeKey.model_improve || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
           // Format provider name nicely
           const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
           setActiveModel(`${providerName} ${model}`);
@@ -193,6 +194,15 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     try {
       const token = await getToken();
 
+      // Get preferences if any
+      let apiPreferences;
+      try {
+        const saved = localStorage.getItem('promptImproverPrefs');
+        if (saved) apiPreferences = JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse improver prefs', e);
+      }
+
       // If the suggested model doesn't support negative prompts (e.g. DALL-E 3, GPT),
       // we should use the optimize-for-model endpoint which handles merging negatives/cleanup.
       if (!supportsNegativePrompt(suggestedModel?.id)) {
@@ -200,16 +210,17 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
           improveInput,
           suggestedModel?.name || 'DALL-E 3',
           token,
-          negativeInput
+          negativeInput,
+          apiPreferences
         );
         setImproveResult(result.optimizedPrompt);
         setNegativeResult(result.negativePrompt || ''); // Should be empty typically
       } else if (negativeInput.trim()) {
-        const result = await improvePromptWithNegative(improveInput, negativeInput, token);
+        const result = await improvePromptWithNegative(improveInput, negativeInput, token, apiPreferences);
         setImproveResult(result.improved);
         setNegativeResult(result.negativePrompt);
       } else {
-        const result = await improvePrompt(improveInput, token);
+        const result = await improvePrompt(improveInput, token, apiPreferences);
         setImproveResult(result);
       }
     } catch (e) {

@@ -85,7 +85,7 @@ const SYSTEM_PROMPTS = {
 async function getActiveProvider() {
     // Check local endpoint first
     const local = await pool.query(
-        'SELECT provider, endpoint_url, model_name FROM user_local_endpoints WHERE is_active = true'
+        'SELECT provider, endpoint_url, model_name, model_gen, model_improve FROM user_local_endpoints WHERE is_active = true'
     );
     if (local.rows.length > 0) {
         return {
@@ -96,7 +96,7 @@ async function getActiveProvider() {
 
     // Check cloud provider keys
     const cloud = await pool.query(
-        'SELECT provider, encrypted_key, model_name FROM user_api_keys WHERE is_active = true'
+        'SELECT provider, encrypted_key, model_name, model_gen, model_improve FROM user_api_keys WHERE is_active = true'
     );
 
     if (cloud.rows.length > 0) {
@@ -104,7 +104,9 @@ async function getActiveProvider() {
             type: 'cloud',
             provider: cloud.rows[0].provider,
             apiKey: decrypt(cloud.rows[0].encrypted_key),
-            modelName: cloud.rows[0].model_name
+            modelName: cloud.rows[0].model_name,
+            modelGen: cloud.rows[0].model_gen,
+            modelImprove: cloud.rows[0].model_improve
         };
     }
 
@@ -562,6 +564,19 @@ router.post('/', async (req, res) => {
         if (!provider) {
             return res.status(503).json({ error: 'No AI provider configured. Please add an API key in Settings.' });
         }
+
+        // Logic to select model_gen vs model_improve
+        // Default to model_gen (or legacy model_name if not set)
+        let activeModel = provider.modelGen || provider.model_gen || provider.modelName || provider.model_name;
+
+        // For improvement tasks, use model_improve if available
+        if (['improve', 'improve-with-negative', 'improve-detailed', 'diagnose', 'optimize-for-model', 'recommend-models'].includes(action)) {
+            activeModel = provider.modelImprove || provider.model_improve || activeModel;
+        }
+
+        // Apply the selected model to the provider config so callAI uses it
+        provider.modelName = activeModel;
+        provider.model_name = activeModel;
 
         const result = await callAI(provider, systemPrompt, userPrompt, maxTokens);
 

@@ -78,21 +78,39 @@ router.post('/', async (req, res) => {
             const isActive = req.body.active !== false; // Default to true if undefined
 
             if (isActive) {
-                const updateResult = await pool.query(
-                    'UPDATE user_api_keys SET is_active = true, model_name = COALESCE($1, model_name) WHERE provider = $2 RETURNING *',
-                    [modelName, provider]
+                // Determine which table to update based on provider existence
+                // First try user_api_keys
+                const updateKeys = await pool.query(
+                    'UPDATE user_api_keys SET is_active = true WHERE provider = $1 RETURNING *',
+                    [provider]
                 );
 
-                if (updateResult.rows.length === 0) {
-                    return res.status(404).json({ error: 'Provider not found' });
+                if (updateKeys.rows.length === 0) {
+                    // Try user_local_endpoints if not found in keys
+                    const updateLocal = await pool.query(
+                        'UPDATE user_local_endpoints SET is_active = true WHERE provider = $1 RETURNING *',
+                        [provider]
+                    );
+
+                    if (updateLocal.rows.length === 0) {
+                        return res.status(404).json({ error: 'Provider not found' });
+                    }
                 }
             }
             res.json({ success: true, active: isActive });
-        } else if (action === 'update-model') {
+        } else if (action === 'update-models') {
+            const { modelGen, modelImprove } = req.body;
+
+            // Try updating both tables, one will succeed
             await pool.query(
-                'UPDATE user_api_keys SET model_name = $1 WHERE provider = $2',
-                [modelName, provider]
+                'UPDATE user_api_keys SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve) WHERE provider = $3',
+                [modelGen, modelImprove, provider]
             );
+            await pool.query(
+                'UPDATE user_local_endpoints SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve) WHERE provider = $3',
+                [modelGen, modelImprove, provider]
+            );
+
             res.json({ success: true });
         } else {
             // Backward compatibility for standard POST without action

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Key, ExternalLink, Loader2, Check, Trash2, Shield, Zap,
+  Key, ExternalLink, Loader2, Check, Trash2, Shield, Zap, Sparkles,
   Eye, EyeOff, RefreshCw, CircleDot, Server, Globe, TestTube2,
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
-import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModelSelection } from '../lib/api-keys-service';
+import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModels } from '../lib/api-keys-service';
 import type { ApiKeyInfo } from '../lib/api-keys-service';
 import { testConnection } from '../lib/ai-service';
 import { ApiKeySchema } from '../lib/validation-schemas';
@@ -20,6 +20,8 @@ interface LocalEndpoint {
   provider: 'ollama' | 'lmstudio';
   endpoint_url: string;
   model_name: string;
+  model_gen?: string;
+  model_improve?: string;
   is_active: boolean;
   updated_at: string;
 }
@@ -347,56 +349,40 @@ export default function Settings({ }: SettingsProps) {
                       }
                     }}
                     onSetActive={async () => {
-                      setActionLoading(`${provider.id}-active`);
+                      setActionLoading(`key-${provider.id}-active`);
                       setError('');
                       try {
                         const token = await getToken();
-                        const modelName = keyInfo?.model_name || getDefaultModelForProvider(provider.id);
-
-                        // Toggle logic: if already active, set to false. Otherwise true.
-                        const isCurrentlyActive = keyInfo?.is_active ?? false;
-                        await setActiveProvider(provider.id, modelName, token, !isCurrentlyActive);
-
+                        const isActive = keyInfo?.is_active ?? false;
+                        await setActiveProvider(provider.id, keyInfo?.model_name || '', token, !isActive);
+                        showSuccess(`${provider.name} ${isActive ? 'deactivated' : 'activated'}`);
                         await loadKeys();
                         await loadLocalEndpoints();
-                        showSuccess(isCurrentlyActive ? `${provider.name} deactivated` : `${provider.name} set as active provider`);
                       } catch (e) {
-                        setError(e instanceof Error ? e.message : 'Failed to set active provider');
+                        setError(e instanceof Error ? e.message : `Failed to update ${provider.name}`);
                       } finally {
                         setActionLoading(null);
                       }
                     }}
-                    onModelChange={async (modelName) => {
+                    onModelChange={async (gen, improve) => {
                       try {
                         const token = await getToken();
-                        await updateModelSelection(provider.id, modelName, token);
+                        await updateModels(provider.id, gen, improve, token);
                         await loadKeys();
+                        showSuccess(`Models updated for ${provider.name}`);
                       } catch (e) {
-                        setError(e instanceof Error ? e.message : 'Failed to update model');
+                        setError(e instanceof Error ? e.message : 'Failed to update models');
                       }
                     }}
                     onFetchModels={async (apiKey) => {
-                      // Only allow fetching for supported providers
-                      if (!['openrouter', 'together', 'openai', 'gemini'].includes(provider.id)) return;
-
-                      setActionLoading(`${provider.id}-fetch`);
+                      setActionLoading(provider.id);
+                      setError('');
                       try {
-                        const token = await getToken();
-                        const fetched = await listModels(token, provider.id, apiKey);
-
-                        // Transform to ModelOption
-                        const options: ModelOption[] = fetched.map(m => ({
-                          id: m.id,
-                          name: m.name || m.id,
-                          // Removed description as it's not part of ModelOption
-                        }));
-
+                        const models = await listModels(await getToken(), provider.id, apiKey);
                         setDynamicModels(prev => ({
                           ...prev,
-                          [provider.id]: options
+                          [provider.id]: models
                         }));
-
-                        showSuccess(`Fetched ${options.length} models for ${provider.name}`);
                       } catch (e) {
                         setError(e instanceof Error ? e.message : 'Failed to fetch models');
                       } finally {
@@ -420,7 +406,7 @@ export default function Settings({ }: SettingsProps) {
                 type="ollama"
                 endpoint={localEndpoints.find((e) => e.provider === 'ollama')}
                 actionLoading={actionLoading}
-                onSave={async (endpointUrl, modelName) => {
+                onSave={async (endpointUrl, modelGen, modelImprove) => {
                   setActionLoading('ollama');
                   setError('');
                   try {
@@ -430,7 +416,9 @@ export default function Settings({ }: SettingsProps) {
                       .insert({
                         provider: 'ollama',
                         endpoint_url: endpointUrl,
-                        model_name: modelName,
+                        model_name: modelGen, // Legacy fallback
+                        model_gen: modelGen,
+                        model_improve: modelImprove,
                         is_active: false,
                       });
                     if (insertError) throw insertError;
@@ -495,7 +483,7 @@ export default function Settings({ }: SettingsProps) {
                 type="lmstudio"
                 endpoint={localEndpoints.find((e) => e.provider === 'lmstudio')}
                 actionLoading={actionLoading}
-                onSave={async (endpointUrl, modelName) => {
+                onSave={async (endpointUrl, modelGen, modelImprove) => {
                   setActionLoading('lmstudio');
                   setError('');
                   try {
@@ -505,7 +493,9 @@ export default function Settings({ }: SettingsProps) {
                       .insert({
                         provider: 'lmstudio',
                         endpoint_url: endpointUrl,
-                        model_name: modelName,
+                        model_name: modelGen, // Legacy fallback
+                        model_gen: modelGen,
+                        model_improve: modelImprove,
                         is_active: false,
                       });
                     if (insertError) throw insertError;
@@ -594,36 +584,37 @@ interface ProviderCardProps {
   onSave: (apiKey: string, modelName: string) => void;
   onDelete: () => void;
   onSetActive: () => void;
-  onModelChange: (modelName: string) => void;
+  onModelChange: (gen: string, improve: string) => void;
   onFetchModels: (apiKey: string) => void;
   dynamicModels: ModelOption[] | undefined;
 }
 
-interface LocalEndpointCardProps {
-  type: 'ollama' | 'lmstudio';
-  endpoint: LocalEndpoint | undefined;
-  actionLoading: string | null;
-  onSave: (endpointUrl: string, modelName: string) => void;
-  onDelete: () => void;
-  onSetActive: () => void;
-}
+
 
 function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSetActive, onModelChange, onFetchModels, dynamicModels }: ProviderCardProps) {
   const [inputValue, setInputValue] = useState('');
-  const [showInput, setShowInput] = useState(false);
+  const [selectedModelGen, setSelectedModelGen] = useState(
+    keyInfo?.model_gen || keyInfo?.model_name ||
+    getDefaultModelForProvider(provider.id)
+  );
+  const [selectedModelImprove, setSelectedModelImprove] = useState(
+    keyInfo?.model_improve || keyInfo?.model_name ||
+    getDefaultModelForProvider(provider.id)
+  );
   const [showKey, setShowKey] = useState(false);
+  const [showInput, setShowInput] = useState(false);
+
+  // Update local state when keyInfo changes
+  useEffect(() => {
+    if (keyInfo) {
+      setSelectedModelGen(keyInfo.model_gen || keyInfo.model_name || getDefaultModelForProvider(provider.id));
+      setSelectedModelImprove(keyInfo.model_improve || keyInfo.model_name || getDefaultModelForProvider(provider.id));
+    }
+  }, [keyInfo, provider.id]);
 
   // Merge static and dynamic models
   const staticModels = getModelsForProvider(provider.id);
   const allModels = dynamicModels && dynamicModels.length > 0 ? dynamicModels : staticModels;
-
-  const defaultModel = keyInfo?.model_name || getDefaultModelForProvider(provider.id);
-  const [selectedModel, setSelectedModel] = useState(defaultModel);
-
-  useEffect(() => {
-    const newModel = keyInfo?.model_name || getDefaultModelForProvider(provider.id);
-    setSelectedModel(newModel);
-  }, [keyInfo?.model_name, provider.id]);
 
   const isConfigured = !!keyInfo;
   const isActive = keyInfo?.is_active ?? false;
@@ -721,20 +712,47 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
                   </button>
                 )}
               </div>
-              <select
-                value={selectedModel}
-                onChange={(e) => {
-                  setSelectedModel(e.target.value);
-                  onModelChange(e.target.value);
-                }}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
-              >
-                {allModels.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name} {model.description && `— ${model.description}`}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-3">
+                {/* Generation Model */}
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">Generation Model</label>
+                  <select
+                    value={selectedModelGen}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedModelGen(val);
+                      onModelChange(val, selectedModelImprove);
+                    }}
+                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+                  >
+                    {allModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name} {model.description && `— ${model.description}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Improvement Model */}
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">Improvement Model</label>
+                  <select
+                    value={selectedModelImprove}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedModelImprove(val);
+                      onModelChange(selectedModelGen, val);
+                    }}
+                    className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+                  >
+                    {allModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name} {model.description && `— ${model.description}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           )}
 
@@ -760,7 +778,7 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
             <button
               onClick={onDelete}
               disabled={isDeleting}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/5 text-red-400/70 text-xs rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50 ml-auto"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/5 text-red-400/70 text-xs rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50"
             >
               {isDeleting ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
               Remove
@@ -785,9 +803,10 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
                   </button>
                 )}
               </div>
+              <label className="block text-[10px] text-slate-500 mb-1">Default Model</label>
               <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
+                value={selectedModelGen}
+                onChange={(e) => setSelectedModelGen(e.target.value)}
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
               >
                 {allModels.map((model) => (
@@ -821,7 +840,8 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                if (inputValue.trim()) onSave(inputValue.trim(), selectedModel);
+                // If setting up for first time, we assume gen = improve = selectedModelGen
+                if (inputValue.trim()) onSave(inputValue.trim(), selectedModelGen);
               }}
               disabled={isSaving || !inputValue.trim()}
               className={`flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r ${provider.gradient} text-white text-xs font-medium rounded-lg hover:opacity-90 transition-all disabled:opacity-50 shadow-lg`}
@@ -844,9 +864,19 @@ function ProviderCard({ provider, keyInfo, actionLoading, onSave, onDelete, onSe
   );
 }
 
+interface LocalEndpointCardProps {
+  type: 'ollama' | 'lmstudio';
+  endpoint: LocalEndpoint | undefined;
+  actionLoading: string | null;
+  onSave: (endpointUrl: string, modelGen: string, modelImprove: string) => void;
+  onDelete: () => void;
+  onSetActive: () => void;
+}
+
 function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, onSetActive }: LocalEndpointCardProps) {
   const [endpointUrl, setEndpointUrl] = useState('');
-  const [modelName, setModelName] = useState('');
+  const [modelGen, setModelGen] = useState('');
+  const [modelImprove, setModelImprove] = useState('');
   const [showInput, setShowInput] = useState(false);
 
   const isConfigured = !!endpoint;
@@ -920,13 +950,19 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
             </div>
             <div className="flex items-center gap-2 bg-slate-800/60 rounded-lg px-3 py-2">
               <Key size={12} className="text-slate-500" />
-              <span className="text-xs text-slate-400 font-mono flex-1">
-                {endpoint.model_name}
+              <span className="text-xs text-slate-400 font-mono flex-1 truncate">
+                Gen: {endpoint.model_gen || endpoint.model_name || 'Default'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-800/60 rounded-lg px-3 py-2">
+              <Key size={12} className="text-slate-500" />
+              <span className="text-xs text-slate-400 font-mono flex-1 truncate">
+                Imp: {endpoint.model_improve || endpoint.model_name || 'Default'}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {!isActive && (
               <button
                 onClick={onSetActive}
@@ -941,7 +977,8 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
               onClick={() => {
                 setShowInput(true);
                 setEndpointUrl(endpoint.endpoint_url);
-                setModelName(endpoint.model_name);
+                setModelGen(endpoint.model_gen || endpoint.model_name);
+                setModelImprove(endpoint.model_improve || endpoint.model_name);
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/50 text-slate-400 text-xs rounded-lg hover:bg-slate-800 hover:text-slate-300 transition-all"
             >
@@ -951,7 +988,7 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
             <button
               onClick={onDelete}
               disabled={isDeleting}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/5 text-red-400/70 text-xs rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50 ml-auto"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/5 text-red-400/70 text-xs rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50"
             >
               {isDeleting ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
               Remove
@@ -972,34 +1009,43 @@ function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, on
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1.5">Model Name (optional)</label>
+              <label className="block text-xs text-slate-400 mb-1.5">Generation Model (optional)</label>
               <input
                 type="text"
-                value={modelName}
-                onChange={(e) => setModelName(e.target.value)}
-                placeholder="e.g. llama3, mistral"
+                value={modelGen}
+                onChange={(e) => setModelGen(e.target.value)}
+                placeholder="e.g., llama2"
                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none focus:border-slate-600"
               />
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onSave(endpointUrl || config.defaultEndpoint, modelName)}
-              disabled={isSaving}
-              className={`flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r ${config.gradient} text-white text-xs font-medium rounded-lg hover:opacity-90 transition-all disabled:opacity-50 shadow-lg`}
-            >
-              {isSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-              Save Config
-            </button>
-            {isConfigured && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Improve Model (optional)</label>
+              <input
+                type="text"
+                value={modelImprove}
+                onChange={(e) => setModelImprove(e.target.value)}
+                placeholder="e.g., codellama"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 font-mono focus:outline-none focus:border-slate-600"
+              />
+            </div>
+            <div>
               <button
-                onClick={() => setShowInput(false)}
-                className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                onClick={() => onSave(endpointUrl || config.defaultEndpoint, modelGen, modelImprove)}
+                disabled={isSaving}
+                className={`flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r ${config.gradient} text-white text-xs font-medium rounded-lg hover:opacity-90 transition-all disabled:opacity-50 shadow-lg`}
               >
-                Cancel
+                {isSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                Save Config
               </button>
-            )}
+              {isConfigured && (
+                <button
+                  onClick={() => setShowInput(false)}
+                  className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1051,12 +1097,12 @@ function FeatureDefaultSelector({ keys, localEndpoints, dynamicModels }: {
         });
       });
     } else {
-      // Fallback if no specific models found (shouldn't happen often)
+      // Fallback if no specific models found
       options.push({
         value: `${k.provider}:default`,
         label: `${providerName} (Default Model)`,
         provider: k.provider,
-        model: k.model_name
+        model: k.model_name || ''
       });
     }
   });
@@ -1071,55 +1117,51 @@ function FeatureDefaultSelector({ keys, localEndpoints, dynamicModels }: {
     });
   });
 
-  // Determine current value
-  const currentValue = improverPref
-    ? (improverPref.model ? `${improverPref.provider}:${improverPref.model}` : `${improverPref.provider}:default`)
-    : 'default';
+  const currentOption = options.find(o =>
+    improverPref && o.provider === improverPref.provider && (o.model === improverPref.model || (!o.model && !improverPref.model))
+  ) || options[0];
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1">
-          Prompt Improver AI
-        </label>
-        <p className="text-xs text-slate-500 mb-2">
-          Select specific AI model to use for "Improve Prompt", regardless of your active generator.
-        </p>
-        <div className="flex items-center gap-3">
-          <select
-            value={currentValue}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (val === 'default') {
-                setImproverPref(null);
-              } else {
-                const opt = options.find(o => o.value === val);
-                if (opt) {
-                  setImproverPref({ provider: opt.provider, model: opt.model });
-                }
-              }
-              setHasSaved(true);
-              setTimeout(() => setHasSaved(false), 2000);
-            }}
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-slate-600"
-          >
-            {options.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {hasSaved && (
-            <span className="text-xs text-emerald-400 flex items-center gap-1 animate-fadeIn">
-              <Check size={12} /> Saved
-            </span>
-          )}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-medium text-slate-200">Default Prompt Improver Model</h3>
+          <p className="text-xs text-slate-500">Select which model to use when clicking "Improve Prompt"</p>
         </div>
       </div>
+
+      <select
+        value={currentOption?.value || 'default'}
+        onChange={(e) => {
+          const selected = options.find(o => o.value === e.target.value);
+          if (selected) {
+            if (selected.value === 'default') {
+              setImproverPref(null);
+            } else {
+              setImproverPref({
+                provider: selected.provider,
+                ...(selected.model ? { model: selected.model } : {})
+              });
+            }
+            setHasSaved(true);
+            setTimeout(() => setHasSaved(false), 2000);
+          }
+        }}
+        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+      >
+        {options.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+
+      {hasSaved && (
+        <span className="text-[10px] text-teal-400 flex items-center gap-1">
+          <Check size={10} />
+          Saved
+        </span>
+      )}
     </div>
   );
 }
 
-// Add imports if needed, but we share scope in same file
-import { Sparkles } from 'lucide-react';
-// Note: imports should be at top. I'll handle that in a separate op if needed,
-// strictly speaking Sparkles is already imported in Settings.tsx line 2.
-// getModelsForProvider is also imported.
+
