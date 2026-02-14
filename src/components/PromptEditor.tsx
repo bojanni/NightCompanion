@@ -66,7 +66,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   }, []);
 
   useEffect(() => {
-    async function loadTags() {
+    const loadTags = async () => {
       const { data } = await db.from('tags').select('*').order('name');
       setAllTags(data ?? []);
 
@@ -77,7 +77,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           .eq('prompt_id', prompt.id);
         setSelectedTagIds(ptData?.map((pt: { tag_id: string }) => pt.tag_id) ?? []);
       }
-    }
+    };
 
     if (prompt) {
       setTitle(prompt.title);
@@ -93,6 +93,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       const lastModel = localStorage.getItem('lastUsedModel');
       if (lastModel) setModel(lastModel);
     }
+
     loadTags();
   }, [prompt]);
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,

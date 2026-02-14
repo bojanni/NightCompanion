@@ -106,13 +106,14 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-3">
               {recentPrompts.map((prompt) => (
-                <div
+                <Link
                   key={prompt.id}
-                  className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors"
+                  to={`/prompts?open=${prompt.id}`}
+                  className="flex items-start gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium text-white truncate">{prompt.title || 'Untitled'}</h3>
+                      <h3 className="text-sm font-medium text-white truncate group-hover:text-amber-400 transition-colors">{prompt.title || 'Untitled'}</h3>
                       {prompt.is_favorite && <Heart size={12} className="text-rose-400 fill-rose-400 flex-shrink-0" />}
                       {prompt.is_template && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
@@ -123,7 +124,7 @@ export default function Dashboard() {
                     <p className="text-xs text-slate-400 mt-0.5 truncate">{prompt.content}</p>
                   </div>
                   <StarRating rating={prompt.rating} size={12} />
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -147,7 +148,7 @@ export default function Dashboard() {
           ) : (
             <div className="space-y-3">
               {topCharacters.map((char) => (
-                <div key={char.id} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl">
+                <Link key={char.id} to="/characters" className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors group">
                   {char.reference_image_url ? (
                     <img
                       src={char.reference_image_url}
@@ -160,10 +161,10 @@ export default function Dashboard() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <h3 className="text-sm font-medium text-white truncate">{char.name}</h3>
+                    <h3 className="text-sm font-medium text-white truncate group-hover:text-amber-400 transition-colors">{char.name}</h3>
                     <p className="text-xs text-slate-400 truncate">{char.description || 'No description'}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -183,7 +184,11 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {recentGallery.map((item) => (
-              <div key={item.id} className="aspect-square rounded-xl overflow-hidden bg-slate-800 group">
+              <Link
+                key={item.id}
+                to={`/gallery?open=${item.id}`}
+                className="aspect-square rounded-xl overflow-hidden bg-slate-800 group relative block"
+              >
                 {item.image_url ? (
                   <img
                     src={item.image_url}
@@ -195,7 +200,8 @@ export default function Dashboard() {
                     <Image size={24} className="text-slate-600" />
                   </div>
                 )}
-              </div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+              </Link>
             ))}
           </div>
         </div>

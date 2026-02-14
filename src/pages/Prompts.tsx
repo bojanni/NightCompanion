@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
@@ -113,9 +113,24 @@ export default function Prompts() {
     setLoading(false);
   }, [currentPage, filterType]);
 
+  const [searchParams] = useSearchParams();
+
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Handle deep linking
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (openId && prompts.length > 0 && detailViewIndex === null) {
+      const index = prompts.findIndex(p => p.id === openId);
+      if (index !== -1) {
+        setDetailViewIndex(index);
+        // Remove the param from URL without refreshing to avoid re-triggering
+        window.history.replaceState({}, '', '/prompts');
+      }
+    }
+  }, [prompts, searchParams, detailViewIndex]);
 
   const filtered = useMemo(() => {
     let result = prompts;
