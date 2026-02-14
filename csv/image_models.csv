@@ -1,0 +1,111 @@
+Model Name,Category,Description,Art Quality,Realism Quality,Prompting Quality,Typography Quality,Cost
+Seedream 3.0,Image,A model by ByteDance with a focus on realistic detail,High,High,High,Medium,$$-$$$
+Flux 2 Dev,Image,Baseline Flux 2 good at everything and at reasonable cost,High,High,High,Medium,$$-$$$
+Qwen Image Edit Plus,Image,AKA Qwen Image Edit 2509 - An enhanced version of Qwen Image-Edit that supports regeneration,High,High,High,Medium,$$-$$$
+Seedance 1.0 Pro Fast,Image,Faster generated videos. Lower price. Cinematic results,High,High,High,Medium,$$-$$$
+Z-Image Turbo,Image,An affordable model with great quality and fast low cost,High,Medium,High,Medium,$-$$$
+Flux 2 Klein 9B Fast,Image,FLUX 2 Klein 9B is a 4-step distilled image generation and editing model designed,High,High,High,Medium,$$-$$$
+HiDream 11 Dev,Image,Creates stunning artistic images with exceptional clarity and detail,High,Medium,High,Medium,$$-$$$
+Nano Banana Pro,Image,The next version of Nano Banana with improved capabilities and performance,High,High,High,Medium,$$$$$
+Seedream 4.0,Image,Next-gen multimodal AI model for ultra-fast image generation (2K-4K),High,High,High,Medium,$$-$$$
+HiDream 11 Fast,Image,Faster and cheaper version of HiDream great for artistic images,High,Medium,High,Medium,$$-$$$
+Flux 2 Klein 4B Fast,Image,The fastest variant in the Klein family. Built for interactive applications real time,High,High,High,Medium,$$-$$$
+Flux 2 Klein 9B,Image,Outstanding quality at sub-second speed. Great for real-time generation while retaining,High,High,High,Medium,$$-$$$
+Seedream 4.5,Image,An improved version of Seedream 4.0,High,High,High,Medium,$$$$$
+Nano Banana,Image,AKA Gemini Flash 2.5 - Google's latest model with first-class start image support,High,High,High,Medium,$$-$$$
+Flux,Image,A great general-purpose model at a low cost,High,High,High,Medium,$$-$$$
+Dreamina Lightning,Image,A fast low-cost model that's good at art and realism,High,High,High,Medium,$$$$$
+Google Imagen v4 Ultra,Image,A larger version of Imagen v4. Google's latest image model,High,High,High,Medium,$$$$$
+Flux PRO v1.1 Ultra,Image,An ultrahigh-resolution version of Flux by Black Forest Labs,High,High,High,Medium,$$$$$
+Flux Kontext,Image,Excellent at editing images using natural language prompts,High,High,High,Medium,$$-$$$
+Flux Kontext Pro,Image,A more powerful version of Flux Kontext for editing images via text prompts,High,High,High,Medium,$$$$$
+Ideogram V3 Quality,Image,The latest & best model from Ideogram,High,High,High,High,$$$$$
+GPT1.5 Medium,Image,The latest model from OpenAI on medium quality setting. Supports prompt-to-edit and,Medium,Medium,High,Medium,$$$$$
+GPT1.5 High,Image,The latest model from OpenAI on high quality setting. Supports prompt-to-edit and,High,High,High,Medium,$$$$$
+GPT1 Medium,Image,The latest flagship image model from OpenAI on medium quality setting,Medium,Medium,High,Medium,$$-$$$
+GPT1 High,Image,The latest flagship model from OpenAI on high quality setting,High,High,High,Medium,$$$$$
+Ideogram V3,Image,The latest model from Ideogram,High,High,High,High,$$$$$
+Google Imagen 3.0 Fast,Image,A faster cheaper version of Imagen v3. Google's image model,High,High,High,Medium,$$-$$$
+Google Imagen 3.0,Image,Google's image model. Great at prompt adherence and typography,High,High,High,High,$$-$$$
+Ideogram 2a,Image,Created by ex Googlers. Affordable prompt adherence and typography,Medium,Medium,High,High,$$-$$$
+Ideogram 2a Turbo,Image,A faster cheaper version of Ideogram 2a,Medium,Medium,High,High,$$-$$$
+GPT1.5 Low,Image,GPT Image 1.5 from OpenAI on low quality setting. Fast & cheap. best for prototyping,Low,Low,High,Medium,$$-$$$
+GPT1 Low,Image,GPT Image 1 from OpenAI on low quality setting. Fast & cheap. best for prototyping,Low,Low,High,Medium,$$-$$$
+Recraft v3,Image,A model by Recraft. Great at spelling and typography. Can generate vectors,High,High,High,High,$$$$$
+NIGHTCAFE,Image,Created by ex Googlers. Great at prompt adherence and generating text in images,High,High,High,High,$$$$$
+Ideogram 2.0 Turbo,Image,A faster cheaper version of Ideogram for typography,High,High,High,High,$$-$$$
+Ideogram 1.0,Image,The first model from Ideogram. Good at typography,Medium,Medium,High,High,$$$$$
+Ideogram 1.0 Turbo,Image,A faster and cheaper version of Ideogram 1.0,Medium,Medium,High,High,$$-$$$
+Seedance 1.5 Pro,Image,The next generation of AI video generation with native synchronized audio capabilities,High,High,High,Medium,$$$$$
+PixVerse V5,Image,PixVerse v5 model delivers the latest advancements in AI video generation,High,High,High,Medium,N/A
+Juggernaut Flux Pro,Image,Flux but better (especially at realism). By RunDiffusion,High,High,High,Medium,$$-$$$
+Juggernaut Flux Lite,Image,A cheaper faster but slightly less powerful version of Juggernaut Flux,High,High,High,Medium,$$-$$$
+Juggernaut XL,Image,Juggernaut re-trained from scratch for better prompt adherence. By RunDiffusion,High,High,High,Medium,$$-$$$
+Juggernaut XL Lightning,Image,Juggernaut re-trained from scratch for better prompt adherence. By RunDiffusion,High,High,High,Medium,$$-$$$
+RealVisXL v5,Image,An SDXL model for photorealism. Great at faces. By SG_161222,High,High,High,Medium,$$-$$$
+RealVisXL v5 Lightning,Image,An SDXL lightning model for photorealism. Great at faces. By SG_161222,High,High,High,Medium,$$$$$
+Boltning XL v1 Lightning,Image,A lightning model for highly detailed aesthetic images. By geonying,High,High,High,Medium,$-$$$
+Atomix XL v4 Lightning,Image,A lightning model that balances realism and CG. By AlexiAI,High,High,High,Medium,$$$$$
+Moste Diffusion XL v1.6 Lighten,Image,A mashup of other popular SDXL models. By movie1776,High,High,High,Medium,$$$$$
+RealVisXL v4,Image,An SDXL model for photorealism. Great at faces. By SG_161222,High,High,High,Medium,$$-$$$
+Stable Core,Image,Beautiful high resolution images. No need for complex prompts,High,High,Low,Medium,$$-$$$
+Clarity Upscaler,Image,A creative upscaler capable of adding detail and clarity while upscaling up to 4x,High,High,High,Medium,N/A
+SDXL 1.0,Image,Stable Diffusion XL. An older model that still holds up,High,High,High,Medium,$$-$$$
+RealVisXL v4 Lightning,Image,An SDXL model for photorealism. Great at faces. By SG_161222,High,High,High,Medium,$-$$$
+Fluently,Image,An SDXL model for creating realistic images. By Fluently,High,High,High,Medium,$$-$$$
+Fluently XL Lightning,Image,An SDXL lightning model for creating realistic images. By Fluently,High,High,High,Medium,$$-$$$
+Sdxl Cartoon XL v4,Image,An SDXL model good at realistic looking cartoons. By 7Whitefire7,High,Medium,High,Medium,$$-$$$
+Starlight XL,Image,An SDXL model designed for creating fantasy concept art and illustrations. by chillpixel,High,High,High,Medium,$$-$$$
+Mysterious XL v4,Image,An SDXL model for fantasy art and cinematics. By LahintheFutureIsland,High,High,High,Medium,$$-$$$
+Juggernaut XL v8,Image,An SDXL model for perfect realism and cinematic styles. By kandooAI,High,High,High,Medium,$$-$$$
+DreamShaper XL alpha2,Image,A versatile SDXL model trained by Lykon,High,High,High,Medium,$$-$$$
+Juggernaut XL v5,Image,An SDXL model for perfect realism and cinematic styles. By kandooAI,High,High,High,Medium,$$-$$$
+Juggernaut XL v6,Image,An SDXL model for perfect realism and cinematic styles. By kandooAI,High,High,High,Medium,$$-$$$
+Juggernaut XL v7,Image,An SDXL model for perfect realism and cinematic styles. By kandooAI,High,High,High,Medium,$$-$$$
+Juggernaut v9 Lightning,Image,A lightning model for perfect realism and cinematic styles. By RunDiffusion,High,High,High,Medium,$$$$$
+Juggernaut v9,Image,An SDXL model for perfect realism and cinematic styles. By RunDiffusion,High,High,High,Medium,$$-$$$
+Blue Pencil XL,Image,An SDXL Anime model by blue_pencil805,High,Medium,High,Medium,$$-$$$
+Animagine XL v3,Image,An SDXL model designed to generate high-quality anime. By CagliostroLab,High,Medium,High,Medium,$$-$$$
+RealMixXL v3,Image,An SDXL model for photorealism. Great at faces. By SG_161222,High,High,High,Medium,$$-$$$
+AAM XL Anime Mix v1,Image,A model aimed at generating anime and stylized art. By Lykon,High,Medium,High,Medium,$$-$$$
+Virtual Utopia XL,Image,Suitable for generating both authentic and fantasy worlds. By CyberBlaattt,High,High,High,Medium,$$-$$$
+Cherry Picker XL v2.7,Image,A photorealistic model that merges carefully selected models. By tkyter,High,High,High,Medium,$$-$$$
+SDXL LCM,Image,SDXL accelerated by LCM LoRA. High quality fast and cheap,High,High,High,Medium,$-$$$
+SDXL DPO,Image,A Direct Preference Optimization (DPO) aligned version of SDXL 1.0,High,High,High,Medium,$$-$$$
+DreamShaper v1.8.1,Image,A "does it all" model by Lykon. Particularly good at faces,High,High,High,Medium,$$$$$
+Realistic Vision V5.1,Image,A model for photorealism. Great at faces. By SG_161222,High,High,High,Medium,$-$$$
+AbsoluteReality v1.8.1,Image,A model aimed at realism by Lykon,High,High,High,Medium,$$$$$
+NeverEnding Dream v1.2.2,Image,A DreamShaper alternative that's better suited. By Lykon,High,High,High,Medium,$-$$$
+3D Animation Diffusion v10,Image,Great for creating 3D cartoon characters. By Lykon,High,Medium,High,Medium,$-$$$
+RPG v5,Image,Aimed at creating RPG character portraits. By Anashel,High,Medium,High,Medium,$-$$$
+Blue Pencil v10,Image,Aimed at creating anime & fantasy art. By blue_pencil805,High,Medium,High,Medium,$-$$$
+Arthemy Comics v5.0,Image,Aimed at creating comic style characters. By Arthemy,High,Medium,High,Medium,$-$$$
+Rabbit v7,Image,Use this model born to draw cute little things. By Rabbit_YourMajesty,High,Medium,High,Medium,$-$$$
+Nightmare Shaper v3,Image,Designed to unleash your darkest imaginations. By Yarner,High,High,High,Medium,$-$$$
+WildlifeFOX Animals,Image,A model focused on animals pets and different breeds. By lvr_fries1111,High,High,High,Medium,$-$$$
+RealCartoon Pixar v8,Image,An SD1.5 model good at pixar-style cartoons. By 7Whitefire7,High,Medium,High,Medium,$$$$$
+SkaterByte V2,Image,An SD1.5 models good at 2SD art. By CameraBuddy,High,Medium,High,Medium,$$$$$
+Juggernaut Reborn,Image,An SD 1.5 model for perfect realism and cinematic styles. By kandooAI,High,High,High,Medium,$$$$$
+SD1.5 DPO,Image,A Direct Preference Optimization (DPO) aligned version of SD1.5,High,High,High,Medium,$$$$$
+DALL-E 2,Image,The original image generator from OpenAI,Medium,Medium,High,Medium,$$-$$$
+Stable Diffusion 1.5,Image,The most popular first-generation stable-diffusion model,Medium,Medium,High,Medium,$$$$$
+Stable Diffusion 1.4,Image,The original Stable diffusion model,Medium,Medium,High,Medium,$$$$$
+Coherent,Image,CLIP-Guided Diffusion,Medium,Medium,High,Medium,N/A
+Artistic,Image,VQGAN+CLIP - the original text-to-image algorithm,Medium,Medium,High,Medium,N/A
+Style Transfer,Image,The original AI Art algorithm,Low,Low,Low,Low,N/A
+Qwen Image 2512,Image,Qwen's Latest update with major rollout enhancements,High,High,High,Medium,$$-$$$
+Qwen Image Edit 2511,Image,It preserves people and keeps textures looking great no matter what you change. Easily,High,High,High,Medium,$$-$$$
+Qwen Image,Image,A model from Alibaba that excels at typography,High,High,High,Medium,$$-$$$
+Qwen Image SD,Image,A cheaper and lower resolution version of Qwen Image,Medium,Medium,High,Medium,$-$$$
+Flux 2 Pro,Image,Flux 2 with improved image quality and good speed generation,High,High,High,Medium,$$$$$
+Flux 2 Pro Dev,Image,Flux 2: better at typography and designs,High,High,High,Medium,$$$-$
+Flux Pro,Image,Grounded generation with real-world context. Maximum quality for complex workflows,High,High,High,Medium,$$$$$
+Flux 2 Lite,Image,Creator realistic images with a focus on more correct human anatomy,High,High,High,Medium,$$$$$
+Flux Schnell,Image,A cheaper faster but slightly less powerful version of Flux,High,High,High,Medium,$$-$$$
+Google Imagen 4.0 Fast,Image,A faster cheaper version of Imagen v4. Google's image model,High,High,High,Medium,$$-$$$
+Google Imagen 4.0,Image,Google's image model. Great at prompt adherence and typography,High,High,High,High,$$$$$
+Qwen Image Edit,Image,Advanced image editing capabilities with Qwen AI,High,High,High,Medium,$$-$$$
+Flux PRO v1.1,Image,The full-power version of Flux by Black Forest Labs,High,High,High,Medium,$$$$$
+HiDream 11 Full,Image,The full power of HiDream 11 a state-of-the-art image generation model,High,High,High,Medium,$$-$$$
+Ideogram V3 Turbo,Image,The latest turbo model from Ideogram,High,High,High,High,$$-$$$
+Flux Kontext Dev,Image,Cheaper & faster version of Kontext still great at editing images using prompts,High,High,High,Medium,$$-$$$
