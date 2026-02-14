@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Save, Wand2, Star, Tag, AlertCircle, Copy, Check, ExternalLink, Paperclip, Unlink, Loader2, Image as ImageIcon, Plus, Upload } from 'lucide-react';
+import { X, Save, Wand2, Plus, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Prompt, Tag } from '../lib/types';
+import type { Prompt, Tag as TagType } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
 import { supabase, db } from '../lib/api';
-import type { Database } from '../lib/database.types';
+import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
 import { handleAIError } from '../lib/error-handler';
@@ -36,7 +36,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
 
-  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [allTags, setAllTags] = useState<TagType[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [showNewTag, setShowNewTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
