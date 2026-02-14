@@ -854,23 +854,39 @@ export default function Prompts() {
         title=""
         wide
       >
-        {lightboxImage && (
-          <div className="relative">
-            <img
-              src={lightboxImage.image_url}
-              alt={lightboxImage.title}
-              className="w-full max-h-[70vh] object-contain rounded-xl"
-            />
-            <div className="mt-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
-              <StarRating
-                rating={lightboxImage.rating}
-                onChange={(r) => handleUpdateGalleryItemRating(lightboxImage!.id, r)}
-                size={24}
+        {lightboxImage && (() => {
+          // Find the prompt that owns this image to show/edit PROMPT rating instead of IMAGE rating
+          const lightboxPrompt = prompts.find(p => linkedImages[p.id]?.some(img => img.id === lightboxImage.id));
+
+          return (
+            <div className="relative">
+              <img
+                src={lightboxImage.image_url}
+                alt={lightboxImage.title}
+                className="w-full max-h-[70vh] object-contain rounded-xl"
               />
+              <div className="mt-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
+                  {lightboxPrompt && lightboxPrompt.title !== lightboxImage.title && (
+                    <p className="text-xs text-slate-500">Linked to: {lightboxPrompt.title}</p>
+                  )}
+                </div>
+                <StarRating
+                  rating={lightboxPrompt ? lightboxPrompt.rating : lightboxImage.rating}
+                  onChange={(r) => {
+                    if (lightboxPrompt) {
+                      handleRatePrompt(lightboxPrompt.id, r);
+                    } else {
+                      handleUpdateGalleryItemRating(lightboxImage!.id, r);
+                    }
+                  }}
+                  size={24}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
     </div>
   );
