@@ -8,6 +8,8 @@ import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
 import { handleAIError } from '../lib/error-handler';
+import { listApiKeys } from '../lib/api-keys-service';
+import { getModelsForProvider } from '../lib/provider-models';
 import ModelSelector from './ModelSelector';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
@@ -47,6 +49,10 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // Models State
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [availableProviders, setAvailableProviders] = useState<any[]>([]);
+
   useEffect(() => {
     if (prompt) {
       setTitle(prompt.title);
@@ -58,7 +64,69 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setIsFavorite(prompt.is_favorite);
     }
     loadTags();
+    loadModels();
   }, [prompt]);
+
+  async function loadModels() {
+    try {
+      const [keys, { data: localEndpoints }] = await Promise.all([
+        listApiKeys(),
+        supabase.from('user_local_endpoints').select('*').eq('is_active', true)
+      ]);
+
+      const providers: any[] = [];
+      let models: any[] = [];
+
+      // Process Cloud Providers
+      const activeKeys = keys.filter(k => k.is_active);
+      for (const key of activeKeys) {
+        providers.push({
+          id: key.provider,
+          name: key.provider.charAt(0).toUpperCase() + key.provider.slice(1), // Simple capitalization
+          type: 'cloud'
+        });
+
+        // Get static models for this provider
+        const providerModels = getModelsForProvider(key.provider).map(m => ({
+          ...m,
+          provider: key.provider
+        }));
+        models = [...models, ...providerModels];
+      }
+
+      // Process Local Endpoints
+      if (localEndpoints) {
+        for (const endpoint of localEndpoints) {
+          const providerId = endpoint.provider;
+          const providerName = providerId === 'ollama' ? 'Ollama' : 'LM Studio';
+
+          // Check if provider already added (unlikely for local but good safety)
+          if (!providers.find(p => p.id === providerId)) {
+            providers.push({
+              id: providerId,
+              name: providerName,
+              type: 'local'
+            });
+          }
+
+          // Local models are dynamic, usually just the one configured or generic
+          // For now let's add the configured one as an option
+          const modelName = endpoint.model_name || 'Local Model';
+          models.push({
+            id: `${providerId}:${modelName}`, // Unique ID for selector
+            name: modelName,
+            provider: providerId,
+            description: `Local model via ${providerName}`
+          });
+        }
+      }
+
+      setAvailableProviders(providers);
+      setAvailableModels(models);
+    } catch (e) {
+      console.error('Failed to load models', e);
+    }
+  }
 
   async function loadTags() {
     const { data } = await db.from('tags').select('*').order('name');
@@ -348,7 +416,12 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         />
       </div>
 
-      <ModelSelector value={model} onChange={setModel} />
+      <ModelSelector
+        value={model}
+        onChange={(id) => setModel(id)}
+        models={availableModels}
+        providers={availableProviders}
+      />
 
       <div>
         <div className="flex justify-between items-center mb-1.5">
