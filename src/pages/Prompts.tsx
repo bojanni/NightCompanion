@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
