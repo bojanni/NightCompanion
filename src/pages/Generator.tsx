@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser, PenTool } from 'lucide-react';
+import { toast } from 'sonner';
+import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser, PenTool, Wand2 } from 'lucide-react';
 import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
 import ManualGenerator from '../components/ManualGenerator';
@@ -56,9 +57,6 @@ export default function Generator() {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).manualInitial || { prompts: [], negative: '' }; } catch { /* ignore */ } return { prompts: [], negative: '' };
   });
 
-  const [isAutofillEnabled, setIsAutofillEnabled] = useState(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).isAutofillEnabled ?? false; } catch { /* ignore */ } return false;
-  });
 
 
   // Load recent prompts on mount
@@ -77,9 +75,9 @@ export default function Generator() {
     // We don't persist manualInitial because ManualGenerator handles its own persistence.
     // If we persist it here, it would overwrite the user's latest edits in ManualGenerator
     // with the stale "initial" state on refresh.
-    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, isAutofillEnabled };
+    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, isAutofillEnabled]);
+  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt]);
 
   async function loadRecentPrompts() {
     const { data } = await db
@@ -104,6 +102,46 @@ export default function Generator() {
     setRemixBase(prompt.content);
     setGuidedInitial(prompt.content);
     setMode('guided');
+  }
+
+  function handleImproveAI() {
+    let p = '';
+    let n = '';
+
+    if (mode === 'random') {
+      p = randomPrompt;
+      n = randomNegativePrompt;
+    } else if (mode === 'guided') {
+      try {
+        const saved = localStorage.getItem('nightcompanion_guided_state');
+        if (saved) {
+          const state = JSON.parse(saved);
+          p = state.generatedPrompt || '';
+        }
+      } catch { /* ignore */ }
+    } else if (mode === 'manual') {
+      try {
+        const saved = localStorage.getItem('nightcompanion_manual_generator');
+        if (saved) {
+          const state = JSON.parse(saved);
+          p = (state.prompts || []).filter(Boolean).join('\n');
+          n = state.negativePrompt || '';
+        }
+      } catch { /* ignore */ }
+    } else if (mode === 'remix') {
+      p = remixBase;
+    }
+
+    if (p && aiToolsRef.current) {
+      aiToolsRef.current.setInputContent(p);
+      if (n) aiToolsRef.current.setNegativeInputContent(n);
+      toast.success('Prompt sent to Improvement AI');
+      // Update: Trigger expand if collapsed
+      // aiToolsRef.current handles its own internal expansion if needed? 
+      // Actually AIToolsRef doesn't have setExpanded. 
+    } else {
+      toast.error('No prompt to improve yet!');
+    }
   }
 
   const [resetKey, setResetKey] = useState(0);
@@ -182,9 +220,6 @@ export default function Generator() {
         onPromptGenerated={(prompt) => {
           setGuidedInitial(prompt);
           setMode('guided');
-          if (isAutofillEnabled && aiToolsRef.current) {
-            aiToolsRef.current.setInputContent(prompt);
-          }
         }}
         maxWords={maxWords}
       />
@@ -219,7 +254,16 @@ export default function Generator() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleImproveAI}
+                className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-teal-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-teal-300 hover:border-slate-700 transition-colors"
+                title="Send current prompt to AI Improvement tools"
+              >
+                <Wand2 size={14} />
+                <span>Improve AI</span>
+              </button>
+
               <button
                 onClick={handleClearAll}
                 className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
@@ -228,16 +272,6 @@ export default function Generator() {
                 <Eraser size={14} />
                 <span className="hidden sm:inline">Clear All</span>
               </button>
-
-              <label className="flex items-center justify-center gap-2 text-[11px] text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={isAutofillEnabled}
-                  onChange={(e) => setIsAutofillEnabled(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-800/50 text-amber-500 focus:ring-amber-500/50"
-                />
-                Auto-fill Improvement AI
-              </label>
             </div>
           </div>
         )}
@@ -252,15 +286,9 @@ export default function Generator() {
           onPromptGenerated={(prompt) => {
             setGuidedInitial(prompt);
             setRandomPrompt(prompt);
-            if (isAutofillEnabled && aiToolsRef.current) {
-              aiToolsRef.current.setInputContent(prompt);
-            }
           }}
           onNegativePromptChanged={(neg) => {
             setRandomNegativePrompt(neg);
-            if (isAutofillEnabled && aiToolsRef.current) {
-              aiToolsRef.current.setNegativeInputContent(neg);
-            }
           }}
           maxWords={maxWords}
           initialPrompt={randomPrompt}

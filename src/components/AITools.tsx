@@ -120,9 +120,12 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     },
     setInputContent: (content: string) => {
       setImproveInput(content);
+      setTab('improve');
+      setExpanded(true);
     },
     setNegativeInputContent: (content: string) => {
       setNegativeInput(content);
+      setExpanded(true);
     }
   }));
 
