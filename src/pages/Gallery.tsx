@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
@@ -123,7 +122,7 @@ export default function Gallery() {
     setAllPrompts(promptsRes.data as Prompt[] ?? []);
     setTotalCount(count ?? 0);
     setLoading(false);
-  }, [currentPage, filterCollection, filterRating, search]);
+  }, [currentPage, filterCollection, filterRating]);
 
   useEffect(() => {
     loadData();
@@ -186,13 +185,26 @@ export default function Gallery() {
   }
 
   async function handleUpdateRating(item: GalleryItem, rating: number) {
-    await db.from('gallery_items').update({ rating }).eq('id', item.id);
-    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)));
-    if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
-    if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
-    // Sync rating to linked prompt
-    if (item.prompt_id) {
-      await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
+    try {
+      await db.from('gallery_items').update({ rating }).eq('id', item.id);
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)));
+      if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
+      if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
+
+      // Sync rating to linked prompt and siblings
+      if (item.prompt_id) {
+        // Sync parent prompt
+        await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
+
+        // Sync sibling gallery items
+        await db.from('gallery_items').update({ rating }).eq('prompt_id', item.prompt_id);
+
+        // Update local state for siblings if they are in the current view
+        setItems(prev => prev.map(i => i.prompt_id === item.prompt_id ? { ...i, rating } : i));
+      }
+    } catch (err) {
+      console.error('Failed to update rating:', err);
+      toast.error('Failed to update rating');
     }
   }
 
@@ -303,18 +315,23 @@ export default function Gallery() {
   async function handleSelectPrompt(prompt: Prompt) {
     if (!linkingImage) return;
     try {
-      await db.from('gallery_items').update({ prompt_id: prompt.id }).eq('id', linkingImage.id);
+      const currentRating = prompt.rating || 0;
+      await db.from('gallery_items').update({ prompt_id: prompt.id, rating: currentRating }).eq('id', linkingImage.id);
+
       setItems(prev => prev.map(item =>
-        item.id === linkingImage.id ? { ...item, prompt_id: prompt.id } : item
+        item.id === linkingImage.id ? { ...item, prompt_id: prompt.id, rating: currentRating } : item
       ));
+
       if (selectedItem?.id === linkingImage.id) {
-        setSelectedItem({ ...selectedItem, prompt_id: prompt.id });
+        setSelectedItem({ ...selectedItem, prompt_id: prompt.id, rating: currentRating });
       }
+
       setShowPromptSelector(false);
       setLinkingImage(null);
-      toast.success('Prompt linked to image');
+      toast.success('Prompt linked and rating synced');
     } catch (err) {
       console.error('Failed to link prompt:', err);
+      toast.error('Failed to link prompt');
     }
   }
 

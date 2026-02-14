@@ -262,6 +262,64 @@ const createCrudRouter = (tableName) => {
         }
     });
 
+    // UPDATE with filters (Batch update)
+    router.put('/', async (req, res) => {
+        try {
+            const filters = req.query;
+            const data = req.body;
+            delete data.id;
+            delete data.created_at;
+            delete data.updated_at;
+
+            if (Object.keys(filters).length === 0) {
+                return res.status(400).json({ error: 'Update operation requires filters' });
+            }
+
+            if (Object.keys(data).length === 0) return res.json({ status: 'no changes' });
+
+            const schema = await getTableSchema(tableName);
+            const hasUpdatedAt = !!schema['updated_at'];
+
+            const updates = [];
+            const values = [];
+            let idx = 1;
+
+            Object.entries(data).forEach(([key, value]) => {
+                updates.push(`${key} = $${idx}`);
+                if (schema[key] === 'jsonb' && typeof value === 'object' && value !== null) {
+                    values.push(JSON.stringify(value));
+                } else {
+                    values.push(value);
+                }
+                idx++;
+            });
+
+            if (hasUpdatedAt) {
+                updates.push(`updated_at = NOW()`);
+            }
+
+            const { conditions, values: filterValues } = buildConditions(filters, idx - 1);
+            if (conditions.length === 0) {
+                return res.status(400).json({ error: 'Update operation requires valid filters' });
+            }
+
+            values.push(...filterValues);
+
+            const query = `
+                UPDATE ${tableName}
+                SET ${updates.join(', ')}
+                WHERE ${conditions.join(' AND ')}
+                RETURNING *
+            `;
+
+            const result = await pool.query(query, values);
+            res.json(result.rows);
+        } catch (err) {
+            console.error(`Error batch updating ${tableName}:`, err);
+            res.status(500).json({ error: err.message });
+        }
+    });
+
     // DELETE with filters (e.g. DELETE /?prompt_id=123)
     router.delete('/', async (req, res) => {
         try {

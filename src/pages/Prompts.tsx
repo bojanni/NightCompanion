@@ -175,9 +175,17 @@ export default function Prompts() {
       if (error) throw error;
       setPrompts(prev => prev.map(p => p.id === id ? { ...p, rating } : p));
 
-      // Optionally sync rating to all linked images? 
-      // For now, let's NOT automatically sync prompt rating to all images as they might differ in quality.
-      // If we wanted to, we'd need to loop through all linkedImages[id] and update them.
+      // Sync rating to all linked images
+      await db.from('gallery_items').update({ rating }).eq('prompt_id', id);
+
+      // Update local state for linked images if they are in the current view
+      setLinkedImages(prev => {
+        if (!prev[id]) return prev;
+        return {
+          ...prev,
+          [id]: prev[id]!.map(img => ({ ...img, rating }))
+        };
+      });
     } catch (err) {
       handleError(err, 'RatePrompt', { promptId: id });
     }
@@ -284,7 +292,8 @@ export default function Prompts() {
         return;
       }
 
-      await db.from('gallery_items').update({ prompt_id: linkingPrompt.id }).eq('id', image.id);
+      const currentRating = linkingPrompt.rating || 0;
+      await db.from('gallery_items').update({ prompt_id: linkingPrompt.id, rating: currentRating }).eq('id', image.id);
 
       setLinkedImages(prev => ({
         ...prev,
@@ -294,7 +303,7 @@ export default function Prompts() {
             id: image.id,
             image_url: image.image_url,
             title: image.title,
-            rating: image.rating ?? 0,
+            rating: currentRating,
             ...(image.model ? { model: image.model } : {})
           }
         ]
@@ -332,12 +341,14 @@ export default function Prompts() {
       const { error } = await db.from('gallery_items').update({ rating }).eq('id', imageId);
       if (error) throw error;
 
-      // Update linked images map
+      // Find which prompt this image belongs to
+      let parentPromptId: string | null = null;
       setLinkedImages(prev => {
         const newMap = { ...prev };
         for (const promptId in newMap) {
           const imageIndex = newMap[promptId]!.findIndex(img => img.id === imageId);
           if (imageIndex !== -1) {
+            parentPromptId = promptId;
             const newImages = [...(newMap[promptId] || [])];
             newImages[imageIndex] = { ...newImages[imageIndex]!, rating };
             newMap[promptId] = newImages;
@@ -346,6 +357,22 @@ export default function Prompts() {
         }
         return newMap;
       });
+
+      // If it belongs to a prompt, sync the prompt and other sibling images
+      if (parentPromptId) {
+        // Sync parent prompt
+        await db.from('prompts').update({ rating }).eq('id', parentPromptId);
+        setPrompts(prev => prev.map(p => p.id === parentPromptId ? { ...p, rating } : p));
+
+        // Sync sibling images (including this one, but that's okay)
+        await db.from('gallery_items').update({ rating }).eq('prompt_id', parentPromptId);
+
+        // Update local state for all sibling images
+        setLinkedImages(prev => ({
+          ...prev,
+          [parentPromptId!]: prev[parentPromptId!]!.map(img => ({ ...img, rating }))
+        }));
+      }
 
       // Update lightbox image if open
       if (lightboxImage && lightboxImage.id === imageId) {

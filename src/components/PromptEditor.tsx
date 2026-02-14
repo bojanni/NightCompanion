@@ -303,6 +303,9 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       if (prompt) {
         const { error } = await db.from('prompts').update(payload).eq('id', prompt.id);
         if (error) throw error;
+
+        // Broadcast rating update to linked gallery items
+        await db.from('gallery_items').update({ rating: payload.rating }).eq('prompt_id', prompt.id);
       } else {
         const { data, error } = await db.from('prompts').insert(payload).select().maybeSingle();
         if (error) {
