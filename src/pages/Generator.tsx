@@ -232,7 +232,7 @@ export default function Generator() {
 
         {/* Global Max Words Slider (Hide in Manual Mode?) */}
         {mode !== 'manual' && (
-          <div className="flex items-start gap-3">
+          <div className="flex items-stretch gap-3">
             <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <label htmlFor="max-words-slider" className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
@@ -257,29 +257,29 @@ export default function Generator() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 min-w-[120px]">
-              <div className="group relative">
+            <div className="flex flex-col justify-between gap-2 min-w-[124px]">
+              <div className="group relative h-[calc(50%-4px)]">
                 <button
                   onClick={handleImproveAI}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 border border-slate-800 text-teal-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-teal-300 hover:border-slate-700 transition-colors"
+                  className="w-full h-full flex items-center justify-center gap-2 px-4 bg-slate-900 border border-slate-800 text-teal-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-teal-300 hover:border-slate-700 transition-colors shadow-sm"
                 >
                   <Wand2 size={14} />
                   <span>AutoFill</span>
                 </button>
-                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
                   Generated Prompt will be copied to Improve prompt field
                 </div>
               </div>
 
-              <div className="group relative">
+              <div className="group relative h-[calc(50%-4px)]">
                 <button
                   onClick={handleClearAll}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
+                  className="w-full h-full flex items-center justify-center gap-2 px-4 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
                 >
                   <Eraser size={14} />
                   <span>Clear All</span>
                 </button>
-                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
                   Clear all fields
                 </div>
               </div>
