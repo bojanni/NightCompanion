@@ -198,15 +198,41 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   }
 
   async function handleCopy(text: string, id: string) {
-    if (!navigator.clipboard) {
-      toast.error('Clipboard access not available');
-      return;
-    }
     try {
-      window.focus();
-      await navigator.clipboard.writeText(text);
-      setCopied(id);
-      setTimeout(() => setCopied(''), 2000);
+      // Try Modern Clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        setCopied(id);
+        setTimeout(() => setCopied(''), 2000);
+        return;
+      }
+    } catch (err) {
+      console.warn('Clipboard API failed, trying fallback...', err);
+    }
+
+    // Fallback Method for older browsers or when focus is an issue
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+
+      // Ensure it's not visible but part of the DOM
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        setCopied(id);
+        setTimeout(() => setCopied(''), 2000);
+      } else {
+        throw new Error('Fallback copy failed');
+      }
     } catch (err) {
       console.error('Failed to copy text: ', err);
       toast.error('Failed to copy to clipboard');
