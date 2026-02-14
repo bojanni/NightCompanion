@@ -1,15 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
-import { Save, Loader2, Plus, X, Upload, Wand2 } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { X, Save, Wand2, Star, Tag, AlertCircle, Copy, Check, ExternalLink, Paperclip, Unlink, Loader2, Image as ImageIcon, Plus, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Prompt, Tag } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
-import { db, supabase } from '../lib/api';
-import { trackKeywordsFromPrompt } from '../lib/style-analysis';
+import { supabase, db } from '../lib/api';
+import type { Database } from '../lib/database.types';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
 import { handleAIError } from '../lib/error-handler';
-import { listApiKeys } from '../lib/api-keys-service';
-import { getModelsForProvider } from '../lib/provider-models';
+import { MODELS } from '../lib/models-data';
 import ModelSelector from './ModelSelector';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
@@ -49,9 +48,22 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Models State
-  const [availableModels, setAvailableModels] = useState<any[]>([]);
-  const [availableProviders, setAvailableProviders] = useState<any[]>([]);
+  // Models State - Derived from static data
+  const availableModels = useMemo(() => MODELS.map(m => ({
+    id: m.id,
+    name: m.name,
+    provider: m.provider,
+    description: m.description
+  })), []);
+
+  const availableProviders = useMemo(() => {
+    const uniqueProviders = Array.from(new Set(MODELS.map(m => m.provider)));
+    return uniqueProviders.map(p => ({
+      id: p,
+      name: p,
+      type: 'cloud' as const
+    }));
+  }, []);
 
   useEffect(() => {
     if (prompt) {
@@ -62,71 +74,14 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setModel(prompt.model || '');
       setIsTemplate(prompt.is_template);
       setIsFavorite(prompt.is_favorite);
+      setAutoGenerateTitle(false); // Don't auto-gen on edit
+    } else {
+      // New prompt default values
+      const lastModel = localStorage.getItem('lastUsedModel');
+      if (lastModel) setModel(lastModel);
     }
     loadTags();
-    loadModels();
   }, [prompt]);
-
-  async function loadModels() {
-    try {
-      const [keys, { data: localEndpoints }] = await Promise.all([
-        listApiKeys(),
-        supabase.from('user_local_endpoints').select('*').eq('is_active', true)
-      ]);
-
-      const providers: any[] = [];
-      let models: any[] = [];
-
-      // Process Cloud Providers
-      const activeKeys = keys.filter(k => k.is_active);
-      for (const key of activeKeys) {
-        providers.push({
-          id: key.provider,
-          name: key.provider.charAt(0).toUpperCase() + key.provider.slice(1), // Simple capitalization
-          type: 'cloud'
-        });
-
-        // Get static models for this provider
-        const providerModels = getModelsForProvider(key.provider).map(m => ({
-          ...m,
-          provider: key.provider
-        }));
-        models = [...models, ...providerModels];
-      }
-
-      // Process Local Endpoints
-      if (localEndpoints) {
-        for (const endpoint of localEndpoints) {
-          const providerId = endpoint.provider;
-          const providerName = providerId === 'ollama' ? 'Ollama' : 'LM Studio';
-
-          // Check if provider already added (unlikely for local but good safety)
-          if (!providers.find(p => p.id === providerId)) {
-            providers.push({
-              id: providerId,
-              name: providerName,
-              type: 'local'
-            });
-          }
-
-          // Local models are dynamic, usually just the one configured or generic
-          // For now let's add the configured one as an option
-          const modelName = endpoint.model_name || 'Local Model';
-          models.push({
-            id: `${providerId}:${modelName}`, // Unique ID for selector
-            name: modelName,
-            provider: providerId,
-            description: `Local model via ${providerName}`
-          });
-        }
-      }
-
-      setAvailableProviders(providers);
-      setAvailableModels(models);
-    } catch (e) {
-      console.error('Failed to load models', e);
-    }
-  }
 
   async function loadTags() {
     const { data } = await db.from('tags').select('*').order('name');
