@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Save, Wand2, Plus, Upload, Loader2 } from 'lucide-react';
+import { X, Save, Wand2, Plus, Upload, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Prompt, Tag as TagType } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
@@ -30,11 +30,20 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [isFavorite, setIsFavorite] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Enhanced Fields
+  const [revisedPrompt, setRevisedPrompt] = useState('');
+  const [seed, setSeed] = useState<number | undefined>(undefined);
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [useCustomAspectRatio, setUseCustomAspectRatio] = useState(false);
+  const [detectedAspectRatio, setDetectedAspectRatio] = useState<string | null>(null);
+
   // AI Auto-Generation State
   const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
   const [autoGenerateTags, setAutoGenerateTags] = useState(true);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [allTags, setAllTags] = useState<TagType[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -65,6 +74,8 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
     }));
   }, []);
 
+  const ASPECT_RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'];
+
   useEffect(() => {
     const loadTags = async () => {
       const { data } = await db.from('tags').select('*').order('name');
@@ -87,6 +98,10 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setModel(prompt.model || '');
       setIsTemplate(prompt.is_template);
       setIsFavorite(prompt.is_favorite);
+      setRevisedPrompt(prompt.revised_prompt || '');
+      setSeed(prompt.seed);
+      setAspectRatio(prompt.aspect_ratio || '1:1');
+      setUseCustomAspectRatio(prompt.use_custom_aspect_ratio || false);
       setAutoGenerateTitle(false); // Don't auto-gen on edit
     } else {
       // New prompt default values
@@ -128,7 +143,42 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+        const result = e.target?.result as string;
+        setImagePreview(result);
+
+        // Auto-detect aspect ratio
+        const img = new Image();
+        img.onload = () => {
+          const ratio = img.width / img.height;
+          // Find closest standard ratio
+          let closest = '1:1';
+          let minDiff = Infinity;
+
+          const standardRatios = {
+            '1:1': 1,
+            '16:9': 16 / 9,
+            '9:16': 9 / 16,
+            '4:3': 4 / 3,
+            '3:4': 3 / 4,
+            '3:2': 3 / 2,
+            '2:3': 2 / 3,
+            '21:9': 21 / 9
+          };
+
+          for (const [key, val] of Object.entries(standardRatios)) {
+            const diff = Math.abs(ratio - val);
+            if (diff < minDiff) {
+              minDiff = diff;
+              closest = key;
+            }
+          }
+
+          setDetectedAspectRatio(closest);
+          if (!useCustomAspectRatio) {
+            setAspectRatio(closest);
+          }
+        };
+        img.src = result;
       };
       reader.readAsDataURL(file);
     }
@@ -138,6 +188,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
     setSelectedImage(null);
     setImagePreview(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setDetectedAspectRatio(null);
   }
 
 
@@ -240,6 +291,10 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         model: model || null,
         is_template: validated.is_template,
         is_favorite: isFavorite,
+        revised_prompt: revisedPrompt.trim() || null,
+        seed: seed || null,
+        aspect_ratio: aspectRatio,
+        use_custom_aspect_ratio: useCustomAspectRatio,
         updated_at: new Date().toISOString(),
       };
 
@@ -565,6 +620,85 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
 
 
+      <div>
+        <div className="flex justify-between items-center mb-1.5 opacity-100">
+          <label className="block text-sm font-medium text-slate-300">Aspect Ratio</label>
+          <div className="flex items-center gap-2">
+            <div className="flex bg-slate-700/50 p-1 rounded-xl border border-slate-600">
+              <button
+                onClick={() => {
+                  setUseCustomAspectRatio(false);
+                  if (detectedAspectRatio) setAspectRatio(detectedAspectRatio);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${!useCustomAspectRatio ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+              >
+                Auto
+              </button>
+              <button
+                onClick={() => setUseCustomAspectRatio(true)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${useCustomAspectRatio ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+              >
+                Custom
+              </button>
+            </div>
+
+            {useCustomAspectRatio ? (
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                aria-label="Select aspect ratio"
+              >
+                {ASPECT_RATIOS.map(ratio => (
+                  <option key={ratio} value={ratio}>{ratio}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="px-3 py-2 bg-slate-700/30 border border-slate-700 rounded-xl text-slate-400 text-sm italic min-w-[100px] text-center">
+                {detectedAspectRatio ? `${detectedAspectRatio} (Detected)` : '1:1 (Default)'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-slate-700/50">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          Advanced Settings
+        </button>
+
+        {showAdvanced && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Seed</label>
+              <input
+                type="number"
+                value={seed ?? ''}
+                onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="Random (-1)"
+                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Set a fixed seed for reproducible results.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Revised Prompt (AI Optimized)</label>
+              <textarea
+                value={revisedPrompt}
+                onChange={(e) => setRevisedPrompt(e.target.value)}
+                placeholder="Model-specific version of the prompt..."
+                rows={3}
+                className="w-full px-4 py-2.5 bg-slate-700/30 border border-slate-700 rounded-xl text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none font-mono"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {!isLinked && (
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">Reference Image</label>
@@ -592,6 +726,11 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
                   <X size={16} />
                 </button>
               </div>
+              {detectedAspectRatio && (
+                <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-xs text-white border border-white/10">
+                  Aspect Ratio: {detectedAspectRatio}
+                </div>
+              )}
             </div>
           )}
           <input

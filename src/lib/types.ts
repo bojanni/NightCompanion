@@ -11,6 +11,10 @@ export interface Prompt {
   tags?: Tag[];
   gallery_item_id?: string | null;
   model?: string;
+  revised_prompt?: string;
+  seed?: number;
+  aspect_ratio?: string;
+  use_custom_aspect_ratio?: boolean;
 }
 
 export interface Tag {
