@@ -159,7 +159,10 @@ export default function Generator() {
     localStorage.removeItem('nightcompanion_manual_generator');
     localStorage.removeItem('nightcompanion_guided_state');
     localStorage.removeItem('nightcompanion_aitools_state');
-    aiToolsRef.current?.clearContent();
+    if (aiToolsRef.current) {
+      aiToolsRef.current.clearContent();
+    }
+    toast.success('All fields cleared');
   }
 
   function handleCheckExternalFields() {
@@ -254,24 +257,32 @@ export default function Generator() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleImproveAI}
-                className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-teal-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-teal-300 hover:border-slate-700 transition-colors"
-                title="Send current prompt to AI Improvement tools"
-              >
-                <Wand2 size={14} />
-                <span>Improve AI</span>
-              </button>
+            <div className="flex flex-col gap-2 min-w-[120px]">
+              <div className="group relative">
+                <button
+                  onClick={handleImproveAI}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 border border-slate-800 text-teal-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-teal-300 hover:border-slate-700 transition-colors"
+                >
+                  <Wand2 size={14} />
+                  <span>AutoFill</span>
+                </button>
+                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                  Generated Prompt will be copied to Improve prompt field
+                </div>
+              </div>
 
-              <button
-                onClick={handleClearAll}
-                className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
-                title="Clear all generated prompts and reset to defaults"
-              >
-                <Eraser size={14} />
-                <span className="hidden sm:inline">Clear All</span>
-              </button>
+              <div className="group relative">
+                <button
+                  onClick={handleClearAll}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
+                >
+                  <Eraser size={14} />
+                  <span>Clear All</span>
+                </button>
+                <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                  Clear all fields
+                </div>
+              </div>
             </div>
           </div>
         )}
