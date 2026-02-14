@@ -459,6 +459,43 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         />
       </div>
 
+      <div className="pt-2 border-t border-slate-700/50">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4"
+        >
+          {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          Advanced Prompt Settings
+        </button>
+
+        {showAdvanced && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Seed</label>
+              <input
+                type="number"
+                value={seed ?? ''}
+                onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="Random (-1)"
+                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Set a fixed seed for reproducible results.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Revised Prompt (AI Optimized)</label>
+              <textarea
+                value={revisedPrompt}
+                onChange={(e) => setRevisedPrompt(e.target.value)}
+                placeholder="Model-specific version of the prompt..."
+                rows={3}
+                className="w-full px-4 py-2.5 bg-slate-700/30 border border-slate-700 rounded-xl text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none font-mono"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-slate-300 mb-1.5">Notes</label>
         <textarea
@@ -665,42 +702,6 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         </div>
       </div>
 
-      <div className="pt-2 border-t border-slate-700/50">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          Advanced Settings
-        </button>
-
-        {showAdvanced && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Seed</label>
-              <input
-                type="number"
-                value={seed ?? ''}
-                onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
-                placeholder="Random (-1)"
-                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-              />
-              <p className="text-[10px] text-slate-500 mt-1">Set a fixed seed for reproducible results.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Revised Prompt (AI Optimized)</label>
-              <textarea
-                value={revisedPrompt}
-                onChange={(e) => setRevisedPrompt(e.target.value)}
-                placeholder="Model-specific version of the prompt..."
-                rows={3}
-                className="w-full px-4 py-2.5 bg-slate-700/30 border border-slate-700 rounded-xl text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none font-mono"
-              />
-            </div>
-          </div>
-        )}
-      </div>
 
       {!isLinked && (
         <div>
