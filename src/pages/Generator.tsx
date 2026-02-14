@@ -4,6 +4,7 @@ import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
 import ManualGenerator from '../components/ManualGenerator';
 import AITools, { AIToolsRef } from '../components/AITools';
+import MagicPromptInput from '../components/MagicPromptInput';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 
@@ -120,9 +121,9 @@ export default function Generator() {
   }
 
   const modes = [
-    { id: 'random' as Mode, label: 'Random', icon: Shuffle, desc: 'One click, done' },
+    { id: 'random' as Mode, label: 'Quick Start', icon: Shuffle, desc: 'One click, done' },
     { id: 'guided' as Mode, label: 'Guided', icon: Target, desc: 'Full control' },
-    { id: 'manual' as Mode, label: 'Manual', icon: PenTool, desc: 'Multi-part build' },
+    { id: 'manual' as Mode, label: 'Multi-Part', icon: PenTool, desc: 'Multi-part build' },
     { id: 'remix' as Mode, label: 'Quick Remix', icon: Zap, desc: 'Modify last prompt' },
   ];
 
@@ -132,6 +133,8 @@ export default function Generator() {
         <h1 className="text-2xl font-bold text-white">Prompt Generator</h1>
         <p className="text-slate-400 mt-1">Create the perfect prompt for your next creation</p>
       </div>
+
+
 
       <div className="grid grid-cols-4 gap-3">
         {modes.map(({ id, label, icon: Icon, desc }) => (
@@ -159,6 +162,17 @@ export default function Generator() {
           </button>
         ))}
       </div>
+
+      <MagicPromptInput
+        onPromptGenerated={(prompt) => {
+          setGuidedInitial(prompt);
+          setMode('guided');
+          if (isAutofillEnabled && aiToolsRef.current) {
+            aiToolsRef.current.setInputContent(prompt);
+          }
+        }}
+        maxWords={maxWords}
+      />
 
       <div className="flex flex-col gap-4">
 
