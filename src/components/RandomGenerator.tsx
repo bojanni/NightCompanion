@@ -18,11 +18,9 @@ interface RandomGeneratorProps {
   initialPrompt?: string;
   initialNegativePrompt?: string;
   onCheckExternalFields?: () => boolean;
-  isAutofillEnabled: boolean;
-  setIsAutofillEnabled: (v: boolean) => void;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, isAutofillEnabled, setIsAutofillEnabled }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
@@ -238,15 +236,9 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             </button>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isAutofillEnabled}
-              onChange={(e) => setIsAutofillEnabled(e.target.checked)}
-              className="w-4 h-4 rounded-md border-slate-600 bg-slate-800/50 text-amber-500 focus:ring-amber-500/50"
-            />
-            Auto-fill Improvement AI
-          </label>
+          <span className="text-[10px] text-slate-500 italic">
+            Auto-fill is now managed globally above
+          </span>
         </div>
       </div>
 

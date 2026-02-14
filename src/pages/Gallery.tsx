@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Link,
 } from 'lucide-react';
 import { db, supabase } from '../lib/api';
-import type { GalleryItem, Collection, Prompt } from '../lib/types';
+import type { GalleryItem, Prompt, Collection } from '../lib/types';
 import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
@@ -16,6 +16,30 @@ import { toast } from 'sonner';
 import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PROVIDER_MODELS } from '../lib/provider-models';
+
+interface DynamicColorElementProps extends React.HTMLAttributes<HTMLElement> {
+  tag?: keyof JSX.IntrinsicElements;
+  cssVars: Record<string, string>;
+}
+
+const DynamicColorElement = ({
+  tag = 'div',
+  cssVars,
+  className,
+  children,
+  ...props
+}: DynamicColorElementProps) => {
+  const Tag = tag;
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      Object.entries(cssVars).forEach(([key, value]) => {
+        ref.current?.style.setProperty(key, value);
+      });
+    }
+  }, [cssVars]);
+  return <Tag ref={ref} className={className} {...props}>{children}</Tag>;
+};
 
 const PAGE_SIZE = 24;
 
@@ -474,17 +498,22 @@ export default function Gallery() {
           </button>
           {collections.map((coll) => (
             <div key={coll.id} className="flex items-center gap-0.5">
-              <button
+              <DynamicColorElement
+                tag="button"
                 onClick={() => handleFilterCollectionChange(filterCollection === coll.id ? null : coll.id)}
                 className={`px-3 py-1.5 rounded-l-xl text-xs font-medium transition-all border ${filterCollection === coll.id
                   ? 'border-amber-500/30 text-amber-400 dynamic-bg-color-alpha'
                   : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
                   }`}
-                style={filterCollection === coll.id ? { '--bg-color': coll.color } as React.CSSProperties : {}}
+                cssVars={filterCollection === coll.id ? { '--bg-color': coll.color } : {}}
               >
-                <span className="inline-block w-2 h-2 rounded-full mr-1.5 dynamic-bg-color" style={{ '--bg-color': coll.color } as React.CSSProperties} />
+                <DynamicColorElement
+                  tag="span"
+                  className="inline-block w-2 h-2 rounded-full mr-1.5 dynamic-bg-color"
+                  cssVars={{ '--bg-color': coll.color }}
+                />
                 {coll.name}
-              </button>
+              </DynamicColorElement>
               <button
                 onClick={() => handleDeleteCollection(coll.id)}
                 className="px-1.5 py-1.5 rounded-r-xl text-xs border border-l-0 border-slate-700 text-slate-600 hover:text-red-400 transition-colors"
@@ -843,11 +872,12 @@ export default function Gallery() {
             <label className="block text-sm font-medium text-slate-300 mb-1.5">Color</label>
             <div className="flex gap-2">
               {['#d97706', '#dc2626', '#059669', '#2563eb', '#db2777', '#0891b2', '#65a30d', '#7c3aed'].map((c) => (
-                <button
+                <DynamicColorElement
+                  tag="button"
                   key={c}
                   onClick={() => setCollColor(c)}
                   className={`w-7 h-7 rounded-full transition-all dynamic-bg-color ${collColor === c ? 'ring-2 ring-white scale-110' : ''}`}
-                  style={{ '--bg-color': c } as React.CSSProperties}
+                  cssVars={{ '--bg-color': c }}
                   aria-label={`Select color ${c}`}
                 />
               ))}

@@ -588,16 +588,27 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Color</label>
                 <div className="flex gap-1">
-                  {TAG_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setNewTagColor(c)}
-                      className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''}`}
-                      style={{ backgroundColor: c }}
-                      aria-label={`Select color ${c}`}
-                      title={`Select color ${c}`}
-                    />
-                  ))}
+                  {TAG_COLORS.map((c) => {
+                    const colorMap: Record<string, string> = {
+                      '#d97706': 'bg-amber-600',
+                      '#dc2626': 'bg-red-600',
+                      '#059669': 'bg-emerald-600',
+                      '#2563eb': 'bg-blue-600',
+                      '#7c3aed': 'bg-violet-600',
+                      '#db2777': 'bg-pink-600',
+                      '#0891b2': 'bg-cyan-600',
+                      '#65a30d': 'bg-lime-600'
+                    };
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => setNewTagColor(c)}
+                        className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''} ${colorMap[c] || 'bg-slate-600'}`}
+                        aria-label={`Select color ${c}`}
+                        title={`Select color ${c}`}
+                      />
+                    );
+                  })}
                 </div>
               </div>
               <div>

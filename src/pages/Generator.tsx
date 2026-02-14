@@ -28,9 +28,24 @@ export default function Generator() {
   const [lastPrompts, setLastPrompts] = useState<Prompt[]>([]);
   const [remixBase, setRemixBase] = useState('');
   const [saveCount, setSaveCount] = useState(0);
-  const [maxWords, setMaxWords] = useState(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).maxWords || 70; } catch { /* ignore */ } return 70;
+  const [maxWords, setMaxWords] = useState<number>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return 70;
+    try {
+      const state = JSON.parse(saved);
+      return state.maxWords || 70;
+    } catch {
+      return 70;
+    }
   });
+
+  const sliderRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (sliderRef.current) {
+      sliderRef.current.style.setProperty('--gradient-percent', `${((maxWords - 20) / 80) * 100}%`);
+    }
+  }, [maxWords]);
   const [randomPrompt, setRandomPrompt] = useState(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).randomPrompt || ''; } catch { /* ignore */ } return '';
   });
@@ -194,9 +209,7 @@ export default function Generator() {
                 value={maxWords}
                 onChange={(e) => setMaxWords(parseInt(e.target.value))}
                 className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500 dynamic-slider-gradient"
-                style={{
-                  '--gradient-percent': `${((maxWords - 20) / 80) * 100}%`
-                } as React.CSSProperties}
+                ref={sliderRef}
                 title="Adjust max words"
               />
               <div className="flex justify-between mt-2">
@@ -206,14 +219,26 @@ export default function Generator() {
               </div>
             </div>
 
-            <button
-              onClick={handleClearAll}
-              className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors h-full"
-              title="Clear all generated prompts and reset to defaults"
-            >
-              <Eraser size={14} />
-              <span className="hidden sm:inline">Clear All</span>
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleClearAll}
+                className="flex items-center gap-1.5 px-4 py-3 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors"
+                title="Clear all generated prompts and reset to defaults"
+              >
+                <Eraser size={14} />
+                <span className="hidden sm:inline">Clear All</span>
+              </button>
+
+              <label className="flex items-center justify-center gap-2 text-[11px] text-slate-500 cursor-pointer select-none hover:text-slate-400 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isAutofillEnabled}
+                  onChange={(e) => setIsAutofillEnabled(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-800/50 text-amber-500 focus:ring-amber-500/50"
+                />
+                Auto-fill Improvement AI
+              </label>
+            </div>
           </div>
         )}
       </div>
@@ -241,8 +266,6 @@ export default function Generator() {
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
           onCheckExternalFields={handleCheckExternalFields}
-          isAutofillEnabled={isAutofillEnabled}
-          setIsAutofillEnabled={setIsAutofillEnabled}
         />
       )}
 
