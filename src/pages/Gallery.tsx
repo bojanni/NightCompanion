@@ -716,7 +716,9 @@ export default function Gallery() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-slate-300">Title</label>
+                <label className="text-sm font-medium text-slate-300">
+                  Title {!autoGenerateTitle && <span className="text-red-400">*</span>}
+                </label>
                 <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">
                   <input
                     type="checkbox"
@@ -731,14 +733,18 @@ export default function Gallery() {
                 <input
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
+                  onBlur={() => handleFieldBlur('title')}
                   disabled={autoGenerateTitle && generatingTitle}
                   placeholder={generatingTitle ? "Generating title..." : "Image title"}
-                  className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${formTouched.title && formErrors.title ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
                 />
                 {generatingTitle && (
                   <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 animate-spin" />
                 )}
               </div>
+              {formTouched.title && formErrors.title && (
+                <p className="text-xs text-red-400 mt-1">{formErrors.title}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Collection</label>
@@ -755,24 +761,32 @@ export default function Gallery() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Model</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                Model <span className="text-red-400">*</span>
+              </label>
               <ModelSelector
                 value={formModel}
-                onChange={(m) => setFormModel(m)}
+                onChange={(m) => { setFormModel(m); setFormTouched(prev => ({ ...prev, model: true })); setFormErrors(prev => { const next = { ...prev }; delete next.model; return next; }); }}
                 models={allModels}
                 providers={allProviders}
               />
+              {formTouched.model && formErrors.model && (
+                <p className="text-xs text-red-400 mt-1">{formErrors.model}</p>
+              )}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Image</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              Image <span className="text-red-400">*</span>
+            </label>
             <div className="space-y-3">
               <div className="flex gap-2">
                 <input
                   value={formImageUrl}
                   onChange={(e) => setFormImageUrl(e.target.value)}
+                  onBlur={() => handleFieldBlur('imageUrl')}
                   placeholder="Paste URL or upload image below..."
-                  className="flex-1 px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                  className={`flex-1 px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm ${formTouched.imageUrl && formErrors.imageUrl ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
                 />
                 <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer transition-colors text-sm font-medium">
                   <Image size={16} />
@@ -785,6 +799,9 @@ export default function Gallery() {
                   />
                 </label>
               </div>
+              {formTouched.imageUrl && formErrors.imageUrl && (
+                <p className="text-xs text-red-400 mt-1">{formErrors.imageUrl}</p>
+              )}
               {formImageUrl && (
                 <img
                   src={formImageUrl}

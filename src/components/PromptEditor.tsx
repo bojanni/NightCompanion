@@ -30,6 +30,10 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [isFavorite, setIsFavorite] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Form validation state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
+
   // Enhanced Fields
   const [revisedPrompt, setRevisedPrompt] = useState('');
   const [seed, setSeed] = useState<number | undefined>(undefined);
@@ -271,7 +275,31 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
     }
   }
 
+  function validatePromptForm() {
+    const errors: Record<string, string> = {};
+    if (!autoGenerateTitle && !title.trim()) {
+      errors.title = 'Title is required when auto-generate is off';
+    }
+    if (!content.trim()) {
+      errors.content = 'Prompt content is required';
+    }
+    if (!model) {
+      errors.model = 'Please select a model';
+    }
+    return errors;
+  }
+
+  function handleValidationBlur(field: string) {
+    setFormTouched(prev => ({ ...prev, [field]: true }));
+    setFormErrors(validatePromptForm());
+  }
+
   async function handleSave() {
+    // Mark all required fields as touched
+    setFormTouched({ title: true, content: true, model: true });
+    const errors = validatePromptForm();
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setSaving(true);
 
     try {
@@ -390,7 +418,9 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
     <div className="space-y-5">
       <div>
         <div className="flex justify-between items-center mb-1.5">
-          <label className="block text-sm font-medium text-slate-300">Title</label>
+          <label className="block text-sm font-medium text-slate-300">
+            Title {!autoGenerateTitle && <span className="text-red-400">*</span>}
+          </label>
           <label className="flex items-center gap-1.5 cursor-pointer">
             <button
               onClick={async () => {
@@ -425,21 +455,35 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => handleValidationBlur('title')}
           placeholder="A descriptive name for this prompt"
-          className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+          className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm ${formTouched.title && formErrors.title ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
         />
+        {formTouched.title && formErrors.title && (
+          <p className="text-xs text-red-400 mt-1">{formErrors.title}</p>
+        )}
       </div>
 
-      <ModelSelector
-        value={model}
-        onChange={(id) => setModel(id)}
-        models={availableModels}
-        providers={availableProviders}
-      />
+      <div>
+        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          Model <span className="text-red-400">*</span>
+        </label>
+        <ModelSelector
+          value={model}
+          onChange={(id) => { setModel(id); setFormTouched(prev => ({ ...prev, model: true })); setFormErrors(prev => { const next = { ...prev }; delete next.model; return next; }); }}
+          models={availableModels}
+          providers={availableProviders}
+        />
+        {formTouched.model && formErrors.model && (
+          <p className="text-xs text-red-400 mt-1">{formErrors.model}</p>
+        )}
+      </div>
 
       <div>
         <div className="flex justify-between items-center mb-1.5">
-          <label className="block text-sm font-medium text-slate-300">Prompt</label>
+          <label className="block text-sm font-medium text-slate-300">
+            Prompt <span className="text-red-400">*</span>
+          </label>
           {isLinked && (
             <span className="text-xs text-amber-500 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
@@ -451,12 +495,14 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Your full prompt text..."
-
           rows={5}
-          onBlur={handlePromptBlur}
+          onBlur={() => { handlePromptBlur(); handleValidationBlur('content'); }}
           disabled={isLinked}
-          className={`w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none ${isLinked ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm resize-none ${isLinked ? 'opacity-50 cursor-not-allowed' : ''} ${formTouched.content && formErrors.content ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
         />
+        {formTouched.content && formErrors.content && (
+          <p className="text-xs text-red-400 mt-1">{formErrors.content}</p>
+        )}
       </div>
 
       <div className="pt-2 border-t border-slate-700/50">
