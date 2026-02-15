@@ -17,9 +17,12 @@ import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PROVIDER_MODELS } from '../lib/provider-models';
 
-interface DynamicColorElementProps extends React.HTMLAttributes<HTMLElement> {
+interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
   cssVars: Record<string, string>;
+  className?: string;
+  children?: React.ReactNode;
+  onClick?: React.MouseEventHandler;
 }
 
 const DynamicColorElement = ({
@@ -27,18 +30,18 @@ const DynamicColorElement = ({
   cssVars,
   className,
   children,
-  ...props
+  onClick,
 }: DynamicColorElementProps) => {
-  const Tag = tag;
-  const ref = useRef<HTMLElement>(null);
+  const Tag = tag as React.ElementType;
+  const ref = useRef<Element>(null);
   useEffect(() => {
-    if (ref.current) {
+    if (ref.current && ref.current instanceof HTMLElement) {
       Object.entries(cssVars).forEach(([key, value]) => {
-        ref.current?.style.setProperty(key, value);
+        (ref.current as HTMLElement).style.setProperty(key, value);
       });
     }
   }, [cssVars]);
-  return <Tag ref={ref} className={className} {...props}>{children}</Tag>;
+  return <Tag ref={ref} className={className} onClick={onClick}>{children}</Tag>;
 };
 
 const PAGE_SIZE = 24;
@@ -81,6 +84,10 @@ export default function Gallery() {
   const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
+
+  // Form validation state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
 
   // Flattened models for the selector
   const allModels = Object.entries(PROVIDER_MODELS).flatMap(([provider, models]) =>
@@ -152,6 +159,28 @@ export default function Gallery() {
     loadData();
   }, [loadData]);
 
+  function validateForm(fields?: { title?: string; imageUrl?: string; model?: string }) {
+    const title = fields?.title ?? formTitle;
+    const imageUrl = fields?.imageUrl ?? formImageUrl;
+    const model = fields?.model ?? formModel;
+    const errors: Record<string, string> = {};
+    if (!autoGenerateTitle && !title.trim()) {
+      errors.title = 'Title is required when auto-generate is off';
+    }
+    if (!imageUrl.trim()) {
+      errors.imageUrl = 'Image URL or upload is required';
+    }
+    if (!model) {
+      errors.model = 'Please select a model';
+    }
+    return errors;
+  }
+
+  function handleFieldBlur(field: string) {
+    setFormTouched(prev => ({ ...prev, [field]: true }));
+    setFormErrors(validateForm());
+  }
+
   function openItemEditor(item: GalleryItem | null) {
     setEditingItem(item);
     setFormTitle(item?.title ?? '');
@@ -165,11 +194,17 @@ export default function Gallery() {
     setPromptSuggestions([]);
     setShowPromptSuggestions(false);
     setSelectedPromptId(item?.prompt_id ?? null);
+    setFormErrors({});
+    setFormTouched({});
     setShowItemEditor(true);
   }
 
   async function handleSaveItem() {
-    if (!formImageUrl) return;
+    // Mark all validatable fields as touched
+    setFormTouched({ title: true, imageUrl: true, model: true });
+    const errors = validateForm();
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setSaving(true);
     try {
       const itemData = {
@@ -204,6 +239,7 @@ export default function Gallery() {
   async function handleDeleteItem(id: string) {
     await db.from('gallery_items').delete().eq('id', id);
     setItems((prev) => prev.filter((i) => i.id !== id));
+    setTotalCount((prev) => Math.max(0, prev - 1));
     if (selectedItem?.id === id) setSelectedItem(null);
     toast.success('Image deleted');
   }
