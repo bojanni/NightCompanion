@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Clock, RotateCcw, GitCompare, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Clock, RotateCcw, GitCompare, ChevronDown, ChevronRight } from 'lucide-react';
 import { db } from '../lib/api';
 import { PromptVersion } from '../lib/types';
 import Modal from './Modal';
@@ -18,14 +18,10 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
   const [showDiff, setShowDiff] = useState(false);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadVersions();
-  }, [promptId]);
-
-  const loadVersions = async () => {
+  const loadVersions = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('prompt_versions')
         .select('*')
         .eq('prompt_id', promptId)
@@ -38,7 +34,11 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
     } finally {
       setLoading(false);
     }
-  };
+  }, [promptId]);
+
+  useEffect(() => {
+    loadVersions();
+  }, [loadVersions]);
 
   const handleRestore = async (version: PromptVersion) => {
     if (window.confirm(`Restore to version ${version.version_number}? This will create a new version with this content.`)) {
@@ -92,24 +92,24 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
     let i = 0, j = 0;
     while (i < oldWords.length || j < newWords.length) {
       if (i >= oldWords.length) {
-        result.push({ type: 'added', text: newWords[j] });
+        result.push({ type: 'added', text: newWords[j]! });
         j++;
       } else if (j >= newWords.length) {
-        result.push({ type: 'removed', text: oldWords[i] });
+        result.push({ type: 'removed', text: oldWords[i]! });
         i++;
       } else if (oldWords[i] === newWords[j]) {
-        result.push({ type: 'unchanged', text: oldWords[i] });
+        result.push({ type: 'unchanged', text: oldWords[i]! });
         i++;
         j++;
       } else {
-        const oldIndex = newWords.indexOf(oldWords[i], j);
-        const newIndex = oldWords.indexOf(newWords[j], i);
+        const oldIndex = newWords.indexOf(oldWords[i]!, j);
+        const newIndex = oldWords.indexOf(newWords[j]!, i);
 
         if (oldIndex !== -1 && (newIndex === -1 || oldIndex - j < newIndex - i)) {
-          result.push({ type: 'added', text: newWords[j] });
+          result.push({ type: 'added', text: newWords[j]! });
           j++;
         } else {
-          result.push({ type: 'removed', text: oldWords[i] });
+          result.push({ type: 'removed', text: oldWords[i]! });
           i++;
         }
       }
@@ -158,11 +158,10 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
             return (
               <div
                 key={version.id}
-                className={`border rounded-lg overflow-hidden transition-all ${
-                  isLatest
-                    ? 'border-orange-300 bg-orange-50'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
+                className={`border rounded-lg overflow-hidden transition-all ${isLatest
+                  ? 'border-orange-300 bg-orange-50'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-4">
@@ -215,11 +214,10 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
                       {showDiff && (
                         <button
                           onClick={() => setCompareVersion(version)}
-                          className={`p-2 rounded-lg transition-colors ${
-                            compareVersion?.id === version.id
-                              ? 'bg-orange-600 text-white'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
+                          className={`p-2 rounded-lg transition-colors ${compareVersion?.id === version.id
+                            ? 'bg-orange-600 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
                           title="Select for comparison"
                         >
                           <GitCompare className="w-4 h-4" />
@@ -245,7 +243,7 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
 
       {selectedVersion && (
         <Modal
-          isOpen={true}
+          open={true}
           onClose={() => setSelectedVersion(null)}
           title={`Restore Version ${selectedVersion.version_number}`}
         >
@@ -285,7 +283,7 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
 
       {compareVersion && (
         <Modal
-          isOpen={true}
+          open={true}
           onClose={() => setCompareVersion(null)}
           title="Compare Versions"
         >
@@ -298,6 +296,7 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
                 <select
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   value={compareVersion.version_number}
+                  aria-label="Select version to compare"
                   onChange={(e) => {
                     const v = versions.find(v => v.version_number === parseInt(e.target.value));
                     if (v) setCompareVersion(v);
@@ -330,8 +329,8 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
                       part.type === 'added'
                         ? 'bg-green-100 text-green-900'
                         : part.type === 'removed'
-                        ? 'bg-red-100 text-red-900 line-through'
-                        : 'text-slate-700'
+                          ? 'bg-red-100 text-red-900 line-through'
+                          : 'text-slate-700'
                     }
                   >
                     {part.text}
