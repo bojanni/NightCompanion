@@ -29,6 +29,7 @@ app.use('/api/character_details', createCrudRouter('character_details'));
 app.use('/api/gallery_items', createCrudRouter('gallery_items'));
 app.use('/api/collections', createCrudRouter('collections'));
 app.use('/api/prompt_tags', createCrudRouter('prompt_tags'));
+app.use('/api/prompt_versions', createCrudRouter('prompt_versions'));
 app.use('/api/style_profiles', createCrudRouter('style_profiles'));
 app.use('/api/style_keywords', createCrudRouter('style_keywords'));
 app.use('/api/style_learning', createCrudRouter('style_learning'));
