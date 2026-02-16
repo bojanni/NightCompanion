@@ -338,7 +338,7 @@ export function ProviderConfigForm({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label className="block text-xs text-slate-400 mb-2">Generation Model</label>
                             <ModelSelector
