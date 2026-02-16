@@ -219,13 +219,7 @@ export default function Generator() {
         ))}
       </div>
 
-      <MagicPromptInput
-        onPromptGenerated={(prompt) => {
-          setGuidedInitial(prompt);
-          setMode('guided');
-        }}
-        maxWords={maxWords}
-      />
+
 
       <div className="flex flex-col gap-4">
 
@@ -285,6 +279,16 @@ export default function Generator() {
               </div>
             </div>
           </div>
+        )}
+
+        {mode === 'random' && (
+          <MagicPromptInput
+            onPromptGenerated={(prompt) => {
+              setGuidedInitial(prompt);
+              setMode('guided');
+            }}
+            maxWords={maxWords}
+          />
         )}
       </div>
 
