@@ -11,6 +11,7 @@ export interface Prompt {
   tags?: Tag[];
   gallery_item_id?: string | null;
   model?: string;
+  suggested_model?: string;
   revised_prompt?: string;
   seed?: number;
   aspect_ratio?: string;

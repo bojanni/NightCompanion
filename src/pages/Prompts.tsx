@@ -581,6 +581,25 @@ export default function Prompts() {
                         )}
                       </div>
                     </div>
+
+                    {prompt.model && (
+                      <div className="flex items-center gap-3 mb-3 pt-2 border-t border-slate-800/50">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Zap size={12} className="text-amber-500 shrink-0" />
+                          <span className="text-[10px] font-medium text-slate-400 truncate" title={prompt.model}>
+                            {prompt.model}
+                          </span>
+                        </div>
+                        {prompt.suggested_model && prompt.model !== prompt.suggested_model && (
+                          <div className="flex items-center gap-1.5 min-w-0 pl-3 border-l border-slate-800/50">
+                            <Sparkles size={12} className="text-teal-500 shrink-0" />
+                            <span className="text-[10px] font-medium text-slate-400 truncate" title={`Suggested: ${prompt.suggested_model}`}>
+                              {prompt.suggested_model}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="px-5 pb-5">

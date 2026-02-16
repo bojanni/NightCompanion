@@ -50,7 +50,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         const { data: localData } = await db
           .from('user_local_endpoints')
           .select('*')
-          .eq('is_active', true)
+          .eq('is_active_gen', true) // Check for generation specific flag
           .single();
 
         if (localData) {
@@ -61,7 +61,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
         // Check cloud providers
         const keys = await listApiKeys();
-        const activeKey = keys.find(k => k.is_active);
+        const activeKey = keys.find(k => k.is_active_gen || k.is_active); // Prioritize gen flag
 
         if (activeKey) {
           const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
@@ -140,6 +140,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       rating: 0,
       is_template: false,
       is_favorite: false,
+      model: activeModel,
+      suggested_model: topSuggestion ? topSuggestion.model : undefined
     });
     setSaving(false);
     onSaved();
