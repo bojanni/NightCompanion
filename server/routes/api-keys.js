@@ -51,11 +51,10 @@ router.post('/', async (req, res) => {
             const encrypted = encrypt(apiKey);
             const hint = maskKey(apiKey);
 
-            // If this is the first key, make it active
-            const existing = await pool.query(
-                'SELECT id FROM user_api_keys WHERE is_active = true'
-            );
-            const isFirst = existing.rows.length === 0;
+            // If this is the first key (across both cloud and local), make it active
+            const existingCloud = await pool.query('SELECT id FROM user_api_keys WHERE is_active = true');
+            const existingLocal = await pool.query('SELECT id FROM user_local_endpoints WHERE is_active = true');
+            const isFirst = existingCloud.rows.length === 0 && existingLocal.rows.length === 0;
 
             await pool.query(
                 `INSERT INTO user_api_keys (provider, encrypted_key, key_hint, model_name, is_active, is_active_gen, is_active_improve)

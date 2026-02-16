@@ -46,7 +46,18 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       try {
         await db.auth.getSession();
 
-        // Check local endpoints first
+        // Check cloud providers FIRST (matches Settings precedence)
+        const keys = await listApiKeys();
+        const activeKey = keys.find(k => k.is_active_gen || k.is_active); // Prioritize gen flag
+
+        if (activeKey) {
+          const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+          setActiveModel(`${providerName} ${model}`);
+          return;
+        }
+
+        // Check local endpoints fallback
         const { data: localData } = await db
           .from('user_local_endpoints')
           .select('*')
@@ -59,17 +70,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
           return;
         }
 
-        // Check cloud providers
-        const keys = await listApiKeys();
-        const activeKey = keys.find(k => k.is_active_gen || k.is_active); // Prioritize gen flag
-
-        if (activeKey) {
-          const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
-          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
-          setActiveModel(`${providerName} ${model}`);
-        } else {
-          setActiveModel('');
-        }
+        setActiveModel('');
       } catch (e) {
         console.error('Failed to fetch active model', e);
       }

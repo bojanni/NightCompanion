@@ -161,11 +161,22 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     async function fetchActiveModel() {
       try {
 
-        // Check local endpoints first
+        const keys = await listApiKeys();
+        const activeKey = keys.find(k => k.is_active_improve || k.is_active);
+
+        if (activeKey) {
+          const model = activeKey.model_improve || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+          // Format provider name nicely
+          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+          setActiveModel(`${providerName} ${model}`);
+          return;
+        }
+
+        // Check local endpoints fallback
         const { data: localData } = await db
           .from('user_local_endpoints')
           .select('*')
-          .eq('is_active', true)
+          .eq('is_active_improve', true)
           .single();
 
         if (localData) {
@@ -174,18 +185,9 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
           return;
         }
 
-        // Check cloud providers
-        const keys = await listApiKeys();
-        const activeKey = keys.find(k => k.is_active);
+        setActiveModel('');
 
-        if (activeKey) {
-          const model = activeKey.model_improve || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
-          // Format provider name nicely
-          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
-          setActiveModel(`${providerName} ${model}`);
-        } else {
-          setActiveModel('');
-        }
+
       } catch (e) {
         console.error('Failed to fetch active model', e);
       }
