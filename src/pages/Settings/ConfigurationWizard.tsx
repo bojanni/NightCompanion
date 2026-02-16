@@ -111,6 +111,26 @@ export function ConfigurationWizard({
         return PROVIDERS; // advanced shows all
     };
 
+    const getModelDisplay = (providerId: string, role: 'generation' | 'improvement' | 'vision') => {
+        if (!providerId) return null;
+        const provider = keys.find(k => k.provider === providerId) || localEndpoints.find(e => e.provider === providerId);
+        if (!provider) return null;
+
+        let model = '';
+        if ('endpoint_url' in provider) {
+            // Local Endpoint
+            if (role === 'generation') model = provider.model_gen || provider.model_name || '';
+            else if (role === 'improvement') model = provider.model_improve || provider.model_name || '';
+            else if (role === 'vision') model = provider.model_vision || provider.model_name || '';
+        } else {
+            // Cloud Provider (ApiKeyInfo)
+            if (role === 'generation') model = provider.model_gen || provider.model_name || '';
+            else if (role === 'improvement') model = provider.model_improve || provider.model_name || '';
+            else if (role === 'vision') model = provider.model_vision || provider.model_name || '';
+        }
+        return model;
+    };
+
     const showLocal = setupType === 'local' || setupType === 'advanced';
     const showCloud = setupType !== 'local';
 
@@ -121,7 +141,11 @@ export function ConfigurationWizard({
             <div className="flex items-center justify-between mb-8 relative">
                 <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-800 -z-10" />
                 {[1, 2, 3].map((s) => (
-                    <div key={s} className={`flex flex-col items-center gap-2 bg-slate-900 px-2 relative z-0 transition-colors duration-300`}>
+                    <div
+                        key={s}
+                        onClick={() => setStep(s as 1 | 2 | 3)}
+                        className={`flex flex-col items-center gap-2 bg-slate-950 px-2 relative z-0 transition-colors duration-300 cursor-pointer hover:opacity-80`}
+                    >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300
                 ${step >= s ? 'bg-teal-500 border-teal-500 text-slate-900' : 'bg-slate-800 border-slate-700 text-slate-500'}
              `}>
@@ -389,6 +413,14 @@ export function ConfigurationWizard({
                                         </option>
                                     ))}
                                 </select>
+                                {roleGen && getModelDisplay(roleGen, 'generation') && (
+                                    <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                                        <span className="text-slate-500 font-medium">Selected Model</span>
+                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleGen, 'generation') || ''}>
+                                            {getModelDisplay(roleGen, 'generation')}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -418,6 +450,14 @@ export function ConfigurationWizard({
                                         </option>
                                     ))}
                                 </select>
+                                {roleImprove && getModelDisplay(roleImprove, 'improvement') && (
+                                    <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                                        <span className="text-slate-500 font-medium">Selected Model</span>
+                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleImprove, 'improvement') || ''}>
+                                            {getModelDisplay(roleImprove, 'improvement')}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -447,6 +487,14 @@ export function ConfigurationWizard({
                                         </option>
                                     ))}
                                 </select>
+                                {roleVision && getModelDisplay(roleVision, 'vision') && (
+                                    <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                                        <span className="text-slate-500 font-medium">Selected Model</span>
+                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleVision, 'vision') || ''}>
+                                            {getModelDisplay(roleVision, 'vision')}
+                                        </span>
+                                    </div>
+                                )}
                                 <p className="text-[10px] text-slate-500 mt-2 italic">
                                     Vision requires a provider that supports image inputs (e.g. GPT-4o, Claude 3, Gemini 1.5).
                                 </p>

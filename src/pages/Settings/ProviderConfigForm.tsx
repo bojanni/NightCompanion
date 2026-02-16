@@ -243,7 +243,7 @@ export function ProviderConfigForm({
     }
 
     return (
-        <div className="space-y-6 max-w-2xl animate-in fade-in slide-in-from-left-4 duration-300">
+        <div className="space-y-6 w-full animate-in fade-in slide-in-from-left-4 duration-300">
             {header}
             {/* API Key Input */}
             <div>
