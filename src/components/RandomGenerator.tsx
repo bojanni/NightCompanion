@@ -18,9 +18,10 @@ interface RandomGeneratorProps {
   initialPrompt?: string;
   initialNegativePrompt?: string;
   onCheckExternalFields?: () => boolean;
+  magicInputSlot?: React.ReactNode;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
 
@@ -198,57 +199,116 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/10 rounded-2xl p-6 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-500/10 rounded-2xl mb-4">
-          <Shuffle size={24} className="text-amber-400" />
+      {magicInputSlot ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          <div className="h-full">
+            {magicInputSlot}
+          </div>
+          <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/10 rounded-2xl p-6 text-center h-full flex flex-col justify-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-500/10 rounded-2xl mb-4 mx-auto">
+              <Shuffle size={24} className="text-amber-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-1">Surprise Me</h3>
+            <p className="text-sm text-slate-400 mb-5">Generate a random prompt based on your preferences</p>
+
+            <div className="flex flex-wrap justify-center gap-3 mb-5">
+              {([
+                { key: 'dreamy', label: 'Keep it dreamy' },
+                { key: 'characters', label: 'Include characters' },
+                { key: 'cinematic', label: 'Cinematic style' },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${filters[key]
+                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                    : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                    }`}
+                >
+                  {filters[key] ? '* ' : ''}{label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center gap-4 mt-auto">
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={handleGenerate}
+                  disabled={saving || regenerating}
+                  className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
+                >
+                  Standard Random
+                </button>
+
+                <button
+                  onClick={handleMagicRandom}
+                  disabled={saving || regenerating}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
+                >
+                  {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {regenerating ? 'Generating...' : 'Magic Random (AI)'}
+                </button>
+              </div>
+
+              <span className="text-[10px] text-slate-500 italic">
+                Auto-fill is now managed globally above
+              </span>
+            </div>
+          </div>
         </div>
-        <h3 className="text-lg font-semibold text-white mb-1">Surprise Me</h3>
-        <p className="text-sm text-slate-400 mb-5">Generate a random prompt based on your preferences</p>
+      ) : (
+        <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/10 rounded-2xl p-6 text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-500/10 rounded-2xl mb-4">
+            <Shuffle size={24} className="text-amber-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-1">Surprise Me</h3>
+          <p className="text-sm text-slate-400 mb-5">Generate a random prompt based on your preferences</p>
 
-        <div className="flex flex-wrap justify-center gap-3 mb-5">
-          {([
-            { key: 'dreamy', label: 'Keep it dreamy' },
-            { key: 'characters', label: 'Include characters' },
-            { key: 'cinematic', label: 'Cinematic style' },
-          ] as const).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${filters[key]
-                ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
-                : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
-                }`}
-            >
-              {filters[key] ? '* ' : ''}{label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={handleGenerate}
-              disabled={saving || regenerating}
-              className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
-            >
-              Standard Random
-            </button>
-
-            <button
-              onClick={handleMagicRandom}
-              disabled={saving || regenerating}
-              className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
-            >
-              {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-              {regenerating ? 'Generating...' : 'Magic Random (AI)'}
-            </button>
+          <div className="flex flex-wrap justify-center gap-3 mb-5">
+            {([
+              { key: 'dreamy', label: 'Keep it dreamy' },
+              { key: 'characters', label: 'Include characters' },
+              { key: 'cinematic', label: 'Cinematic style' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setFilters((f) => ({ ...f, [key]: !f[key] }))}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${filters[key]
+                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                  : 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                  }`}
+              >
+                {filters[key] ? '* ' : ''}{label}
+              </button>
+            ))}
           </div>
 
-          <span className="text-[10px] text-slate-500 italic">
-            Auto-fill is now managed globally above
-          </span>
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={handleGenerate}
+                disabled={saving || regenerating}
+                className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
+              >
+                Standard Random
+              </button>
+
+              <button
+                onClick={handleMagicRandom}
+                disabled={saving || regenerating}
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
+              >
+                {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {regenerating ? 'Generating...' : 'Magic Random (AI)'}
+              </button>
+            </div>
+
+            <span className="text-[10px] text-slate-500 italic">
+              Auto-fill is now managed globally above
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {prompt && (
         <div className="space-y-4">

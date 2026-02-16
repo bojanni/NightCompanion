@@ -281,14 +281,7 @@ export default function Generator() {
           </div>
         )}
 
-        {mode === 'random' && (
-          <MagicPromptInput
-            onPromptGenerated={(prompt) => {
-              setRandomPrompt(prompt);
-            }}
-            maxWords={maxWords}
-          />
-        )}
+
       </div>
 
       {mode === 'random' && (
@@ -308,6 +301,15 @@ export default function Generator() {
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
           onCheckExternalFields={handleCheckExternalFields}
+          magicInputSlot={
+            <MagicPromptInput
+              className="h-full"
+              onPromptGenerated={(prompt) => {
+                setRandomPrompt(prompt);
+              }}
+              maxWords={maxWords}
+            />
+          }
         />
       )}
 
