@@ -95,6 +95,7 @@ export function ProviderConfigForm({
     const providersInfo = [{ id: provider.id, name: provider.name, type: 'cloud' as const }];
     // Filter models to only this provider's models (redundant if allModels is correct but safe)
     const selectorModels = allModels.filter((m: ModelOption) => m.provider === provider.id || !m.provider).map((m: ModelOption) => ({ ...m, provider: provider.id }));
+    console.log(`[ProviderConfigForm] ${provider.id} models:`, selectorModels.length, selectorModels);
 
     const isSaving = actionLoading === provider.id;
     const isDeleting = actionLoading === `${provider.id}-delete`;
@@ -177,6 +178,7 @@ export function ProviderConfigForm({
                 [provider.id]: models
             }));
             toast.success('Models list updated');
+            console.log(`Fetched ${models.length} models for ${provider.id}`, models);
         } catch (e) {
             toast.error(e instanceof Error ? e.message : 'Failed to fetch models');
         } finally {

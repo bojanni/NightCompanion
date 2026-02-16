@@ -244,11 +244,14 @@ export default function ModelSelector({
                             </div>
                         )}
 
-                        {filteredModels.length === 0 && (
-                            <div className="px-4 py-8 text-center text-xs text-slate-500">
-                                No models found
-                            </div>
+                        <div className="px-4 py-8 text-center text-xs text-slate-500">
+                            No models found
+                        </div>
                         )}
+
+                        <div className="px-3 py-2 text-[10px] text-slate-600 text-center border-t border-slate-800/50">
+                            Showing {allDisplayModels.length} models
+                        </div>
                     </div>
                 </div>
             )}
