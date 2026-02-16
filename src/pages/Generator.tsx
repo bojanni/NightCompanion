@@ -284,8 +284,7 @@ export default function Generator() {
         {mode === 'random' && (
           <MagicPromptInput
             onPromptGenerated={(prompt) => {
-              setGuidedInitial(prompt);
-              setMode('guided');
+              setRandomPrompt(prompt);
             }}
             maxWords={maxWords}
           />

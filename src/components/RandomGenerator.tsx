@@ -23,6 +23,14 @@ interface RandomGeneratorProps {
 export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
+
+  // Sync state when initialPrompt changes (e.g. from Magic Prompt Input)
+  useEffect(() => {
+    if (initialPrompt !== undefined) {
+      setPrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
+
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedNeg, setCopiedNeg] = useState(false);
