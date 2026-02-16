@@ -286,19 +286,30 @@ export interface TimelineEvent {
   detail?: string;
   fullText?: string;
   keywords?: string[];
+  thumbnail?: string;
   snapshotData?: StyleProfile;
 }
 
 export async function getTimelineEvents(): Promise<TimelineEvent[]> {
-  const [{ data: prompts }, { data: snapshots }] = await Promise.all([
+  const [{ data: prompts }, { data: snapshots }, { data: galleryItems }] = await Promise.all([
     db.from('prompts').select('id, title, content, created_at').order('created_at', { ascending: true }),
     db.from('style_profiles').select('*').order('created_at', { ascending: true }),
+    db.from('gallery_items').select('prompt_id, image_url, created_at').order('created_at', { ascending: true }),
   ]);
+
+  // Build map of prompt_id -> first linked image URL
+  const thumbnailMap = new Map<string, string>();
+  (galleryItems ?? []).forEach((g: { prompt_id: string | null; image_url: string }) => {
+    if (g.prompt_id && g.image_url && !thumbnailMap.has(g.prompt_id)) {
+      thumbnailMap.set(g.prompt_id, g.image_url);
+    }
+  });
 
   const events: TimelineEvent[] = [];
 
   (prompts ?? []).forEach((p: { id: string; title?: string; content: string; created_at: string }) => {
     const extracted = extractKeywords(p.content);
+    const thumb = thumbnailMap.get(p.id);
     events.push({
       type: 'prompt',
       id: p.id,
@@ -306,6 +317,7 @@ export async function getTimelineEvents(): Promise<TimelineEvent[]> {
       label: p.title || p.content.substring(0, 50) + (p.content.length > 50 ? '...' : ''),
       fullText: p.content,
       keywords: extracted.map(k => k.keyword),
+      ...(thumb ? { thumbnail: thumb } : {}),
     });
   });
 

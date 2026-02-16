@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Fingerprint, Loader2, BarChart3, Lightbulb,
   Clock, TrendingUp, Cpu, Database, Sparkles,
-  ChevronDown, Check, Diamond, Circle, Link2,
+  ChevronDown, Check, Link2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { analyzeStyle } from '../lib/ai-service';
@@ -10,14 +10,13 @@ import { db } from '../lib/api';
 import {
   saveStyleProfile, rebuildAllKeywords,
   getLatestProfile, getStyleHistory, getKeywordStats,
-  getPromptsForKeyword, getTimelineEvents,
+  getPromptsForKeyword,
   CATEGORY_LABELS, CATEGORY_COLORS,
 } from '../lib/style-analysis';
 import type {
   StyleProfile as StyleProfileType,
   KeywordStat,
   PromptForKeyword,
-  TimelineEvent,
 } from '../lib/style-analysis';
 
 export default function StyleProfile() {
@@ -31,24 +30,21 @@ export default function StyleProfile() {
   const [snapshotSaved, setSnapshotSaved] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [showSnapshotPicker, setShowSnapshotPicker] = useState(false);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
-    const [profileRes, historyRes, keywordsRes, countRes, events] = await Promise.all([
+    const [profileRes, historyRes, keywordsRes, countRes] = await Promise.all([
       getLatestProfile(),
       getStyleHistory(),
       getKeywordStats(),
       db.from('prompts').select('id', { count: 'exact', head: true }),
-      getTimelineEvents(),
     ]);
     setProfile(profileRes);
     setHistory(historyRes);
     setKeywords(keywordsRes);
     setPromptCount(countRes.count ?? 0);
-    setTimelineEvents(events);
     setLoading(false);
   }
 
@@ -268,9 +264,19 @@ export default function StyleProfile() {
         </div>
       )}
 
-      {timelineEvents.length > 1 && (
-        <EnhancedTimeline events={timelineEvents} onLoadSnapshot={handleLoadSnapshot} />
-      )}
+      {/* Link to Timeline page */}
+      <a
+        href="/timeline"
+        className="block bg-slate-900/60 border border-slate-800 rounded-2xl p-5 hover:bg-slate-800/40 transition-colors group"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-teal-400" />
+            <h3 className="text-sm font-semibold text-white">Style Evolution Timeline</h3>
+          </div>
+          <span className="text-xs text-slate-500 group-hover:text-teal-400 transition-colors">View full timeline →</span>
+        </div>
+      </a>
     </div>
   );
 }
@@ -629,98 +635,9 @@ function ProfileSection({ title, items, icon: Icon, color, dotColor }: {
   );
 }
 
-/* ——— Enhanced Timeline ——— */
 
-function EnhancedTimeline({ events, onLoadSnapshot }: {
-  events: TimelineEvent[];
-  onLoadSnapshot: (s: StyleProfileType) => void;
-}) {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-      <div className="flex items-center gap-2 mb-5">
-        <Clock size={16} className="text-teal-400" />
-        <h3 className="text-sm font-semibold text-white">Style Evolution Timeline</h3>
-        <span className="text-[10px] text-slate-500 ml-1">
-          Prompts & snapshots over time
-        </span>
-      </div>
 
-      <div className="relative">
-        {/* Vertical line */}
-        <div className="absolute left-3 top-3 bottom-3 w-px bg-slate-700" />
-
-        <div className="space-y-3">
-          {events.map((event) => {
-            const isSnapshot = event.type === 'snapshot';
-            const isHovered = hoveredId === event.id;
-
-            return (
-              <div
-                key={`${event.type}-${event.id}`}
-                className="flex gap-4 pl-1"
-                onMouseEnter={() => setHoveredId(event.id)}
-                onMouseLeave={() => setHoveredId(null)}
-              >
-                {/* Icon node */}
-                <div className="relative z-10 shrink-0 mt-0.5">
-                  {isSnapshot ? (
-                    <div className="w-5 h-5 flex items-center justify-center">
-                      <Diamond
-                        size={14}
-                        className="text-amber-400 fill-amber-400/20"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-5 h-5 flex items-center justify-center">
-                      <Circle
-                        size={10}
-                        className="text-slate-500 fill-slate-800"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div
-                  className={`flex-1 p-3 rounded-xl transition-all ${isSnapshot
-                    ? 'bg-amber-500/5 border border-amber-500/20 cursor-pointer hover:bg-amber-500/10'
-                    : isHovered
-                      ? 'bg-slate-800/50'
-                      : 'bg-transparent'
-                    }`}
-                  onClick={() => {
-                    if (isSnapshot && event.snapshotData) {
-                      onLoadSnapshot(event.snapshotData);
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className={`text-xs font-medium truncate ${isSnapshot ? 'text-amber-400' : 'text-slate-400'
-                      }`}>
-                      {isSnapshot && <span className="text-[9px] mr-1.5 px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded">📸</span>}
-                      {event.label}
-                    </p>
-                    <p className="text-[10px] text-slate-600 shrink-0 ml-2">
-                      {formatRelativeDate(new Date(event.date))}
-                    </p>
-                  </div>
-                  {event.detail && (
-                    <p className="text-[10px] text-slate-500 mt-1">{event.detail}</p>
-                  )}
-                  {isSnapshot && (
-                    <p className="text-[9px] text-amber-600 mt-1">Click to load this snapshot</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function formatRelativeDate(date: Date): string {
   const now = new Date();

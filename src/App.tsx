@@ -14,6 +14,7 @@ import BatchTesting from './pages/BatchTesting';
 import CostDemo from './pages/CostDemo';
 import VersioningGuide from './pages/VersioningGuide';
 import Tools from './pages/Tools';
+import Timeline from './pages/Timeline';
 
 export default function App() {
   const { user, loading, signIn, signUp, signOut } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/versioning-guide" element={<VersioningGuide />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/tools" element={<Tools />} />
+          <Route path="/timeline" element={<Timeline />} />
         </Route>
       </Routes>
     </BrowserRouter>

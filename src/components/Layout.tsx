@@ -13,6 +13,7 @@ import {
   FlaskConical,
   Coins,
   Wrench,
+  Clock,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/models', icon: Compass, label: 'Models' },
   { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
   { to: '/style', icon: Fingerprint, label: 'Style Profile' },
+  { to: '/timeline', icon: Clock, label: 'Timeline' },
   { to: '/cost-calculator', icon: Coins, label: 'Cost Calculator' },
   { to: '/tools', icon: Wrench, label: 'AI Tools' },
   { to: '/settings', icon: Settings, label: 'Settings' },
@@ -38,7 +40,7 @@ export default function Layout({ onSignOut }: LayoutProps) {
 
   // Define full-width pages (Dashboard, Gallery, Prompts)
   // Dashboard is '/'
-  const isFullWidthPage = ['/', '/prompts', '/gallery'].includes(location.pathname);
+  const isFullWidthPage = ['/', '/prompts', '/gallery', '/timeline'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
