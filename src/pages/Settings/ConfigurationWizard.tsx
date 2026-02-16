@@ -18,7 +18,7 @@ interface ConfigurationWizardProps {
     loadKeys: () => Promise<void>;
     loadLocalEndpoints: () => Promise<void>;
     getToken: () => Promise<string>;
-    dynamicModels: ModelOption[];
+    dynamicModels: Record<string, ModelOption[]>;
     setDynamicModels: React.Dispatch<React.SetStateAction<Record<string, ModelOption[]>>>;
 }
 
@@ -207,7 +207,7 @@ export function ConfigurationWizard({
                                             setActionLoading={setActionLoading}
                                             loadKeys={loadKeys}
                                             loadLocalEndpoints={loadLocalEndpoints}
-                                            dynamicModels={dynamicModels}
+                                            dynamicModels={dynamicModels[provider.id] || []}
                                             setDynamicModels={setDynamicModels}
                                             getToken={getToken}
                                             isGlobalActive={keyInfo?.is_active || false}
