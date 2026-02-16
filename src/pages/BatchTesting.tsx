@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { FlaskConical, Plus, Trash2, Loader2, Star, ExternalLink, Grid3x3 } from 'lucide-react';
-import { db, supabase } from '../lib/api';
-import PromptVariationGenerator, { VariationList } from '../components/PromptVariationGenerator';
+import { db } from '../lib/api';
+import PromptVariationGenerator from '../components/PromptVariationGenerator';
 import ResultsComparisonMatrix from '../components/ResultsComparisonMatrix';
 import { generatePromptVariations } from '../lib/ai-service';
 
-interface BatchTestingProps { }
 
 interface BatchTest {
   id: string;
@@ -32,7 +31,7 @@ interface BatchTestResult {
   notes: string;
 }
 
-export default function BatchTesting({ }: BatchTestingProps) {
+export default function BatchTesting() {
   const [tests, setTests] = useState<BatchTest[]>([]);
   const [selectedTest, setSelectedTest] = useState<BatchTest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,11 +50,12 @@ export default function BatchTesting({ }: BatchTestingProps) {
     if (selectedTest) {
       loadTestDetails(selectedTest.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTest?.id]);
 
   async function loadTests() {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('batch_tests')
         .select('*')
         .order('created_at', { ascending: false });
@@ -71,7 +71,7 @@ export default function BatchTesting({ }: BatchTestingProps) {
 
   async function loadTestDetails(testId: string) {
     try {
-      const { data: prompts, error } = await supabase
+      const { data: prompts, error } = await db
         .from('batch_test_prompts')
         .select(`
           *,
@@ -93,7 +93,7 @@ export default function BatchTesting({ }: BatchTestingProps) {
 
     setCreating(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('batch_tests')
         .insert({
           name: newTestName,
@@ -188,7 +188,7 @@ export default function BatchTesting({ }: BatchTestingProps) {
 
   async function updateRating(resultId: string, rating: number) {
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('batch_test_results')
         .update({ rating })
         .eq('id', resultId);
@@ -300,8 +300,8 @@ export default function BatchTesting({ }: BatchTestingProps) {
                     key={test.id}
                     onClick={() => setSelectedTest(test)}
                     className={`w-full text-left p-3 rounded-lg transition-all ${selectedTest?.id === test.id
-                        ? 'bg-cyan-500/10 border border-cyan-500/30'
-                        : 'bg-slate-800/50 border border-slate-800 hover:border-slate-700'
+                      ? 'bg-cyan-500/10 border border-cyan-500/30'
+                      : 'bg-slate-800/50 border border-slate-800 hover:border-slate-700'
                       }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -312,6 +312,7 @@ export default function BatchTesting({ }: BatchTestingProps) {
                           deleteTest(test.id);
                         }}
                         className="text-slate-500 hover:text-red-400 transition-colors"
+                        aria-label="Delete test"
                       >
                         <Trash2 size={14} />
                       </button>

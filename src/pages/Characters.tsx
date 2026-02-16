@@ -4,7 +4,7 @@ import {
   MessageSquare, Image as ImageIcon, Save, Loader2,
   ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown
 } from 'lucide-react';
-import { supabase } from '../lib/api';
+import { db } from '../lib/api';
 import type { Character, CharacterDetail } from '../lib/types';
 import {
   useCharacters,
@@ -53,7 +53,7 @@ export default function Characters() {
   async function loadDetails(characterId: string) {
     if (details[characterId]) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('character_details')
         .select('*')
         .eq('character_id', characterId)

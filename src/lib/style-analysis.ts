@@ -1,4 +1,4 @@
-import { supabase, db } from './api';
+import { db } from './api';
 import type { StyleAnalysis } from './ai-service';
 
 const VOCAB: Record<string, string[]> = {
@@ -119,7 +119,7 @@ export async function trackKeywordsFromPrompt(promptContent: string) {
   // Since RPCs might not be available or needed for simple local logic
 
   for (const { keyword, category } of keywords) {
-    const { data: existing } = await supabase
+    const { data: existing } = await db
       .from('style_keywords')
       .select('count')
       .eq('keyword', keyword)
@@ -127,7 +127,7 @@ export async function trackKeywordsFromPrompt(promptContent: string) {
 
     const count = (existing?.count || 0) + 1;
 
-    await supabase.from('style_keywords').upsert({
+    await db.from('style_keywords').upsert({
       keyword,
       category,
       count
@@ -136,15 +136,31 @@ export async function trackKeywordsFromPrompt(promptContent: string) {
 }
 
 export async function rebuildAllKeywords() {
-  const { data: prompts } = await supabase
+  // Fetch all prompts
+  const { data: allPrompts } = await db
     .from('prompts')
-    .select('content');
+    .select('id, content');
 
-  if (!prompts || prompts.length === 0) return;
+  if (!allPrompts || allPrompts.length === 0) return;
+
+  // Fetch gallery-linked prompt IDs to filter for quality prompts
+  const { data: galleryLinks } = await db
+    .from('gallery_items')
+    .select('prompt_id');
+
+  const linkedIds = new Set(
+    (galleryLinks ?? [])
+      .map((g: { prompt_id: string | null }) => g.prompt_id)
+      .filter(Boolean)
+  );
+
+  // If there are gallery-linked prompts, only use those. Otherwise fall back to all.
+  const prompts = linkedIds.size > 0
+    ? allPrompts.filter((p: { id: string }) => linkedIds.has(p.id))
+    : allPrompts;
 
   // Clear existing
-  // Clear existing - use a filter that works for integers to avoid UUID type errors
-  await supabase.from('style_keywords').delete().gt('count', -1);
+  await db.from('style_keywords').delete().gt('count', -1);
 
   const aggregated = aggregateKeywords(prompts.map((p: { content: string }) => p.content));
 
@@ -155,7 +171,7 @@ export async function rebuildAllKeywords() {
   }));
 
   if (updates.length > 0) {
-    await supabase.from('style_keywords').upsert(updates, { onConflict: 'keyword, category' });
+    await db.from('style_keywords').upsert(updates, { onConflict: 'keyword, category' });
   }
 }
 
@@ -186,7 +202,7 @@ export interface StyleProfile {
 }
 
 export async function getLatestProfile(): Promise<StyleProfile | null> {
-  const { data } = await supabase
+  const { data } = await db
     .from('style_profiles')
     .select('*')
     .order('created_at', { ascending: false })
@@ -196,7 +212,7 @@ export async function getLatestProfile(): Promise<StyleProfile | null> {
 }
 
 export async function getStyleHistory(): Promise<StyleProfile[]> {
-  const { data } = await supabase
+  const { data } = await db
     .from('style_profiles')
     .select('*')
     .order('created_at', { ascending: true });
@@ -204,11 +220,91 @@ export async function getStyleHistory(): Promise<StyleProfile[]> {
 }
 
 export async function getKeywordStats(): Promise<KeywordStat[]> {
-  const { data } = await supabase
+  const { data } = await db
     .from('style_keywords')
     .select('keyword, category, count')
     .order('count', { ascending: false });
   return data ?? [];
+}
+
+export interface PromptForKeyword {
+  id: string;
+  content: string;
+  title?: string;
+  created_at: string;
+  linked: boolean;
+}
+
+export async function getPromptsForKeyword(keyword: string): Promise<PromptForKeyword[]> {
+  const { data: allPrompts } = await db
+    .from('prompts')
+    .select('id, content, title, created_at')
+    .order('created_at', { ascending: false });
+
+  if (!allPrompts) return [];
+
+  // Fetch gallery links
+  const { data: galleryLinks } = await db
+    .from('gallery_items')
+    .select('prompt_id');
+
+  const linkedIds = new Set(
+    (galleryLinks ?? [])
+      .map((g: { prompt_id: string | null }) => g.prompt_id)
+      .filter(Boolean)
+  );
+
+  // Filter prompts that contain the keyword
+  return allPrompts
+    .filter((p: { content: string }) => p.content.toLowerCase().includes(keyword.toLowerCase()))
+    .map((p: { id: string; content: string; title?: string; created_at: string }) => ({
+      id: p.id,
+      content: p.content.length > 80 ? p.content.substring(0, 80) + '...' : p.content,
+      title: p.title,
+      created_at: p.created_at,
+      linked: linkedIds.has(p.id),
+    }));
+}
+
+export interface TimelineEvent {
+  type: 'prompt' | 'snapshot';
+  id: string;
+  date: string;
+  label: string;
+  detail?: string;
+  snapshotData?: StyleProfile;
+}
+
+export async function getTimelineEvents(): Promise<TimelineEvent[]> {
+  const [{ data: prompts }, { data: snapshots }] = await Promise.all([
+    db.from('prompts').select('id, title, content, created_at').order('created_at', { ascending: true }),
+    db.from('style_profiles').select('*').order('created_at', { ascending: true }),
+  ]);
+
+  const events: TimelineEvent[] = [];
+
+  (prompts ?? []).forEach((p: { id: string; title?: string; content: string; created_at: string }) => {
+    events.push({
+      type: 'prompt',
+      id: p.id,
+      date: p.created_at,
+      label: p.title || p.content.substring(0, 50) + (p.content.length > 50 ? '...' : ''),
+    });
+  });
+
+  (snapshots ?? []).forEach((s: StyleProfile) => {
+    events.push({
+      type: 'snapshot',
+      id: s.id,
+      date: s.created_at,
+      label: `Snapshot: "${s.signature}"`,
+      detail: `${s.prompt_count} prompts analyzed`,
+      snapshotData: s,
+    });
+  });
+
+  events.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  return events;
 }
 
 export const CATEGORY_LABELS: Record<string, string> = {

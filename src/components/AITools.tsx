@@ -9,7 +9,7 @@ import { handleAIError } from '../lib/error-handler';
 import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider } from '../lib/provider-models';
 import { saveStyleProfile } from '../lib/style-analysis';
@@ -162,7 +162,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       try {
 
         // Check local endpoints first
-        const { data: localData } = await supabase
+        const { data: localData } = await db
           .from('user_local_endpoints')
           .select('*')
           .eq('is_active', true)
@@ -294,11 +294,11 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       const token = await getToken();
 
       const [charsRes, topPromptsRes] = await Promise.all([
-        supabase
+        db
           .from('characters')
           .select('name, description')
           .limit(5),
-        supabase
+        db
           .from('prompts')
           .select('content')
           .gte('rating', 4)
@@ -335,7 +335,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     setStyleResult(null);
     try {
       const token = await getToken();
-      const { data } = await supabase
+      const { data } = await db
         .from('prompts')
         .select('content')
         .order('created_at', { ascending: false })

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 
 export interface UserProfile {
   id: string;
@@ -33,7 +33,7 @@ export function useCredits() {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await db
         .from('user_profiles')
         .select('*')
         .maybeSingle();
@@ -41,7 +41,7 @@ export function useCredits() {
       if (fetchError) throw fetchError;
 
       if (!data) {
-        const { data: newProfile, error: insertError } = await supabase
+        const { data: newProfile, error: insertError } = await db
           .from('user_profiles')
           .insert({
             credit_balance: 1000,
@@ -75,7 +75,7 @@ export function useCredits() {
     try {
       const newBalance = profile.credit_balance - amount;
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('user_profiles')
         .update({
           credit_balance: newBalance,
@@ -116,7 +116,7 @@ export function useCredits() {
     try {
       const newBalance = profile.credit_balance + amount;
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await db
         .from('user_profiles')
         .update({
           credit_balance: newBalance,

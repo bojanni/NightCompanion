@@ -1,29 +1,29 @@
 import { useState, useRef } from 'react';
 import { Download, Upload, AlertTriangle, Loader2, Database, FileJson, Trash2, X } from 'lucide-react';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import { handleError, showSuccess } from '../lib/error-handler';
+
+type TableRow = Record<string, unknown>;
 
 interface BackupData {
   version: string;
   exported_at: string;
   data: {
-    prompts: any[];
-    characters: any[];
-    character_details: any[];
-    gallery: any[];
-    tags: any[];
-    prompt_tags: any[];
-    model_usage: any[];
-    prompt_versions: any[];
-    style_learning: any[];
-    batch_tests: any[];
-    batch_test_results: any[];
+    prompts: TableRow[];
+    characters: TableRow[];
+    character_details: TableRow[];
+    gallery: TableRow[];
+    tags: TableRow[];
+    prompt_tags: TableRow[];
+    model_usage: TableRow[];
+    prompt_versions: TableRow[];
+    style_learning: TableRow[];
+    batch_tests: TableRow[];
+    batch_test_results: TableRow[];
   };
 }
 
-interface DataManagementProps { }
-
-export function DataManagement({ }: DataManagementProps) {
+export function DataManagement() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importStats, setImportStats] = useState<Record<string, number> | null>(null);
@@ -35,7 +35,7 @@ export function DataManagement({ }: DataManagementProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const downloadJSON = (data: any, filename: string) => {
+  const downloadJSON = (data: unknown, filename: string) => {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -105,8 +105,9 @@ export function DataManagement({ }: DataManagementProps) {
     }
   };
 
-  const validateBackup = (backup: any): backup is BackupData => {
-    if (!backup.version || !backup.exported_at || !backup.data) {
+  const validateBackup = (backup: unknown): backup is BackupData => {
+    const b = backup as Record<string, unknown>;
+    if (!b.version || !b.exported_at || !b.data) {
       return false;
     }
 
@@ -116,7 +117,8 @@ export function DataManagement({ }: DataManagementProps) {
       'batch_tests', 'batch_test_results'
     ];
 
-    return requiredTables.every(table => Array.isArray(backup.data[table]));
+    const data = b.data as Record<string, unknown>;
+    return requiredTables.every(table => Array.isArray(data[table]));
   };
 
   const importData = async (file: File) => {
@@ -137,9 +139,10 @@ export function DataManagement({ }: DataManagementProps) {
         if (!Array.isArray(records) || records.length === 0) continue;
 
         // Strip user_id from imported records if present
-        const cleanRecords = records.map(({ user_id, ...rest }) => rest);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const cleanRecords = records.map(({ user_id: _, ...rest }) => rest);
 
-        const { error: insertError } = await supabase
+        const { error: insertError } = await db
           .from(table)
           .upsert(cleanRecords, { onConflict: 'id' });
 
@@ -269,6 +272,7 @@ export function DataManagement({ }: DataManagementProps) {
               accept=".json"
               onChange={handleFileSelect}
               className="hidden"
+              aria-label="Select backup file to import"
             />
 
             <button
@@ -425,7 +429,7 @@ export function DataManagement({ }: DataManagementProps) {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-bold text-red-600">Final Confirmation</h3>
-                  <button onClick={() => setResetStep(0)} className="text-slate-400 hover:text-slate-600">
+                  <button onClick={() => setResetStep(0)} className="text-slate-400 hover:text-slate-600" aria-label="Close confirmation dialog">
                     <X size={20} />
                   </button>
                 </div>

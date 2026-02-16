@@ -3,7 +3,7 @@ import {
   Plus, Trash2, Trophy, TrendingUp, BarChart3,
   Save, Loader2, CheckCircle2,
 } from 'lucide-react';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import { MODELS, CATEGORY_OPTIONS, type ModelInfo } from '../lib/models-data';
 import type { GalleryItem } from '../lib/types';
 import StarRating from './StarRating';
@@ -46,11 +46,11 @@ export default function ModelTracker() {
     setLoading(true);
     try {
       const [usageRes, galleryRes] = await Promise.all([
-        supabase
+        db
           .from('model_usage')
           .select('*')
           .order('created_at', { ascending: false }),
-        supabase
+        db
           .from('gallery_items')
           .select('*')
           .neq('model', null) // Only items with a model
@@ -165,7 +165,7 @@ export default function ModelTracker() {
         const catCount = new Map<string, number>();
         uses.forEach((u) => catCount.set(u.category, (catCount.get(u.category) ?? 0) + 1));
         const topCategory = catCount.size > 0
-          ? Array.from(catCount.entries()).sort((a, b) => b[1] - a[1])[0][0]
+          ? Array.from(catCount.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'general'
           : 'general';
 
         return {

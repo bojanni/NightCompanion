@@ -3,7 +3,7 @@ import { handleAIError } from '../lib/error-handler';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette } from 'lucide-react';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import { generateRandomPromptAI } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider } from '../lib/provider-models';
@@ -38,7 +38,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         await db.auth.getSession();
 
         // Check local endpoints first
-        const { data: localData } = await supabase
+        const { data: localData } = await db
           .from('user_local_endpoints')
           .select('*')
           .eq('is_active', true)

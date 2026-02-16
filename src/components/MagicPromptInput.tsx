@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, Loader2, Sparkle } from 'lucide-react';
 import { generateFromDescription } from '../lib/ai-service';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import { handleAIError } from '../lib/error-handler';
 import { toast } from 'sonner';
 
@@ -23,11 +23,11 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords }: MagicP
 
             // Get some context for better generation
             const [charsRes, topPromptsRes] = await Promise.all([
-                supabase
+                db
                     .from('characters')
                     .select('name, description')
                     .limit(3),
-                supabase
+                db
                     .from('prompts')
                     .select('content')
                     .gte('rating', 4)

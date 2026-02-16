@@ -4,7 +4,7 @@ import {
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Link,
 } from 'lucide-react';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import type { GalleryItem, Prompt, Collection } from '../lib/types';
 import Modal from '../components/Modal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
@@ -106,7 +106,7 @@ export default function Gallery() {
   const loadData = useCallback(async () => {
     setLoading(true);
 
-    let query = supabase
+    let query = db
       .from('gallery_items')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });

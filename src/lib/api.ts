@@ -20,7 +20,7 @@ class LocalApiClient {
                 error: null
             };
         },
-        onAuthStateChange: (callback: (event: string, session: any) => void) => {
+        onAuthStateChange: (callback: (event: string, session: unknown) => void) => {
             this.auth.getSession().then(({ data }) => {
                 if (data.session) {
                     callback('SIGNED_IN', data.session);
@@ -59,6 +59,7 @@ class LocalApiClient {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private async handleApiKeyOperation(body: any) {
         const { action } = body || {};
 
@@ -118,6 +119,7 @@ class QueryBuilder {
     offsetValue: number | null = null;
 
     method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body: any = null;
 
     constructor(table: string) {
@@ -210,7 +212,9 @@ class QueryBuilder {
 
     async executeSingle() {
         // Reuse query logic but expect one result
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Promise<{ data: any, error: any }>((resolve) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             this.then((res: any) => {
                 if (res.error) {
                     resolve({ data: null, error: res.error });
@@ -223,7 +227,8 @@ class QueryBuilder {
         });
     }
 
-    async then(resolve: (value: any) => void, _reject?: (reason?: any) => void) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async then(resolve: (value: any) => void) {
         try {
             let url = this.url;
             const params = new URLSearchParams();
@@ -342,6 +347,5 @@ class QueryBuilder {
 
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const db = new LocalApiClient() as any;
-export const supabase = db; // Alias for backward compatibility
-

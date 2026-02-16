@@ -3,7 +3,7 @@ import { X, Save, Wand2, Plus, Upload, Loader2, ChevronDown, ChevronRight } from
 import { toast } from 'sonner';
 import type { Prompt, Tag as TagType } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
-import { supabase, db } from '../lib/api';
+import { db } from '../lib/api';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
@@ -86,7 +86,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setAllTags(data ?? []);
 
       if (prompt) {
-        const { data: ptData } = await supabase
+        const { data: ptData } = await db
           .from('prompt_tags')
           .select('tag_id')
           .eq('prompt_id', prompt.id);
@@ -118,7 +118,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
   async function handleCreateTag() {
     if (!newTagName.trim()) return;
-    const { data } = await supabase
+    const { data } = await db
       .from('tags')
       .insert({ name: newTagName.trim(), color: newTagColor, category: newTagCategory })
       .select()
@@ -222,7 +222,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         // Create new tags if they don't exist
         if (tagsToCreate.length > 0) {
           const createdTags = await Promise.all(tagsToCreate.map(async (name) => {
-            const { data } = await supabase
+            const { data } = await db
               .from('tags')
               .insert({
                 name: name,
@@ -347,7 +347,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       if (promptId) {
         await db.from('prompt_tags').delete().eq('prompt_id', promptId);
         if (selectedTagIds.length > 0) {
-          const { error: tagError } = await supabase
+          const { error: tagError } = await db
             .from('prompt_tags')
             .insert(selectedTagIds.map((tag_id) => ({ prompt_id: promptId!, tag_id })));
           if (tagError) console.error('Error saving tags:', tagError);

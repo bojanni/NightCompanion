@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { db, supabase } from '../lib/api';
-import type { Character, CharacterDetail } from '../lib/types';
+import { db } from '../lib/api';
+
 import { handleError, showSuccess } from '../lib/error-handler';
 
 const PAGE_SIZE = 12;
@@ -12,7 +12,7 @@ export function useCharacters(page: number = 0) {
     return useQuery({
         queryKey: ['characters', page],
         queryFn: async () => {
-            const { data, count, error } = await supabase
+            const { data, count, error } = await db
                 .from('characters')
                 .select('*', { count: 'exact' })
                 .order('created_at', { ascending: false })
@@ -37,7 +37,7 @@ export function useCharacterDetails(characterId: string | null) {
         queryFn: async () => {
             if (!characterId) return [];
 
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('character_details')
                 .select('*')
                 .eq('character_id', characterId)
@@ -62,7 +62,7 @@ export function useCreateCharacter() {
             description: string;
             reference_image_url: string;
         }) => {
-            const { error } = await supabase
+            const { error } = await db
                 .from('characters')
                 .insert({ ...data, updated_at: new Date().toISOString() });
 
@@ -92,7 +92,7 @@ export function useUpdateCharacter() {
             reference_image_url: string;
         }) => {
             const { id, ...payload } = data;
-            const { error } = await supabase
+            const { error } = await db
                 .from('characters')
                 .update({ ...payload, updated_at: new Date().toISOString() })
                 .eq('id', id);
@@ -164,7 +164,7 @@ export function useDeleteCharacterDetail() {
 
     return useMutation({
         mutationFn: async (data: { detailId: string; characterId: string }) => {
-            const { error } = await supabase
+            const { error } = await db
                 .from('character_details')
                 .delete()
                 .eq('id', data.detailId);

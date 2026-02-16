@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '../lib/api';
-import type { Prompt, Tag } from '../lib/types';
+
 import { handleError, showSuccess } from '../lib/error-handler';
 
 const PAGE_SIZE = 20;
@@ -18,7 +18,7 @@ export function usePrompts({ page = 0, filterType = 'all', filterTag = null }: U
     return useQuery({
         queryKey: ['prompts', page, filterType, filterTag],
         queryFn: async () => {
-            let query = supabase
+            let query = db
                 .from('prompts')
                 .select('*', { count: 'exact' })
                 .order('created_at', { ascending: false });
@@ -69,7 +69,7 @@ export function usePromptTags(promptIds: string[]) {
         queryFn: async () => {
             if (promptIds.length === 0) return {};
 
-            const { data, error } = await supabase
+            const { data, error } = await db
                 .from('prompt_tags')
                 .select('*')
                 .in('prompt_id', promptIds);
@@ -77,9 +77,9 @@ export function usePromptTags(promptIds: string[]) {
             if (error) throw error;
 
             const map: Record<string, string[]> = {};
-            (data ?? []).forEach((pt: any) => {
+            (data ?? []).forEach((pt: { prompt_id: string; tag_id: string }) => {
                 if (!map[pt.prompt_id]) map[pt.prompt_id] = [];
-                map[pt.prompt_id].push(pt.tag_id);
+                map[pt.prompt_id]?.push(pt.tag_id);
             });
 
             return map;
@@ -117,7 +117,7 @@ export function useToggleFavorite() {
 
     return useMutation({
         mutationFn: async (data: { id: string; is_favorite: boolean }) => {
-            const { error } = await supabase
+            const { error } = await db
                 .from('prompts')
                 .update({ is_favorite: data.is_favorite })
                 .eq('id', data.id);
@@ -141,7 +141,7 @@ export function useUpdatePrompt() {
 
     return useMutation({
         mutationFn: async (data: { id: string; content: string }) => {
-            const { error } = await supabase
+            const { error } = await db
                 .from('prompts')
                 .update({ content: data.content, updated_at: new Date().toISOString() })
                 .eq('id', data.id);

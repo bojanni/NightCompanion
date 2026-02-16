@@ -4,7 +4,7 @@ import {
   Eye, EyeOff, RefreshCw, Server, Globe, TestTube2,
   Laptop, Cloud, Cpu
 } from 'lucide-react';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import { listApiKeys, saveApiKey, deleteApiKey, setActiveProvider, updateModels } from '../lib/api-keys-service';
 import type { ApiKeyInfo } from '../lib/api-keys-service';
 import { testConnection } from '../lib/ai-service';
@@ -157,7 +157,7 @@ export default function Settings() {
 
   const loadLocalEndpoints = useCallback(async () => {
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await db
         .from('user_local_endpoints')
         .select('*')
         .order('updated_at', { ascending: false });
@@ -375,7 +375,7 @@ export default function Settings() {
                   try {
                     const existing = localEndpoints.find(e => e.provider === 'ollama');
                     await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
-                    const { error: insertError } = await supabase
+                    const { error: insertError } = await db
                       .from('user_local_endpoints')
                       .insert({
                         provider: 'ollama',
@@ -434,7 +434,7 @@ export default function Settings() {
                   try {
                     const existing = localEndpoints.find(e => e.provider === 'lmstudio');
                     await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
-                    const { error: insertError } = await supabase
+                    const { error: insertError } = await db
                       .from('user_local_endpoints')
                       .insert({
                         provider: 'lmstudio',
