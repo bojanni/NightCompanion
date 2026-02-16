@@ -112,7 +112,6 @@ export default function Gallery() {
       .order('created_at', { ascending: false });
 
     if (search) {
-      // @ts-ignore - Custom search param handled by our backend
       query = query.like('search', search);
     }
 
@@ -238,8 +237,7 @@ export default function Gallery() {
       }
       setShowItemEditor(false);
       loadData();
-    } catch (error) {
-      console.error('Failed to save item:', error);
+    } catch {
       toast.error('Failed to save image');
     } finally {
       setSaving(false);
@@ -291,7 +289,7 @@ export default function Gallery() {
       setCollDesc('');
       toast.success('Collection created');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Failed to create collection');
       setSaving(false);
     }
@@ -305,7 +303,7 @@ export default function Gallery() {
       if (filterCollection === id) setFilterCollection(null);
       toast.success('Collection deleted');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete collection');
     }
   }
@@ -395,7 +393,7 @@ export default function Gallery() {
       setShowPromptSelector(false);
       toast.success('Prompt linked');
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Failed to link prompt');
     }
   }
@@ -1049,11 +1047,16 @@ export default function Gallery() {
         {lightboxImage && (
           <div className="relative">
             {/* Image */}
-            <div className="relative bg-slate-800 rounded-xl overflow-hidden">
+            <div className="relative bg-slate-950 rounded-xl overflow-hidden group">
+              {/* Background Blur Effect */}
+              <div
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-110"
+                style={{ backgroundImage: `url(${lightboxImage.image_url})` }}
+              />
               <img
                 src={lightboxImage.image_url}
                 alt={lightboxImage.title}
-                className="w-full max-h-[70vh] object-contain"
+                className="relative z-10 w-full max-h-[70vh] object-contain transition-transform duration-500"
               />
             </div>
 

@@ -903,7 +903,11 @@ export default function Prompts() {
           const lightboxPrompt = prompts.find(p => linkedImages[p.id]?.some(img => img.id === lightboxImage.id));
 
           return (
-            <div className="relative">
+            <div className="relative bg-slate-950 rounded-xl overflow-hidden group">
+              <div
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-110"
+                style={{ backgroundImage: `url(${lightboxImage.image_url})` }}
+              />
               <img
                 src={lightboxImage.image_url}
                 alt={lightboxImage.title}

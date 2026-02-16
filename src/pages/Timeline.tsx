@@ -281,12 +281,19 @@ export default function Timeline() {
                     >
                         <X size={24} />
                     </button>
-                    <img
-                        src={lightboxImage}
-                        alt="Full size"
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+                    <div className="relative max-w-full max-h-full bg-slate-950 rounded-2xl overflow-hidden group shadow-2xl">
+                        {/* Background Blur Effect */}
+                        <div
+                            className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-110"
+                            style={{ backgroundImage: `url(${lightboxImage})` }}
+                        />
+                        <img
+                            src={lightboxImage}
+                            alt="Full size"
+                            className="relative z-10 max-w-full max-h-[85vh] object-contain"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
                 </div>
             )}
         </div>
