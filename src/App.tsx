@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
-import Auth from './pages/Auth';
+
 import Dashboard from './pages/Dashboard';
 import Prompts from './pages/Prompts';
 import Characters from './pages/Characters';
@@ -17,24 +16,14 @@ import Tools from './pages/Tools';
 import Timeline from './pages/Timeline';
 
 export default function App() {
-  const { user, loading, signIn, signUp, signOut } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Auth onSignIn={signIn} onSignUp={signUp} />;
-  }
+  const handleSignOut = () => {
+    window.location.reload();
+  };
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout onSignOut={signOut} />}>
+        <Route element={<Layout onSignOut={handleSignOut} />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/generator" element={<Generator />} />
           <Route path="/prompts" element={<Prompts />} />

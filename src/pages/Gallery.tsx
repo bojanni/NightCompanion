@@ -111,6 +111,11 @@ export default function Gallery() {
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
 
+    if (search) {
+      // @ts-ignore - Custom search param handled by our backend
+      query = query.like('search', search);
+    }
+
     if (filterCollection) {
       query = query.eq('collection_id', filterCollection);
     }
@@ -153,11 +158,17 @@ export default function Gallery() {
     setAllPrompts(promptsRes.data as Prompt[] ?? []);
     setTotalCount(count ?? 0);
     setLoading(false);
-  }, [currentPage, filterCollection, filterRating]);
+  }, [currentPage, filterCollection, filterRating, search]); // Added search dependency
 
   useEffect(() => {
-    loadData();
+    // Debounce search
+    const timer = setTimeout(() => {
+      loadData();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [loadData]);
+
+  // ... (validateForm logic here)
 
   function validateForm(fields?: { title?: string; imageUrl?: string; model?: string }) {
     const title = fields?.title ?? formTitle;
@@ -200,11 +211,11 @@ export default function Gallery() {
   }
 
   async function handleSaveItem() {
-    // Mark all validatable fields as touched
     setFormTouched({ title: true, imageUrl: true, model: true });
     const errors = validateForm();
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
+
     setSaving(true);
     try {
       const itemData = {
@@ -225,42 +236,39 @@ export default function Gallery() {
         await db.from('gallery_items').insert(itemData);
         toast.success('Image added to gallery');
       }
-      // ... (rest of function)
+      setShowItemEditor(false);
+      loadData();
     } catch (error) {
       console.error('Failed to save item:', error);
       toast.error('Failed to save image');
     } finally {
       setSaving(false);
-      setShowItemEditor(false);
-      loadData();
     }
   }
 
   async function handleDeleteItem(id: string) {
-    await db.from('gallery_items').delete().eq('id', id);
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    setTotalCount((prev) => Math.max(0, prev - 1));
-    if (selectedItem?.id === id) setSelectedItem(null);
-    toast.success('Image deleted');
+    if (!window.confirm('Are you sure you want to delete this image?')) return;
+    try {
+      await db.from('gallery_items').delete().eq('id', id);
+      setItems(prev => prev.filter(i => i.id !== id));
+      setTotalCount(prev => Math.max(0, prev - 1));
+      if (selectedItem?.id === id) setSelectedItem(null);
+      toast.success('Image deleted');
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      toast.error('Failed to delete image');
+    }
   }
 
   async function handleUpdateRating(item: GalleryItem, rating: number) {
     try {
       await db.from('gallery_items').update({ rating }).eq('id', item.id);
-      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)));
+      setItems(prev => prev.map(i => (i.id === item.id ? { ...i, rating } : i)));
       if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
-      if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
+      if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating } as any);
 
-      // Sync rating to linked prompt and siblings
       if (item.prompt_id) {
-        // Sync parent prompt
         await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
-
-        // Sync sibling gallery items
-        await db.from('gallery_items').update({ rating }).eq('prompt_id', item.prompt_id);
-
-        // Update local state for siblings if they are in the current view
-        setItems(prev => prev.map(i => i.prompt_id === item.prompt_id ? { ...i, rating } : i));
       }
     } catch (err) {
       console.error('Failed to update rating:', err);
@@ -271,25 +279,35 @@ export default function Gallery() {
   async function handleSaveCollection() {
     if (!collName.trim()) return;
     setSaving(true);
-    await db.from('collections').insert({
-      name: collName.trim(),
-      description: collDesc,
-      color: collColor,
-    });
-    setSaving(false);
-    setShowCollectionEditor(false);
-    setCollName('');
-    setCollDesc('');
-    toast.success('Collection created');
-    loadData();
+    try {
+      await db.from('collections').insert({
+        name: collName.trim(),
+        description: collDesc,
+        color: collColor,
+      });
+      setSaving(false);
+      setShowCollectionEditor(false);
+      setCollName('');
+      setCollDesc('');
+      toast.success('Collection created');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to create collection');
+      setSaving(false);
+    }
   }
 
   async function handleDeleteCollection(id: string) {
-    await db.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
-    await db.from('collections').delete().eq('id', id);
-    setFilterCollection(null);
-    toast.success('Collection deleted');
-    loadData();
+    if (!window.confirm('Delete this collection? Items will remain in the gallery.')) return;
+    try {
+      await db.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
+      await db.from('collections').delete().eq('id', id);
+      if (filterCollection === id) setFilterCollection(null);
+      toast.success('Collection deleted');
+      loadData();
+    } catch (error) {
+      toast.error('Failed to delete collection');
+    }
   }
 
   async function handleLinkPrompt(image: GalleryItem) {
@@ -300,25 +318,24 @@ export default function Gallery() {
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Convert to base64 data URL
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormImageUrl(reader.result as string);
+      setFormTouched(prev => ({ ...prev, imageUrl: true }));
     };
     reader.readAsDataURL(file);
   }
 
-  async function searchPrompts(query: string) {
-    if (query.length === 0) {
-      setPromptSuggestions(allPrompts);
+  function searchPrompts(query: string) {
+    if (!query) {
+      setPromptSuggestions(allPrompts.slice(0, 50));
       return;
     }
-
+    const q = query.toLowerCase();
     const filtered = allPrompts.filter(p =>
-      p.title.toLowerCase().includes(query.toLowerCase()) ||
-      p.content.toLowerCase().includes(query.toLowerCase())
-    );
+      p.title.toLowerCase().includes(q) ||
+      p.content.toLowerCase().includes(q)
+    ).slice(0, 50);
     setPromptSuggestions(filtered);
   }
 
@@ -327,13 +344,16 @@ export default function Gallery() {
     searchPrompts(value);
   }
 
+  function handlePromptInputFocus() {
+    setShowPromptSuggestions(true);
+    searchPrompts(promptSearchValue);
+  }
+
   function selectPrompt(prompt: Prompt) {
     setFormPromptUsed(prompt.content);
     setPromptSearchValue(prompt.title);
     setShowPromptSuggestions(false);
     setSelectedPromptId(prompt.id);
-
-    // Auto-generate title if checkbox is enabled
     if (autoGenerateTitle) {
       generateTitle(prompt.content);
     }
@@ -344,20 +364,17 @@ export default function Gallery() {
 
     setGeneratingTitle(true);
     try {
-      // Use AI to generate a concise title (max 10 words)
       const title = await generateFromDescription(
         `Create a short, descriptive title (maximum 10 words) for this image prompt: "${promptContent}"`,
         {
           preferences: { maxWords: 10 }
         },
-        '' // Empty token for local backend
+        ''
       );
-      // Remove markdown bold formatting (**)
-      const cleanTitle = title.trim().replace(/\*\*/g, '');
+      const cleanTitle = title.trim().replace(/\*\*/g, '').replace(/"/g, '');
       setFormTitle(cleanTitle);
     } catch (err) {
       console.error('Failed to generate title:', err);
-      // Fallback: use first few words of prompt
       const fallbackTitle = promptContent.split(' ').slice(0, 10).join(' ');
       setFormTitle(fallbackTitle);
     } finally {
@@ -365,32 +382,20 @@ export default function Gallery() {
     }
   }
 
-  function handlePromptInputFocus() {
-    setShowPromptSuggestions(true);
-    if (promptSuggestions.length === 0) {
-      setPromptSuggestions(allPrompts);
-    }
-  }
-
   async function handleSelectPrompt(prompt: Prompt) {
     if (!linkingImage) return;
     try {
-      const currentRating = prompt.rating || 0;
-      await db.from('gallery_items').update({ prompt_id: prompt.id, rating: currentRating }).eq('id', linkingImage.id);
+      await db.from('gallery_items').update({ prompt_id: prompt.id }).eq('id', linkingImage.id);
 
-      setItems(prev => prev.map(item =>
-        item.id === linkingImage.id ? { ...item, prompt_id: prompt.id, rating: currentRating } : item
-      ));
-
+      setItems(prev => prev.map(i => i.id === linkingImage.id ? { ...i, prompt_id: prompt.id } : i));
       if (selectedItem?.id === linkingImage.id) {
-        setSelectedItem({ ...selectedItem, prompt_id: prompt.id, rating: currentRating });
+        setSelectedItem({ ...selectedItem, prompt_id: prompt.id });
       }
-
-      setShowPromptSelector(false);
       setLinkingImage(null);
-      toast.success('Prompt linked and rating synced');
-    } catch (err) {
-      console.error('Failed to link prompt:', err);
+      setShowPromptSelector(false);
+      toast.success('Prompt linked');
+      loadData();
+    } catch (error) {
       toast.error('Failed to link prompt');
     }
   }
@@ -404,38 +409,29 @@ export default function Gallery() {
   }
 
   function navigateLightbox(direction: 'prev' | 'next') {
-    const currentIndex = filtered.findIndex(item => item.id === lightboxImage?.id);
+    if (!lightboxImage) return;
+    const currentIndex = filtered.findIndex(i => i.id === lightboxImage.id);
     if (currentIndex === -1) return;
 
     let newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0) newIndex = filtered.length - 1;
     if (newIndex >= filtered.length) newIndex = 0;
 
-    const newItem = filtered[newIndex];
-    if (newItem) {
-      setLightboxImage(newItem);
-    }
+    setLightboxImage(filtered[newIndex]);
   }
 
   const filtered = useMemo(() => {
-    let result = items;
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (i) =>
-          i.title.toLowerCase().includes(q) ||
-          i.prompt_used.toLowerCase().includes(q) ||
-          i.notes.toLowerCase().includes(q)
-      );
-    }
-    if (filterCollection) {
-      result = result.filter((i) => i.collection_id === filterCollection);
-    }
-    if (filterRating > 0) {
-      result = result.filter((i) => i.rating >= filterRating);
-    }
-    return result;
-  }, [items, search, filterCollection, filterRating]);
+    // Client-side filtering only for non-search/db filters if needed, 
+    // but effectively result is already filtered by DB for search/collection/rating.
+    // However, keeping local filtering for instant UI updates if items change locally without reload?
+    // Actually, loadData fetches fresh data, so 'items' is the source of truth.
+    // 'items' are already filtered by search/collection/rating from DB.
+    // BUT wait, search is now DB side. collection/rating were already DB side.
+    // So 'items' contains the correct subset.
+    // We just return items.
+
+    return items;
+  }, [items]);
 
   function getCollectionName(id: string | null): string {
     return collections.find((c) => c.id === id)?.name ?? '';

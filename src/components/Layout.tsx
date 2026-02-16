@@ -81,10 +81,10 @@ export default function Layout({ onSignOut }: LayoutProps) {
 
           <button
             onClick={toggleSidebar}
-            className={`text-slate-500 hover:text-white transition-colors ${collapsed ? 'hidden' : 'block'}`}
-            title="Collapse Sidebar"
+            className={`text-slate-500 hover:text-white transition-colors ${collapsed ? 'absolute left-1/2 -translate-x-1/2 top-20' : 'block'}`}
+            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            <ChevronLeft size={16} />
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
 
@@ -111,16 +111,6 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </nav>
 
         <div className="px-3 py-4 border-t border-slate-800 space-y-2">
-          {collapsed && (
-            <button
-              onClick={toggleSidebar}
-              className="flex items-center justify-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:text-white hover:bg-slate-800 transition-all w-full"
-              title="Expand Sidebar"
-            >
-              <ChevronRight size={18} />
-            </button>
-          )}
-
           <button
             onClick={onSignOut}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all w-full whitespace-nowrap ${collapsed ? 'justify-center' : ''}`}

@@ -22,11 +22,12 @@ const apiKeysRouter = require('./routes/api-keys');
 const localEndpointsRouter = require('./routes/local-endpoints');
 
 // Mount generic CRUD routes
-app.use('/api/prompts', createCrudRouter('prompts'));
-app.use('/api/tags', createCrudRouter('tags'));
-app.use('/api/characters', createCrudRouter('characters'));
+// Mount generic CRUD routes
+app.use('/api/prompts', createCrudRouter('prompts', ['title', 'content', 'notes']));
+app.use('/api/tags', createCrudRouter('tags', ['name']));
+app.use('/api/characters', createCrudRouter('characters', ['name', 'description']));
 app.use('/api/character_details', createCrudRouter('character_details'));
-app.use('/api/gallery_items', createCrudRouter('gallery_items'));
+app.use('/api/gallery_items', createCrudRouter('gallery_items', ['title', 'prompt_used', 'notes']));
 app.use('/api/collections', createCrudRouter('collections'));
 app.use('/api/prompt_tags', createCrudRouter('prompt_tags'));
 app.use('/api/prompt_versions', createCrudRouter('prompt_versions'));

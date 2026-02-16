@@ -59,6 +59,11 @@ export default function Prompts() {
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
 
+    if (search) {
+      // @ts-ignore - Custom search param handled by our backend
+      query = query.like('search', search);
+    }
+
     if (filterType === 'templates') {
       query = query.eq('is_template', true);
     } else if (filterType === 'favorites') {
@@ -112,12 +117,16 @@ export default function Prompts() {
     }
 
     setLoading(false);
-  }, [currentPage, filterType]);
+  }, [currentPage, filterType, search]); // Added search dependency
 
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    loadData();
+    // Debounce search to avoid too many requests
+    const timer = setTimeout(() => {
+      loadData();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [loadData]);
 
   // Handle deep linking
@@ -136,25 +145,14 @@ export default function Prompts() {
   const filtered = useMemo(() => {
     let result = prompts;
 
-    if (search) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.content.toLowerCase().includes(q) ||
-          p.notes.toLowerCase().includes(q)
-      );
-    }
-
-    if (filterType === 'templates') result = result.filter((p) => p.is_template);
-    if (filterType === 'favorites') result = result.filter((p) => p.is_favorite);
+    // Search is now handled by backend
 
     if (filterTag) {
       result = result.filter((p) => promptTagMap[p.id]?.includes(filterTag));
     }
 
     return result;
-  }, [prompts, search, filterType, filterTag, promptTagMap]);
+  }, [prompts, filterTag, promptTagMap]);
 
   async function handleDelete(id: string) {
     if (!window.confirm('Are you sure you want to delete this prompt?')) return;

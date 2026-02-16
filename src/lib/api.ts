@@ -4,14 +4,18 @@ const API_URL = 'http://localhost:3000/api';
 class LocalApiClient {
     auth = {
         getUser: async () => {
-            try {
-                const response = await fetch(`${API_URL}/auth/user`);
-                if (!response.ok) throw new Error('Auth failed');
-                const user = await response.json();
-                return { data: { user }, error: null };
-            } catch (error) {
-                return { data: { user: null }, error };
-            }
+            // Always return a mock user for Single Tenant mode
+            return {
+                data: {
+                    user: {
+                        id: '00000000-0000-0000-0000-000000000000',
+                        email: 'local@user.com',
+                        aud: 'authenticated',
+                        role: 'authenticated'
+                    }
+                },
+                error: null
+            };
         },
         getSession: async () => {
             const { data } = await this.auth.getUser();

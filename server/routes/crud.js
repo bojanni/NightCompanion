@@ -1,99 +1,25 @@
 const express = require('express');
 const { pool } = require('../db');
 
-const createCrudRouter = (tableName) => {
+const createCrudRouter = (tableName, searchableColumns = []) => {
     const router = express.Router();
 
-    // Helper to get columns and types
-    const getTableSchema = async (tableName) => {
-        if (!global.tableSchemaCache) global.tableSchemaCache = {};
-        if (global.tableSchemaCache[tableName]) return global.tableSchemaCache[tableName];
-
-        try {
-            const colResult = await pool.query(`
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = $1
-            `, [tableName]);
-
-            const schema = {};
-            colResult.rows.forEach(r => {
-                schema[r.column_name] = r.data_type;
-            });
-
-            global.tableSchemaCache[tableName] = schema;
-            return schema;
-        } catch (e) {
-            console.error('Error fetching schema:', e);
-            return {};
-        }
-    };
-
-    // Helper to build WHERE conditions
-    const buildConditions = (filters, startValueIndex = 0) => {
-        const conditions = [];
-        const values = [];
-        let currentIndex = startValueIndex;
-
-        Object.entries(filters).forEach(([key, value]) => {
-            if (key === 'limit' || key === 'offset' || key === 'order' || key === 'on_conflict') return;
-
-            if (typeof value === 'string') {
-                if (value.startsWith('in.(') && value.endsWith(')')) {
-                    const list = value.slice(4, -1).split(',');
-                    if (list.length > 0) {
-                        const placeholders = list.map((_, i) => `$${currentIndex + i + 1}`).join(', ');
-                        conditions.push(`${key} IN (${placeholders})`);
-                        values.push(...list);
-                        currentIndex += list.length;
-                    }
-                } else if (value.startsWith('neq.')) {
-                    const val = value.substring(4);
-                    if (val === 'null') {
-                        conditions.push(`${key} IS NOT NULL`);
-                    } else {
-                        conditions.push(`${key} != $${currentIndex + 1}`);
-                        values.push(val);
-                        currentIndex++;
-                    }
-                } else if (value.startsWith('gte.')) {
-                    conditions.push(`${key} >= $${currentIndex + 1}`);
-                    values.push(value.substring(4));
-                    currentIndex++;
-                } else if (value.startsWith('gt.')) {
-                    conditions.push(`${key} > $${currentIndex + 1}`);
-                    values.push(value.substring(3));
-                    currentIndex++;
-                } else if (value.startsWith('lte.')) {
-                    conditions.push(`${key} <= $${currentIndex + 1}`);
-                    values.push(value.substring(4));
-                    currentIndex++;
-                } else if (value.startsWith('lt.')) {
-                    conditions.push(`${key} < $${currentIndex + 1}`);
-                    values.push(value.substring(3));
-                    currentIndex++;
-                } else {
-                    conditions.push(`${key} = $${currentIndex + 1}`);
-                    values.push(value);
-                    currentIndex++;
-                }
-            } else {
-                conditions.push(`${key} = $${currentIndex + 1}`);
-                values.push(value);
-                currentIndex++;
-            }
-        });
-
-        return { conditions, values, nextIndex: currentIndex };
-    };
+    // ... (helper functions) ...
 
     // GET all items with filtering, sorting, and pagination
     router.get('/', async (req, res) => {
         try {
-            const { limit, offset, order, ...filters } = req.query;
+            const { limit, offset, order, search, ...filters } = req.query;
             let queryText = `SELECT * FROM ${tableName}`;
 
             const { conditions, values } = buildConditions(filters);
+
+            // Handle Search
+            if (search && searchableColumns.length > 0) {
+                const searchPlaceholders = searchableColumns.map((col, i) => `${col} ILIKE $${values.length + 1}`);
+                conditions.push(`(${searchPlaceholders.join(' OR ')})`);
+                values.push(`%${search}%`);
+            }
 
             if (conditions.length > 0) {
                 queryText += ` WHERE ${conditions.join(' AND ')}`;
@@ -166,6 +92,17 @@ const createCrudRouter = (tableName) => {
 
             const insertItems = Array.isArray(data) ? data : [data];
             if (insertItems.length === 0) return res.json([]);
+
+            // Auto-inject user_id if required by schema but missing (Single Tenant Fix)
+            if (schema['user_id']) {
+                insertItems.forEach(item => {
+                    if (!item.user_id) {
+                        item.user_id = '88ea3bcb-d9a8-44b5-ac26-c90885a74686'; // Local Default User
+                    }
+                });
+            }
+
+
 
             const columns = Object.keys(insertItems[0]);
             const values = [];
