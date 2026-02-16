@@ -61,6 +61,7 @@ export function useCreateCharacter() {
             name: string;
             description: string;
             reference_image_url: string;
+            images: any[];
         }) => {
             const { data: insertedData, error } = await db
                 .from('characters')
@@ -92,6 +93,7 @@ export function useUpdateCharacter() {
             name: string;
             description: string;
             reference_image_url: string;
+            images: any[];
         }) => {
             const { id, ...payload } = data;
             const { error } = await db

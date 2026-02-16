@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Search, Plus, Edit3, Trash2, X,
-  MessageSquare, Image as ImageIcon, Save, Loader2, Upload,
-  ChevronDown, ChevronRight, Check, ThumbsUp, ThumbsDown
+  MessageSquare, Image as ImageIcon, Save, Loader2,
+  Check, ThumbsUp, ThumbsDown
 } from 'lucide-react';
-import { useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../lib/api';
-import type { Character, CharacterDetail } from '../lib/types';
+import type { Character, CharacterDetail, CharacterImage } from '../lib/types';
 import {
   useCharacters,
   useCreateCharacter,
@@ -20,6 +20,239 @@ import { toast } from 'sonner';
 
 const PAGE_SIZE = 12;
 
+function CharacterCard({
+  char,
+  isExpanded,
+  details,
+  onToggleExpand,
+  onEdit,
+  onDelete,
+  showDetailForm,
+  onAddDetail,
+  onCloseDetailForm,
+  detailText,
+  setDetailText,
+  detailCategory,
+  setDetailCategory,
+  detailWorks,
+  setDetailWorks,
+  onSaveDetail,
+  onDeleteDetail
+}: {
+  char: Character;
+  isExpanded: boolean;
+  details: CharacterDetail[];
+  onToggleExpand: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  showDetailForm: boolean;
+  onAddDetail: () => void;
+  onCloseDetailForm: () => void;
+  detailText: string;
+  setDetailText: (t: string) => void;
+  detailCategory: string;
+  setDetailCategory: (c: string) => void;
+  detailWorks: boolean;
+  setDetailWorks: (w: boolean) => void;
+  onSaveDetail: () => void;
+  onDeleteDetail: (id: string) => void;
+}) {
+  const mainImage = char.images?.find(img => img.isMain) || { url: char.reference_image_url };
+  const additionalImages = (char.images || []).filter(img => img.url !== mainImage.url);
+
+  return (
+    <div
+      className={`bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden cursor-pointer ${isExpanded ? 'ring-1 ring-blue-500/20 shadow-2xl shadow-blue-900/10' : ''}`}
+      onClick={onToggleExpand}
+    >
+      <div className="p-5 pb-0">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <h3 className="text-sm font-semibold text-white truncate">{char.name}</h3>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded-md flex-shrink-0">
+              Character
+            </span>
+          </div>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-blue-400 rounded-lg transition-colors"
+              title="Edit character"
+            >
+              <Edit3 size={14} />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 hover:bg-red-900/20 text-slate-500 hover:text-red-400 rounded-lg transition-colors"
+              title="Delete character"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">
+          {char.description || 'No description provided.'}
+        </p>
+
+        <div className="h-12 overflow-hidden mb-4">
+          <div className="flex flex-wrap gap-1">
+            {details.length > 0 ? (
+              details.slice(0, 5).map((detail) => (
+                <span
+                  key={detail.id}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border ${detail.works_well
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                    }`}
+                >
+                  {detail.detail}
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-slate-600 italic py-0.5">No details recorded</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="px-5 pb-5">
+        <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors">
+          {mainImage.url ? (
+            <img src={mainImage.url} alt={char.name} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-800">
+              <ImageIcon size={48} strokeWidth={1} />
+            </div>
+          )}
+          {mainImage.url && (
+            <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-sm text-[8px] font-bold px-1.5 py-0.5 rounded-md text-white uppercase tracking-wider">Main</div>
+          )}
+        </div>
+
+        {additionalImages.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mt-2">
+            {additionalImages.slice(0, 4).map((img, idx) => (
+              <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+                <img src={img.url} className="w-full h-full object-cover" alt="Gallery" />
+                {idx === 3 && additionalImages.length > 4 && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] font-bold text-white">
+                    +{additionalImages.length - 4}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Details</h4>
+                <button
+                  onClick={onAddDetail}
+                  className="text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  Add Detail
+                </button>
+              </div>
+
+              {showDetailForm && (
+                <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800 space-y-3">
+                  <input
+                    type="text"
+                    placeholder="e.g. Blue eyes, Wearing a red cloak"
+                    className="w-full text-sm px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    value={detailText}
+                    onChange={(e) => setDetailText(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="text-xs px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-md text-slate-300 focus:outline-none"
+                      value={detailCategory}
+                      onChange={(e) => setDetailCategory(e.target.value)}
+                      aria-label="Detail category"
+                    >
+                      <option value="clothing">Clothing</option>
+                      <option value="lighting">Lighting</option>
+                      <option value="pose">Pose</option>
+                      <option value="style">Style</option>
+                      <option value="expression">Expression</option>
+                      <option value="environment">Environment</option>
+                      <option value="appearance">Appearance</option>
+                    </select>
+                    <div className="flex border border-slate-700 rounded-md overflow-hidden">
+                      <button
+                        onClick={() => setDetailWorks(true)}
+                        className={`p-1.5 transition-colors ${detailWorks ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-900 text-slate-500 hover:text-slate-300'}`}
+                        title="Works well"
+                      >
+                        <ThumbsUp size={12} />
+                      </button>
+                      <button
+                        onClick={() => setDetailWorks(false)}
+                        className={`p-1.5 transition-colors ${!detailWorks ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-900 text-slate-500 hover:text-slate-300'}`}
+                        title="Issues reported"
+                      >
+                        <ThumbsDown size={12} />
+                      </button>
+                    </div>
+                    <button
+                      onClick={onSaveDetail}
+                      className="ml-auto px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-md hover:bg-blue-700 transition-colors uppercase"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={onCloseDetailForm}
+                      className="px-3 py-1.5 text-slate-500 hover:text-white text-xs font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-2">
+                {details.map(d => (
+                  <div key={d.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-950/30 border border-slate-800/50 group/detail">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {d.works_well ? <Check size={12} className="text-emerald-500" /> : <X size={12} className="text-rose-500" />}
+                      <span className="text-xs text-slate-300 truncate">{d.detail}</span>
+                      <span className="text-[10px] text-slate-500 uppercase px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 font-medium tracking-wide">{d.category}</span>
+                    </div>
+                    <button
+                      onClick={() => onDeleteDetail(d.id)}
+                      className="opacity-0 group-hover/detail:opacity-100 p-1 text-slate-600 hover:text-red-400 transition-all"
+                      title="Delete detail"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                {details.length === 0 && (
+                  <div className="text-center py-6 text-slate-600 text-xs italic">No additional details recorded.</div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function Characters() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
@@ -27,12 +260,10 @@ export default function Characters() {
   const [editingChar, setEditingChar] = useState<Character | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, CharacterDetail[]>>({});
-  const [characterGallery, setCharacterGallery] = useState<Record<string, any[]>>({});
-  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
 
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState<string>('');
-  const [formImage, setFormImage] = useState('');
+  const [formImages, setFormImages] = useState<CharacterImage[]>([]);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -67,22 +298,6 @@ export default function Characters() {
       if (error) throw error;
       setDetails((prev) => ({ ...prev, [characterId]: data ?? [] }));
     } catch {
-      // Silent error - details just won't show
-    }
-  }
-
-  async function loadGallery(characterId: string) {
-    if (characterGallery[characterId]) return;
-    try {
-      const { data, error } = await db
-        .from('gallery_items')
-        .select('*')
-        .eq('character_id', characterId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setCharacterGallery((prev) => ({ ...prev, [characterId]: data ?? [] }));
-    } catch {
       // Silent error
     }
   }
@@ -91,57 +306,26 @@ export default function Characters() {
     setEditingChar(char);
     setFormName(char?.name ?? '');
     setFormDesc(char?.description ?? '');
-    setFormImage(char?.reference_image_url ?? '');
-    setUploadedUrls([]);
+    setFormImages(char?.images ?? []);
     setShowEditor(true);
   }
 
   async function handleSaveCharacter() {
     setSaving(true);
+    const mainImage = formImages.find(img => img.isMain) || formImages[0];
     const payload = {
       name: formName.trim() || 'Unnamed Character',
       description: formDesc,
-      reference_image_url: formImage,
+      reference_image_url: mainImage?.url || '',
+      images: formImages
     };
 
     try {
       if (editingChar) {
         await updateMutation.mutateAsync({ id: editingChar.id, ...payload });
-
-        // Link any newly uploaded images to gallery
-        for (const url of uploadedUrls) {
-          if (url === formImage) continue; // Skip if it's the main reference image
-          await db.from('gallery_items').insert({
-            title: `${formName} Reference`,
-            image_url: url,
-            character_id: editingChar.id,
-            prompt_used: 'Character reference upload',
-            rating: 0,
-            notes: ''
-          });
-        }
-
         toast.success('Character updated');
       } else {
-        const response = await createMutation.mutateAsync(payload);
-        const newChar = (response as any)?.[0] || response; // Handle both array and single object
-
-        // If we have additional images, link them to the new character
-        const charId = newChar?.id;
-        if (charId) {
-          for (const url of uploadedUrls) {
-            if (url === formImage) continue;
-            await db.from('gallery_items').insert({
-              title: `${formName} Reference`,
-              image_url: url,
-              character_id: charId,
-              prompt_used: 'Character reference upload',
-              rating: 0,
-              notes: ''
-            });
-          }
-        }
-
+        await createMutation.mutateAsync(payload);
         toast.success('Character created');
       }
       setShowEditor(false);
@@ -156,12 +340,12 @@ export default function Characters() {
   }
 
   async function handleAnalyzeImage() {
-    if (!formImage) return;
+    const mainImg = formImages.find(i => i.isMain) || formImages[0];
+    if (!mainImg) return;
     setAnalyzing(true);
     try {
-      // Mock token for local - in real app, get from context/store
       const token = 'mock-token';
-      const result = await describeCharacter(formImage, false, token);
+      const result = await describeCharacter(mainImg.url, false, token);
 
       if (typeof result === 'string') {
         // Fallback if string returned
@@ -212,11 +396,14 @@ export default function Characters() {
       }
 
       if (newUrls.length > 0) {
-        // Set first image as main reference if none exists or if it was the only one
-        if (!formImage || newUrls.length === 1) {
-          setFormImage(newUrls[0]);
-        }
-        setUploadedUrls(prev => [...prev, ...newUrls]);
+        const newImages: CharacterImage[] = newUrls.map((url, idx) => ({
+          id: crypto.randomUUID(),
+          url,
+          isMain: formImages.length === 0 && idx === 0,
+          created_at: new Date().toISOString()
+        }));
+
+        setFormImages(prev => [...prev, ...newImages]);
         toast.success(`${newUrls.length} image(s) uploaded successfully`);
       }
     } catch (err) {
@@ -286,228 +473,54 @@ export default function Characters() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {characters.map((char: Character) => (
-            <div
+            <CharacterCard
               key={char.id}
-              className={`group bg-slate-900 rounded-2xl border transition-all duration-300 ${expandedId === char.id
-                ? 'border-blue-500 ring-1 ring-blue-500 col-span-full xl:col-span-2 shadow-2xl shadow-blue-900/20'
-                : 'border-slate-800 hover:border-slate-700 hover:shadow-2xl hover:-translate-y-1'
-                }`}
-            >
-              <div className="p-4 space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 border border-slate-700">
-                      {char.reference_image_url ? (
-                        <img src={char.reference_image_url} alt={char.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xl font-bold text-slate-600">{char.name[0]}</span>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white line-clamp-1 group-hover:text-blue-400 transition-colors">
-                        {char.name}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Edited {new Date(char.updated_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => {
-                        if (expandedId === char.id) {
-                          setExpandedId(null);
-                        } else {
-                          setExpandedId(char.id);
-                          loadDetails(char.id);
-                          loadGallery(char.id);
-                        }
-                      }}
-                      className={`p-1.5 rounded-lg transition-colors ${expandedId === char.id
-                        ? 'bg-blue-500/10 text-blue-400'
-                        : 'hover:bg-slate-800 text-slate-500 hover:text-slate-300'
-                        }`}
-                      title={expandedId === char.id ? "Collapse details" : "Expand details"}
-                    >
-                      {expandedId === char.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                    <button
-                      onClick={() => openEditor(char)}
-                      className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-blue-400 rounded-lg transition-colors"
-                      title="Edit character"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this character?')) {
-                          handleDeleteCharacter(char.id);
-                        }
-                      }}
-                      className="p-1.5 hover:bg-red-900/20 text-slate-500 hover:text-red-400 rounded-lg transition-colors"
-                      title="Delete character"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <p className="text-sm text-slate-400 line-clamp-2 min-h-[2.5rem]">
-                  {char.description || <span className="text-slate-600 italic">No description provided</span>}
-                </p>
-
-                {expandedId === char.id && (
-                  <div className="pt-4 border-t border-slate-800 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Character Details
-                      </h4>
-                      <button
-                        onClick={() => setShowDetailForm(char.id)}
-                        className="text-xs font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add Detail
-                      </button>
-                    </div>
-
-                    {showDetailForm === char.id && (
-                      <div className="bg-slate-950/50 rounded-lg p-3 mb-3 border border-slate-800">
-                        <div className="space-y-3">
-                          <input
-                            type="text"
-                            placeholder="Detail description (e.g. 'Blue eyes', 'Always wears a hat')"
-                            className="w-full text-sm px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                            value={detailText}
-                            onChange={(e) => setDetailText(e.target.value)}
-                            autoFocus
-                          />
-                          <div className="flex items-center gap-2">
-                            <select
-                              className="text-sm px-3 py-2 bg-slate-900 border border-slate-700 rounded-md text-white focus:outline-none focus:border-blue-500"
-                              value={detailCategory}
-                              onChange={(e) => setDetailCategory(e.target.value)}
-                              aria-label="Detail category"
-                            >
-                              <option value="clothing">Clothing</option>
-                              <option value="lighting">Lighting</option>
-                              <option value="pose">Pose</option>
-                              <option value="style">Style</option>
-                              <option value="expression">Expression</option>
-                              <option value="environment">Environment</option>
-                              <option value="general">General Appearance</option>
-                            </select>
-                            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-md px-2 py-1.5">
-                              <button
-                                onClick={() => setDetailWorks(true)}
-                                className={`p-1 rounded ${detailWorks ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-500 hover:text-slate-300'}`}
-                                title="Works well"
-                              >
-                                <ThumbsUp className="w-3.5 h-3.5" />
-                              </button>
-                              <div className="w-px h-3 bg-slate-700" />
-                              <button
-                                onClick={() => setDetailWorks(false)}
-                                className={`p-1 rounded ${!detailWorks ? 'bg-rose-500/20 text-rose-400' : 'text-slate-500 hover:text-slate-300'}`}
-                                title="Doesn't work well"
-                              >
-                                <ThumbsDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (detailText.trim()) {
-                                  addDetailMutation.mutateAsync({
-                                    character_id: char.id,
-                                    category: detailCategory,
-                                    detail: detailText.trim(),
-                                    works_well: detailWorks
-                                  }).then(() => {
-                                    setDetailText('');
-                                    setShowDetailForm(null);
-                                    loadDetails(char.id); // Reload
-                                  });
-                                }
-                              }}
-                              disabled={!detailText.trim()}
-                              className="ml-auto px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-                            >
-                              Add
-                            </button>
-                            <button
-                              onClick={() => setShowDetailForm(null)}
-                              className="px-3 py-2 text-slate-500 hover:text-slate-300 text-xs font-medium"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
-                      {(details[char.id] || []).length > 0 ? (
-                        (details[char.id] || []).map((d) => (
-                          <div key={d.id} className="group flex items-start gap-2 text-sm p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all">
-                            <div className={`mt-0.5 ${d.works_well ? 'text-emerald-400' : 'text-rose-400'}`} title={d.works_well ? "Works well" : "Issues reported"}>
-                              {d.works_well ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                            </div>
-                            <div className="flex-1">
-                              <span className="text-slate-300">{d.detail}</span>
-                              <span className="ml-2 text-[10px] text-slate-500 uppercase tracking-wide px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
-                                {d.category}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                deleteDetailMutation.mutateAsync({ detailId: d.id, characterId: char.id })
-                                  .then(() => loadDetails(char.id));
-                              }}
-                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition-all"
-                              title="Delete detail"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-slate-500 italic text-center py-4">No details recorded yet.</p>
-                      )}
-                    </div>
-
-                    {/* Character Gallery Section */}
-                    <div className="mt-6 pt-6 border-t border-slate-800">
-                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                        Reference Gallery
-                      </h4>
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                        {char.reference_image_url && (
-                          <div className="aspect-square rounded-lg overflow-hidden border border-blue-500/50 relative group/img">
-                            <img src={char.reference_image_url} alt="Main" className="w-full h-full object-cover" />
-                            <div className="absolute top-1 right-1 bg-blue-500 text-[8px] font-bold px-1 rounded text-white uppercase">Main</div>
-                          </div>
-                        )}
-                        {(characterGallery[char.id] || []).map((img) => (
-                          <div key={img.id} className="aspect-square rounded-lg overflow-hidden border border-slate-800 hover:border-slate-700 transition-colors shadow-sm">
-                            <img src={img.image_url} alt="Gallery" className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                        <button
-                          onClick={() => openEditor(char)}
-                          className="aspect-square rounded-lg border border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-600 hover:text-slate-400 hover:border-slate-700 transition-all gap-1 hover:bg-slate-800/50"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-[8px] font-medium uppercase">Add</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+              char={char}
+              isExpanded={expandedId === char.id}
+              details={details[char.id] || []}
+              onToggleExpand={() => {
+                if (expandedId === char.id) {
+                  setExpandedId(null);
+                } else {
+                  setExpandedId(char.id);
+                  loadDetails(char.id);
+                }
+              }}
+              onEdit={() => openEditor(char)}
+              onDelete={() => {
+                if (confirm('Are you sure you want to delete this character?')) {
+                  handleDeleteCharacter(char.id);
+                }
+              }}
+              showDetailForm={showDetailForm === char.id}
+              onAddDetail={() => setShowDetailForm(char.id)}
+              onCloseDetailForm={() => setShowDetailForm(null)}
+              detailText={detailText}
+              setDetailText={setDetailText}
+              detailCategory={detailCategory}
+              setDetailCategory={setDetailCategory}
+              detailWorks={detailWorks}
+              setDetailWorks={setDetailWorks}
+              onSaveDetail={async () => {
+                if (detailText.trim()) {
+                  await addDetailMutation.mutateAsync({
+                    character_id: char.id,
+                    category: detailCategory,
+                    detail: detailText.trim(),
+                    works_well: detailWorks
+                  });
+                  setDetailText('');
+                  setShowDetailForm(null);
+                  loadDetails(char.id);
+                }
+              }}
+              onDeleteDetail={async (detailId) => {
+                await deleteDetailMutation.mutateAsync({ detailId, characterId: char.id });
+                loadDetails(char.id);
+              }}
+            />
           ))}
         </div>
       )}
@@ -580,90 +593,105 @@ export default function Characters() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">
-                  Reference Image URL <span className="text-slate-500 text-xs">(Optional)</span>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-400">
+                  Character Images <span className="text-slate-500 text-xs">(Set one as Main)</span>
                 </label>
-                <div className="relative">
-                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={formImage}
-                    onChange={(e) => setFormImage(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full pl-9 pr-24 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
-                  />
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    <input
-                      type="file"
-                      id="char-image-upload"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      title="Select image files"
-                    />
+                <div className="flex flex-wrap gap-2">
+                  {formImages.map((img) => (
+                    <div key={img.id} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-800 group bg-slate-950">
+                      <img src={img.url} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt="Preview" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormImages(prev => prev.map(i => ({
+                            ...i,
+                            isMain: i.id === img.id
+                          })));
+                        }}
+                        className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity ${img.isMain ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                        title={img.isMain ? "Main image" : "Set as main"}
+                      >
+                        {img.isMain ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <Check className="w-5 h-5 text-blue-400" />
+                            <span className="text-[8px] font-bold text-white uppercase">Main</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-white uppercase">Set Main</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormImages(prev => prev.filter(i => i.id !== img.id))}
+                        className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="w-20 h-20 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 hover:border-slate-700 hover:bg-slate-800/50 transition-all gap-1"
+                  >
+                    {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                    <span className="text-[10px] font-medium">Add Image</span>
+                  </button>
+                  {formImages.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="px-2 py-1 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors disabled:opacity-50 flex items-center gap-1"
-                      title="Upload one or multiple images"
-                    >
-                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                      <span className="hidden sm:inline">Upload</span>
-                    </button>
-                    <button
                       onClick={handleAnalyzeImage}
-                      disabled={!formImage || analyzing}
-                      className="px-2 py-1 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors disabled:opacity-50"
-                      title="Analyze image to generate description"
+                      disabled={analyzing}
+                      className="w-20 h-20 rounded-xl border border-slate-800 flex flex-col items-center justify-center text-slate-500 hover:text-slate-300 hover:border-slate-700 hover:bg-slate-800/50 transition-all gap-1"
+                      title="Analyze character appearance"
                     >
-                      {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Analyze'}
+                      {analyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                      <span className="text-[10px] font-medium">Analyze</span>
                     </button>
-                  </div>
+                  )}
                 </div>
-
-
-                {formImage && (
-                  <div className="mt-2 relative aspect-video rounded-lg overflow-hidden border border-slate-700 bg-slate-800">
-                    <img
-                      src={formImage}
-                      alt="Reference"
-                      className="w-full h-full object-cover"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                  </div>
-                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  title="Upload character images"
+                />
               </div>
             </div>
+          </div>
 
-            <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex items-center justify-end gap-3">
-              <button
-                onClick={() => setShowEditor(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveCharacter}
-                disabled={!formName.trim() || saving}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Save Character
-                  </>
-                )}
-              </button>
-            </div>
+          <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setShowEditor(false)}
+              className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveCharacter}
+              disabled={!formName.trim() || saving}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all shadow-sm shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Character
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}

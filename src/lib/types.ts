@@ -41,11 +41,19 @@ export interface PromptVersion {
   model?: string;
 }
 
+export interface CharacterImage {
+  id: string;
+  url: string;
+  isMain: boolean;
+  created_at: string;
+}
+
 export interface Character {
   id: string;
   name: string;
   description: string;
   reference_image_url: string;
+  images: CharacterImage[];
   created_at: string;
   updated_at: string;
   details?: CharacterDetail[];
