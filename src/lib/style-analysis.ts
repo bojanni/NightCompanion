@@ -284,6 +284,8 @@ export interface TimelineEvent {
   date: string;
   label: string;
   detail?: string;
+  fullText?: string;
+  keywords?: string[];
   snapshotData?: StyleProfile;
 }
 
@@ -296,11 +298,14 @@ export async function getTimelineEvents(): Promise<TimelineEvent[]> {
   const events: TimelineEvent[] = [];
 
   (prompts ?? []).forEach((p: { id: string; title?: string; content: string; created_at: string }) => {
+    const extracted = extractKeywords(p.content);
     events.push({
       type: 'prompt',
       id: p.id,
       date: p.created_at,
       label: p.title || p.content.substring(0, 50) + (p.content.length > 50 ? '...' : ''),
+      fullText: p.content,
+      keywords: extracted.map(k => k.keyword),
     });
   });
 

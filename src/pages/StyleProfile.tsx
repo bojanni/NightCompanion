@@ -28,6 +28,7 @@ export default function StyleProfile() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [savingSnapshot, setSavingSnapshot] = useState(false);
+  const [snapshotSaved, setSnapshotSaved] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [showSnapshotPicker, setShowSnapshotPicker] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
@@ -56,11 +57,13 @@ export default function StyleProfile() {
     try {
       setSavingSnapshot(true);
       await saveStyleProfile(profile, promptCount);
+      setSavingSnapshot(false);
+      setSnapshotSaved(true);
       toast.success('Snapshot succesvol opgeslagen');
       await loadData();
+      setTimeout(() => setSnapshotSaved(false), 2000);
     } catch {
       toast.error('Opslaan van snapshot mislukt');
-    } finally {
       setSavingSnapshot(false);
     }
   }
@@ -138,8 +141,8 @@ export default function StyleProfile() {
             disabled={savingSnapshot || !profile}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm rounded-xl hover:bg-emerald-600/30 transition-all disabled:opacity-50"
           >
-            {savingSnapshot ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
-            Save Snapshot
+            {savingSnapshot ? <Loader2 size={14} className="animate-spin" /> : snapshotSaved ? <Check size={14} /> : <Database size={14} />}
+            {snapshotSaved ? 'Saved ✓' : 'Save Snapshot'}
           </button>
 
           {/* Load Snapshot Dropdown */}
