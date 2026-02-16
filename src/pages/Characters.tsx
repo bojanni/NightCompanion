@@ -406,14 +406,14 @@ export default function Characters() {
       {/* Character Editor Modal */}
       {showEditor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-semibold text-slate-900">
+          <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-800">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+              <h3 className="font-semibold text-white">
                 {editingChar ? 'Edit Character' : 'New Character'}
               </h3>
               <button
                 onClick={() => setShowEditor(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-white transition-colors"
                 aria-label="Close editor"
               >
                 <X className="w-5 h-5" />
@@ -422,7 +422,7 @@ export default function Characters() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-400 mb-1">
                   Name
                 </label>
                 <input
@@ -430,13 +430,13 @@ export default function Characters() {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g. Cyberpunk Detective"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-400 mb-1">
                   Description
                 </label>
                 <textarea
@@ -444,28 +444,28 @@ export default function Characters() {
                   onChange={(e) => setFormDesc(e.target.value)}
                   placeholder="Core traits, visual style, personality..."
                   rows={4}
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Reference Image URL
+                <label className="block text-sm font-medium text-slate-400 mb-1">
+                  Reference Image URL <span className="text-slate-500 text-xs">(Optional)</span>
                 </label>
                 <div className="relative">
-                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <input
                     type="text"
                     value={formImage}
                     onChange={(e) => setFormImage(e.target.value)}
                     placeholder="https://..."
-                    className="w-full pl-9 pr-24 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                    className="w-full pl-9 pr-24 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
                     <button
                       onClick={handleAnalyzeImage}
                       disabled={!formImage || analyzing}
-                      className="px-2 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors disabled:opacity-50"
+                      className="px-2 py-1 text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors disabled:opacity-50"
                       title="Analyze image to generate description"
                     >
                       {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Analyze'}
@@ -475,7 +475,7 @@ export default function Characters() {
 
 
                 {formImage && (
-                  <div className="mt-2 relative aspect-video rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+                  <div className="mt-2 relative aspect-video rounded-lg overflow-hidden border border-slate-700 bg-slate-800">
                     <img
                       src={formImage}
                       alt="Reference"
@@ -487,10 +487,10 @@ export default function Characters() {
               </div>
             </div>
 
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex items-center justify-end gap-3">
               <button
                 onClick={() => setShowEditor(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
               >
                 Cancel
               </button>
