@@ -62,11 +62,13 @@ export function useCreateCharacter() {
             description: string;
             reference_image_url: string;
         }) => {
-            const { error } = await db
+            const { data: insertedData, error } = await db
                 .from('characters')
-                .insert({ ...data, updated_at: new Date().toISOString() });
+                .insert({ ...data, updated_at: new Date().toISOString() })
+                .select();
 
             if (error) throw error;
+            return insertedData;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['characters'] });
