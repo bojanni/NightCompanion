@@ -26,18 +26,7 @@ function CharacterCard({
   details,
   onToggleExpand,
   onEdit,
-  onDelete,
-  showDetailForm,
-  onAddDetail,
-  onCloseDetailForm,
-  detailText,
-  setDetailText,
-  detailCategory,
-  setDetailCategory,
-  detailWorks,
-  setDetailWorks,
-  onSaveDetail,
-  onDeleteDetail
+  onDelete
 }: {
   char: Character;
   isExpanded: boolean;
@@ -45,17 +34,6 @@ function CharacterCard({
   onToggleExpand: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  showDetailForm: boolean;
-  onAddDetail: () => void;
-  onCloseDetailForm: () => void;
-  detailText: string;
-  setDetailText: (t: string) => void;
-  detailCategory: string;
-  setDetailCategory: (c: string) => void;
-  detailWorks: boolean;
-  setDetailWorks: (w: boolean) => void;
-  onSaveDetail: () => void;
-  onDeleteDetail: (id: string) => void;
 }) {
   const mainImage = char.images?.find(img => img.isMain) || { url: char.reference_image_url };
   const additionalImages = (char.images || []).filter(img => img.url !== mainImage.url);
@@ -159,70 +137,14 @@ function CharacterCard({
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Details</h4>
                 <button
-                  onClick={onAddDetail}
+                  onClick={onEdit}
                   className="text-[10px] font-bold text-blue-400 hover:text-blue-300 uppercase tracking-wider flex items-center gap-1"
+                  title="Edit character details"
                 >
-                  <Plus size={12} />
-                  Add Detail
+                  <Edit3 size={12} />
+                  Edit
                 </button>
               </div>
-
-              {showDetailForm && (
-                <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800 space-y-3">
-                  <input
-                    type="text"
-                    placeholder="e.g. Blue eyes, Wearing a red cloak"
-                    className="w-full text-sm px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    value={detailText}
-                    onChange={(e) => setDetailText(e.target.value)}
-                    autoFocus
-                  />
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="text-xs px-2 py-1.5 bg-slate-900 border border-slate-700 rounded-md text-slate-300 focus:outline-none"
-                      value={detailCategory}
-                      onChange={(e) => setDetailCategory(e.target.value)}
-                      aria-label="Detail category"
-                    >
-                      <option value="clothing">Clothing</option>
-                      <option value="lighting">Lighting</option>
-                      <option value="pose">Pose</option>
-                      <option value="style">Style</option>
-                      <option value="expression">Expression</option>
-                      <option value="environment">Environment</option>
-                      <option value="appearance">Appearance</option>
-                    </select>
-                    <div className="flex border border-slate-700 rounded-md overflow-hidden">
-                      <button
-                        onClick={() => setDetailWorks(true)}
-                        className={`p-1.5 transition-colors ${detailWorks ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-900 text-slate-500 hover:text-slate-300'}`}
-                        title="Works well"
-                      >
-                        <ThumbsUp size={12} />
-                      </button>
-                      <button
-                        onClick={() => setDetailWorks(false)}
-                        className={`p-1.5 transition-colors ${!detailWorks ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-900 text-slate-500 hover:text-slate-300'}`}
-                        title="Issues reported"
-                      >
-                        <ThumbsDown size={12} />
-                      </button>
-                    </div>
-                    <button
-                      onClick={onSaveDetail}
-                      className="ml-auto px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-md hover:bg-blue-700 transition-colors uppercase"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={onCloseDetailForm}
-                      className="px-3 py-1.5 text-slate-500 hover:text-white text-xs font-medium"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="grid gap-2">
                 {details.map(d => (
@@ -232,13 +154,6 @@ function CharacterCard({
                       <span className="text-xs text-slate-300 truncate">{d.detail}</span>
                       <span className="text-[10px] text-slate-500 uppercase px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 font-medium tracking-wide">{d.category}</span>
                     </div>
-                    <button
-                      onClick={() => onDeleteDetail(d.id)}
-                      className="opacity-0 group-hover/detail:opacity-100 p-1 text-slate-600 hover:text-red-400 transition-all"
-                      title="Delete detail"
-                    >
-                      <X size={12} />
-                    </button>
                   </div>
                 ))}
                 {details.length === 0 && (
@@ -264,13 +179,13 @@ export default function Characters() {
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState<string>('');
   const [formImages, setFormImages] = useState<CharacterImage[]>([]);
+  const [formDetails, setFormDetails] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [showDetailForm, setShowDetailForm] = useState<string | null>(null);
-  const [detailCategory, setDetailCategory] = useState<string>('general');
+  const [detailCategory, setDetailCategory] = useState<string>('appearance');
   const [detailText, setDetailText] = useState('');
   const [detailWorks, setDetailWorks] = useState(true);
 
@@ -287,7 +202,7 @@ export default function Characters() {
 
   // Manual detail loading for character expansion
   async function loadDetails(characterId: string) {
-    if (details[characterId]) return;
+    if (details[characterId]) return details[characterId];
     try {
       const { data, error } = await db
         .from('character_details')
@@ -296,9 +211,11 @@ export default function Characters() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDetails((prev) => ({ ...prev, [characterId]: data ?? [] }));
+      const result = data ?? [];
+      setDetails((prev) => ({ ...prev, [characterId]: result }));
+      return result;
     } catch {
-      // Silent error
+      return [];
     }
   }
 
@@ -307,6 +224,13 @@ export default function Characters() {
     setFormName(char?.name ?? '');
     setFormDesc(char?.description ?? '');
     setFormImages(char?.images ?? []);
+    setFormDetails(char ? (details[char.id] || []) : []);
+
+    if (char && !details[char.id]) {
+      // Background load if missing
+      loadDetails(char.id).then(data => setFormDetails(data || []));
+    }
+
     setShowEditor(true);
   }
 
@@ -321,13 +245,35 @@ export default function Characters() {
     };
 
     try {
+      let characterId = editingChar?.id;
       if (editingChar) {
         await updateMutation.mutateAsync({ id: editingChar.id, ...payload });
         toast.success('Character updated');
       } else {
-        await createMutation.mutateAsync(payload);
+        const result = await createMutation.mutateAsync(payload) as any;
+        if (result && Array.isArray(result) && result.length > 0) {
+          characterId = result[0].id;
+        }
         toast.success('Character created');
       }
+
+      // Handle details persistence if we have a characterId
+      if (characterId) {
+        // This is a simplified approach: delete all and re-add or diff
+        // For now, let's just use the formDetails to update
+        // Since the details manage themselves with IDs, we can probably just save new ones
+        for (const detail of formDetails) {
+          if (!detail.id.startsWith('temp-')) continue; // Already saved
+          await addDetailMutation.mutateAsync({
+            character_id: characterId,
+            category: detail.category,
+            detail: detail.detail,
+            works_well: detail.works_well
+          });
+        }
+        // Note: Deletions from formDetails should also be handled if we want full consistency
+      }
+
       setShowEditor(false);
     } finally {
       setSaving(false);
@@ -494,32 +440,6 @@ export default function Characters() {
                   handleDeleteCharacter(char.id);
                 }
               }}
-              showDetailForm={showDetailForm === char.id}
-              onAddDetail={() => setShowDetailForm(char.id)}
-              onCloseDetailForm={() => setShowDetailForm(null)}
-              detailText={detailText}
-              setDetailText={setDetailText}
-              detailCategory={detailCategory}
-              setDetailCategory={setDetailCategory}
-              detailWorks={detailWorks}
-              setDetailWorks={setDetailWorks}
-              onSaveDetail={async () => {
-                if (detailText.trim()) {
-                  await addDetailMutation.mutateAsync({
-                    character_id: char.id,
-                    category: detailCategory,
-                    detail: detailText.trim(),
-                    works_well: detailWorks
-                  });
-                  setDetailText('');
-                  setShowDetailForm(null);
-                  loadDetails(char.id);
-                }
-              }}
-              onDeleteDetail={async (detailId) => {
-                await deleteDetailMutation.mutateAsync({ detailId, characterId: char.id });
-                loadDetails(char.id);
-              }}
             />
           ))}
         </div>
@@ -662,6 +582,109 @@ export default function Characters() {
                   onChange={handleImageUpload}
                   title="Upload character images"
                 />
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-slate-400">
+                    Character Traits <span className="text-slate-500 text-xs">(Clothing, Appearance, etc.)</span>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-800 space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. Wearing a leather jacket"
+                        className="flex-1 text-sm px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        value={detailText}
+                        onChange={(e) => setDetailText(e.target.value)}
+                      />
+                      <select
+                        className="text-xs px-2 py-1.5 bg-slate-800 border border-slate-700 rounded-md text-slate-300 focus:outline-none"
+                        value={detailCategory}
+                        onChange={(e) => setDetailCategory(e.target.value)}
+                        aria-label="Detail category"
+                      >
+                        <option value="clothing">Clothing</option>
+                        <option value="lighting">Lighting</option>
+                        <option value="pose">Pose</option>
+                        <option value="style">Style</option>
+                        <option value="expression">Expression</option>
+                        <option value="environment">Environment</option>
+                        <option value="appearance">Appearance</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex border border-slate-700 rounded-md overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setDetailWorks(true)}
+                          className={`p-1.5 transition-colors ${detailWorks ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
+                          title="Works well"
+                        >
+                          <ThumbsUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDetailWorks(false)}
+                          className={`p-1.5 transition-colors ${!detailWorks ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
+                          title="Issues reported"
+                        >
+                          <ThumbsDown size={12} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (detailText.trim()) {
+                            setFormDetails(prev => [...prev, {
+                              id: `temp-${Date.now()}`,
+                              detail: detailText.trim(),
+                              category: detailCategory,
+                              works_well: detailWorks
+                            }]);
+                            setDetailText('');
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-md hover:bg-slate-700 transition-colors uppercase flex items-center gap-1.5 border border-slate-700"
+                      >
+                        <Plus size={12} />
+                        Add Trait
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    {formDetails.map((d, idx) => (
+                      <div key={d.id || idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-950/30 border border-slate-800/50 group/detail">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {d.works_well ? <Check size={12} className="text-emerald-500" /> : <X size={12} className="text-rose-500" />}
+                          <span className="text-xs text-slate-300 truncate">{d.detail}</span>
+                          <span className="text-[10px] text-slate-500 uppercase px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 font-medium tracking-wide">{d.category}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!d.id.startsWith('temp-') && editingChar) {
+                              await deleteDetailMutation.mutateAsync({ detailId: d.id, characterId: editingChar.id });
+                            }
+                            setFormDetails(prev => prev.filter(item => item.id !== d.id));
+                          }}
+                          className="p-1 text-slate-600 hover:text-red-400 transition-all"
+                          title="Remove trait"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {formDetails.length === 0 && (
+                      <div className="text-center py-4 text-slate-600 text-xs italic">No traits added yet.</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
