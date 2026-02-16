@@ -417,7 +417,7 @@ function KeywordDashboard({ grouped }: { grouped: Record<string, KeywordStat[]> 
 
                     {/* Drill-down panel */}
                     {expandedKeyword === kw.keyword && (
-                      <div className="ml-22 mt-1 mb-2 bg-slate-800/40 border border-slate-700/50 rounded-lg p-3">
+                      <div className="mt-1 mb-2 bg-slate-800/40 border border-slate-700/50 rounded-lg p-3 ml-1">
                         {drillDownLoading ? (
                           <div className="flex items-center gap-2 text-slate-500 text-xs">
                             <Loader2 size={12} className="animate-spin" />
@@ -426,27 +426,47 @@ function KeywordDashboard({ grouped }: { grouped: Record<string, KeywordStat[]> 
                         ) : drillDownData.length === 0 ? (
                           <p className="text-xs text-slate-500">No prompts found</p>
                         ) : (
-                          <div className="space-y-2">
-                            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
-                              Prompts containing "{kw.keyword}"
+                          <div>
+                            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">
+                              Contribution Analysis — "{kw.keyword}" appears in {drillDownData.length} prompt{drillDownData.length !== 1 ? 's' : ''}
                             </p>
-                            {drillDownData.map((prompt) => (
-                              <div key={prompt.id} className="flex items-start gap-2 text-xs">
-                                <span className="text-slate-300 flex-1 leading-relaxed">
-                                  {prompt.content}
-                                </span>
-                                <span className="text-slate-600 shrink-0 text-[10px]">
-                                  {new Date(prompt.created_at).toLocaleDateString('en-US', {
-                                    month: 'short', day: 'numeric',
-                                  })}
-                                </span>
-                                {prompt.linked && (
-                                  <span className="text-emerald-400 shrink-0" title="Linked to gallery">
-                                    <Link2 size={10} />
-                                  </span>
-                                )}
-                              </div>
-                            ))}
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="text-[10px] text-slate-600 uppercase tracking-wider">
+                                  <th className="text-left pb-1.5 w-6">#</th>
+                                  <th className="text-left pb-1.5">Prompt Source</th>
+                                  <th className="text-right pb-1.5 w-20">Date</th>
+                                  <th className="text-right pb-1.5 w-16">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-700/30">
+                                {drillDownData.map((prompt, idx) => (
+                                  <tr key={prompt.id} className="hover:bg-slate-700/20 transition-colors">
+                                    <td className="py-1.5 text-slate-600 align-top">{idx + 1}</td>
+                                    <td className="py-1.5 text-slate-300 leading-relaxed pr-2">
+                                      {prompt.content}
+                                    </td>
+                                    <td className="py-1.5 text-slate-500 text-right align-top text-[10px] whitespace-nowrap">
+                                      {new Date(prompt.created_at).toLocaleDateString('en-US', {
+                                        month: 'short', day: 'numeric',
+                                      })}
+                                    </td>
+                                    <td className="py-1.5 text-right align-top">
+                                      {prompt.linked ? (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/15 text-emerald-400 rounded text-[10px] font-medium">
+                                          <Link2 size={8} />
+                                          Linked
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 text-slate-400 rounded text-[10px] font-medium">
+                                          Saved
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         )}
                       </div>
@@ -543,10 +563,10 @@ function EnhancedTimeline({ events, onLoadSnapshot }: {
                 {/* Content */}
                 <div
                   className={`flex-1 p-3 rounded-xl transition-all ${isSnapshot
-                      ? 'bg-amber-500/5 border border-amber-500/20 cursor-pointer hover:bg-amber-500/10'
-                      : isHovered
-                        ? 'bg-slate-800/50'
-                        : 'bg-transparent'
+                    ? 'bg-amber-500/5 border border-amber-500/20 cursor-pointer hover:bg-amber-500/10'
+                    : isHovered
+                      ? 'bg-slate-800/50'
+                      : 'bg-transparent'
                     }`}
                   onClick={() => {
                     if (isSnapshot && event.snapshotData) {
