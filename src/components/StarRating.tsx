@@ -28,7 +28,17 @@ export default function StarRating({ rating, onChange, size = 16 }: StarRatingPr
   };
 
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-0.5 relative">
+      {/* Define the gradient once */}
+      <svg width="0" height="0" className="absolute">
+        <defs>
+          <linearGradient id="star-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#facc15" /> {/* yellow-400 */}
+            <stop offset="100%" stopColor="#f59e0b" /> {/* amber-500 */}
+          </linearGradient>
+        </defs>
+      </svg>
+
       {[1, 2, 3, 4, 5].map((star) => {
         const isFull = rating >= star;
         const isHalf = rating >= star - 0.5 && rating < star;
@@ -48,27 +58,24 @@ export default function StarRating({ rating, onChange, size = 16 }: StarRatingPr
                 size={size}
                 className={
                   isFull
-                    ? 'fill-amber-400 text-amber-400'
+                    ? 'text-transparent' // Make text transparent so fill shows
                     : isHalf
-                      ? 'fill-transparent text-amber-400' // Half star replaces this
+                      ? 'text-transparent' // Half star replaces this
                       : 'text-slate-600'
                 }
+                fill={isFull ? "url(#star-gradient)" : "none"}
               />
 
               {/* Overlay Half Star if needed */}
               {isHalf && (
-                <div className="absolute top-0 left-0 overflow-hidden text-amber-400">
-                  <StarHalf size={size} className="fill-amber-400 text-amber-400" />
+                <div className="absolute top-0 left-0 overflow-hidden pointer-events-none">
+                  <StarHalf
+                    size={size}
+                    className="text-transparent"
+                    fill="url(#star-gradient)"
+                  />
                 </div>
               )}
-
-              {/* 
-                   Alternative approach: 
-                   Lucide StarHalf is the *left* half. 
-                   So if isHalf, we render StarHalf filled.
-                   If isFull, we render Star filled.
-                   If empty, we render Star outlined.
-                */}
             </div>
           </span>
         );
