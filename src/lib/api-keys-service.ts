@@ -26,6 +26,7 @@ export interface ApiKeyInfo {
   model_name?: string;
   model_gen?: string;
   model_improve?: string;
+  model_vision?: string;
   updated_at: string;
 }
 
@@ -36,6 +37,7 @@ export interface LocalEndpoint {
   model_name: string;
   model_gen?: string;
   model_improve?: string;
+  model_vision?: string;
   is_active: boolean;
   is_active_gen: boolean;
   is_active_improve: boolean;
@@ -61,6 +63,6 @@ export async function setActiveProvider(provider: string, modelName: string, act
   await callKeyService('POST', '', { action: 'set-active', provider, modelName, active, role });
 }
 
-export async function updateModels(provider: string, modelGen: string, modelImprove: string): Promise<void> {
-  await callKeyService('POST', '', { action: 'update-models', provider, modelGen, modelImprove });
+export async function updateModels(provider: string, modelGen: string, modelImprove: string, modelVision?: string): Promise<void> {
+  await callKeyService('POST', '', { action: 'update-models', provider, modelGen, modelImprove, modelVision });
 }

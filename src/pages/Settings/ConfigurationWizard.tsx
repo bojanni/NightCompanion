@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-    ArrowRight, ArrowLeft, Check, Zap, Sparkles, Eye, Settings,
-    Cpu, Cloud, LayoutDashboard, Database, AlertCircle, Loader2
+    ArrowRight, ArrowLeft, Check, Zap, Sparkles, Eye,
+    Cpu, LayoutDashboard, Database, Loader2
 } from 'lucide-react';
 import { PROVIDERS } from '../../lib/providers';
 import { ProviderConfigForm } from './ProviderConfigForm';
@@ -228,7 +228,7 @@ export function ConfigurationWizard({
                                     type="ollama"
                                     endpoint={localEndpoints.find(e => e.provider === 'ollama')}
                                     actionLoading={actionLoading}
-                                    onSave={async (url, mGen, mImp) => {
+                                    onSave={async (url, mGen, mImp, mVis) => {
                                         // Re-using logic from Settings.tsx via duplication for now or we should pass handler
                                         // Ideally we should pass a specific handler or move the logic to a hook/service
                                         // For simplicity/speed in this refactor, I'll allow inline definition or require props.
@@ -250,14 +250,15 @@ export function ConfigurationWizard({
                                             await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
                                             await db.from('user_local_endpoints').insert({
                                                 provider: 'ollama', endpoint_url: url, model_name: mGen,
-                                                model_gen: mGen, model_improve: mImp,
+                                                model_gen: mGen, model_improve: mImp, model_vision: mVis,
                                                 is_active: existing?.is_active ?? false,
                                                 is_active_gen: existing?.is_active_gen ?? false,
-                                                is_active_improve: existing?.is_active_improve ?? false
+                                                is_active_improve: existing?.is_active_improve ?? false,
+                                                is_active_vision: existing?.is_active_vision ?? false
                                             });
                                             await loadLocalEndpoints();
                                             toast.success('Ollama config saved');
-                                        } catch (e) { toast.error('Failed to save Ollama'); }
+                                        } catch (_) { toast.error('Failed to save Ollama'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onDelete={async () => {
@@ -267,7 +268,7 @@ export function ConfigurationWizard({
                                             await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
                                             await loadLocalEndpoints();
                                             toast.success('Ollama removed');
-                                        } catch (e) { toast.error('Failed to remove'); }
+                                        } catch (_) { toast.error('Failed to remove'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onSetActive={async (role) => {
@@ -275,12 +276,16 @@ export function ConfigurationWizard({
                                         setActionLoading(`ollama-${role}`);
                                         try {
                                             const endpoint = localEndpoints.find(e => e.provider === 'ollama');
-                                            const model = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name) : (endpoint?.model_improve || endpoint?.model_name);
+                                            const model = role === 'generation'
+                                                ? (endpoint?.model_gen || endpoint?.model_name)
+                                                : role === 'improvement'
+                                                    ? (endpoint?.model_improve || endpoint?.model_name)
+                                                    : (endpoint?.model_vision || endpoint?.model_name); // Vision
                                             // Vision check
                                             const isRoleActive = role === 'generation' ? endpoint?.is_active_gen : role === 'improvement' ? endpoint?.is_active_improve : endpoint?.is_active_vision;
                                             await setActiveProvider('ollama', model || '', !isRoleActive, role);
                                             await loadKeys(); await loadLocalEndpoints();
-                                        } catch (e) { toast.error('Failed toggle'); }
+                                        } catch (_) { toast.error('Failed toggle'); }
                                         finally { setActionLoading(null); }
                                     }}
                                 />
@@ -288,7 +293,7 @@ export function ConfigurationWizard({
                                     type="lmstudio"
                                     endpoint={localEndpoints.find(e => e.provider === 'lmstudio')}
                                     actionLoading={actionLoading}
-                                    onSave={async (url, mGen, mImp) => {
+                                    onSave={async (url, mGen, mImp, mVis) => {
                                         setActionLoading('lmstudio');
                                         try {
                                             const { db } = await import('../../lib/api');
@@ -296,14 +301,15 @@ export function ConfigurationWizard({
                                             await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
                                             await db.from('user_local_endpoints').insert({
                                                 provider: 'lmstudio', endpoint_url: url, model_name: mGen,
-                                                model_gen: mGen, model_improve: mImp,
+                                                model_gen: mGen, model_improve: mImp, model_vision: mVis,
                                                 is_active: existing?.is_active ?? false,
                                                 is_active_gen: existing?.is_active_gen ?? false,
-                                                is_active_improve: existing?.is_active_improve ?? false
+                                                is_active_improve: existing?.is_active_improve ?? false,
+                                                is_active_vision: existing?.is_active_vision ?? false
                                             });
                                             await loadLocalEndpoints();
                                             toast.success('LM Studio config saved');
-                                        } catch (e) { toast.error('Failed to save LM Studio'); }
+                                        } catch (_) { toast.error('Failed to save LM Studio'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onDelete={async () => {
@@ -313,18 +319,22 @@ export function ConfigurationWizard({
                                             await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
                                             await loadLocalEndpoints();
                                             toast.success('LM Studio removed');
-                                        } catch (e) { toast.error('Failed to remove'); }
+                                        } catch (_) { toast.error('Failed to remove'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onSetActive={async (role) => {
                                         setActionLoading(`lmstudio-${role}`);
                                         try {
                                             const endpoint = localEndpoints.find(e => e.provider === 'lmstudio');
-                                            const model = role === 'generation' ? (endpoint?.model_gen || endpoint?.model_name) : (endpoint?.model_improve || endpoint?.model_name);
+                                            const model = role === 'generation'
+                                                ? (endpoint?.model_gen || endpoint?.model_name)
+                                                : role === 'improvement'
+                                                    ? (endpoint?.model_improve || endpoint?.model_name)
+                                                    : (endpoint?.model_vision || endpoint?.model_name);
                                             const isRoleActive = role === 'generation' ? endpoint?.is_active_gen : role === 'improvement' ? endpoint?.is_active_improve : endpoint?.is_active_vision;
                                             await setActiveProvider('lmstudio', model || '', !isRoleActive, role);
                                             await loadKeys(); await loadLocalEndpoints();
-                                        } catch (e) { toast.error('Failed toggle'); }
+                                        } catch (_) { toast.error('Failed toggle'); }
                                         finally { setActionLoading(null); }
                                     }}
                                 />

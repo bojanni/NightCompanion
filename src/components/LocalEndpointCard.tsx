@@ -9,7 +9,7 @@ interface LocalEndpointCardProps {
     type: 'ollama' | 'lmstudio';
     endpoint: LocalEndpoint | undefined;
     actionLoading: string | null;
-    onSave: (endpointUrl: string, modelGen: string, modelImprove: string) => void;
+    onSave: (endpointUrl: string, modelGen: string, modelImprove: string, modelVision: string) => void;
     onDelete: () => void;
     onSetActive: (role: 'generation' | 'improvement' | 'vision') => void;
 }
@@ -22,6 +22,7 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
     const [url, setUrl] = useState(endpoint?.endpoint_url || defaults.url);
     const [modelGen, setModelGen] = useState(endpoint?.model_gen || endpoint?.model_name || '');
     const [modelImprove, setModelImprove] = useState(endpoint?.model_improve || endpoint?.model_name || '');
+    const [modelVision, setModelVision] = useState(endpoint?.model_vision || endpoint?.model_name || '');
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
@@ -29,6 +30,7 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
             setUrl(endpoint.endpoint_url);
             setModelGen(endpoint.model_gen || endpoint.model_name || '');
             setModelImprove(endpoint.model_improve || endpoint.model_name || '');
+            setModelVision(endpoint.model_vision || endpoint.model_name || '');
         }
     }, [endpoint]);
 
@@ -43,7 +45,7 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
             toast.error('Endpoint URL is required');
             return;
         }
-        onSave(url, modelGen || 'default', modelImprove || 'default');
+        onSave(url, modelGen || 'default', modelImprove || 'default', modelVision || 'default');
         setIsEditing(false);
     };
 
@@ -104,6 +106,16 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
                                 placeholder="e.g. mistral"
                             />
                         </div>
+                        <div className="col-span-2">
+                            <label className="block text-xs text-slate-400 mb-1">Vision Model (Optional)</label>
+                            <input
+                                type="text"
+                                value={modelVision}
+                                onChange={(e) => setModelVision(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
+                                placeholder="e.g. llava"
+                            />
+                        </div>
                     </div>
                     <div className="flex gap-2">
                         <button
@@ -134,6 +146,12 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-slate-500">Gen Model</span>
                                 <span className="text-slate-300 font-mono">{endpoint.model_gen}</span>
+                            </div>
+                        )}
+                        {endpoint.model_vision && (
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-500">Vis Model</span>
+                                <span className="text-slate-300 font-mono">{endpoint.model_vision}</span>
                             </div>
                         )}
                     </div>

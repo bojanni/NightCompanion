@@ -32,7 +32,6 @@ export default function ModelSelector({
     placeholder = 'Select a model...',
 }: ModelSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [filterProvider, setFilterProvider] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(-1);
 
@@ -60,19 +59,12 @@ export default function ModelSelector({
         const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (m.description && m.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        // Always show local models if they match search (pinned behavior)
-        // AND show Remote items only if they match the filter
-        const isLocal = providers.find(p => p.id === m.provider)?.type === 'local';
-        const matchesProvider = filterProvider === 'all' || m.provider === filterProvider;
-
-        return matchesSearch && (isLocal || matchesProvider);
+        return matchesSearch;
     });
 
     // Group by Local vs Remote for display sectioning
     const localModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'local');
     const remoteModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'cloud');
-
-    const remoteProviders = providers.filter(p => p.type === 'cloud');
 
     // Flattened list for keyboard navigation index
     const allDisplayModels = [...localModels, ...remoteModels];
@@ -191,30 +183,7 @@ export default function ModelSelector({
                             />
                         </div>
 
-                        {/* Provider Filter (Remote Only) */}
-                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar w-full">
-                            <button
-                                onClick={() => setFilterProvider('all')}
-                                className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${filterProvider === 'all'
-                                    ? 'bg-slate-100 text-slate-900 border-slate-100'
-                                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
-                                    }`}
-                            >
-                                All Remote
-                            </button>
-                            {remoteProviders.map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => setFilterProvider(p.id)}
-                                    className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium border transition-colors ${filterProvider === p.id
-                                        ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
-                                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-600'
-                                        }`}
-                                >
-                                    {p.name}
-                                </button>
-                            ))}
-                        </div>
+
                     </div>
 
                     {/* List Content */}
@@ -256,7 +225,7 @@ export default function ModelSelector({
                             <div className="space-y-1">
                                 <div className="px-2 py-1 flex items-center gap-2 text-[10px] font-semibold text-teal-300 uppercase tracking-wider bg-teal-500/5 rounded-lg mb-2">
                                     <Cloud size={10} />
-                                    {filterProvider === 'all' ? 'Cloud Providers' : providers.find(p => p.id === filterProvider)?.name}
+                                    Cloud Providers
                                 </div>
                                 {remoteModels.map((model, idx) => {
                                     const globalIdx = localModels.length + idx;

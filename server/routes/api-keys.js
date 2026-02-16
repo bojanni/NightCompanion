@@ -6,7 +6,7 @@ const { encrypt, maskKey } = require('../lib/crypto');
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, provider, key_hint, model_name, model_gen, model_improve, is_active, is_active_gen, is_active_improve, is_active_vision, created_at FROM user_api_keys ORDER BY provider'
+            'SELECT id, provider, key_hint, model_name, model_gen, model_improve, model_vision, is_active, is_active_gen, is_active_improve, is_active_vision, created_at FROM user_api_keys ORDER BY provider'
         );
         res.json({ keys: result.rows }); // Wrap in keys object to match expected format
     } catch (err) {
@@ -57,8 +57,8 @@ router.post('/', async (req, res) => {
             const isFirst = existingCloud.rows.length === 0 && existingLocal.rows.length === 0;
 
             await pool.query(
-                `INSERT INTO user_api_keys (provider, encrypted_key, key_hint, model_name, is_active, is_active_gen, is_active_improve, is_active_vision)
-                  VALUES ($1, $2, $3, $4, $5, $5, $5, $5)
+                `INSERT INTO user_api_keys (provider, encrypted_key, key_hint, model_name, model_vision, is_active, is_active_gen, is_active_improve, is_active_vision)
+                  VALUES ($1, $2, $3, $4, $4, $5, $5, $5, $5)
                   ON CONFLICT (provider) 
                   DO UPDATE SET encrypted_key = $2, key_hint = $3, model_name = $4, updated_at = NOW()`,
                 [provider, encrypted, hint, modelName || null, isFirst]
@@ -107,13 +107,13 @@ router.post('/', async (req, res) => {
                 await pool.query('UPDATE user_local_endpoints SET is_active_vision = false');
                 if (isActive) {
                     const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active_vision = true WHERE provider = $1 RETURNING *', // Vision doesn't have specific model column yet, uses default model_name implicitly for now or just provider
-                        [provider]
+                        'UPDATE user_api_keys SET is_active_vision = true, model_vision = COALESCE($2, model_vision, model_name) WHERE provider = $1 RETURNING *',
+                        [provider, modelName]
                     );
                     if (updateKeys.rows.length === 0) {
                         await pool.query(
-                            'UPDATE user_local_endpoints SET is_active_vision = true WHERE provider = $1',
-                            [provider]
+                            'UPDATE user_local_endpoints SET is_active_vision = true, model_vision = COALESCE($2, model_vision, model_name) WHERE provider = $1',
+                            [provider, modelName]
                         );
                     }
                 }
@@ -139,16 +139,16 @@ router.post('/', async (req, res) => {
             await pool.query('UPDATE user_local_endpoints SET is_active = (is_active_gen OR is_active_improve OR is_active_vision)');
             res.json({ success: true, active: isActive, role });
         } else if (action === 'update-models') {
-            const { modelGen, modelImprove } = req.body;
+            const { modelGen, modelImprove, modelVision } = req.body;
 
             // Try updating both tables, one will succeed
             await pool.query(
-                'UPDATE user_api_keys SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve) WHERE provider = $3',
-                [modelGen, modelImprove, provider]
+                'UPDATE user_api_keys SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve), model_vision = COALESCE($3, model_vision) WHERE provider = $4',
+                [modelGen, modelImprove, modelVision, provider]
             );
             await pool.query(
-                'UPDATE user_local_endpoints SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve) WHERE provider = $3',
-                [modelGen, modelImprove, provider]
+                'UPDATE user_local_endpoints SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve), model_vision = COALESCE($3, model_vision) WHERE provider = $4',
+                [modelGen, modelImprove, modelVision, provider]
             );
 
             res.json({ success: true });

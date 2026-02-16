@@ -52,17 +52,17 @@ export function ProviderConfigForm({
         if (keyInfo) {
             const serverGen = keyInfo.model_gen || keyInfo.model_name || getDefaultModelForProvider(provider.id);
             const serverImprove = keyInfo.model_improve || keyInfo.model_name || getDefaultModelForProvider(provider.id);
+            const serverVision = keyInfo.model_vision || keyInfo.model_name || getDefaultModelForProvider(provider.id);
             setSelectedModelGen(serverGen);
             setSelectedModelImprove(serverImprove);
-            // We don't have model_vision col yet, so just use general model name or keep it consistent
-            setSelectedModelVision(keyInfo.model_name || getDefaultModelForProvider(provider.id));
+            setSelectedModelVision(serverVision);
         } else {
             // Reset if no key info (e.g. removed)
             setSelectedModelGen(getDefaultModelForProvider(provider.id));
             setSelectedModelImprove(getDefaultModelForProvider(provider.id));
             setSelectedModelVision(getDefaultModelForProvider(provider.id));
         }
-    }, [keyInfo?.model_gen, keyInfo?.model_improve, keyInfo?.model_name, provider.id, keyInfo]);
+    }, [keyInfo?.model_gen, keyInfo?.model_improve, keyInfo?.model_vision, keyInfo?.model_name, provider.id, keyInfo]);
 
     const staticModels = getModelsForProvider(provider.id);
     const allModels = dynamicModels && dynamicModels.length > 0 ? dynamicModels : staticModels;
@@ -111,7 +111,7 @@ export function ProviderConfigForm({
             });
 
             await saveApiKey(validated.provider, validated.api_key, selectedModelGen);
-            await updateModels(provider.id, selectedModelGen, selectedModelImprove);
+            await updateModels(provider.id, selectedModelGen, selectedModelImprove, selectedModelVision);
 
             await loadKeys();
             toast.success(`${provider.name} key saved successfully`);
@@ -152,7 +152,7 @@ export function ProviderConfigForm({
             } else if (role === 'improvement') {
                 isActuallyActive = !!(keyInfo?.is_active_improve && (keyInfo?.model_improve || keyInfo?.model_name) === selectedModelImprove);
             } else if (role === 'vision') {
-                isActuallyActive = !!keyInfo?.is_active_vision; // Vision doesn't strictly check model yet
+                isActuallyActive = !!(keyInfo?.is_active_vision && (keyInfo?.model_vision || keyInfo?.model_name) === selectedModelVision);
             }
 
             await setActiveProvider(provider.id, currentModel, !isActuallyActive, role);
@@ -184,10 +184,10 @@ export function ProviderConfigForm({
         }
     }
 
-    const handleModelChange = async (genId: string, improveId: string) => {
+    const handleModelChange = async (genId: string, improveId: string, visionId: string) => {
         if (!isEditing && keyInfo) {
             try {
-                await updateModels(provider.id, genId, improveId);
+                await updateModels(provider.id, genId, improveId, visionId);
                 toast.success('Model preferences updated');
                 await loadKeys();
             } catch (e) {
@@ -195,6 +195,28 @@ export function ProviderConfigForm({
             }
         }
     }
+
+    const handleTestConnection = async () => {
+        // If not editing and no saved key, or editing and no input
+        if ((!isEditing && !keyInfo) || (isEditing && !inputValue)) {
+            toast.error('Please enter an API key first');
+            return;
+        }
+
+        setActionLoading(`${provider.id}-test`);
+        try {
+            // Use the key from input, or undefined to let backend use saved key
+            const apiKeyToUse = (isEditing && inputValue) ? inputValue : undefined;
+            const token = await getToken();
+            await listModels(token, provider.id, apiKeyToUse);
+            toast.success('Connection successful! API key is valid.');
+        } catch (e) {
+            console.error(e);
+            toast.error(e instanceof Error ? e.message : 'Connection failed. Please check your API key.');
+        } finally {
+            setActionLoading(null);
+        }
+    };
 
     if (!keyInfo && !isEditing) {
         return (
@@ -235,6 +257,14 @@ export function ProviderConfigForm({
                             className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all"
                         />
                         <button
+                            onClick={handleTestConnection}
+                            disabled={actionLoading === `${provider.id}-test`}
+                            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 border border-slate-700 hover:border-slate-600"
+                            title="Test Connection"
+                        >
+                            {actionLoading === `${provider.id}-test` ? <Loader2 size={14} className="animate-spin" /> : 'Test'}
+                        </button>
+                        <button
                             onClick={handleSave}
                             disabled={isSaving || !inputValue}
                             className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -257,6 +287,15 @@ export function ProviderConfigForm({
                         </div>
                         <button onClick={() => setShowKey(!showKey)} className="text-slate-500 hover:text-slate-300 p-1">
                             {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                        <div className="w-px h-4 bg-slate-700 mx-1" />
+                        <button
+                            onClick={handleTestConnection}
+                            disabled={actionLoading === `${provider.id}-test`}
+                            className="text-slate-400 hover:text-white text-xs font-medium px-2 flex items-center gap-1"
+                            title="Test Connection"
+                        >
+                            {actionLoading === `${provider.id}-test` ? <Loader2 size={12} className="animate-spin" /> : 'Test'}
                         </button>
                         <div className="w-px h-4 bg-slate-700 mx-1" />
                         <button
@@ -305,7 +344,7 @@ export function ProviderConfigForm({
                                 value={selectedModelGen}
                                 onChange={(id) => {
                                     setSelectedModelGen(id);
-                                    handleModelChange(id, selectedModelImprove);
+                                    handleModelChange(id, selectedModelImprove, selectedModelVision);
                                 }}
                                 models={selectorModels}
                                 providers={providersInfo}
@@ -320,11 +359,34 @@ export function ProviderConfigForm({
                                 value={selectedModelImprove}
                                 onChange={(id) => {
                                     setSelectedModelImprove(id);
-                                    handleModelChange(selectedModelGen, id);
+                                    handleModelChange(selectedModelGen, id, selectedModelVision);
                                 }}
                                 models={selectorModels}
                                 providers={providersInfo}
                                 placeholder="Select improvement model..."
+                                className="w-full"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs text-slate-400 mb-2">Vision Model</label>
+                            <ModelSelector
+                                value={selectedModelVision}
+                                onChange={(id) => {
+                                    setSelectedModelVision(id);
+                                    handleModelChange(selectedModelGen, selectedModelImprove, id);
+                                }}
+                                models={selectorModels.filter(m =>
+                                    m.capabilities?.includes('vision') ||
+                                    m.id.toLowerCase().includes('vision') ||
+                                    m.name.toLowerCase().includes('vision') ||
+                                    // Fallback for known vision families if capabilities missing
+                                    m.id.toLowerCase().includes('gpt-4') ||
+                                    m.id.toLowerCase().includes('claude-3') ||
+                                    m.id.toLowerCase().includes('gemini')
+                                )}
+                                providers={providersInfo}
+                                placeholder="Select vision model..."
                                 className="w-full"
                             />
                         </div>
