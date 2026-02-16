@@ -265,7 +265,7 @@ export default function Gallery() {
       await db.from('gallery_items').update({ rating }).eq('id', item.id);
       setItems(prev => prev.map(i => (i.id === item.id ? { ...i, rating } : i)));
       if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
-      if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating } as any);
+      if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
 
       if (item.prompt_id) {
         await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
