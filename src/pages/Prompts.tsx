@@ -4,7 +4,7 @@ import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
 } from 'lucide-react';
-import { db, supabase } from '../lib/api';
+import { db } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
 import Modal from '../components/Modal';
 import { PromptSkeleton } from '../components/PromptSkeleton';
@@ -54,7 +54,7 @@ export default function Prompts() {
   const loadData = useCallback(async () => {
     setLoading(true);
 
-    let query = supabase
+    let query = db
       .from('prompts')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
@@ -222,7 +222,7 @@ export default function Prompts() {
   async function handleRestoreVersion(content: string) {
     if (historyPrompt) {
       try {
-        const { error } = await supabase
+        const { error } = await db
           .from('prompts')
           .update({ content, updated_at: new Date().toISOString() })
           .eq('id', historyPrompt.id);
@@ -241,7 +241,7 @@ export default function Prompts() {
   async function handleApplyImprovement(content: string) {
     if (improverPrompt) {
       try {
-        const { error } = await supabase
+        const { error } = await db
           .from('prompts')
           .update({ content, updated_at: new Date().toISOString() })
           .eq('id', improverPrompt.id);
@@ -260,7 +260,7 @@ export default function Prompts() {
   async function handleApplyOptimization(content: string) {
     if (optimizerPrompt) {
       try {
-        const { error } = await supabase
+        const { error } = await db
           .from('prompts')
           .update({ content, updated_at: new Date().toISOString() })
           .eq('id', optimizerPrompt.id);
