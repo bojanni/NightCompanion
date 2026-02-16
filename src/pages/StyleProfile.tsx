@@ -235,6 +235,10 @@ export default function StyleProfile() {
 
       {keywords.length > 0 && <KeywordDashboard grouped={grouped} />}
 
+      {keywords.length > 0 && (
+        <SubjectContext keywords={keywords} />
+      )}
+
       {profile && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <ProfileSection
@@ -478,6 +482,121 @@ function KeywordDashboard({ grouped }: { grouped: Record<string, KeywordStat[]> 
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ——— Subject Context (Contribution Analysis) ——— */
+
+function SubjectContext({ keywords }: { keywords: KeywordStat[] }) {
+  const [selectedKeyword, setSelectedKeyword] = useState<string>(keywords[0]?.keyword ?? '');
+  const [prompts, setPrompts] = useState<PromptForKeyword[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedKeyword) {
+      loadPrompts(selectedKeyword);
+    }
+  }, [selectedKeyword]);
+
+  async function loadPrompts(keyword: string) {
+    setLoading(true);
+    try {
+      const data = await getPromptsForKeyword(keyword);
+      setPrompts(data);
+    } catch {
+      setPrompts([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const selectedStat = keywords.find(k => k.keyword === selectedKeyword);
+
+  return (
+    <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <Link2 size={16} className="text-amber-400" />
+          <h3 className="text-sm font-semibold text-white">Subject Context</h3>
+          <span className="text-[10px] text-slate-500 ml-1">
+            Where does "{selectedKeyword}" come from?
+          </span>
+        </div>
+        <select
+          value={selectedKeyword}
+          onChange={(e) => setSelectedKeyword(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/50"
+          aria-label="Select keyword to analyze"
+        >
+          {keywords.slice(0, 20).map(kw => (
+            <option key={`${kw.category}::${kw.keyword}`} value={kw.keyword}>
+              {kw.keyword} ({kw.count}x) — {CATEGORY_LABELS[kw.category] || kw.category}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedStat && (
+        <div className="flex items-center gap-4 mb-4 p-3 bg-slate-800/40 rounded-lg">
+          <div>
+            <p className="text-xl font-bold text-amber-400">{selectedStat.count}x</p>
+            <p className="text-[10px] text-slate-500">occurrences</p>
+          </div>
+          <div className="h-8 w-px bg-slate-700" />
+          <div>
+            <p className="text-sm font-medium text-white capitalize">{selectedStat.keyword}</p>
+            <p className="text-[10px] text-slate-500">{CATEGORY_LABELS[selectedStat.category] || selectedStat.category}</p>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-slate-500 text-xs py-4">
+          <Loader2 size={14} className="animate-spin" />
+          Loading contribution analysis…
+        </div>
+      ) : prompts.length === 0 ? (
+        <p className="text-xs text-slate-500 py-4">No prompts found containing "{selectedKeyword}"</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-[10px] text-slate-600 uppercase tracking-wider border-b border-slate-700/50">
+              <th className="text-left pb-2 w-6">#</th>
+              <th className="text-left pb-2">Prompt Source (Contribution Analysis)</th>
+              <th className="text-right pb-2 w-20">Date</th>
+              <th className="text-right pb-2 w-16">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-700/30">
+            {prompts.map((prompt, idx) => (
+              <tr key={prompt.id} className="hover:bg-slate-800/40 transition-colors">
+                <td className="py-2 text-slate-600 align-top">{idx + 1}</td>
+                <td className="py-2 text-slate-300 leading-relaxed pr-3">
+                  {prompt.content}
+                </td>
+                <td className="py-2 text-slate-500 text-right align-top text-[10px] whitespace-nowrap">
+                  {new Date(prompt.created_at).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric',
+                  })}
+                </td>
+                <td className="py-2 text-right align-top">
+                  {prompt.linked ? (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/15 text-emerald-400 rounded text-[10px] font-medium">
+                      <Link2 size={8} />
+                      Linked
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-700/50 text-slate-400 rounded text-[10px] font-medium">
+                      Saved
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

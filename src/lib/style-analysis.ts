@@ -70,14 +70,26 @@ for (const [category, keywords] of Object.entries(VOCAB)) {
 }
 SORTED_VOCAB.sort((a, b) => b.keyword.length - a.keyword.length);
 
+// Word-boundary regex cache to avoid recreating for each prompt
+const WORD_REGEX_CACHE = new Map<string, RegExp>();
+
+function matchesWord(text: string, word: string): boolean {
+  let regex = WORD_REGEX_CACHE.get(word);
+  if (!regex) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    regex = new RegExp(`\\b${escaped}\\b`, 'i');
+    WORD_REGEX_CACHE.set(word, regex);
+  }
+  return regex.test(text);
+}
+
 export function extractKeywords(text: string): VocabEntry[] {
-  const lower = text.toLowerCase();
   const found: VocabEntry[] = [];
   const seen = new Set<string>();
 
   for (const entry of SORTED_VOCAB) {
     const key = `${entry.category}::${entry.keyword}`;
-    if (!seen.has(key) && lower.includes(entry.keyword)) {
+    if (!seen.has(key) && matchesWord(text, entry.keyword)) {
       found.push(entry);
       seen.add(key);
     }
@@ -254,9 +266,9 @@ export async function getPromptsForKeyword(keyword: string): Promise<PromptForKe
       .filter(Boolean)
   );
 
-  // Filter prompts that contain the keyword
+  // Filter prompts that contain the keyword (exact word boundary match)
   return allPrompts
-    .filter((p: { content: string }) => p.content.toLowerCase().includes(keyword.toLowerCase()))
+    .filter((p: { content: string }) => matchesWord(p.content, keyword))
     .map((p: { id: string; content: string; title?: string; created_at: string }) => ({
       id: p.id,
       content: p.content.length > 80 ? p.content.substring(0, 80) + '...' : p.content,
