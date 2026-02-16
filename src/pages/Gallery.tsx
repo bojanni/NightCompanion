@@ -417,7 +417,8 @@ export default function Gallery() {
     if (newIndex < 0) newIndex = filtered.length - 1;
     if (newIndex >= filtered.length) newIndex = 0;
 
-    setLightboxImage(filtered[newIndex]);
+    const nextItem = filtered[newIndex];
+    if (nextItem) setLightboxImage(nextItem);
   }
 
   const filtered = useMemo(() => {

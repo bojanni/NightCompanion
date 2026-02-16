@@ -4,7 +4,70 @@ const { pool } = require('../db');
 const createCrudRouter = (tableName, searchableColumns = []) => {
     const router = express.Router();
 
-    // ... (helper functions) ...
+    const getTableSchema = async (tableName) => {
+        const result = await pool.query(`
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = $1
+        `, [tableName]);
+        const schema = {};
+        result.rows.forEach(row => {
+            schema[row.column_name] = row.data_type;
+        });
+        return schema;
+    };
+
+    const buildConditions = (filters, valueStartIndex = 0) => {
+        const conditions = [];
+        const values = [];
+        let idx = valueStartIndex + 1;
+
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value === undefined || value === null) return;
+
+            let operator = '=';
+            let finalValue = value;
+
+            if (typeof value === 'string') {
+                if (value.startsWith('neq.')) {
+                    operator = '!=';
+                    finalValue = value.substring(4);
+                } else if (value.startsWith('gt.')) {
+                    operator = '>';
+                    finalValue = value.substring(3);
+                } else if (value.startsWith('gte.')) {
+                    operator = '>=';
+                    finalValue = value.substring(4);
+                } else if (value.startsWith('lt.')) {
+                    operator = '<';
+                    finalValue = value.substring(3);
+                } else if (value.startsWith('lte.')) {
+                    operator = '<=';
+                    finalValue = value.substring(4);
+                } else if (value.startsWith('in.')) {
+                    // in.(val1,val2)
+                    operator = '= ANY';
+                    const raw = value.substring(3);
+                    if (raw.startsWith('(') && raw.endsWith(')')) {
+                        finalValue = raw.substring(1, raw.length - 1).split(',');
+                    } else {
+                        finalValue = [raw];
+                    }
+                }
+            }
+
+            if (operator === '= ANY') {
+                conditions.push(`${key} = ANY($${idx})`);
+            } else {
+                conditions.push(`${key} ${operator} $${idx}`);
+            }
+
+            values.push(finalValue);
+            idx++;
+        });
+
+        return { conditions, values };
+    };
 
     // GET all items with filtering, sorting, and pagination
     router.get('/', async (req, res) => {

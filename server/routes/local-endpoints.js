@@ -6,7 +6,7 @@ const { pool } = require('../db');
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(
-            'SELECT id, provider, endpoint_url, model_name, model_gen, model_improve, is_active, is_active_gen, is_active_improve, created_at, updated_at FROM user_local_endpoints ORDER BY created_at DESC'
+            'SELECT id, provider, endpoint_url, model_name, model_gen, model_improve, is_active, is_active_gen, is_active_improve, is_active_vision, created_at, updated_at FROM user_local_endpoints ORDER BY created_at DESC'
         );
         res.json(result.rows);
     } catch (err) {
@@ -21,9 +21,9 @@ router.post('/', async (req, res) => {
         const { provider, endpoint_url, model_name, is_active } = req.body;
 
         const result = await pool.query(
-            `INSERT INTO user_local_endpoints (provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve)
-             VALUES ($1, $2, $3, $4, $4, $4)
-             RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, created_at, updated_at`,
+            `INSERT INTO user_local_endpoints (provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, is_active_vision)
+             VALUES ($1, $2, $3, $4, $4, $4, $4)
+             RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, is_active_vision, created_at, updated_at`,
             [provider, endpoint_url, model_name, is_active !== false]
         );
 
@@ -66,7 +66,8 @@ router.put('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const isActiveVal = is_active !== false;
+        const { provider, endpoint_url, model_name, is_active } = req.body;
+
         const result = await pool.query(
             `UPDATE user_local_endpoints 
              SET provider = COALESCE($1, provider),
@@ -75,17 +76,18 @@ router.patch('/:id', async (req, res) => {
                  is_active = COALESCE($4, is_active),
                  is_active_gen = COALESCE($5, is_active_gen),
                  is_active_improve = COALESCE($6, is_active_improve),
+                 is_active_vision = COALESCE($7, is_active_vision),
                  updated_at = NOW()
-             WHERE id = $7
-             RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, created_at, updated_at`,
-            [provider, endpoint_url, model_name, is_active, req.body.is_active_gen, req.body.is_active_improve, id]
+             WHERE id = $8
+             RETURNING id, provider, endpoint_url, model_name, is_active, is_active_gen, is_active_improve, is_active_vision, created_at, updated_at`,
+            [provider, endpoint_url, model_name, is_active, req.body.is_active_gen, req.body.is_active_improve, req.body.is_active_vision, id]
         );
 
         // Sync legacy is_active if role flags were provided
-        if (req.body.is_active_gen !== undefined || req.body.is_active_improve !== undefined) {
+        if (req.body.is_active_gen !== undefined || req.body.is_active_improve !== undefined || req.body.is_active_vision !== undefined) {
             await pool.query(`
                 UPDATE user_local_endpoints 
-                SET is_active = (is_active_gen OR is_active_improve)
+                SET is_active = (is_active_gen OR is_active_improve OR is_active_vision)
                 WHERE id = $1
             `, [id]);
         }

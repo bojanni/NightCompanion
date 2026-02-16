@@ -1,21 +1,9 @@
 import { useState, useEffect } from 'react';
 import {
-    Server, Loader2, Check, Trash2, Zap, RefreshCw
+    Server, Loader2, Check, Trash2, Zap, RefreshCw, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface LocalEndpoint {
-    id: string;
-    provider: 'ollama' | 'lmstudio';
-    endpoint_url: string;
-    model_name: string;
-    model_gen?: string;
-    model_improve?: string;
-    is_active: boolean;
-    is_active_gen: boolean;
-    is_active_improve: boolean;
-    updated_at: string;
-}
+import type { LocalEndpoint } from '../lib/api-keys-service';
 
 interface LocalEndpointCardProps {
     type: 'ollama' | 'lmstudio';
@@ -23,7 +11,7 @@ interface LocalEndpointCardProps {
     actionLoading: string | null;
     onSave: (endpointUrl: string, modelGen: string, modelImprove: string) => void;
     onDelete: () => void;
-    onSetActive: (role: 'generation' | 'improvement') => void;
+    onSetActive: (role: 'generation' | 'improvement' | 'vision') => void;
 }
 
 export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, onSetActive }: LocalEndpointCardProps) {
@@ -151,32 +139,44 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
+                        {/* Config Buttons Logic */}
+                        <div className="grid grid-cols-3 gap-1">
                             <button
                                 onClick={() => onSetActive('generation')}
                                 disabled={actionLoading === `${type}-generation`}
-                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 ${endpoint.is_active_gen
+                                className={`py-1.5 rounded-lg text-[10px] font-medium transition-all flex flex-col items-center justify-center gap-1 ${endpoint.is_active_gen
                                     ? 'bg-amber-500/20 text-amber-300'
                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                                     }`}
                             >
                                 {actionLoading === `${type}-generation` ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
-                                {endpoint.is_active_gen ? 'Gen: Active' : 'Gen: Activate'}
+                                {endpoint.is_active_gen ? 'Gen Active' : 'Set Gen'}
                             </button>
                             <button
                                 onClick={() => onSetActive('improvement')}
                                 disabled={actionLoading === `${type}-improvement`}
-                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center justify-center gap-1.5 ${endpoint.is_active_improve
+                                className={`py-1.5 rounded-lg text-[10px] font-medium transition-all flex flex-col items-center justify-center gap-1 ${endpoint.is_active_improve
                                     ? 'bg-teal-500/20 text-teal-300'
                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                                     }`}
                             >
                                 {actionLoading === `${type}-improvement` ? <Loader2 size={10} className="animate-spin" /> : <Zap size={10} />}
-                                {endpoint.is_active_improve ? 'Imp: Active' : 'Imp: Activate'}
+                                {endpoint.is_active_improve ? 'Imp Active' : 'Set Imp'}
+                            </button>
+                            <button
+                                onClick={() => onSetActive('vision')}
+                                disabled={actionLoading === `${type}-vision`}
+                                className={`py-1.5 rounded-lg text-[10px] font-medium transition-all flex flex-col items-center justify-center gap-1 ${endpoint.is_active_vision
+                                    ? 'bg-violet-500/20 text-violet-300'
+                                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                                    }`}
+                            >
+                                {actionLoading === `${type}-vision` ? <Loader2 size={10} className="animate-spin" /> : <Eye size={10} />}
+                                {endpoint.is_active_vision ? 'Vis Active' : 'Set Vis'}
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mt-1">
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="flex-1 p-1.5 text-center text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center gap-1.5 text-[10px]"

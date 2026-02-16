@@ -22,9 +22,24 @@ export interface ApiKeyInfo {
   is_active: boolean;
   is_active_gen: boolean;
   is_active_improve: boolean;
+  is_active_vision?: boolean;
   model_name?: string;
   model_gen?: string;
   model_improve?: string;
+  updated_at: string;
+}
+
+export interface LocalEndpoint {
+  id: string;
+  provider: 'ollama' | 'lmstudio';
+  endpoint_url: string;
+  model_name: string;
+  model_gen?: string;
+  model_improve?: string;
+  is_active: boolean;
+  is_active_gen: boolean;
+  is_active_improve: boolean;
+  is_active_vision?: boolean;
   updated_at: string;
 }
 
@@ -42,7 +57,7 @@ export async function deleteApiKey(provider: string): Promise<void> {
   await callKeyService('DELETE', `/${provider}`);
 }
 
-export async function setActiveProvider(provider: string, modelName: string, active: boolean = true, role?: 'generation' | 'improvement'): Promise<void> {
+export async function setActiveProvider(provider: string, modelName: string, active: boolean = true, role?: 'generation' | 'improvement' | 'vision'): Promise<void> {
   await callKeyService('POST', '', { action: 'set-active', provider, modelName, active, role });
 }
 
