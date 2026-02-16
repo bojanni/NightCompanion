@@ -496,9 +496,21 @@ router.post('/', async (req, res) => {
             // But for now let's reuse getActiveProvider OR allow passing credentials for setup time
             let providerConfig = null;
 
-            if (payload.provider && payload.apiKey) {
-                providerConfig = { provider: payload.provider, apiKey: payload.apiKey, type: 'cloud' };
-            } else if (payload.provider === 'local' || payload.endpointUrl) {
+            if (payload.provider) {
+                if (payload.apiKey) {
+                    providerConfig = { provider: payload.provider, apiKey: payload.apiKey, type: 'cloud' };
+                } else if (payload.provider === 'local') {
+                    providerConfig = { type: 'local', endpoint_url: payload.endpointUrl, provider: payload.subProvider };
+                } else {
+                    // Look up saved credentials for the requested provider
+                    providerConfig = await getProviderCredentials(payload.provider);
+
+                    // Special case: OpenRouter doesn't strictly need a key to list models
+                    if (!providerConfig && payload.provider === 'openrouter') {
+                        providerConfig = { provider: 'openrouter', apiKey: '', type: 'cloud' };
+                    }
+                }
+            } else if (payload.endpointUrl) {
                 providerConfig = { type: 'local', endpoint_url: payload.endpointUrl, provider: payload.subProvider };
             } else {
                 providerConfig = await getActiveProvider();
