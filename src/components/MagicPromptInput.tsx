@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, Sparkle } from 'lucide-react';
+import { Sparkles, Loader2, Sparkle, User } from 'lucide-react';
 import { generateFromDescription } from '../lib/ai-service';
 import { db } from '../lib/api';
 import { handleAIError } from '../lib/error-handler';
 import { toast } from 'sonner';
+import CharacterPicker from './CharacterPicker';
+import { useCharacters } from '../hooks/useCharacters';
 
 interface MagicPromptInputProps {
     onPromptGenerated: (prompt: string) => void;
@@ -14,6 +16,11 @@ interface MagicPromptInputProps {
 export default function MagicPromptInput({ onPromptGenerated, maxWords, className }: MagicPromptInputProps) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPicker, setShowPicker] = useState(false);
+
+    // Check for characters
+    const { data } = useCharacters(0);
+    const characterCount = data?.totalCount || 0;
 
     async function handleMagicAI() {
         if (!input.trim()) return;
@@ -67,17 +74,29 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
     return (
         <div className={`bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm overflow-hidden relative group flex flex-col ${className}`}>
             {/* Subtle background glow */}
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-teal-500/10 blur-3xl rounded-full group-hover:bg-teal-500/20 transition-colors duration-500" />
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-teal-500/10 blur-3xl rounded-full group-hover:bg-teal-500/20 transition-colors duration-500 pointer-events-none" />
 
             <div className="relative space-y-4 flex-1 flex flex-col">
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="w-8 h-8 bg-teal-500/15 rounded-lg flex items-center justify-center">
-                        <Sparkle size={16} className="text-teal-400" />
+                <div className="flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-teal-500/15 rounded-lg flex items-center justify-center">
+                            <Sparkle size={16} className="text-teal-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-semibold text-white">Magic Quick Start</h3>
+                            <p className="text-[11px] text-slate-500">Describe your idea and let AI do the heavy lifting</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-sm font-semibold text-white">Magic Quick Start</h3>
-                        <p className="text-[11px] text-slate-500">Describe your idea and let AI do the heavy lifting</p>
-                    </div>
+
+                    <button
+                        onClick={() => setShowPicker(true)}
+                        disabled={characterCount === 0}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={characterCount === 0 ? "No characters created yet" : "Add character reference"}
+                    >
+                        <User size={12} />
+                        Add Character
+                    </button>
                 </div>
 
                 <div className="relative flex-1">
@@ -107,6 +126,18 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
                     </div>
                 </div>
             </div>
+
+            {showPicker && (
+                <CharacterPicker
+                    onClose={() => setShowPicker(false)}
+                    onSelect={(char) => {
+                        const charText = `Character: ${char.name}. ${char.description || ''}`;
+                        setInput(prev => prev ? `${prev}\n\n${charText}` : charText);
+                        setShowPicker(false);
+                        toast.success(`added ${char.name} to prompt`);
+                    }}
+                />
+            )}
         </div>
     );
 }
