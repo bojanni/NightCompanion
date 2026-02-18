@@ -26,7 +26,7 @@ const navItems = [
 ];
 
 // Full-width: these pages use all available horizontal space
-const FULL_WIDTH_PAGES = ['/', '/generator', '/prompts', '/gallery', '/timeline'];
+const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
 
 export default function Layout({ onSignOut }: LayoutProps) {
   const location = useLocation();
