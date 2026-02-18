@@ -11,22 +11,22 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { to: '/',                icon: LayoutDashboard, label: 'Dashboard'       },
-  { to: '/generator',       icon: Wand2,           label: 'Generator'       },
-  { to: '/prompts',         icon: Sparkles,        label: 'Prompts'         },
-  { to: '/characters',      icon: Users,           label: 'Characters'      },
-  { to: '/gallery',         icon: Image,           label: 'Gallery'         },
-  { to: '/models',          icon: Compass,         label: 'Models'          },
-  { to: '/batch-testing',   icon: FlaskConical,    label: 'Batch Testing'   },
-  { to: '/style',           icon: Fingerprint,     label: 'Style Profile'   },
-  { to: '/timeline',        icon: Clock,           label: 'Timeline'        },
-  { to: '/cost-calculator', icon: Coins,           label: 'Cost Calculator' },
-  { to: '/tools',           icon: Wrench,          label: 'AI Tools'        },
-  { to: '/settings',        icon: Settings,        label: 'Settings'        },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/generator', icon: Wand2, label: 'Generator' },
+  { to: '/prompts', icon: Sparkles, label: 'Prompts' },
+  { to: '/characters', icon: Users, label: 'Characters' },
+  { to: '/gallery', icon: Image, label: 'Gallery' },
+  { to: '/models', icon: Compass, label: 'Models' },
+  { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
+  { to: '/style', icon: Fingerprint, label: 'Style Profile' },
+  { to: '/timeline', icon: Clock, label: 'Timeline' },
+  { to: '/cost-calculator', icon: Coins, label: 'Cost Calculator' },
+  { to: '/tools', icon: Wrench, label: 'AI Tools' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 // Full-width: these pages use all available horizontal space
-const FULL_WIDTH_PAGES = ['/generator', '/prompts', '/gallery', '/timeline'];
+const FULL_WIDTH_PAGES = ['/', '/generator', '/prompts', '/gallery', '/timeline'];
 
 export default function Layout({ onSignOut }: LayoutProps) {
   const location = useLocation();
