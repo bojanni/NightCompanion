@@ -244,7 +244,12 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
     }
 
     const data = await res.json();
-    return data.choices[0].message.content;
+    const content = data.choices[0].message.content;
+
+    // Log the raw content for debugging
+    console.log('[OpenRouter] Raw content received:', content ? content.substring(0, 200) + '...' : 'null/undefined');
+
+    return content;
 }
 
 async function callTogether(apiKey, system, user, model, maxTokens = 1500) {
@@ -635,22 +640,30 @@ router.post('/', async (req, res) => {
             try {
                 let jsonStr = result;
                 // Attempt to find JSON within markdown code blocks first
-                const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                const codeBlockMatch = result && result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
                 if (codeBlockMatch) {
                     jsonStr = codeBlockMatch[1];
                 } else {
                     // Fallback to finding the first { and last }
-                    const firstBrace = result.indexOf('{');
-                    const lastBrace = result.lastIndexOf('}');
+                    const firstBrace = result ? result.indexOf('{') : -1;
+                    const lastBrace = result ? result.lastIndexOf('}') : -1;
                     if (firstBrace !== -1 && lastBrace !== -1) {
                         jsonStr = result.substring(firstBrace, lastBrace + 1);
                     }
                 }
-                parsedResult = JSON.parse(jsonStr);
+
+                if (jsonStr) {
+                    parsedResult = JSON.parse(jsonStr);
+                } else {
+                    console.warn('No JSON found in response');
+                    // Return a safe fallback structure if possible, or just the raw text
+                    parsedResult = { error: "Failed to parse AI response", raw: result };
+                }
             } catch (e) {
                 console.warn('Failed to parse JSON response:', e);
                 // Return raw text if parsing fails, but helpful to log what it was
                 console.log('Raw output was:', result);
+                parsedResult = { error: "Invalid JSON from AI", raw: result };
             }
         }
 
