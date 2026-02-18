@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink, Clock } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink, Clock, Plus, Loader2 } from 'lucide-react';
 import type { Prompt, Tag } from '../lib/types';
 import { MODELS } from '../lib/models-data';
 import { formatDate } from '../lib/date-utils';
 import TagBadge from './TagBadge';
 import StarRating from './StarRating';
+import { db } from '../lib/api';
+import { toast } from 'sonner';
 
 interface PromptDetailOverlayProps {
     prompt: Prompt;
@@ -15,6 +17,7 @@ interface PromptDetailOverlayProps {
     onNext: () => void;
     onPrev: () => void;
     onRate?: (rating: number) => void;
+    onImageUploaded?: (image: { id: string; image_url: string; title: string; rating: number; model?: string }) => void;
 }
 
 export default function PromptDetailOverlay({
@@ -24,8 +27,12 @@ export default function PromptDetailOverlay({
     onClose,
     onNext,
     onPrev,
-    onRate
+    onRate,
+    onImageUploaded
 }: PromptDetailOverlayProps) {
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'ArrowRight') onNext();
@@ -42,6 +49,57 @@ export default function PromptDetailOverlay({
             document.body.style.overflow = 'unset';
         };
     }, [onNext, onPrev, onClose]);
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const uploadRes = await fetch('http://localhost:3000/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await uploadRes.json();
+
+            if (data.success) {
+                // Create gallery item
+                const { data: galleryItem, error } = await db.from('gallery_items').insert({
+                    title: prompt.title || 'Uploaded Image',
+                    image_url: data.url,
+                    prompt_used: prompt.content,
+                    prompt_id: prompt.id,
+                    rating: 0,
+                    model: prompt.model || null,
+                    created_at: new Date().toISOString()
+                }).select().maybeSingle();
+
+                if (error) throw error;
+
+                if (galleryItem) {
+                    toast.success('Image uploaded and linked');
+                    onImageUploaded?.({
+                        id: galleryItem.id,
+                        image_url: galleryItem.image_url,
+                        title: galleryItem.title,
+                        rating: galleryItem.rating,
+                        model: galleryItem.model
+                    });
+                }
+            } else {
+                toast.error('Failed to upload image');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('Error uploading image');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
 
     const mainImage = images && images.length > 0 ? images[0] : null;
@@ -97,6 +155,21 @@ export default function PromptDetailOverlay({
                         <div className="flex flex-col items-center gap-4 text-slate-500 py-20">
                             <Database size={64} strokeWidth={1} />
                             <p>No image linked to this prompt</p>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors mt-2"
+                            >
+                                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                                {isUploading ? 'Uploading...' : 'Add Image'}
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleImageUpload}
+                            />
                         </div>
                     )}
 
