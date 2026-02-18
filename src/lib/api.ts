@@ -266,7 +266,15 @@ class QueryBuilder {
             const response = await fetch(url, options);
 
             if (!response.ok) {
-                const error = { message: `HTTP ${response.status}`, status: response.status };
+                let errorMsg = `HTTP ${response.status}`;
+                try {
+                    const errorText = await response.text();
+                    const errorJson = JSON.parse(errorText);
+                    errorMsg = errorJson.error || errorJson.message || errorMsg;
+                } catch (e) {
+                    // ignore json parse error
+                }
+                const error = { message: errorMsg, status: response.status };
                 return resolve({ data: null, error });
             }
 

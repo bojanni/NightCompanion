@@ -373,7 +373,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   async function handleSavePrompt(text: string, title: string) {
     setSaving(title);
     try {
-      await db.from('prompts').insert({
+      const { error } = await db.from('prompts').insert({
         title: title,
         content: text,
         notes: 'Generated with AI Tools',
@@ -381,9 +381,14 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         is_template: false,
         is_favorite: false,
       });
+
+      if (error) throw error;
+
+      toast.success('Prompt saved to library');
       if (onSaved) onSaved();
     } catch (e) {
       console.error('Failed to save prompt:', e);
+      toast.error('Failed to save prompt: ' + (e instanceof Error ? e.message : 'Unknown error'));
     } finally {
       setSaving('');
     }
