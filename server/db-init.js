@@ -78,14 +78,14 @@ async function initSchema() {
                 title TEXT,
                 content TEXT NOT NULL,
                 notes TEXT,
-                rating INTEGER DEFAULT 0,
+                rating NUMERIC(3,1) DEFAULT 0,
                 is_favorite BOOLEAN DEFAULT FALSE,
                 is_template BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
-        await addColumn(pool, 'prompts', 'rating', 'INTEGER DEFAULT 0');
+        await addColumn(pool, 'prompts', 'rating', 'NUMERIC(3,1) DEFAULT 0');
         await addColumn(pool, 'prompts', 'is_favorite', 'BOOLEAN DEFAULT FALSE');
         await addColumn(pool, 'prompts', 'is_template', 'BOOLEAN DEFAULT FALSE');
         await addColumn(pool, 'prompts', 'model', 'TEXT');
@@ -169,7 +169,7 @@ async function initSchema() {
             );
         `);
         await addColumn(pool, 'gallery_items', 'prompt_id', 'UUID');
-        await addColumn(pool, 'gallery_items', 'rating', 'INTEGER DEFAULT 0');
+        await addColumn(pool, 'gallery_items', 'rating', 'NUMERIC(3,1) DEFAULT 0');
         await addColumn(pool, 'gallery_items', 'model_used', 'TEXT');
         await addColumn(pool, 'gallery_items', 'model', 'TEXT');
         await addColumn(pool, 'gallery_items', 'is_favorite', 'BOOLEAN DEFAULT FALSE');
@@ -179,6 +179,7 @@ async function initSchema() {
         await addColumn(pool, 'gallery_items', 'height', 'INTEGER');
         await addColumn(pool, 'gallery_items', 'character_id', 'UUID');
         await addColumn(pool, 'gallery_items', 'collection_id', 'UUID');
+        await addColumn(pool, 'gallery_items', 'created_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
         await addColumn(pool, 'gallery_items', 'updated_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
 
 

@@ -4,6 +4,7 @@ import {
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Link,
 } from 'lucide-react';
+import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
 import type { GalleryItem, Prompt, Collection } from '../lib/types';
 import Modal from '../components/Modal';
