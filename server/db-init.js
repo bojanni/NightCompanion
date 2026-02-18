@@ -166,11 +166,15 @@ async function initSchema() {
                 model_used TEXT,
                 notes TEXT,
                 is_favorite BOOLEAN DEFAULT FALSE,
+                aspect_ratio TEXT,
+                use_custom_aspect_ratio BOOLEAN DEFAULT false,
+                start_image TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
         await addColumn(pool, 'gallery_items', 'prompt_id', 'UUID');
+        await addColumn(pool, 'gallery_items', 'start_image', 'TEXT');
         await addColumn(pool, 'gallery_items', 'rating', 'NUMERIC(3,1) DEFAULT 0');
         await addColumn(pool, 'gallery_items', 'model_used', 'TEXT');
         await addColumn(pool, 'gallery_items', 'model', 'TEXT');

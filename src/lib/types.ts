@@ -16,6 +16,7 @@ export interface Prompt {
   seed?: number;
   aspect_ratio?: string;
   use_custom_aspect_ratio?: boolean;
+  start_image?: string | null;
 }
 
 export interface Tag {

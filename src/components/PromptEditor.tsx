@@ -40,6 +40,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [useCustomAspectRatio, setUseCustomAspectRatio] = useState(false);
   const [detectedAspectRatio, setDetectedAspectRatio] = useState<string | null>(null);
+  const [startImage, setStartImage] = useState<string | null>(null);
 
   // AI Auto-Generation State
   const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
@@ -105,6 +106,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setSeed(prompt.seed);
       setAspectRatio(prompt.aspect_ratio || '1:1');
       setUseCustomAspectRatio(prompt.use_custom_aspect_ratio || false);
+      setStartImage(prompt.start_image || null);
       setAutoGenerateTitle(false); // Don't auto-gen on edit
     } else {
       // New prompt default values
@@ -319,6 +321,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         seed: seed || null,
         aspect_ratio: aspectRatio,
         use_custom_aspect_ratio: useCustomAspectRatio,
+        start_image: startImage,
         updated_at: new Date().toISOString(),
       };
 
@@ -525,7 +528,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Revised Prompt (AI Optimized)</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Enhanced prompt (by NC)</label>
               <textarea
                 value={revisedPrompt}
                 onChange={(e) => setRevisedPrompt(e.target.value)}
@@ -533,6 +536,58 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
                 rows={3}
                 className="w-full px-4 py-2.5 bg-slate-700/30 border border-slate-700 rounded-xl text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none font-mono"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1.5">Start Image (Optional)</label>
+              {startImage ? (
+                <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-600 group">
+                  <img src={startImage} alt="Start" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setStartImage(null)}
+                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                  >
+                    <X className="text-white w-6 h-6" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => document.getElementById('start-image-upload')?.click()}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                  >
+                    <Upload size={14} />
+                    Upload Image
+                  </button>
+                  <input
+                    id="start-image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      const formData = new FormData();
+                      formData.append('image', file);
+
+                      try {
+                        const res = await fetch('http://localhost:3000/api/upload', {
+                          method: 'POST',
+                          body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          setStartImage(data.url);
+                          toast.success('Start image uploaded');
+                        }
+                      } catch (err) {
+                        toast.error('Failed to upload start image');
+                      }
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
