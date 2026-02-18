@@ -1100,6 +1100,15 @@ export default function Gallery() {
                       </span>
                     )}
                   </div>
+                  <div className="text-[10px] text-slate-500 mt-1.5 space-y-0.5">
+                    {lightboxImage.created_at && (
+                      <p>Created: {formatDate(lightboxImage.created_at)}</p>
+                    )}
+                    {lightboxImage.updated_at && lightboxImage.created_at &&
+                      formatDate(lightboxImage.updated_at) !== formatDate(lightboxImage.created_at) && (
+                        <p>Updated: {formatDate(lightboxImage.updated_at)}</p>
+                      )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <StarRating
