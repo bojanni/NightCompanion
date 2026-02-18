@@ -11,22 +11,22 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/generator', icon: Wand2, label: 'Generator' },
-  { to: '/prompts', icon: Sparkles, label: 'Prompts' },
-  { to: '/characters', icon: Users, label: 'Characters' },
-  { to: '/gallery', icon: Image, label: 'Gallery' },
-  { to: '/models', icon: Compass, label: 'Models' },
-  { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
-  { to: '/style', icon: Fingerprint, label: 'Style Profile' },
-  { to: '/timeline', icon: Clock, label: 'Timeline' },
-  { to: '/cost-calculator', icon: Coins, label: 'Cost Calculator' },
-  { to: '/tools', icon: Wrench, label: 'AI Tools' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/',                icon: LayoutDashboard, label: 'Dashboard'       },
+  { to: '/generator',       icon: Wand2,           label: 'Generator'       },
+  { to: '/prompts',         icon: Sparkles,        label: 'Prompts'         },
+  { to: '/characters',      icon: Users,           label: 'Characters'      },
+  { to: '/gallery',         icon: Image,           label: 'Gallery'         },
+  { to: '/models',          icon: Compass,         label: 'Models'          },
+  { to: '/batch-testing',   icon: FlaskConical,    label: 'Batch Testing'   },
+  { to: '/style',           icon: Fingerprint,     label: 'Style Profile'   },
+  { to: '/timeline',        icon: Clock,           label: 'Timeline'        },
+  { to: '/cost-calculator', icon: Coins,           label: 'Cost Calculator' },
+  { to: '/tools',           icon: Wrench,          label: 'AI Tools'        },
+  { to: '/settings',        icon: Settings,        label: 'Settings'        },
 ];
 
-// Full-width pages fill all available space (no max-width, no centering)
-const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
+// Full-width: these pages use all available horizontal space
+const FULL_WIDTH_PAGES = ['/generator', '/prompts', '/gallery', '/timeline'];
 
 export default function Layout({ onSignOut }: LayoutProps) {
   const location = useLocation();
@@ -105,18 +105,19 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </div>
       </aside>
 
-      {/* ── Main content area ── */}
+      {/* ── Main ── */}
       <main className={`flex-1 min-h-screen overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${collapsed ? 'ml-20' : 'ml-64'}`}>
         {isFullWidthPage ? (
-          // Full-width: no max-width constraint, page fills everything
+          /* Full-width: Generator, Prompts, Gallery, Timeline */
           <div className="w-full p-8">
             <Outlet />
           </div>
         ) : (
-          // Centered: page manages its own max-width (via max-w-* on root div)
-          // We just provide padding and ensure minimum usable width
-          <div className="w-full min-w-[1200px] p-8">
-            <Outlet />
+          /* Centered: all other pages — max 1400px, centered, min 1200px */
+          <div className="w-full p-8">
+            <div className="max-w-[1400px] min-w-[1200px] mx-auto">
+              <Outlet />
+            </div>
           </div>
         )}
       </main>
