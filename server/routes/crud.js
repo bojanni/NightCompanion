@@ -255,7 +255,8 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
       `;
 
             console.log(`[CRUD] Updating ${tableName}:`, query);
-            console.log(`[CRUD] Values:`, JSON.stringify(values));
+            const valuesWithTypes = values.map(v => ({ value: v, type: typeof v, isNull: v === null }));
+            console.log(`[CRUD] Values:`, JSON.stringify(valuesWithTypes, null, 2));
 
             const result = await pool.query(query, values);
             if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
