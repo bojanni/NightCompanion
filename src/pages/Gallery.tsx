@@ -1087,7 +1087,16 @@ export default function Gallery() {
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-white">{lightboxImage.title || 'Untitled'}</h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <div className="text-[10px] text-slate-500 mt-1 space-y-0.5">
+                    {lightboxImage.created_at && (
+                      <p>Created: {formatDate(lightboxImage.created_at)}</p>
+                    )}
+                    {lightboxImage.updated_at && lightboxImage.created_at &&
+                      formatDate(lightboxImage.updated_at) !== formatDate(lightboxImage.created_at) && (
+                        <p>Updated: {formatDate(lightboxImage.updated_at)}</p>
+                      )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
                     {lightboxImage.collection_id && (
                       <span className="text-sm text-slate-400 flex items-center gap-1">
                         <FolderOpen size={13} />
@@ -1099,15 +1108,6 @@ export default function Gallery() {
                         {lightboxImage.model}
                       </span>
                     )}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-1.5 space-y-0.5">
-                    {lightboxImage.created_at && (
-                      <p>Created: {formatDate(lightboxImage.created_at)}</p>
-                    )}
-                    {lightboxImage.updated_at && lightboxImage.created_at &&
-                      formatDate(lightboxImage.updated_at) !== formatDate(lightboxImage.created_at) && (
-                        <p>Updated: {formatDate(lightboxImage.updated_at)}</p>
-                      )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

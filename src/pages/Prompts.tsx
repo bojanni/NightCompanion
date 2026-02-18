@@ -120,7 +120,7 @@ export default function Prompts() {
     setLoading(false);
   }, [currentPage, filterType, search]); // Added search dependency
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     // Debounce search to avoid too many requests
@@ -137,11 +137,15 @@ export default function Prompts() {
       const index = prompts.findIndex(p => p.id === openId);
       if (index !== -1) {
         setDetailViewIndex(index);
-        // Remove the param from URL without refreshing to avoid re-triggering
-        window.history.replaceState({}, '', '/prompts');
+        // Remove the param from URL using setSearchParams to ensure react-router knows about the change
+        setSearchParams(params => {
+          const newParams = new URLSearchParams(params);
+          newParams.delete('open');
+          return newParams;
+        }, { replace: true });
       }
     }
-  }, [prompts, searchParams, detailViewIndex]);
+  }, [prompts, searchParams, detailViewIndex, setSearchParams]);
 
   const filtered = useMemo(() => {
     let result = prompts;
