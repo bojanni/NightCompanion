@@ -164,7 +164,8 @@ async function initSchema() {
                 model_used TEXT,
                 notes TEXT,
                 is_favorite BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
         await addColumn(pool, 'gallery_items', 'prompt_id', 'UUID');
@@ -178,6 +179,7 @@ async function initSchema() {
         await addColumn(pool, 'gallery_items', 'height', 'INTEGER');
         await addColumn(pool, 'gallery_items', 'character_id', 'UUID');
         await addColumn(pool, 'gallery_items', 'collection_id', 'UUID');
+        await addColumn(pool, 'gallery_items', 'updated_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
 
 
         // Collections
@@ -186,7 +188,8 @@ async function initSchema() {
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 name TEXT NOT NULL,
                 description TEXT,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
 
@@ -329,10 +332,20 @@ async function initSchema() {
             ON CONFLICT (email) DO NOTHING
         `, [defaultUser]);
 
+        // Add updated_at columns to existing tables
+        await addUpdatedAtColumns(pool);
+
     } catch (err) {
         throw err; // Re-throw the error so the caller can catch it
     } finally {
         await pool.end();
+    }
+}
+
+async function addUpdatedAtColumns(pool) {
+    const tables = ['collections', 'tags', 'characters', 'user_api_keys'];
+    for (const table of tables) {
+        await addColumn(pool, table, 'updated_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
     }
 }
 

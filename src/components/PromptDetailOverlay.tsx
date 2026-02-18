@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink } from 'lucide-react';
 import type { Prompt, Tag } from '../lib/types';
 import { MODELS } from '../lib/models-data';
 import TagBadge from './TagBadge';
+import StarRating from './StarRating';
 
 interface PromptDetailOverlayProps {
     prompt: Prompt;
@@ -12,6 +13,7 @@ interface PromptDetailOverlayProps {
     onClose: () => void;
     onNext: () => void;
     onPrev: () => void;
+    onRate?: (rating: number) => void;
 }
 
 export default function PromptDetailOverlay({
@@ -20,7 +22,8 @@ export default function PromptDetailOverlay({
     images,
     onClose,
     onNext,
-    onPrev
+    onPrev,
+    onRate
 }: PromptDetailOverlayProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -101,6 +104,26 @@ export default function PromptDetailOverlay({
                             {modelName}
                         </div>
                     )}
+
+                    {/* Star Rating Overlay */}
+                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <StarRating
+                            rating={prompt.rating}
+                            onChange={(r) => onRate?.(r)}
+                            size={20}
+                        />
+                        <div className="w-px h-4 bg-white/10" />
+                        <button
+                            className="text-white/50 hover:text-amber-400 transition-colors"
+                            title="View online"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (mainImage?.image_url) window.open(mainImage.image_url, '_blank');
+                            }}
+                        >
+                            <ExternalLink size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Right Side: Data */}

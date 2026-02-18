@@ -267,6 +267,7 @@ export default function Gallery() {
 
       if (item.prompt_id) {
         await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
+        await db.from('gallery_items').update({ rating }).eq('prompt_id', item.prompt_id);
       }
     } catch (err) {
       console.error('Failed to update rating:', err);

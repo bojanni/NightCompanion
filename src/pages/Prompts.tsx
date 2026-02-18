@@ -906,6 +906,10 @@ export default function Prompts() {
             onClose={() => setDetailViewIndex(null)}
             onNext={() => navigateDetail('next')}
             onPrev={() => navigateDetail('prev')}
+            onRate={(r) => {
+              const p = filtered[detailViewIndex];
+              if (p) handleRatePrompt(p.id, r);
+            }}
           />
         )}
       </AnimatePresence>
