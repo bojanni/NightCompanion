@@ -293,6 +293,15 @@ async function listModels(providerConfig) {
             }
         } catch (e) { /* ignore */ }
 
+        // Fallback for LM Studio specific API
+        try {
+            const res = await fetch(`${url}/api/v1/models`);
+            if (res.ok) {
+                const data = await res.json();
+                return data.data.map(m => ({ id: m.id, name: m.id }));
+            }
+        } catch (e) { /* ignore */ }
+
         // Fallback for Ollama specific
         try {
             const res = await fetch(`${url}/api/tags`);

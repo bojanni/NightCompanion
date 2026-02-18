@@ -41,9 +41,22 @@ const navItems = [
 export default function Layout({ onSignOut }: LayoutProps) {
   const location = useLocation();
 
-  // Define full-width pages (Dashboard, Gallery, Prompts)
-  // Dashboard is '/'
-  const isFullWidthPage = ['/', '/prompts', '/gallery', '/timeline'].includes(location.pathname);
+  // Define full-width pages (Dashboard, Gallery, Prompts, Settings, etc.)
+  const isFullWidthPage = [
+    '/',
+    '/prompts',
+    '/gallery',
+    '/timeline',
+    '/settings',
+    '/models',
+    '/characters',
+    '/generator',
+    '/tools',
+    '/style',
+    '/cost-calculator',
+    '/batch-testing',
+    '/versioning-guide'
+  ].includes(location.pathname);
 
 
   const [collapsed, setCollapsed] = useState(() => {
