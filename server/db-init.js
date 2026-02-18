@@ -317,14 +317,22 @@ async function initSchema() {
             ON CONFLICT (email) DO NOTHING
         `, [defaultUser]);
 
-        console.log('✅ Schema initialization complete.');
-
     } catch (err) {
-        console.error('Error initializing schema:', err);
-        process.exit(1);
+        throw err; // Re-throw the error so the caller can catch it
     } finally {
         await pool.end();
     }
 }
 
-initSchema();
+module.exports = { initSchema };
+
+// If run directly, execute initSchema
+if (require.main === module) {
+    initSchema().then(() => {
+        console.log('✅ Schema initialization complete.');
+        process.exit(0);
+    }).catch(err => {
+        console.error('❌ Schema initialization failed:', err);
+        process.exit(1);
+    });
+}
