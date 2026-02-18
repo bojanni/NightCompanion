@@ -284,27 +284,42 @@ async function listModels(providerConfig) {
         // LM Studio: GET /v1/models
 
         let url = endpoint_url.replace(/\/$/, '');
-        // Try standard OpenAI compatible endpoint first which both usually support now
+
+        // Attempt to find the base URL if the user included '/v1'
+        const baseUrl = url.endsWith('/v1') ? url.slice(0, -3) : url;
+
+        // 1. Try LM Studio specific API (http://localhost:1234/api/v1/models)
         try {
-            const res = await fetch(`${url}/v1/models`);
+            const res = await fetch(`${baseUrl}/api/v1/models`);
             if (res.ok) {
                 const data = await res.json();
                 return data.data.map(m => ({ id: m.id, name: m.id }));
             }
         } catch (e) { /* ignore */ }
 
-        // Fallback for LM Studio specific API
+        // 2. Try OpenAI compatible (http://localhost:1234/v1/models)
         try {
-            const res = await fetch(`${url}/api/v1/models`);
+            const res = await fetch(`${baseUrl}/v1/models`);
             if (res.ok) {
                 const data = await res.json();
                 return data.data.map(m => ({ id: m.id, name: m.id }));
             }
         } catch (e) { /* ignore */ }
 
-        // Fallback for Ollama specific
+        // 3. Keep original provided URL attempt (e.g. if user has a custom proxy ending in /v1)
+        if (url !== baseUrl) {
+            try {
+                const res = await fetch(`${url}/models`);
+                if (res.ok) {
+                    const data = await res.json();
+                    return data.data.map(m => ({ id: m.id, name: m.id }));
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // 4. Fallback for Ollama specific (http://localhost:11434/api/tags)
         try {
-            const res = await fetch(`${url}/api/tags`);
+            const res = await fetch(`${baseUrl}/api/tags`);
             if (res.ok) {
                 const data = await res.json();
                 return data.models.map(m => ({ id: m.name, name: m.name }));
