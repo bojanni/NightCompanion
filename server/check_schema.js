@@ -14,14 +14,15 @@ const pool = new Pool(config);
 async function check() {
     try {
         const res = await pool.query(`
-            SELECT column_name, data_type
+            SELECT table_name, column_name, data_type
             FROM information_schema.columns
-            WHERE table_name = 'prompts'
+            WHERE table_name IN ('prompts', 'gallery_items')
+            ORDER BY table_name, column_name
         `);
-        console.log('--- PROMPTS COLUMNS ---');
-        res.rows.forEach(row => console.log(`${row.column_name}: ${row.data_type}`));
+        console.log('--- SCHEMA Check ---');
+        res.rows.forEach(row => console.log(`${row.table_name}.${row.column_name}: ${row.data_type}`));
     } catch (e) {
-        console.error(e);
+        console.error('Error checking schema:', e);
     } finally {
         await pool.end();
     }
