@@ -199,6 +199,7 @@ async function initSchema() {
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
+        await addColumn(pool, 'collections', 'color', 'TEXT');
 
         // --- Configuration Tables ---
 

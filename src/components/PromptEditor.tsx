@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Save, Wand2, Plus, Upload, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { FolderPlus, CheckCircle, Plus, Loader2, Save, X, Upload, ChevronDown, ChevronRight, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Prompt, Tag as TagType } from '../lib/types';
+import type { Prompt, Tag as TagType, GalleryItem } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
 import { db } from '../lib/api';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
@@ -12,6 +12,8 @@ import { MODELS } from '../lib/models-data';
 import ModelSelector from './ModelSelector';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
+import CollectionManager from './CollectionManager';
+
 
 interface PromptEditorProps {
   prompt: Prompt | null;
@@ -56,10 +58,13 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   const [newTagColor, setNewTagColor] = useState(TAG_COLORS[0]);
   const [newTagCategory, setNewTagCategory] = useState<string>(TAG_CATEGORIES[0]);
 
-  // Image Upload State
+  // Image Upload & Gallery State
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [showCollectionManager, setShowCollectionManager] = useState(false);
+  const [managingCollectionFor, setManagingCollectionFor] = useState<string | null>(null); // gallery_item_id
 
   // Models State - Derived from static data
   const availableModels = useMemo(() => MODELS.map(m => ({
@@ -91,6 +96,14 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           .select('tag_id')
           .eq('prompt_id', prompt.id);
         setSelectedTagIds(ptData?.map((pt: { tag_id: string }) => pt.tag_id) ?? []);
+
+        // Load linked gallery items
+        const { data: gData } = await db
+          .from('gallery_items')
+          .select('*')
+          .eq('prompt_id', prompt.id)
+          .order('created_at', { ascending: false });
+        setGalleryItems(gData || []);
       }
     };
 
@@ -139,61 +152,76 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
   }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const newFiles: File[] = [];
+
+    files.forEach(file => {
       if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
+        toast.error(`Skipped non-image: ${file.name}`);
         return;
       }
-      setSelectedImage(file);
+      newFiles.push(file);
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setImagePreview(result);
+        setFilePreviews(prev => [...prev, result]);
 
-        // Auto-detect aspect ratio
-        const img = new Image();
-        img.onload = () => {
-          const ratio = img.width / img.height;
-          // Find closest standard ratio
-          let closest = '1:1';
-          let minDiff = Infinity;
-
-          const standardRatios = {
-            '1:1': 1,
-            '16:9': 16 / 9,
-            '9:16': 9 / 16,
-            '4:3': 4 / 3,
-            '3:4': 3 / 4,
-            '3:2': 3 / 2,
-            '2:3': 2 / 3,
-            '21:9': 21 / 9
-          };
-
-          for (const [key, val] of Object.entries(standardRatios)) {
-            const diff = Math.abs(ratio - val);
-            if (diff < minDiff) {
-              minDiff = diff;
-              closest = key;
+        // Auto-detect aspect ratio from first image if not set
+        if (newFiles.indexOf(file) === 0 && !detectedAspectRatio) {
+          const img = new Image();
+          img.onload = () => {
+            const ratio = img.width / img.height;
+            // Find closest standard ratio
+            let closest = '1:1';
+            let minDiff = Infinity;
+            const standardRatios = { '1:1': 1, '16:9': 16 / 9, '9:16': 9 / 16, '4:3': 4 / 3, '3:4': 3 / 4, '3:2': 3 / 2, '2:3': 2 / 3, '21:9': 21 / 9 };
+            for (const [key, val] of Object.entries(standardRatios)) {
+              const diff = Math.abs(ratio - val);
+              if (diff < minDiff) { minDiff = diff; closest = key; }
             }
-          }
-
-          setDetectedAspectRatio(closest);
-          if (!useCustomAspectRatio) {
-            setAspectRatio(closest);
-          }
-        };
-        img.src = result;
+            setDetectedAspectRatio(closest);
+            if (!useCustomAspectRatio) setAspectRatio(closest);
+          };
+          img.src = result;
+        }
       };
       reader.readAsDataURL(file);
+    });
+
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+  }
+
+
+
+  async function handleSetMainImage(galleryItemId: string) {
+    if (!prompt) return;
+    try {
+      const { error } = await db.from('prompts').update({ gallery_item_id: galleryItemId }).eq('id', prompt.id);
+      if (error) throw error;
+      toast.success('Main image updated');
+      onSave(); // Reload parent
+    } catch (err) {
+      toast.error('Failed to update main image');
     }
   }
 
-  function clearImage() {
-    setSelectedImage(null);
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setDetectedAspectRatio(null);
+  async function handleAddToCollection(collectionId: string) {
+    if (!managingCollectionFor) return;
+    try {
+      // If collectionId is empty string, it means remove from collection
+      const colId = collectionId || null;
+      const { error } = await db.from('gallery_items').update({ collection_id: colId }).eq('id', managingCollectionFor);
+      if (error) throw error;
+
+      setGalleryItems(prev => prev.map(item => item.id === managingCollectionFor ? { ...item, collection_id: colId } : item));
+      toast.success(colId ? 'Added to collection' : 'Removed from collection');
+      setManagingCollectionFor(null);
+      setShowCollectionManager(false);
+    } catch (err) {
+      toast.error('Failed to update collection');
+    }
   }
 
 
@@ -305,7 +333,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         content,
         title: title.trim() || 'Untitled',
         is_template: isTemplate,
-        rating: rating || null,
+        rating: rating,
         tags: []
       });
 
@@ -352,52 +380,40 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           if (tagError) console.error('Error saving tags:', tagError);
         }
 
-        // Handle Image Upload & Linking
-        if (selectedImage) {
+        // Handle Multiple Image Uploads & Linking
+        if (selectedFiles.length > 0) {
+          for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            if (!file) continue;
+            const formData = new FormData();
+            formData.append('image', file);
 
-          const formData = new FormData();
-          formData.append('image', selectedImage);
+            try {
+              const uploadRes = await fetch('http://localhost:3000/api/upload', { method: 'POST', body: formData });
+              if (uploadRes.ok) {
+                const { url } = await uploadRes.json();
 
-          try {
-            const uploadRes = await fetch('http://localhost:3000/api/upload', {
-              method: 'POST',
-              body: formData
-            });
+                const { data: galleryItem } = await db.from('gallery_items').insert({
+                  title: validated.title || `Prompt Image ${i + 1}`,
+                  image_url: url,
+                  prompt_used: validated.content,
+                  prompt_id: promptId,
+                  rating: 0,
+                  model: model || null,
+                  notes: 'Uploaded via Prompt Editor',
+                  created_at: new Date().toISOString()
+                }).select().maybeSingle();
 
-            if (uploadRes.ok) {
-              const { url } = await uploadRes.json();
-
-
-              // Create Gallery Item linked to Prompt
-              const { data: galleryItem, error: galleryError } = await db.from('gallery_items').insert({
-                title: validated.title || 'Prompt Image',
-                image_url: url,
-                prompt_used: validated.content,
-                prompt_id: promptId,
-                rating: 0,
-                model: model || null,
-                notes: 'Uploaded via Prompt Editor',
-                created_at: new Date().toISOString()
-              }).select().maybeSingle();
-
-              if (galleryError) console.error('Error creating gallery item:', galleryError);
-
-              if (galleryItem) {
-
-                // Bi-directional link: Update Prompt with gallery_item_id
-                const { error: updateError } = await db.from('prompts').update({ gallery_item_id: galleryItem.id }).eq('id', promptId);
-                if (updateError) console.error('Error linking prompt to gallery:', updateError);
+                if (galleryItem && i === 0 && !prompt?.gallery_item_id) {
+                  // Set first uploaded image as main if none exists
+                  await db.from('prompts').update({ gallery_item_id: galleryItem.id }).eq('id', promptId);
+                }
               }
-
-              toast.success('Image uploaded and linked to gallery');
-            } else {
-              console.error('Upload failed:', await uploadRes.text());
-              toast.error('Failed to upload image');
+            } catch (e) {
+              console.error('Upload failed for file', i, e);
             }
-          } catch (uploadErr) {
-            console.error('Upload exception:', uploadErr);
-            toast.error('Failed to upload image (Network/Server error)');
           }
+          toast.success(`${selectedFiles.length} images processed`);
         }
       }
 
@@ -804,46 +820,84 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
 
       {!isLinked && (
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Reference Image</label>
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-slate-300">Gallery Images</label>
 
-          {!imagePreview ? (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-800/30 hover:bg-slate-800/50"
-            >
-              <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center mb-2 text-slate-400">
-                <Upload size={20} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {/* Existing Gallery Items */}
+            {galleryItems.map((item) => (
+              <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
+                <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+
+                {/* Overlay Actions */}
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                  {prompt?.gallery_item_id === item.id ? (
+                    <span className="text-[10px] text-green-400 font-medium flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
+                      <CheckCircle size={10} /> Main Image
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleSetMainImage(item.id)}
+                      className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded-lg border border-slate-600 w-full"
+                    >
+                      Make Main
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => { setManagingCollectionFor(item.id); setShowCollectionManager(true); }}
+                    className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded-lg border border-slate-600 w-full flex items-center justify-center gap-1"
+                  >
+                    <FolderPlus size={10} /> Collection
+                  </button>
+
+                  {item.collection_id && (
+                    <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 truncate max-w-full">
+                      In Collection
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-slate-400 font-medium">Click to upload image</p>
-              <p className="text-xs text-slate-500 mt-1">Saves to gallery & links to prompt</p>
-            </div>
-          ) : (
-            <div className="relative rounded-xl overflow-hidden border border-slate-700 group">
-              <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover" />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            ))}
+
+            {/* New Upload Previews */}
+            {filePreviews.map((preview, idx) => (
+              <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
+                <img src={preview} alt="Upload preview" className="w-full h-full object-cover opacity-75" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-medium text-white drop-shadow-md">Queued</span>
+                </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); clearImage(); }}
-                  className="p-2 bg-red-500/80 text-white rounded-full hover:bg-red-600 transition-colors"
-                  aria-label="Remove image"
+                  onClick={() => {
+                    setFilePreviews(prev => prev.filter((_, i) => i !== idx));
+                    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+                  }}
+                  className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                 >
-                  <X size={16} />
+                  <X size={12} />
                 </button>
               </div>
-              {detectedAspectRatio && (
-                <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded text-xs text-white border border-white/10">
-                  Aspect Ratio: {detectedAspectRatio}
-                </div>
-              )}
+            ))}
+
+            {/* Upload Button */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-800/30 hover:bg-slate-800/50 gap-2"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
+                <Plus size={16} />
+              </div>
+              <span className="text-xs text-slate-400 font-medium">Add Image</span>
             </div>
-          )}
+          </div>
+
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleImageSelect}
             accept="image/*"
             className="hidden"
-            aria-label="Upload reference image"
+            multiple
           />
         </div>
       )}
@@ -864,6 +918,23 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           {prompt ? 'Update' : 'Create'} Prompt
         </button>
       </div>
+      {/* Collection Manager Modal Overlay */}
+      {showCollectionManager && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }}>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Manage Collection</h3>
+              <button onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }} className="text-slate-400 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <CollectionManager
+              onSelect={(colId) => handleAddToCollection(colId)}
+              selectedId={galleryItems.find(g => g.id === managingCollectionFor)?.collection_id ?? null}
+            />
+          </div>
+        </div>
+      )}
     </div >
   );
 }
