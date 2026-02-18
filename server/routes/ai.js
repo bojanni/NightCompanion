@@ -614,7 +614,44 @@ router.post('/', async (req, res) => {
 
         // Logic to select model_gen vs model_improve
         // Determine which role we are fulfilling
-        const isImprovementAction = ['improve', 'improve-with-negative', 'improve-detailed', 'diagnose', 'optimize-for-model', 'recommend-models'].includes(action);
+        // ACTIONS that require an LLM (text generation/analysis) should use the 'improvement' provider
+        // ACTIONS that generate Images should use the 'generation' provider (though 'generate' here currently generates a PROMPT, so it's also text... wait)
+
+        // The 'generate' action in this file generates a PROMPT from a description. So it IS text generation.
+        // Actually, ALL actions in this file return TEXT (JSON or String). None return an Image directly (except strictly image gen which is not handled here, it's in a different route or 'generate' returns prompt text).
+
+        // However, the user likely configures "Generation Model" as their Image Generator (e.g. Flux) and "Assistant Model" as their LLM (e.g. GPT-4).
+        // If we send "Write a prompt" to Flux, it fails.
+        // So essentially ALL logic in this file should use the Assistant/Improvement model, EXCEPT maybe none?
+        // Let's check 'generate'. It transforms description to prompt. That needs an LLM.
+        // 'random'. Generates a prompt. Needs LLM.
+
+        // It seems ALL actions in this AI route should use the 'improvement' (LLM) provider, because this route is entirely about Prompt Engineering (Text-to-Text).
+        // The only exception IS if we implemented actual Image Generation here, which we don't seem to.
+
+        // Let's look at getActiveProvider usage.
+        // The app differentiates "Generation Model" vs "Assistant Model".
+        // It seems safer to force EVERYTHING here to use the 'improvement' model, unless the user specifically wants their 'Generation Model' (which might be an LLM if they are using DALL-E 3 via OpenAI chat).
+
+        // But if they use OpenRouter/Local with Flux, 'Generation Model' is Flux. Flux cannot write prompts.
+        // So 'generate', 'random', 'suggest-tags' MUST use the 'improvement' model.
+
+        // I will expand the list to include ALL text-processing actions.
+        const isImprovementAction = [
+            'improve',
+            'improve-with-negative',
+            'improve-detailed',
+            'diagnose',
+            'optimize-for-model',
+            'recommend-models',
+            'suggest-tags',
+            'generate-title',
+            'generate-negative-prompt',
+            'describe-character',
+            'generate', // Description -> Prompt
+            'random',   // Random Prompt
+            'generate-variations'
+        ].includes(action);
         const role = isImprovementAction ? 'improvement' : 'generation';
 
         // Fallback to active provider if no preference or preference failed to load

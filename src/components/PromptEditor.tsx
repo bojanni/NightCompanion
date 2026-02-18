@@ -200,9 +200,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
     setIsGeneratingTags(true);
     try {
-      console.log('Generating tags for content:', content.substring(0, 50) + '...');
       const tagString = await suggestTags(content, 'dummy-token');
-      console.log('Received tag string:', tagString);
       if (tagString) {
         const suggestedTags = tagString.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
 
