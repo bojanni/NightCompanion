@@ -38,26 +38,15 @@ const navItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
+// Full-width pages: use all available space
+const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
+
+// Centered pages: max-width with min 1200px
+const CENTERED_MIN_WIDTH = 1200;
+
 export default function Layout({ onSignOut }: LayoutProps) {
   const location = useLocation();
-
-  // Define full-width pages (Dashboard, Gallery, Prompts, Settings, etc.)
-  const isFullWidthPage = [
-    '/',
-    '/prompts',
-    '/gallery',
-    '/timeline',
-    '/settings',
-    '/models',
-    '/characters',
-    '/generator',
-    '/tools',
-    '/style',
-    '/cost-calculator',
-    '/batch-testing',
-    '/versioning-guide'
-  ].includes(location.pathname);
-
+  const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
 
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -79,9 +68,12 @@ export default function Layout({ onSignOut }: LayoutProps) {
         className={`bg-slate-900 border-r border-slate-800 flex flex-col fixed h-full z-40 transition-all duration-300 ease-in-out ${collapsed ? 'w-20' : 'w-64'
           }`}
       >
-        <div className={`px-6 py-5 border-b border-slate-800 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <div
+          className={`px-6 py-5 border-b border-slate-800 flex items-center ${collapsed ? 'justify-center' : 'justify-between'
+            }`}
+        >
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className={`w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0`}>
+            <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
               <Flame size={20} className="text-white" />
             </div>
             {!collapsed && (
@@ -94,8 +86,9 @@ export default function Layout({ onSignOut }: LayoutProps) {
 
           <button
             onClick={toggleSidebar}
-            className={`text-slate-500 hover:text-white transition-colors ${collapsed ? 'absolute left-1/2 -translate-x-1/2 top-20' : 'block'}`}
-            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            className={`text-slate-500 hover:text-white transition-colors ${collapsed ? 'absolute left-1/2 -translate-x-1/2 top-20' : 'block'
+              }`}
+            title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
@@ -126,8 +119,9 @@ export default function Layout({ onSignOut }: LayoutProps) {
         <div className="px-3 py-4 border-t border-slate-800 space-y-2">
           <button
             onClick={onSignOut}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all w-full whitespace-nowrap ${collapsed ? 'justify-center' : ''}`}
-            title={collapsed ? "Sign Out" : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all w-full whitespace-nowrap ${collapsed ? 'justify-center' : ''
+              }`}
+            title={collapsed ? 'Sign Out' : undefined}
           >
             <LogOut size={18} className="shrink-0" />
             {!collapsed && (
@@ -143,15 +137,18 @@ export default function Layout({ onSignOut }: LayoutProps) {
       >
         <div className="antigravity-app-root flex-1 overflow-auto">
           {isFullWidthPage ? (
+            /* Full-width pages: no max-width constraint */
             <div className="w-full h-full p-8">
-              <div className="max-w-[1920px] mx-auto w-full">
-                <Outlet />
-              </div>
+              <Outlet />
             </div>
           ) : (
+            /* Centered pages: min 1200px, max 1600px, centered */
             <div className="utility-page-centered p-8">
-              <div className="content-inner w-full">
-                {<Outlet />}
+              <div
+                className="content-inner w-full mx-auto"
+                style={{ minWidth: `${CENTERED_MIN_WIDTH}px`, maxWidth: '1600px' }}
+              >
+                <Outlet />
               </div>
             </div>
           )}
