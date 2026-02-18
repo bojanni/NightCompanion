@@ -12,7 +12,7 @@
     "electron": "cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
     "electron:build": "npm run build && electron-builder",
-    "server:setup": "cd server && npm run setup-db"
+    "server:setup": "cd server && node db-init.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.20",
