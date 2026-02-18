@@ -99,7 +99,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="w-full px-4 py-8">
       {view === 'dashboard' ? (
         <div className="space-y-12">
           <Dashboard

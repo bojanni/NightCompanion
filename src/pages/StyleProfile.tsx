@@ -123,7 +123,7 @@ export default function StyleProfile() {
   const topKeyword = keywords[0];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Style Profile</h1>
