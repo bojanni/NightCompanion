@@ -88,6 +88,7 @@ async function initSchema() {
         await addColumn(pool, 'prompts', 'rating', 'INTEGER DEFAULT 0');
         await addColumn(pool, 'prompts', 'is_favorite', 'BOOLEAN DEFAULT FALSE');
         await addColumn(pool, 'prompts', 'is_template', 'BOOLEAN DEFAULT FALSE');
+        await addColumn(pool, 'prompts', 'model', 'TEXT');
 
 
         // Tags
