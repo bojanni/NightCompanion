@@ -56,7 +56,13 @@ const SYSTEM_PROMPTS = {
 
     'generate-title': `Create a short, catchy title (max 10 words) for the image prompt. ${LANGUAGE_INSTRUCTION} Return ONLY the title text. No quotes.`,
 
-    'suggest-tags': `Suggest 5-10 comma-separated tags for the image prompt. ${LANGUAGE_INSTRUCTION} Return ONLY the tags. Example: "nature, landscape, mountain, blue sky".`,
+    'suggest-tags': `Suggest exactly 5-10 comma-separated tags for the image prompt. 
+    RULES:
+    1. Each tag MUST be a single word or short phrase (max 3 words).
+    2. NO sentences or long descriptions.
+    3. Return ONLY the comma-separated tags.
+    ${LANGUAGE_INSTRUCTION}
+    Example: "nature, landscape, mountain, blue sky, cinematic lighting"`,
 
     'optimize-for-model': `You are an expert AI prompt engineer. Optimize the user's prompt for a specific AI model. ${LANGUAGE_INSTRUCTION}
     - If the model is DALL-E 3 or any GPT-Image model (e.g. GPT1.5, GPT-4o): These do NOT support negative prompts. You MUST merge any key negative constraints (e.g. "no blur", "no text") naturally into the positive prompt formulation or ignore them if minor. Return ONLY the optimized positive prompt.
