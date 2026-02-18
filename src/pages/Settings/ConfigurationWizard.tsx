@@ -135,7 +135,7 @@ export function ConfigurationWizard({
     const showCloud = setupType !== 'local';
 
     return (
-        <div className="w-full max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* Progress Indicator */}
             <div className="flex items-center justify-between mb-8 relative">

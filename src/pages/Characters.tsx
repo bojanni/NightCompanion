@@ -365,7 +365,7 @@ export default function Characters() {
 
 
   return (
-    <div className="w-full space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Characters</h1>

@@ -203,39 +203,39 @@ export function DataManagement() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-slate-900/40 rounded-xl border border-slate-800 p-6">
         <div className="flex items-start gap-4 mb-6">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Database className="w-6 h-6 text-blue-600" />
+          <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Database className="w-6 h-6 text-blue-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-1">Data Management</h2>
-            <p className="text-sm text-slate-600">
+            <h2 className="text-xl font-bold text-white mb-1">Data Management</h2>
+            <p className="text-sm text-slate-400">
               Export your data for backup or migration to another account. Import data to restore from a previous backup.
             </p>
           </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="border border-slate-200 rounded-lg p-5 hover:border-slate-300 transition-colors">
+          <div className="border border-slate-800 rounded-lg p-5 hover:border-slate-700 transition-colors bg-slate-900/20">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <Download className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                <Download className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Export Data</h3>
-                <p className="text-xs text-slate-500">Download all your data as JSON</p>
+                <h3 className="font-semibold text-white">Export Data</h3>
+                <p className="text-xs text-slate-400">Download all your data as JSON</p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-slate-400 mb-4">
               Creates a complete backup of your prompts, characters, gallery, tags, and all related data.
             </p>
 
             <button
               onClick={exportAllData}
               disabled={exporting}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600/90 hover:bg-emerald-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium border border-emerald-500/20"
             >
               {exporting ? (
                 <>
@@ -251,18 +251,18 @@ export function DataManagement() {
             </button>
           </div>
 
-          <div className="border border-slate-200 rounded-lg p-5 hover:border-slate-300 transition-colors">
+          <div className="border border-slate-800 rounded-lg p-5 hover:border-slate-700 transition-colors bg-slate-900/20">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Upload className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                <Upload className="w-5 h-5 text-blue-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Import Data</h3>
-                <p className="text-xs text-slate-500">Restore from a backup file</p>
+                <h3 className="font-semibold text-white">Import Data</h3>
+                <p className="text-xs text-slate-400">Restore from a backup file</p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-slate-400 mb-4">
               Upload a previously exported backup file to restore your data. Existing records will be updated.
             </p>
 
@@ -278,7 +278,7 @@ export function DataManagement() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600/90 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium border border-blue-500/20"
             >
               {importing ? (
                 <>
@@ -294,8 +294,8 @@ export function DataManagement() {
             </button>
 
             {importStats && (
-              <div className="mt-3 text-xs text-slate-600 space-y-1 bg-slate-50 rounded-lg p-3">
-                <div className="font-medium text-slate-700 mb-1.5">Import Details:</div>
+              <div className="mt-3 text-xs text-slate-400 space-y-1 bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                <div className="font-medium text-slate-300 mb-1.5">Import Details:</div>
                 {Object.entries(importStats).map(([table, count]) => (
                   count > 0 && (
                     <div key={table} className="flex justify-between">
@@ -310,12 +310,12 @@ export function DataManagement() {
         </div>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+      <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-5">
         <div className="flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-amber-900">Important Notes</h3>
-            <ul className="text-sm text-amber-800 space-y-1.5 list-disc list-inside">
+            <h3 className="text-sm font-semibold text-amber-200">Important Notes</h3>
+            <ul className="text-sm text-amber-400/80 space-y-1.5 list-disc list-inside">
               <li>Backup files contain all your data including prompts, characters, gallery items, and settings</li>
               <li>Importing data will merge with existing data. Records with matching IDs will be updated</li>
               <li>API keys and encrypted data are NOT included in backups for security reasons</li>
@@ -326,41 +326,41 @@ export function DataManagement() {
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
+      <div className="bg-slate-800/20 border border-slate-800 rounded-xl p-5">
         <div className="flex items-start gap-3">
-          <FileJson className="w-5 h-5 text-slate-600 flex-shrink-0 mt-0.5" />
+          <FileJson className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-2">Backup File Format</h3>
-            <p className="text-sm text-slate-600 mb-3">
+            <h3 className="text-sm font-semibold text-white mb-2">Backup File Format</h3>
+            <p className="text-sm text-slate-400 mb-3">
               Backup files are in JSON format and include:
             </p>
-            <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-700">
+            <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-400">
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Prompts & Versions</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Characters & Details</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Gallery Items</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Tags & Associations</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Model Usage History</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Style Learning Data</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-slate-400 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-slate-600 rounded-full"></div>
                 <span>Batch Test Results</span>
               </div>
             </div>
@@ -369,20 +369,20 @@ export function DataManagement() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+      <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-6">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Trash2 className="w-6 h-6 text-red-600" />
+          <div className="w-12 h-12 bg-red-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Trash2 className="w-6 h-6 text-red-500" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-red-900 mb-1">Danger Zone</h2>
-            <p className="text-sm text-red-700 mb-4">
+            <h2 className="text-xl font-bold text-red-200 mb-1">Danger Zone</h2>
+            <p className="text-sm text-red-400 mb-4">
               Irreversible actions that will permanently delete your data.
             </p>
 
             <button
               onClick={() => setResetStep(1)}
-              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+              className="px-4 py-2 bg-red-600/80 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors shadow-sm border border-red-500/20"
             >
               Reset Database
             </button>

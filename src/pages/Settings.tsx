@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
 import type { ApiKeyInfo, LocalEndpoint } from '../lib/api-keys-service';
@@ -14,6 +14,7 @@ export default function Settings() {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
 
   // Shared state for dynamic models cache to avoid refetching too often
   const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
@@ -99,7 +100,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-full px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       {view === 'dashboard' ? (
         <div className="space-y-12">
           <Dashboard
