@@ -25,7 +25,7 @@ const navItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-// These pages use all available horizontal space
+// Full-width pages fill all available space (no max-width, no centering)
 const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
 
 export default function Layout({ onSignOut }: LayoutProps) {
@@ -44,12 +44,11 @@ export default function Layout({ onSignOut }: LayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex transition-all duration-300">
+    <div className="min-h-screen bg-slate-950 flex">
 
-      {/* ── Sidebar ────────────────────────────────────────────────────── */}
+      {/* ── Sidebar ── */}
       <aside className={`bg-slate-900 border-r border-slate-800 flex flex-col fixed h-full z-40 transition-all duration-300 ease-in-out ${collapsed ? 'w-20' : 'w-64'}`}>
 
-        {/* Logo */}
         <div className={`px-6 py-5 border-b border-slate-800 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
@@ -71,7 +70,6 @@ export default function Layout({ onSignOut }: LayoutProps) {
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-x-hidden">
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
@@ -79,8 +77,9 @@ export default function Layout({ onSignOut }: LayoutProps) {
               to={to}
               end={to === '/'}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group whitespace-nowrap ${isActive ? 'bg-amber-500/10 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                } ${collapsed ? 'justify-center' : ''}`
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
+                ${isActive ? 'bg-amber-500/10 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'}
+                ${collapsed ? 'justify-center' : ''}`
               }
               title={collapsed ? label : undefined}
             >
@@ -92,8 +91,7 @@ export default function Layout({ onSignOut }: LayoutProps) {
           ))}
         </nav>
 
-        {/* Sign out */}
-        <div className="px-3 py-4 border-t border-slate-800 space-y-2">
+        <div className="px-3 py-4 border-t border-slate-800">
           <button
             onClick={onSignOut}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all w-full whitespace-nowrap ${collapsed ? 'justify-center' : ''}`}
@@ -107,24 +105,20 @@ export default function Layout({ onSignOut }: LayoutProps) {
         </div>
       </aside>
 
-      {/* ── Main content ───────────────────────────────────────────────── */}
-      {/* overflow-auto here so the page itself scrolls, not the root */}
-      <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${collapsed ? 'ml-20' : 'ml-64'}`}>
-        <div className="antigravity-app-root flex-1">
-          {isFullWidthPage ? (
-            /* Full-width: Dashboard, Prompts, Gallery, Timeline */
-            <div className="fullwidth-page">
-              <Outlet />
-            </div>
-          ) : (
-            /* Centered: all other pages, min 1200px, max 1600px */
-            <div className="utility-page-centered">
-              <div className="content-inner">
-                <Outlet />
-              </div>
-            </div>
-          )}
-        </div>
+      {/* ── Main content area ── */}
+      <main className={`flex-1 min-h-screen overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${collapsed ? 'ml-20' : 'ml-64'}`}>
+        {isFullWidthPage ? (
+          // Full-width: no max-width constraint, page fills everything
+          <div className="w-full p-8">
+            <Outlet />
+          </div>
+        ) : (
+          // Centered: page manages its own max-width (via max-w-* on root div)
+          // We just provide padding and ensure minimum usable width
+          <div className="w-full min-w-[1200px] p-8">
+            <Outlet />
+          </div>
+        )}
       </main>
 
     </div>

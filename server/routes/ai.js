@@ -368,7 +368,15 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         // We'll flatten to text if possible or error out for vision
         const textUser = typeof user === 'string' ? user : user.find(p => p.type === 'text')?.text || '';
 
-        const url = `${providerConfig.endpoint_url.replace(/\/$/, '')}/v1/chat/completions`;
+        // Normalize URL: remove trailing slash and /v1 suffix to get base
+        let baseUrl = providerConfig.endpoint_url.replace(/\/$/, '');
+        if (baseUrl.endsWith('/v1')) {
+            baseUrl = baseUrl.slice(0, -3);
+        }
+
+        // Always use OpenAI compatible endpoint for chat as requested
+        const url = `${baseUrl}/v1/chat/completions`;
+        console.log(`[AI Service] Calling Local URL: ${url} with model: ${providerConfig.model_name}`);
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
