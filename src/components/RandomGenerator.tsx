@@ -157,7 +157,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
   async function handleMagicRandom() {
     // Refresh model info before generating to ensure accuracy
-    fetchActiveModel();
+    await fetchActiveModel();
 
     if (prompt.trim()) {
       if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
