@@ -143,7 +143,11 @@ export default function Layout({ onSignOut }: LayoutProps) {
       >
         <div className="antigravity-app-root flex-1 overflow-auto">
           {isFullWidthPage ? (
-            <div className="w-full h-full p-8">{<Outlet />}</div>
+            <div className="w-full h-full p-8">
+              <div className="max-w-[1920px] mx-auto w-full">
+                <Outlet />
+              </div>
+            </div>
           ) : (
             <div className="utility-page-centered p-8">
               <div className="content-inner w-full">
