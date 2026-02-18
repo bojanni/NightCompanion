@@ -9,6 +9,7 @@ const express = require('express');
 const cors = require('cors');
 const { pool } = require('./db');
 const path = require('path');
+const { initSchema } = require('./db-init');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -77,6 +78,13 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ Server running on http://localhost:${port}`);
+// Initialize DB and start server
+initSchema().then(() => {
+  console.log('✅ Database check complete.');
+  app.listen(port, () => {
+    console.log(`✅ Server running on http://localhost:${port}`);
+  });
+}).catch(err => {
+  console.error('❌ Failed to initialize database:', err);
+  process.exit(1);
 });
