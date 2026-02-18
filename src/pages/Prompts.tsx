@@ -407,588 +407,578 @@ export default function Prompts() {
   };
 
   if (loading) {
-    // ... (lines 397-412 skipped for brevity in search, but I need to target ensuring I am replacing correctly)
-    // Wait, I should not replace vast chunks.
-    // Best to insert handleImageAdded before navigateDetail.
-    // And then replace the PromptDetailOverlay render.
-    // I will split into two ReplaceFileContent calls or use MultiReplaceFileContent.
-    // Actually, `navigateDetail` starts at line 389.
-    // I will use MultiReplaceFileContent to insert function and update render.
-
-
-    if (loading) {
-      return (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Prompts</h1>
-              <p className="text-slate-400 mt-1">Loading...</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <PromptSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
-    function handleFilterChange(type: 'all' | 'templates' | 'favorites') {
-      setFilterType(type);
-      setCurrentPage(0);
-    }
-
-    function handleTagFilterChange(tagId: string | null) {
-      setFilterTag(tagId);
-      setCurrentPage(0);
-    }
-
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Prompts</h1>
-            <p className="text-slate-400 mt-1">{totalCount} prompts in your library</p>
+            <p className="text-slate-400 mt-1">Loading...</p>
           </div>
-          <button
-            onClick={() => {
-              setEditingPrompt(null);
-              setShowEditor(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
-          >
-            <Plus size={16} />
-            New Prompt
-          </button>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <PromptSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-        <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
-          <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search prompts..."
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || filterTag
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                  }`}
-              >
-                <Filter size={14} />
-                Filters
-              </button>
-              {(['all', 'templates', 'favorites'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleFilterChange(type)}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === type
-                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                >
-                  {type === 'templates' && <BookTemplate size={13} />}
-                  {type === 'favorites' && <Heart size={13} />}
-                  {type === 'all' && <SlidersHorizontal size={13} />}
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </button>
-              ))}
-            </div>
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  function handleFilterChange(type: 'all' | 'templates' | 'favorites') {
+    setFilterType(type);
+    setCurrentPage(0);
+  }
+
+  function handleTagFilterChange(tagId: string | null) {
+    setFilterTag(tagId);
+    setCurrentPage(0);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Prompts</h1>
+          <p className="text-slate-400 mt-1">{totalCount} prompts in your library</p>
+        </div>
+        <button
+          onClick={() => {
+            setEditingPrompt(null);
+            setShowEditor(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
+        >
+          <Plus size={16} />
+          New Prompt
+        </button>
+      </div>
+
+      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
+        <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search prompts..."
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+            />
           </div>
-          <GridDensitySelector storageKey="prompts-grid-density" defaultValue={3} />
-        </div>
-
-        {showFilters && tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 p-4 bg-slate-900 border border-slate-800 rounded-xl">
+          <div className="flex gap-2">
             <button
-              onClick={() => handleTagFilterChange(null)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!filterTag
-                ? 'bg-white/10 text-white'
-                : 'text-slate-400 hover:text-white'
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || filterTag
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
                 }`}
             >
-              All Tags
+              <Filter size={14} />
+              Filters
             </button>
-            {tags.map((tag) => (
-              <TagBadge
-                key={tag.id}
-                tag={tag}
-                onClick={() => handleTagFilterChange(filterTag === tag.id ? null : tag.id)}
-                selected={filterTag === tag.id}
-              />
+            {(['all', 'templates', 'favorites'] as const).map((type) => (
+              <button
+                key={type}
+                onClick={() => handleFilterChange(type)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === type
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+              >
+                {type === 'templates' && <BookTemplate size={13} />}
+                {type === 'favorites' && <Heart size={13} />}
+                {type === 'all' && <SlidersHorizontal size={13} />}
+                {type.charAt(0).toUpperCase() + type.slice(1)}
+              </button>
             ))}
           </div>
-        )}
+        </div>
+        <GridDensitySelector storageKey="prompts-grid-density" defaultValue={3} />
+      </div>
 
-        {filtered.length === 0 ? (
-          <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
-            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Wand2 size={28} className="text-slate-600" />
-            </div>
-            <h3 className="text-lg font-medium text-white mb-1">
-              {search || filterTag || filterType !== 'all' ? 'No matching prompts' : 'No prompts yet'}
-            </h3>
-            <p className="text-sm text-slate-400">
-              {search || filterTag || filterType !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Create your first prompt to get started'}
-            </p>
-          </div>
-        ) : (
-          <motion.div
-            layout
-            className="dynamic-grid"
+      {showFilters && tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 p-4 bg-slate-900 border border-slate-800 rounded-xl">
+          <button
+            onClick={() => handleTagFilterChange(null)}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!filterTag
+              ? 'bg-white/10 text-white'
+              : 'text-slate-400 hover:text-white'
+              }`}
           >
-            <AnimatePresence mode="popLayout">
-              {filtered.map((prompt, index) => {
-                const promptTags = getTagsForPrompt(prompt.id);
-                const promptImages = linkedImages[prompt.id];
-                return (
-                  <motion.div
-                    layout
-                    key={prompt.id}
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                    transition={{
-                      duration: 0.3,
-                      delay: Math.min(index * 0.05, 0.5),
-                      layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
-                    }}
-                    onClick={() => setDetailViewIndex(index)}
-                    className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden cursor-pointer"
-                  >
-                    <div className="p-5 pb-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
-                          {prompt.is_template && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
-                              Template
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleToggleFavorite(prompt); }}
-                          className="flex-shrink-0 ml-2"
-                          title={prompt.is_favorite ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          <Heart
-                            size={16}
-                            className={
-                              prompt.is_favorite
-                                ? 'fill-rose-400 text-rose-400'
-                                : 'text-slate-600 hover:text-rose-400 transition-colors'
-                            }
-                          />
-                        </button>
-                      </div>
+            All Tags
+          </button>
+          {tags.map((tag) => (
+            <TagBadge
+              key={tag.id}
+              tag={tag}
+              onClick={() => handleTagFilterChange(filterTag === tag.id ? null : tag.id)}
+              selected={filterTag === tag.id}
+            />
+          ))}
+        </div>
+      )}
 
-
-
-                      <div className="flex items-center gap-3 text-[10px] text-slate-500 mb-2">
-                        <span className="flex items-center gap-1" title={`Created: ${formatDate(prompt.created_at)}`}>
-                          <Calendar size={10} />
-                          {formatDate(prompt.created_at).split(' ')[0]}
-                        </span>
-                        {prompt.updated_at !== prompt.created_at && (
-                          <span className="flex items-center gap-1" title={`Updated: ${formatDate(prompt.updated_at)}`}>
-                            <Clock size={10} />
-                            {formatDate(prompt.updated_at).split(' ')[1]}
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
+          <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Wand2 size={28} className="text-slate-600" />
+          </div>
+          <h3 className="text-lg font-medium text-white mb-1">
+            {search || filterTag || filterType !== 'all' ? 'No matching prompts' : 'No prompts yet'}
+          </h3>
+          <p className="text-sm text-slate-400">
+            {search || filterTag || filterType !== 'all'
+              ? 'Try adjusting your filters'
+              : 'Create your first prompt to get started'}
+          </p>
+        </div>
+      ) : (
+        <motion.div
+          layout
+          className="dynamic-grid"
+        >
+          <AnimatePresence mode="popLayout">
+            {filtered.map((prompt, index) => {
+              const promptTags = getTagsForPrompt(prompt.id);
+              const promptImages = linkedImages[prompt.id];
+              return (
+                <motion.div
+                  layout
+                  key={prompt.id}
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                  transition={{
+                    duration: 0.3,
+                    delay: Math.min(index * 0.05, 0.5),
+                    layout: { duration: 0.5, ease: [0.4, 0, 0.2, 1] }
+                  }}
+                  onClick={() => setDetailViewIndex(index)}
+                  className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden cursor-pointer"
+                >
+                  <div className="p-5 pb-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
+                        {prompt.is_template && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
+                            Template
                           </span>
                         )}
                       </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(prompt); }}
+                        className="flex-shrink-0 ml-2"
+                        title={prompt.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                      >
+                        <Heart
+                          size={16}
+                          className={
+                            prompt.is_favorite
+                              ? 'fill-rose-400 text-rose-400'
+                              : 'text-slate-600 hover:text-rose-400 transition-colors'
+                          }
+                        />
+                      </button>
+                    </div>
 
-                      <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">{prompt.content}</p>
 
-                      <div className="h-20 overflow-hidden mb-4">
-                        <div className="flex flex-wrap gap-1">
-                          {promptTags.length > 0 ? (
-                            promptTags.slice(0, 15).map((tag) => (
-                              <TagBadge key={tag.id} tag={tag} />
-                            ))
-                          ) : (
-                            <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
-                          )}
-                        </div>
+
+                    <div className="flex items-center gap-3 text-[10px] text-slate-500 mb-2">
+                      <span className="flex items-center gap-1" title={`Created: ${formatDate(prompt.created_at)}`}>
+                        <Calendar size={10} />
+                        {formatDate(prompt.created_at).split(' ')[0]}
+                      </span>
+                      {prompt.updated_at !== prompt.created_at && (
+                        <span className="flex items-center gap-1" title={`Updated: ${formatDate(prompt.updated_at)}`}>
+                          <Clock size={10} />
+                          {formatDate(prompt.updated_at).split(' ')[1]}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">{prompt.content}</p>
+
+                    <div className="h-20 overflow-hidden mb-4">
+                      <div className="flex flex-wrap gap-1">
+                        {promptTags.length > 0 ? (
+                          promptTags.slice(0, 15).map((tag) => (
+                            <TagBadge key={tag.id} tag={tag} />
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
+                        )}
                       </div>
+                    </div>
 
-                      {prompt.model && (
-                        <div className="flex items-center gap-3 mb-3 pt-2 border-t border-slate-800/50">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <Zap size={12} className="text-amber-500 shrink-0" />
-                            <span className="text-[10px] font-medium text-slate-400 truncate" title={prompt.model}>
-                              {prompt.model}
+                    {prompt.model && (
+                      <div className="flex items-center gap-3 mb-3 pt-2 border-t border-slate-800/50">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Zap size={12} className="text-amber-500 shrink-0" />
+                          <span className="text-[10px] font-medium text-slate-400 truncate" title={prompt.model}>
+                            {prompt.model}
+                          </span>
+                        </div>
+                        {prompt.suggested_model && prompt.model !== prompt.suggested_model && (
+                          <div className="flex items-center gap-1.5 min-w-0 pl-3 border-l border-slate-800/50">
+                            <Sparkles size={12} className="text-teal-500 shrink-0" />
+                            <span className="text-[10px] font-medium text-slate-400 truncate" title={`Suggested: ${prompt.suggested_model}`}>
+                              {prompt.suggested_model}
                             </span>
                           </div>
-                          {prompt.suggested_model && prompt.model !== prompt.suggested_model && (
-                            <div className="flex items-center gap-1.5 min-w-0 pl-3 border-l border-slate-800/50">
-                              <Sparkles size={12} className="text-teal-500 shrink-0" />
-                              <span className="text-[10px] font-medium text-slate-400 truncate" title={`Suggested: ${prompt.suggested_model}`}>
-                                {prompt.suggested_model}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-                    <div className="px-5 pb-5">
-                      {promptImages && promptImages.length > 0 && (
-                        <div className={`grid gap-2 mb-3 ${promptImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                          {promptImages.map((img) => (
-                            <div key={img.id} className="relative group/img">
-                              <div
-                                className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLightboxImage(img);
-                                }}
-                                title={`View ${img.title || 'Untitled'}`}
-                              >
-                                <img
-                                  src={img.image_url}
-                                  alt={img.title}
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleUnlinkImage(prompt.id, img.id);
-                                    }}
-                                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
-                                    title="Unlink image"
-                                  >
-                                    <X size={12} />
-                                  </button>
-                                  <div className="absolute bottom-1 left-1 right-1">
-                                    <p className="text-[10px] text-white truncate flex items-center gap-1">
-                                      <Lock size={9} />
-                                      {img.title || 'Linked Image'}
-                                    </p>
-                                  </div>
-                                  {img.model && (
-                                    <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
-                                      {img.model}
-                                    </div>
-                                  )}
+                  <div className="px-5 pb-5">
+                    {promptImages && promptImages.length > 0 && (
+                      <div className={`grid gap-2 mb-3 ${promptImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        {promptImages.map((img) => (
+                          <div key={img.id} className="relative group/img">
+                            <div
+                              className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLightboxImage(img);
+                              }}
+                              title={`View ${img.title || 'Untitled'}`}
+                            >
+                              <img
+                                src={img.image_url}
+                                alt={img.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUnlinkImage(prompt.id, img.id);
+                                  }}
+                                  className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
+                                  title="Unlink image"
+                                >
+                                  <X size={12} />
+                                </button>
+                                <div className="absolute bottom-1 left-1 right-1">
+                                  <p className="text-[10px] text-white truncate flex items-center gap-1">
+                                    <Lock size={9} />
+                                    {img.title || 'Linked Image'}
+                                  </p>
                                 </div>
+                                {img.model && (
+                                  <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
+                                    {img.model}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                      <div className="flex items-center justify-between">
-                        <StarRating
-                          rating={prompt.rating}
-                          onChange={(newRating) => handleRatePrompt(prompt.id, newRating)}
-                          size={13}
-                        />
-                        <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content, prompt.id); }}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                            title="Copy prompt"
-                          >
-                            {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleLinkImage(prompt); }}
-                            className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
-                            title={promptImages?.length ? 'Linked to image' : 'Link to image'}
-                          >
-                            <Link size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOptimizerPrompt(prompt);
-                              setShowOptimizer(true);
-                            }}
-                            disabled={!!promptImages?.length}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={promptImages?.length ? 'Locked: linked to image' : 'Optimize prompt'}
-                          >
-                            <Zap size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setImproverPrompt(prompt);
-                              setShowImprover(true);
-                            }}
-                            disabled={!!promptImages?.length}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={promptImages?.length ? 'Locked: linked to image' : 'Improve with AI'}
-                          >
-                            <Sparkles size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setHistoryPrompt(prompt);
-                              setShowHistory(true);
-                            }}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-blue-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
-                            title="Version history"
-                          >
-                            <Clock size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setVariationBase(prompt.content);
-                              setShowVariations(true);
-                            }}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
-                            title="Generate variations"
-                          >
-                            <Wand2 size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingPrompt(prompt);
-                              setShowEditor(true);
-                            }}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                            title={promptImages?.length ? 'Edit (Restricted)' : 'Edit'}
-                          >
-                            {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(prompt.id); }}
-                            className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <StarRating
+                        rating={prompt.rating}
+                        onChange={(newRating) => handleRatePrompt(prompt.id, newRating)}
+                        size={13}
+                      />
+                      <div className="flex flex-wrap gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content, prompt.id); }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title="Copy prompt"
+                        >
+                          {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleLinkImage(prompt); }}
+                          className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
+                          title={promptImages?.length ? 'Linked to image' : 'Link to image'}
+                        >
+                          <Link size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOptimizerPrompt(prompt);
+                            setShowOptimizer(true);
+                          }}
+                          disabled={!!promptImages?.length}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={promptImages?.length ? 'Locked: linked to image' : 'Optimize prompt'}
+                        >
+                          <Zap size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImproverPrompt(prompt);
+                            setShowImprover(true);
+                          }}
+                          disabled={!!promptImages?.length}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={promptImages?.length ? 'Locked: linked to image' : 'Improve with AI'}
+                        >
+                          <Sparkles size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHistoryPrompt(prompt);
+                            setShowHistory(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-blue-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title="Version history"
+                        >
+                          <Clock size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVariationBase(prompt.content);
+                            setShowVariations(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title="Generate variations"
+                        >
+                          <Wand2 size={14} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPrompt(prompt);
+                            setShowEditor(true);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
+                          title={promptImages?.length ? 'Edit (Restricted)' : 'Edit'}
+                        >
+                          {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(prompt.id); }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
-                );
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div >
+      )
+      }
+
+      {
+        totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
+                if (
+                  page === 0 ||
+                  page === totalPages - 1 ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                    >
+                      {page + 1}
+                    </button>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <span key={page} className="text-slate-600 px-2">...</span>;
+                }
+                return null;
               })}
-            </AnimatePresence>
-          </motion.div >
-        )
-        }
-
-        {
-          totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                disabled={currentPage === 0}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={16} />
-                Previous
-              </button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
-                  if (
-                    page === 0 ||
-                    page === totalPages - 1 ||
-                    (page >= currentPage - 1 && page <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                          }`}
-                      >
-                        {page + 1}
-                      </button>
-                    );
-                  } else if (page === currentPage - 2 || page === currentPage + 2) {
-                    return <span key={page} className="text-slate-600 px-2">...</span>;
-                  }
-                  return null;
-                })}
-              </div>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={currentPage === totalPages - 1}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Next
-                <ChevronRight size={16} />
-              </button>
             </div>
-          )
-        }
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage === totalPages - 1}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )
+      }
 
-        <Modal
-          open={showEditor}
-          onClose={() => setShowEditor(false)}
-          title={editingPrompt ? 'Edit Prompt' : 'New Prompt'}
-          wide
-        >
-          <PromptEditor
-            prompt={editingPrompt}
-            isLinked={!!(editingPrompt && linkedImages[editingPrompt.id]?.length)}
-            onSave={() => {
-              setShowEditor(false);
-              loadData();
-            }}
-            onCancel={() => setShowEditor(false)}
+      <Modal
+        open={showEditor}
+        onClose={() => setShowEditor(false)}
+        title={editingPrompt ? 'Edit Prompt' : 'New Prompt'}
+        wide
+      >
+        <PromptEditor
+          prompt={editingPrompt}
+          isLinked={!!(editingPrompt && linkedImages[editingPrompt.id]?.length)}
+          onSave={() => {
+            setShowEditor(false);
+            loadData();
+          }}
+          onCancel={() => setShowEditor(false)}
+        />
+      </Modal>
+
+      <Modal
+        open={showVariations}
+        onClose={() => setShowVariations(false)}
+        title="Variation Generator"
+        wide
+      >
+        <VariationGenerator
+          basePrompt={variationBase}
+          onSaved={loadData}
+        />
+      </Modal>
+
+      <Modal
+        open={showHistory}
+        onClose={() => setShowHistory(false)}
+        title={`Version History: ${historyPrompt?.title || 'Untitled'}`}
+        wide
+      >
+        {historyPrompt && (
+          <PromptHistory
+            promptId={historyPrompt.id}
+            currentContent={historyPrompt.content}
+            onRestore={handleRestoreVersion}
           />
-        </Modal>
+        )}
+      </Modal>
 
-        <Modal
-          open={showVariations}
-          onClose={() => setShowVariations(false)}
-          title="Variation Generator"
-          wide
-        >
-          <VariationGenerator
-            basePrompt={variationBase}
-            onSaved={loadData}
+      <Modal
+        open={showImprover}
+        onClose={() => setShowImprover(false)}
+        title={`AI Prompt Improvement: ${improverPrompt?.title || 'Untitled'}`}
+        wide
+      >
+        {improverPrompt && (
+          <PromptImprover
+            prompt={improverPrompt.content}
+            onApply={handleApplyImprovement}
           />
-        </Modal>
+        )}
+      </Modal>
 
-        <Modal
-          open={showHistory}
-          onClose={() => setShowHistory(false)}
-          title={`Version History: ${historyPrompt?.title || 'Untitled'}`}
-          wide
-        >
-          {historyPrompt && (
-            <PromptHistory
-              promptId={historyPrompt.id}
-              currentContent={historyPrompt.content}
-              onRestore={handleRestoreVersion}
-            />
-          )}
-        </Modal>
+      <Modal
+        open={showOptimizer}
+        onClose={() => setShowOptimizer(false)}
+        title={`Prompt Optimizer: ${optimizerPrompt?.title || 'Untitled'}`}
+        wide
+      >
+        {optimizerPrompt && (
+          <PromptOptimizer
+            prompt={optimizerPrompt.content}
+            onApply={handleApplyOptimization}
+          />
+        )}
+      </Modal>
 
-        <Modal
-          open={showImprover}
-          onClose={() => setShowImprover(false)}
-          title={`AI Prompt Improvement: ${improverPrompt?.title || 'Untitled'}`}
-          wide
-        >
-          {improverPrompt && (
-            <PromptImprover
-              prompt={improverPrompt.content}
-              onApply={handleApplyImprovement}
-            />
-          )}
-        </Modal>
-
-        <Modal
-          open={showOptimizer}
-          onClose={() => setShowOptimizer(false)}
-          title={`Prompt Optimizer: ${optimizerPrompt?.title || 'Untitled'}`}
-          wide
-        >
-          {optimizerPrompt && (
-            <PromptOptimizer
-              prompt={optimizerPrompt.content}
-              onApply={handleApplyOptimization}
-            />
-          )}
-        </Modal>
-
-        <Modal
-          open={showImageSelector}
-          onClose={() => {
+      <Modal
+        open={showImageSelector}
+        onClose={() => {
+          setShowImageSelector(false);
+          setLinkingPrompt(null);
+        }}
+        title="Select Image to Link"
+        wide
+      >
+        <ImageSelector
+          onSelect={handleSelectImage}
+          onCancel={() => {
             setShowImageSelector(false);
             setLinkingPrompt(null);
           }}
-          title="Select Image to Link"
-          wide
-        >
-          <ImageSelector
-            onSelect={handleSelectImage}
-            onCancel={() => {
-              setShowImageSelector(false);
-              setLinkingPrompt(null);
+        />
+      </Modal>
+
+      <AnimatePresence>
+        {detailViewIndex !== null && filtered[detailViewIndex] && (
+          <PromptDetailOverlay
+            prompt={filtered[detailViewIndex]}
+            tags={getTagsForPrompt(filtered[detailViewIndex].id)}
+            images={linkedImages[filtered[detailViewIndex].id] || []}
+            onClose={() => setDetailViewIndex(null)}
+            onNext={() => navigateDetail('next')}
+            onPrev={() => navigateDetail('prev')}
+            onRate={(rating) => {
+              const p = filtered[detailViewIndex as number];
+              if (p) handleRatePrompt(p.id, rating);
+            }}
+            onImageUploaded={(image) => {
+              const p = filtered[detailViewIndex as number];
+              if (p) handleImageAdded(p.id, image);
             }}
           />
-        </Modal>
+        )}
+      </AnimatePresence>
 
-        <AnimatePresence>
-          {detailViewIndex !== null && filtered[detailViewIndex] && (
-            <PromptDetailOverlay
-              prompt={filtered[detailViewIndex]}
-              tags={getTagsForPrompt(filtered[detailViewIndex].id)}
-              images={linkedImages[filtered[detailViewIndex].id] || []}
-              onClose={() => setDetailViewIndex(null)}
-              onNext={() => navigateDetail('next')}
-              onPrev={() => navigateDetail('prev')}
-              onRate={(rating) => {
-                const p = filtered[detailViewIndex as number];
-                if (p) handleRatePrompt(p.id, rating);
-              }}
-              onImageUploaded={(image) => {
-                const p = filtered[detailViewIndex as number];
-                if (p) handleImageAdded(p.id, image);
-              }}
-            />
-          )}
-        </AnimatePresence>
+      {/* Image Lightbox */}
+      <Modal
+        open={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        title=""
+        wide
+      >
+        {lightboxImage && (() => {
+          // Find the prompt that owns this image to show/edit PROMPT rating instead of IMAGE rating
+          const lightboxPrompt = prompts.find(p => linkedImages[p.id]?.some(img => img.id === lightboxImage.id));
 
-        {/* Image Lightbox */}
-        <Modal
-          open={!!lightboxImage}
-          onClose={() => setLightboxImage(null)}
-          title=""
-          wide
-        >
-          {lightboxImage && (() => {
-            // Find the prompt that owns this image to show/edit PROMPT rating instead of IMAGE rating
-            const lightboxPrompt = prompts.find(p => linkedImages[p.id]?.some(img => img.id === lightboxImage.id));
-
-            return (
-              <div className="relative bg-slate-950 rounded-xl overflow-hidden group">
-                <div
-                  className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-110"
-                  style={{ backgroundImage: `url(${lightboxImage.image_url})` }}
-                />
-                <img
-                  src={lightboxImage.image_url}
-                  alt={lightboxImage.title}
-                  className="w-full max-h-[70vh] object-contain rounded-xl"
-                />
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
-                    {lightboxPrompt && lightboxPrompt.title !== lightboxImage.title && (
-                      <p className="text-xs text-slate-500">Linked to: {lightboxPrompt.title}</p>
-                    )}
-                  </div>
-                  <StarRating
-                    rating={lightboxPrompt ? lightboxPrompt.rating : lightboxImage.rating}
-                    onChange={(r) => {
-                      if (lightboxPrompt) {
-                        handleRatePrompt(lightboxPrompt.id, r);
-                      } else {
-                        handleUpdateGalleryItemRating(lightboxImage!.id, r);
-                      }
-                    }}
-                    size={24}
-                  />
+          return (
+            <div className="relative bg-slate-950 rounded-xl overflow-hidden group">
+              <div
+                className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-110"
+                style={{ backgroundImage: `url(${lightboxImage.image_url})` }}
+              />
+              <img
+                src={lightboxImage.image_url}
+                alt={lightboxImage.title}
+                className="w-full max-h-[70vh] object-contain rounded-xl"
+              />
+              <div className="mt-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
+                  {lightboxPrompt && lightboxPrompt.title !== lightboxImage.title && (
+                    <p className="text-xs text-slate-500">Linked to: {lightboxPrompt.title}</p>
+                  )}
                 </div>
+                <StarRating
+                  rating={lightboxPrompt ? lightboxPrompt.rating : lightboxImage.rating}
+                  onChange={(r) => {
+                    if (lightboxPrompt) {
+                      handleRatePrompt(lightboxPrompt.id, r);
+                    } else {
+                      handleUpdateGalleryItemRating(lightboxImage!.id, r);
+                    }
+                  }}
+                  size={24}
+                />
               </div>
-            );
-          })()}
-        </Modal>
-      </div >
-    );
-  }
+            </div>
+          );
+        })()}
+      </Modal>
+    </div >
+  );
+}
