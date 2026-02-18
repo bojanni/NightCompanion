@@ -49,19 +49,16 @@ body {
 
 .dropdown-scroll::-webkit-scrollbar-track {
   background: rgba(30, 41, 59, 0.5);
-  /* slate-800/50 */
   border-radius: 4px;
 }
 
 .dropdown-scroll::-webkit-scrollbar-thumb {
   background: rgba(71, 85, 105, 0.8);
-  /* slate-600 */
   border-radius: 4px;
 }
 
 .dropdown-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.8);
-  /* slate-400 */
 }
 
 /* Dynamic Grid Density */
@@ -91,40 +88,46 @@ body {
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
-/* Main App Container */
+/* ─── Main App Container ──────────────────────────────────────────────────── */
+/* Removed overflow:hidden so full-width pages can expand naturally */
 .antigravity-app-root {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
   width: 100% !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  /* scroll vertically */
+  overflow-x: hidden !important;
+  /* never scroll horizontally */
   position: relative !important;
 }
 
-/*
-  Utility Page Centering Logic
-  - Ensures the container takes full available width (100vw - sidebar)
-  - Centers the inner content
-*/
+/* ─── Full-width page wrapper ─────────────────────────────────────────────── */
+/* Dashboard, Prompts, Gallery, Timeline — use all available space */
+.fullwidth-page {
+  width: 100% !important;
+  min-height: 100% !important;
+  padding: 2rem !important;
+}
+
+/* ─── Centered page wrapper ───────────────────────────────────────────────── */
+/* All other pages — centered with min 1200px, max 1600px */
 .utility-page-centered {
   display: flex !important;
   justify-content: center !important;
-  /* 256px is the w-64 sidebar width */
-  width: calc(100vw - 256px) !important;
+  width: 100% !important;
   flex: 1 !important;
-  height: 100% !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  min-height: 100% !important;
+  overflow-x: auto !important;
+  padding: 2rem !important;
 }
 
 .utility-page-centered .content-inner {
-  min-width: 1000px !important;
-  max-width: 1400px !important;
+  min-width: 1200px !important;
+  max-width: 1600px !important;
   width: 100% !important;
   height: fit-content !important;
   margin: 0 auto !important;
@@ -138,13 +141,17 @@ body {
   align-items: center;
 }
 
-/* Dynamic style helpers */
+/* ─── Dynamic style helpers ───────────────────────────────────────────────── */
 .dynamic-width {
   width: var(--width-percent) !important;
 }
 
 .dynamic-slider-gradient {
-  background: linear-gradient(to right, rgb(245 158 11) 0%, rgb(245 158 11) var(--gradient-percent), rgb(30 41 59) var(--gradient-percent), rgb(30 41 59) 100%) !important;
+  background: linear-gradient(to right,
+      rgb(245 158 11) 0%,
+      rgb(245 158 11) var(--gradient-percent),
+      rgb(30 41 59) var(--gradient-percent),
+      rgb(30 41 59) 100%) !important;
 }
 
 .dynamic-bg-color {
@@ -155,25 +162,22 @@ body {
   opacity: var(--opacity-value) !important;
 }
 
-/* Container for Centered Pages */
+/* ─── Legacy helpers (kept for compatibility) ─────────────────────────────── */
 .page-content-centered {
   width: 100%;
-  max-width: 1400px;
-  min-width: 1000px;
+  max-width: 1600px;
+  min-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
-  /* Breathing room at the edges */
   display: flex;
   flex-direction: column;
 }
 
-/* Ensure the wrapper allows the background to fill the screen */
 .page-wrapper-full {
   width: 100%;
   min-height: 100vh;
 }
 
-/* Ensure children (like your Prompt Generator sections) take full container width */
 .page-content-centered>section,
 .page-content-centered>div {
   width: 100%;
