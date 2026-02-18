@@ -79,6 +79,7 @@ export interface GalleryItem {
   collection_id: string | null;
   notes: string;
   created_at: string;
+  updated_at?: string;
   model?: string;
 }
 
