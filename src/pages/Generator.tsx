@@ -104,45 +104,7 @@ export default function Generator() {
     setMode('guided');
   }
 
-  function handleImproveAI() {
-    let p = '';
-    let n = '';
 
-    if (mode === 'random') {
-      p = randomPrompt;
-      n = randomNegativePrompt;
-    } else if (mode === 'guided') {
-      try {
-        const saved = localStorage.getItem('nightcompanion_guided_state');
-        if (saved) {
-          const state = JSON.parse(saved);
-          p = state.generatedPrompt || '';
-        }
-      } catch { /* ignore */ }
-    } else if (mode === 'manual') {
-      try {
-        const saved = localStorage.getItem('nightcompanion_manual_generator');
-        if (saved) {
-          const state = JSON.parse(saved);
-          p = (state.prompts || []).filter(Boolean).join('\n');
-          n = state.negativePrompt || '';
-        }
-      } catch { /* ignore */ }
-    } else if (mode === 'remix') {
-      p = remixBase;
-    }
-
-    if (p && aiToolsRef.current) {
-      aiToolsRef.current.setInputContent(p);
-      if (n) aiToolsRef.current.setNegativeInputContent(n);
-      toast.success('Prompt sent to Improvement AI');
-      // Update: Trigger expand if collapsed
-      // aiToolsRef.current handles its own internal expansion if needed? 
-      // Actually AIToolsRef doesn't have setExpanded. 
-    } else {
-      toast.error('No prompt to improve yet!');
-    }
-  }
 
   const [resetKey, setResetKey] = useState(0);
 
@@ -183,14 +145,47 @@ export default function Generator() {
     { id: 'remix' as Mode, label: 'Quick Remix', icon: Zap, desc: 'Modify last prompt' },
   ];
 
+  const [autoFillImprove, setAutoFillImprove] = useState(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).autoFillImprove ?? false; } catch { /* ignore */ } return false;
+  });
+
+  // Save autoFillImprove state
+  useEffect(() => {
+    const state = { guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, autoFillImprove };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [guidedInitial, maxWords, mode, randomPrompt, randomNegativePrompt, autoFillImprove]);
+
+  // Handle AutoFill Logic
+  useEffect(() => {
+    if (autoFillImprove && aiToolsRef.current) {
+      // Determine current prompt based on mode
+      let p = '';
+      let n = '';
+      if (mode === 'random') {
+        p = randomPrompt;
+        n = randomNegativePrompt;
+      } else if (mode === 'guided') {
+        p = guidedInitial;
+      } else if (mode === 'remix') {
+        p = remixBase;
+      }
+
+      // Only update if differen to avoid loops/refreshes, though setInputContent should be safe 
+      if (p) {
+        // We use a small timeout to let the UI settle if needed, but direct is fine
+        aiToolsRef.current.setInputContent(p);
+        if (n) aiToolsRef.current.setNegativeInputContent(n);
+      }
+    }
+  }, [randomPrompt, randomNegativePrompt, guidedInitial, remixBase, mode, autoFillImprove]);
+
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Prompt Generator</h1>
         <p className="text-slate-400 mt-1">Create the perfect prompt for your next creation</p>
       </div>
-
-
 
       <div className="grid grid-cols-4 gap-3">
         {modes.map(({ id, label, icon: Icon, desc }) => (
@@ -219,10 +214,7 @@ export default function Generator() {
         ))}
       </div>
 
-
-
       <div className="flex flex-col gap-4">
-
 
         {/* Global Max Words Slider (Hide in Manual Mode?) */}
         {mode !== 'manual' && (
@@ -254,14 +246,17 @@ export default function Generator() {
             <div className="flex flex-col justify-between gap-2 min-w-[124px]">
               <div className="group relative h-[calc(50%-4px)]">
                 <button
-                  onClick={handleImproveAI}
-                  className="w-full h-full flex items-center justify-center gap-2 px-4 bg-slate-900 border border-slate-800 text-teal-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-teal-300 hover:border-slate-700 transition-colors shadow-sm"
+                  onClick={() => setAutoFillImprove(!autoFillImprove)}
+                  className={`w-full h-full flex items-center justify-center gap-2 px-4 border text-sm rounded-2xl transition-colors shadow-sm ${autoFillImprove
+                    ? 'bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700'
+                    }`}
                 >
-                  <Wand2 size={14} />
-                  <span>AutoFill</span>
+                  <Wand2 size={14} className={autoFillImprove ? "text-teal-400" : ""} />
+                  <span>Auto-Fill {autoFillImprove ? 'ON' : 'OFF'}</span>
                 </button>
                 <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
-                  Generated Prompt will be copied to Improve prompt field
+                  {autoFillImprove ? 'Automatically copies generated prompts to Improve tab' : 'Click to enable auto-copying prompts to Improve tab'}
                 </div>
               </div>
 

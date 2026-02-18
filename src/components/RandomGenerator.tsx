@@ -40,42 +40,47 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [generatedStyle, setGeneratedStyle] = useState<string>('');
   const [activeModel, setActiveModel] = useState<string>('');
 
-  // Fetch active model (similar to AITools)
-  useEffect(() => {
-    async function fetchActiveModel() {
-      try {
-        await db.auth.getSession();
+  async function fetchActiveModel() {
+    try {
+      await db.auth.getSession();
 
-        // Check cloud providers FIRST (matches Settings precedence)
-        const keys = await listApiKeys();
-        const activeKey = keys.find(k => k.is_active_gen || k.is_active); // Prioritize gen flag
+      // Check cloud providers FIRST (matches Settings precedence)
+      const keys = await listApiKeys();
+      const activeKey = keys.find(k => k.is_active_gen || k.is_active); // Prioritize gen flag
 
-        if (activeKey) {
-          const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
-          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
-          setActiveModel(`${providerName} ${model}`);
-          return;
-        }
-
-        // Check local endpoints fallback
-        const { data: localData } = await db
-          .from('user_local_endpoints')
-          .select('*')
-          .eq('is_active_gen', true) // Check for generation specific flag
-          .single();
-
-        if (localData) {
-          const modelName = localData.model_gen || localData.model_name;
-          setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
-          return;
-        }
-
-        setActiveModel('');
-      } catch (e) {
-        console.error('Failed to fetch active model', e);
+      if (activeKey) {
+        const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+        const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+        setActiveModel(`${providerName} ${model}`);
+        return;
       }
+
+      // Check local endpoints fallback
+      const { data: localData } = await db
+        .from('user_local_endpoints')
+        .select('*')
+        .eq('is_active_gen', true) // Check for generation specific flag
+        .single();
+
+      if (localData) {
+        const modelName = localData.model_gen || localData.model_name;
+        setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
+        return;
+      }
+
+      setActiveModel('');
+    } catch (e) {
+      console.error('Failed to fetch active model', e);
     }
+  }
+
+  // Fetch active model on mount and focus
+  useEffect(() => {
     fetchActiveModel();
+
+    const onFocus = () => fetchActiveModel();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   function handleGenerate() {
@@ -151,6 +156,9 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const topSuggestion = (prompt && typeof prompt === 'string') ? analyzePrompt(prompt)[0] : null;
 
   async function handleMagicRandom() {
+    // Refresh model info before generating to ensure accuracy
+    fetchActiveModel();
+
     if (prompt.trim()) {
       if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
         return;

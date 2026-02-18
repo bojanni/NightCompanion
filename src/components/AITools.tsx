@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 
 import { toast } from 'sonner';
+import { diffWords } from '../lib/diff-utils';
 import { handleAIError } from '../lib/error-handler';
 import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
@@ -104,97 +105,42 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
   const [activeModel, setActiveModel] = useState<string>('');
 
-  useImperativeHandle(ref, () => ({
-    hasContent: () => {
-      // Check if current Improve tab has content that might be lost
-      if (tab === 'improve') {
-        return !!improveInput.trim();
+  async function fetchActiveModel() {
+    try {
+      const keys = await listApiKeys();
+      const activeKey = keys.find(k => k.is_active_improve || k.is_active);
+
+      if (activeKey) {
+        const model = activeKey.model_improve || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+        const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+        setActiveModel(`${providerName} ${model}`);
+        return;
       }
-      return false;
-    },
-    clearContent: () => {
-      setImproveInput('');
-      setNegativeInput('');
-      setImproveResult('');
-      setNegativeResult('');
-    },
-    setInputContent: (content: string) => {
-      setImproveInput(content);
-      setTab('improve');
-      setExpanded(true);
-    },
-    setNegativeInputContent: (content: string) => {
-      setNegativeInput(content);
-      setExpanded(true);
-    }
-  }));
 
-  // Analyze prompt for model advice to conditionally hide negative prompt
-  useEffect(() => {
-    if (!improveInput.trim()) {
-      setSuggestedModel(null);
-      return;
-    }
-    const timeout = setTimeout(() => {
-      const results = analyzePrompt(improveInput);
-      if (results && results.length > 0 && results[0]) {
-        setSuggestedModel(results[0].model as ModelInfo);
+      const { data: localData } = await db
+        .from('user_local_endpoints')
+        .select('*')
+        .eq('is_active_improve', true)
+        .single();
+
+      if (localData) {
+        const modelName = localData.model_improve || localData.model_name;
+        setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
+        return;
       }
-    }, 100);
-    return () => clearTimeout(timeout);
-  }, [improveInput]);
 
-  // Persist state to localStorage
-  useEffect(() => {
-    const state = {
-      tab, expanded,
-      improveInput, improveResult, negativeInput, negativeResult,
-      generateInput, generateResult, generatePrefs,
-      styleResult,
-      diagnosePromptInput, diagnoseIssue, diagnoseResult,
-    };
-    localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
-  }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
-
-  // Fetch active model
-  useEffect(() => {
-    async function fetchActiveModel() {
-      try {
-
-        const keys = await listApiKeys();
-        const activeKey = keys.find(k => k.is_active_improve || k.is_active);
-
-        if (activeKey) {
-          const model = activeKey.model_improve || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
-          // Format provider name nicely
-          const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
-          setActiveModel(`${providerName} ${model}`);
-          return;
-        }
-
-        // Check local endpoints fallback
-        const { data: localData } = await db
-          .from('user_local_endpoints')
-          .select('*')
-          .eq('is_active_improve', true)
-          .single();
-
-        if (localData) {
-          const modelName = localData.model_improve || localData.model_name;
-          setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
-          return;
-        }
-
-        setActiveModel('');
-
-
-      } catch (e) {
-        console.error('Failed to fetch active model', e);
-      }
+      setActiveModel('');
+    } catch (e) {
+      console.error('Failed to fetch active model', e);
     }
+  }
+
+  useEffect(() => {
     fetchActiveModel();
-    fetchActiveModel();
-  }, []); // Run once on mount
+    const onFocus = () => fetchActiveModel();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
 
   async function getToken() {
     await db.auth.getUser(); // Get user for later just in case, though usually not needed for local insert if RLS disabled
@@ -514,7 +460,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
 
 export default AITools;
 
-import { diffWords } from '../lib/diff-utils';
+
 
 function ImproveTab({
   input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt, suggestedModel, activeModel,
