@@ -135,6 +135,58 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     }
   }
 
+  useImperativeHandle(ref, () => ({
+    hasContent: () => {
+      // Check if current Improve tab has content that might be lost
+      if (tab === 'improve') {
+        return !!improveInput.trim();
+      }
+      return false;
+    },
+    clearContent: () => {
+      setImproveInput('');
+      setNegativeInput('');
+      setImproveResult('');
+      setNegativeResult('');
+    },
+    setInputContent: (content: string) => {
+      setImproveInput(content);
+      setTab('improve');
+      setExpanded(true);
+    },
+    setNegativeInputContent: (content: string) => {
+      setNegativeInput(content);
+      setExpanded(true);
+    }
+  }));
+
+  // Analyze prompt for model advice to conditionally hide negative prompt
+  useEffect(() => {
+    if (!improveInput.trim()) {
+      setSuggestedModel(null);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      const results = analyzePrompt(improveInput);
+      if (results && results.length > 0 && results[0]) {
+        setSuggestedModel(results[0].model as ModelInfo);
+      }
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [improveInput]);
+
+  // Persist state to localStorage
+  useEffect(() => {
+    const state = {
+      tab, expanded,
+      improveInput, improveResult, negativeInput, negativeResult,
+      generateInput, generateResult, generatePrefs,
+      styleResult,
+      diagnosePromptInput, diagnoseIssue, diagnoseResult,
+    };
+    localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
+  }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
+
   useEffect(() => {
     fetchActiveModel();
     const onFocus = () => fetchActiveModel();
