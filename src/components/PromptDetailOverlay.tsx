@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft } from 'lucide-react';
 import type { Prompt, Tag } from '../lib/types';
+import { MODELS } from '../lib/models-data';
 import TagBadge from './TagBadge';
 
 interface PromptDetailOverlayProps {
@@ -38,7 +39,13 @@ export default function PromptDetailOverlay({
         };
     }, [onNext, onPrev, onClose]);
 
+
     const mainImage = images && images.length > 0 ? images[0] : null;
+
+    // Resolve Model Name
+    const modelId = mainImage?.model || prompt.model;
+    const modelInfo = MODELS.find(m => m.id === modelId);
+    const modelName = modelInfo?.name || modelId || 'Unknown Model';
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 md:p-8">
@@ -89,9 +96,9 @@ export default function PromptDetailOverlay({
                         </div>
                     )}
 
-                    {mainImage?.model && (
+                    {modelId && (
                         <div className="absolute top-8 left-8 px-4 py-2 bg-black/60 backdrop-blur-md rounded-xl text-sm font-medium text-amber-400 border border-white/10 shadow-lg capitalize">
-                            {mainImage.model}
+                            {modelName}
                         </div>
                     )}
                 </div>
@@ -102,7 +109,7 @@ export default function PromptDetailOverlay({
                         <h2 className="text-2xl font-bold text-white mb-2">{prompt.title || 'Untitled Prompt'}</h2>
                         <div className="flex items-center gap-2 text-slate-400 text-sm">
                             <Database size={14} />
-                            <span>Model ID: {mainImage?.model || 'Generic / Unknown'}</span>
+                            <span>Model: {modelName}</span>
                         </div>
                     </div>
 

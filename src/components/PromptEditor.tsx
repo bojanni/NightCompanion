@@ -43,7 +43,6 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
   // AI Auto-Generation State
   const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
-  const [autoGenerateTags, setAutoGenerateTags] = useState(true);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isGeneratingTags, setIsGeneratingTags] = useState(false);
 
@@ -201,7 +200,9 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
     setIsGeneratingTags(true);
     try {
+      console.log('Generating tags for content:', content.substring(0, 50) + '...');
       const tagString = await suggestTags(content, 'dummy-token');
+      console.log('Received tag string:', tagString);
       if (tagString) {
         const suggestedTags = tagString.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
 
@@ -269,10 +270,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       }
     }
 
-    // Generate Tags
-    if (autoGenerateTags) {
-      generateTags();
-    }
+    // Generate Tags - Auto-suggest removed
   }
 
   function validatePromptForm() {
@@ -588,16 +586,8 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
               className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
             >
               <Wand2 size={12} />
-              Regenerate
+              (Re)Generate Tags
             </button>
-            <div className="w-px h-3 bg-slate-700 mx-1" />
-            <input
-              type="checkbox"
-              checked={autoGenerateTags}
-              onChange={(e) => setAutoGenerateTags(e.target.checked)}
-              className="w-3.5 h-3.5 bg-slate-700 border-slate-600 rounded text-amber-500 focus:ring-amber-500/40"
-            />
-            <span className="text-xs text-slate-400">Auto-suggest</span>
             {isGeneratingTags && <Loader2 size={12} className="animate-spin text-amber-500 ml-1" />}
           </label>
         </div>
