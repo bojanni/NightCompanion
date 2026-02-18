@@ -214,7 +214,7 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
             'X-Title': 'NightCompanion', // Optional. Shows in rankings on openrouter.ai.
         },
         body: JSON.stringify({
-            model: model || 'google/gemini-2.0-flash-001',
+            model: model || 'google/gemini-2.0-pro-exp-02-05:free', // Try a reliable free model as default
             messages: messages,
             max_tokens: maxTokens
         })
@@ -250,7 +250,16 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
     }
 
     const data = await res.json();
-    const content = data.choices[0].message.content;
+
+    // Log full data for debugging format
+    console.log('[OpenRouter] Full Response Data:', JSON.stringify(data, null, 2).substring(0, 1000));
+
+    if (!data.choices || data.choices.length === 0) {
+        throw new Error('OpenRouter returned no choices: ' + JSON.stringify(data));
+    }
+
+    const choice = data.choices[0];
+    const content = choice.message?.content || choice.text; // Fallback for older/different APIs
 
     // Log the raw content for debugging
     console.log('[OpenRouter] Raw content received:', content ? content.substring(0, 200) + '...' : 'null/undefined');
