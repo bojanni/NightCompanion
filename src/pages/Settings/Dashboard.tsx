@@ -1,6 +1,11 @@
-import { Zap, Sparkles, Eye, Settings, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { Zap, Sparkles, Eye, Settings, AlertTriangle, ChevronDown, RefreshCw } from 'lucide-react';
 import type { ApiKeyInfo, LocalEndpoint } from '../../lib/api-keys-service';
-import { PROVIDERS } from '../Settings'; // We'll need to export PROVIDERS from Settings.tsx or move it to a shared file
+import type { ModelOption } from '../../lib/provider-models';
+import { setActiveProvider } from '../../lib/api-keys-service';
+import { listModels } from '../../lib/ai-service';
+import { getDefaultModelForProvider } from '../../lib/provider-models';
+import { toast } from 'sonner';
 
 interface DashboardProps {
     activeGen: ApiKeyInfo | LocalEndpoint | undefined;
@@ -8,37 +13,20 @@ interface DashboardProps {
     activeVision: ApiKeyInfo | LocalEndpoint | undefined;
     onConfigure: () => void;
     configuredCount: number;
+    keys: ApiKeyInfo[];
+    localEndpoints: LocalEndpoint[];
+    dynamicModels: Record<string, ModelOption[]>;
+    setDynamicModels: React.Dispatch<React.SetStateAction<Record<string, ModelOption[]>>>;
+    onRefreshData: () => Promise<void>;
+    getToken: () => Promise<string>;
 }
 
-export function Dashboard({ activeGen, activeImprove, activeVision, onConfigure, configuredCount }: DashboardProps) {
+export function Dashboard({
+    activeGen, activeImprove, activeVision, onConfigure, configuredCount,
+    keys, localEndpoints, dynamicModels, setDynamicModels, onRefreshData, getToken
+}: DashboardProps) {
 
-    const getProviderDisplayName = (p: ApiKeyInfo | LocalEndpoint | undefined) => {
-        if (!p) return 'Not Configured';
-        if ('endpoint_url' in p) {
-            return `${p.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${p.model_gen || p.model_improve || p.model_name})`;
-        }
-        // We need access to PROVIDERS list to get nice name, or just use provider id
-        // For now, let's just capitalize provider ID if we can't get name easily, or import PROVIDERS.
-        // Since PROVIDERS is in Settings.tsx, we might want to move it to a constants file.
-        // For now, I will capitalize the ID.
-        const name = p.provider.charAt(0).toUpperCase() + p.provider.slice(1);
-        const model = p.model_gen || p.model_improve || p.model_name || 'Default';
-        return `${name} (${model})`;
-    };
-
-    const getProviderName = (p: ApiKeyInfo | LocalEndpoint | undefined) => {
-        if (!p) return 'None';
-        if ('endpoint_url' in p) return p.provider === 'ollama' ? 'Ollama' : 'LM Studio';
-        return p.provider.charAt(0).toUpperCase() + p.provider.slice(1);
-    };
-
-    const getModelName = (p: ApiKeyInfo | LocalEndpoint | undefined, role: 'gen' | 'improve' | 'vision') => {
-        if (!p) return '-';
-        if (role === 'gen') return p.model_gen || p.model_name || 'Default';
-        if (role === 'improve') return p.model_improve || p.model_name || 'Default';
-        // Vision might not have specific model col yet, usually just model_name
-        return p.model_name || 'Default';
-    };
+    const allProviders = [...keys, ...localEndpoints];
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -54,73 +42,45 @@ export function Dashboard({ activeGen, activeImprove, activeVision, onConfigure,
 
             {/* Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                {/* Generation Card */}
-                <div className={`relative group overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${activeGen ? 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40' : 'bg-slate-900/40 border-slate-800 border-dashed'}`}>
-                    <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 rounded-xl ${activeGen ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-500'}`}>
-                            <Zap size={24} />
-                        </div>
-                        {activeGen && <div className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20">Active</div>}
-                    </div>
-
-                    <h3 className="text-lg font-semibold text-white mb-1">Generation</h3>
-                    <p className="text-sm text-slate-400 mb-4 h-10">Creates prompts from your ideas using advanced reasoning.</p>
-
-                    <div className="space-y-1">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Provider</div>
-                        <div className="text-slate-200 font-medium truncate">{getProviderName(activeGen)}</div>
-                    </div>
-                    <div className="space-y-1 mt-3">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Model</div>
-                        <div className="text-slate-200 font-medium truncate">{getModelName(activeGen, 'gen')}</div>
-                    </div>
-                </div>
-
-                {/* Improvement Card */}
-                <div className={`relative group overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${activeImprove ? 'bg-teal-500/5 border-teal-500/20 hover:border-teal-500/40' : 'bg-slate-900/40 border-slate-800 border-dashed'}`}>
-                    <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 rounded-xl ${activeImprove ? 'bg-teal-500/10 text-teal-400' : 'bg-slate-800 text-slate-500'}`}>
-                            <Sparkles size={24} />
-                        </div>
-                        {activeImprove && <div className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-teal-500/10 text-teal-500 border border-teal-500/20">Active</div>}
-                    </div>
-
-                    <h3 className="text-lg font-semibold text-white mb-1">Improvement</h3>
-                    <p className="text-sm text-slate-400 mb-4 h-10">Refines and enhances your prompts with expert techniques.</p>
-
-                    <div className="space-y-1">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Provider</div>
-                        <div className="text-slate-200 font-medium truncate">{getProviderName(activeImprove)}</div>
-                    </div>
-                    <div className="space-y-1 mt-3">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Model</div>
-                        <div className="text-slate-200 font-medium truncate">{getModelName(activeImprove, 'improve')}</div>
-                    </div>
-                </div>
-
-                {/* Vision Card */}
-                <div className={`relative group overflow-hidden rounded-2xl border p-6 transition-all duration-300 ${activeVision ? 'bg-violet-500/5 border-violet-500/20 hover:border-violet-500/40' : 'bg-slate-900/40 border-slate-800 border-dashed'}`}>
-                    <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 rounded-xl ${activeVision ? 'bg-violet-500/10 text-violet-400' : 'bg-slate-800 text-slate-500'}`}>
-                            <Eye size={24} />
-                        </div>
-                        {activeVision && <div className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-violet-500/10 text-violet-500 border border-violet-500/20">Active</div>}
-                    </div>
-
-                    <h3 className="text-lg font-semibold text-white mb-1">Vision</h3>
-                    <p className="text-sm text-slate-400 mb-4 h-10">Analyzes characters and images for style replication.</p>
-
-                    <div className="space-y-1">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Provider</div>
-                        <div className="text-slate-200 font-medium truncate">{getProviderName(activeVision)}</div>
-                    </div>
-                    <div className="space-y-1 mt-3">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Model</div>
-                        <div className="text-slate-200 font-medium truncate">{getModelName(activeVision, 'vision')}</div>
-                    </div>
-                </div>
-
+                <ProviderStatusCard
+                    role="generation"
+                    label="Generation"
+                    description="Creates prompts from your ideas using advanced reasoning."
+                    icon={Zap}
+                    activeProvider={activeGen}
+                    allProviders={allProviders}
+                    dynamicModels={dynamicModels}
+                    setDynamicModels={setDynamicModels}
+                    onRefreshData={onRefreshData}
+                    getToken={getToken}
+                    colorClass="amber"
+                />
+                <ProviderStatusCard
+                    role="improvement"
+                    label="Improvement"
+                    description="Refines and enhances your prompts with expert techniques."
+                    icon={Sparkles}
+                    activeProvider={activeImprove}
+                    allProviders={allProviders}
+                    dynamicModels={dynamicModels}
+                    setDynamicModels={setDynamicModels}
+                    onRefreshData={onRefreshData}
+                    getToken={getToken}
+                    colorClass="teal"
+                />
+                <ProviderStatusCard
+                    role="vision"
+                    label="Vision"
+                    description="Analyzes characters and images for style replication."
+                    icon={Eye}
+                    activeProvider={activeVision}
+                    allProviders={allProviders}
+                    dynamicModels={dynamicModels}
+                    setDynamicModels={setDynamicModels}
+                    onRefreshData={onRefreshData}
+                    getToken={getToken}
+                    colorClass="violet"
+                />
             </div>
 
             {/* Action Area */}
@@ -142,6 +102,245 @@ export function Dashboard({ activeGen, activeImprove, activeVision, onConfigure,
                         <span>{configuredCount} provider{configuredCount !== 1 ? 's' : ''} currently configured</span>
                     )}
                 </p>
+            </div>
+
+        </div>
+    );
+}
+
+interface ProviderStatusCardProps {
+    role: 'generation' | 'improvement' | 'vision';
+    label: string;
+    description: string;
+    icon: React.ElementType;
+    activeProvider: ApiKeyInfo | LocalEndpoint | undefined;
+    allProviders: (ApiKeyInfo | LocalEndpoint)[];
+    dynamicModels: Record<string, ModelOption[]>;
+    setDynamicModels: React.Dispatch<React.SetStateAction<Record<string, ModelOption[]>>>;
+    onRefreshData: () => Promise<void>;
+    getToken: () => Promise<string>;
+    colorClass: 'amber' | 'teal' | 'violet';
+}
+
+function ProviderStatusCard({
+    role, label, description, icon: Icon, activeProvider, allProviders,
+    dynamicModels, setDynamicModels, onRefreshData, getToken, colorClass
+}: ProviderStatusCardProps) {
+    const [loading, setLoading] = useState(false);
+
+    // Helper to determine the unique ID of a provider entry
+    const getProviderId = (p: ApiKeyInfo | LocalEndpoint) => {
+        if ('endpoint_url' in p) return `local-${p.provider}-${p.id}`; // Local endpoints need unique ID
+        return `cloud-${p.provider}`;
+    };
+
+    const currentProviderId = activeProvider ? getProviderId(activeProvider) : '';
+
+    const getModels = (p: ApiKeyInfo | LocalEndpoint) => {
+        const providerKey = p.provider;
+        // Prefer dynamic models if available, otherwise empty (will trigger fetch optionally?)
+        // Actually we should probably have static models fallback if available in provider-models.ts
+        // But since we can't easily import everything here without prop drilling or imports...
+        // Let's rely on dynamicModels which should be populated or we can fetch.
+        return dynamicModels[providerKey] || [];
+    };
+
+    const handleProviderChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newId = e.target.value;
+        if (!newId) return; // distinct "none" case?
+
+        const newProvider = allProviders.find(p => getProviderId(p) === newId);
+        if (!newProvider) return;
+
+        setLoading(true);
+        try {
+            // When switching provider, we need to pick a default model for this role
+            // 1. Check if this provider already has a model set for this role
+            let modelToUse = '';
+            if (role === 'generation') modelToUse = newProvider.model_gen || newProvider.model_name || '';
+            else if (role === 'improvement') modelToUse = newProvider.model_improve || newProvider.model_name || '';
+            else if (role === 'vision') modelToUse = newProvider.model_vision || newProvider.model_name || '';
+
+            if (!modelToUse) {
+                modelToUse = getDefaultModelForProvider(newProvider.provider);
+            }
+
+            await setActiveProvider(newProvider.provider, modelToUse, true, role);
+            await onRefreshData();
+            toast.success(`${label} provider changed to ${newProvider.provider}`);
+        } catch (err) {
+            toast.error('Failed to change provider');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleModelChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (!activeProvider) return;
+        const newModel = e.target.value;
+        setLoading(true);
+        try {
+            // updateModels requires updating ALL roles. This is tricky if we don't know the other roles' models.
+            // But wait, updateModels updates the PREFERENCES for that provider.
+            // setActiveProvider updates the ACTIVE status and can also set the model for that specific role?
+            // Looking at `api-keys-service.ts`:
+            // setActiveProvider(provider, modelName, active, role)
+
+            await setActiveProvider(activeProvider.provider, newModel, true, role);
+
+            // Also update the preference so it sticks?
+            // updateModels(provider, gen, improve, vision)
+            // We'd need to know the current values for other roles to not overwrite them.
+            // For now, setActiveProvider with role seems sufficient to switch the current active model usage.
+            // But to persist it as "preferred model for this role" in the DB column (model_gen etc), 
+            // the backend `set-active` action should handle that.
+            // Let's verify backend `set-active`... usually it sets `is_active_role` = true AND `model_role` = modelName.
+
+            await onRefreshData();
+            toast.success(`${label} model updated`);
+        } catch (err) {
+            toast.error('Failed to update model');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRefreshModels = async () => {
+        if (!activeProvider) return;
+        setLoading(true);
+        try {
+            const token = await getToken();
+            // If it's a cloud provider, we might need an API key if not waiting for backend proxy
+            // For security we rely on backend having the key.
+            // listModels(token, providerId)
+            const models = await listModels(token, activeProvider.provider);
+            setDynamicModels(prev => ({
+                ...prev,
+                [activeProvider.provider]: models
+            }));
+            toast.success('Models refreshed');
+        } catch (err) {
+            toast.error('Failed to refresh models');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Color mappings
+    const bgColors = {
+        amber: 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40',
+        teal: 'bg-teal-500/5 border-teal-500/20 hover:border-teal-500/40',
+        violet: 'bg-violet-500/5 border-violet-500/20 hover:border-violet-500/40',
+    };
+    const iconBgColors = {
+        amber: 'bg-amber-500/10 text-amber-400',
+        teal: 'bg-teal-500/10 text-teal-400',
+        violet: 'bg-violet-500/10 text-violet-400',
+    };
+    const activeBadgeColors = {
+        amber: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+        teal: 'bg-teal-500/10 text-teal-500 border-teal-500/20',
+        violet: 'bg-violet-500/10 text-violet-500 border-violet-500/20',
+    };
+
+    // Active Model Display Logic
+    let activeModelName = '';
+    if (role === 'generation') activeModelName = activeProvider?.model_gen || activeProvider?.model_name || '';
+    else if (role === 'improvement') activeModelName = activeProvider?.model_improve || activeProvider?.model_name || '';
+    else if (role === 'vision') activeModelName = activeProvider?.model_vision || activeProvider?.model_name || '';
+
+    const activeModelsList = activeProvider ? getModels(activeProvider) : [];
+
+    return (
+        <div className={`relative group overflow-visible rounded-2xl border p-6 transition-all duration-300 ${activeProvider ? bgColors[colorClass] : 'bg-slate-900/40 border-slate-800 border-dashed'}`}>
+            <div className="flex items-start justify-between mb-4">
+                <div className={`p-3 rounded-xl ${activeProvider ? iconBgColors[colorClass] : 'bg-slate-800 text-slate-500'}`}>
+                    <Icon size={24} />
+                </div>
+                {activeProvider && <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${activeBadgeColors[colorClass]}`}>Active</div>}
+            </div>
+
+            <h3 className="text-lg font-semibold text-white mb-1">{label}</h3>
+            <p className="text-sm text-slate-400 mb-6 h-10">{description}</p>
+
+            <div className="space-y-4">
+                {/* Provider Selection */}
+                <div className="space-y-1.5">
+                    <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold flex items-center justify-between">
+                        <span>Provider</span>
+                    </div>
+                    <div className="relative">
+                        <select
+                            value={currentProviderId}
+                            onChange={handleProviderChange}
+                            disabled={loading}
+                            className="w-full appearance-none bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-slate-500 transition-colors disabled:opacity-50"
+                        >
+                            {allProviders.length === 0 && <option value="">No Configured Providers</option>}
+                            {allProviders.map(p => {
+                                const id = getProviderId(p);
+                                const name = p.provider === 'ollama' ? 'Ollama' : (p.provider === 'lmstudio' ? 'LM Studio' : (p.provider.charAt(0).toUpperCase() + p.provider.slice(1)));
+                                const label = 'endpoint_url' in p ? `${name} (Local)` : name;
+                                return (
+                                    <option key={id} value={id}>{label}</option>
+                                );
+                            })}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                    </div>
+                </div>
+
+                {/* Model Selection */}
+                {activeProvider && (
+                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-300">
+                        <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold flex items-center justify-between">
+                            <span>Model</span>
+                            <button
+                                onClick={handleRefreshModels}
+                                disabled={loading}
+                                className="text-slate-500 hover:text-white transition-colors"
+                                title="Refresh Models"
+                            >
+                                <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                            </button>
+                        </div>
+
+                        {activeModelsList.length > 0 ? (
+                            <div className="relative">
+                                <select
+                                    value={activeModelName}
+                                    onChange={handleModelChange}
+                                    disabled={loading}
+                                    className="w-full appearance-none bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-slate-500 transition-colors disabled:opacity-50"
+                                >
+                                    {activeModelsList.map(m => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.name || m.id}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={activeModelName}
+                                    disabled
+                                    className="w-full bg-slate-900/30 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-400 italic"
+                                />
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                    <button onClick={handleRefreshModels} className="p-1 hover:bg-slate-700 rounded transition-colors">
+                                        <RefreshCw size={12} className={loading ? "animate-spin text-teal-500" : "text-slate-500"} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
         </div>

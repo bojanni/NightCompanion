@@ -108,11 +108,30 @@ export default function Settings() {
             activeVision={activeVision}
             onConfigure={() => setView('wizard')}
             configuredCount={configuredCount}
+            keys={keys}
+            localEndpoints={localEndpoints}
+            dynamicModels={dynamicModels}
+            setDynamicModels={setDynamicModels}
+            onRefreshData={refreshData}
+            getToken={getToken}
           />
 
           <div className="pt-8 border-t border-slate-800">
-            <h2 className="text-xl font-bold text-white mb-6">Data Management</h2>
-            <DataManagement />
+            <button
+              onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
+              className="flex items-center justify-between w-full group"
+            >
+              <h2 className="text-xl font-bold text-white group-hover:text-teal-400 transition-colors">Data Management</h2>
+              <ChevronDown
+                className={`text-slate-500 group-hover:text-teal-400 transition-all duration-300 ${isDataManagementOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            <div className={`grid transition-all duration-300 ease-in-out ${isDataManagementOpen ? 'grid-rows-[1fr] opacity-100 mt-6' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
+              <div className="overflow-hidden">
+                <DataManagement />
+              </div>
+            </div>
           </div>
         </div>
       ) : (
