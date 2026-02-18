@@ -115,7 +115,7 @@ export default function Layout({ onSignOut }: LayoutProps) {
         ) : (
           /* Centered: all other pages — max 1400px, centered, min 1200px */
           <div className="w-full p-8">
-            <div className="max-w-[1400px] min-w-[1200px] mx-auto">
+            <div className="max-w-[1200px] min-w-[900px] mx-auto">
               <Outlet />
             </div>
           </div>
