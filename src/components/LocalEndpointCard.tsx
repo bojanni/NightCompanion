@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
-    Server, Loader2, Check, Trash2, Zap, RefreshCw, Eye
+    Server, Loader2, Check, Trash2, Zap, RefreshCw, Eye, ChevronDown, Search, Cloud
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { LocalEndpoint } from '../lib/api-keys-service';
+import { listModels, ModelListItem } from '../lib/ai-service';
 
 interface LocalEndpointCardProps {
     type: 'ollama' | 'lmstudio';
@@ -12,6 +13,105 @@ interface LocalEndpointCardProps {
     onSave: (endpointUrl: string, modelGen: string, modelImprove: string, modelVision: string) => void;
     onDelete: () => void;
     onSetActive: (role: 'generation' | 'improvement' | 'vision') => void;
+}
+
+// Helper component for Editable Combobox
+function EditableModelSelect({
+    value,
+    onChange,
+    options,
+    placeholder,
+    label
+}: {
+    value: string;
+    onChange: (val: string) => void;
+    options: ModelListItem[];
+    placeholder: string;
+    label: string;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredOptions = options.filter(opt =>
+        opt.name.toLowerCase().includes(search.toLowerCase()) ||
+        opt.id.toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+        <div className="relative" ref={containerRef}>
+            <label className="block text-xs text-slate-400 mb-1">{label}</label>
+            <div className="relative flex items-center">
+                <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
+                    placeholder={placeholder}
+                    onFocus={() => setIsOpen(true)}
+                />
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="absolute right-2 text-slate-500 hover:text-white"
+                >
+                    <ChevronDown size={14} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+            </div>
+
+            {isOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                    <div className="p-2 border-b border-slate-800 sticky top-0 bg-slate-900 z-10">
+                        <div className="relative">
+                            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input
+                                type="text"
+                                placeholder="Filter list..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full bg-slate-800 rounded px-2 pl-7 py-1 text-[10px] text-white border border-slate-700 focus:outline-none"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <div className="p-1 space-y-0.5">
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map((opt) => (
+                                <button
+                                    key={opt.id}
+                                    type="button"
+                                    onClick={() => {
+                                        onChange(opt.id);
+                                        setIsOpen(false);
+                                    }}
+                                    className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center justify-between group ${value === opt.id ? 'bg-violet-500/20 text-violet-300' : 'hover:bg-slate-800 text-slate-300'
+                                        }`}
+                                >
+                                    <span className="truncate">{opt.name}</span>
+                                    {value === opt.id && <Check size={12} />}
+                                </button>
+                            ))
+                        ) : (
+                            <div className="px-2 py-3 text-center text-[10px] text-slate-500">
+                                No models found via fetch.
+                                <br />Type manually above.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDelete, onSetActive }: LocalEndpointCardProps) {
@@ -24,6 +124,10 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
     const [modelImprove, setModelImprove] = useState(endpoint?.model_improve || endpoint?.model_name || '');
     const [modelVision, setModelVision] = useState(endpoint?.model_vision || endpoint?.model_name || '');
     const [isEditing, setIsEditing] = useState(false);
+
+    // State for fetched models
+    const [availableModels, setAvailableModels] = useState<ModelListItem[]>([]);
+    const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         if (endpoint) {
@@ -38,6 +142,33 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
     const isActive = endpoint?.is_active || false;
     const isSaving = actionLoading === type;
     const isDeleting = actionLoading === `${type}-delete`;
+
+    const handleFetchModels = async () => {
+        if (!url) {
+            toast.error('Please enter an Endpoint URL first');
+            return;
+        }
+        setIsFetching(true);
+        try {
+            // Pass empty string as token since auth removed. 
+            // Pass 'local' as provider so backend knows logic, URL passed as endpointUrl
+            const models = await listModels('', 'local', undefined, url);
+            setAvailableModels(models);
+            toast.success(`Found ${models.length} models`);
+
+            // Auto-fill if empty and models found
+            if (models.length > 0) {
+                if (!modelGen) setModelGen(models[0].id);
+                if (!modelImprove) setModelImprove(models[0].id);
+                if (!modelVision) setModelVision(models[0].id);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to fetch models. checks URL and ensure server is running.');
+        } finally {
+            setIsFetching(false);
+        }
+    };
 
     const handleSave = () => {
         // Basic validation
@@ -74,50 +205,54 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
             </div>
 
             {!isConfigured || isEditing ? (
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-xs text-slate-400 mb-1">Endpoint URL</label>
-                        <input
-                            type="text"
-                            value={url}
-                            onChange={(e) => setUrl(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
-                            placeholder={defaults.url}
+                <div className="space-y-4">
+                    <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                            <label className="block text-xs text-slate-400 mb-1">Endpoint URL</label>
+                            <input
+                                type="text"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500 font-mono"
+                                placeholder={defaults.url}
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleFetchModels}
+                            disabled={isFetching || !url}
+                            className="px-3 py-2 bg-slate-800 text-slate-300 border border-slate-700 rounded-lg hover:bg-slate-700 hover:text-white hover:border-slate-600 transition-colors disabled:opacity-50"
+                            title="Fetch Models"
+                        >
+                            {isFetching ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                        </button>
+                    </div>
+
+                    <div className="space-y-3 pt-2 border-t border-slate-800/50">
+                        <EditableModelSelect
+                            label="Generation Model"
+                            value={modelGen}
+                            onChange={setModelGen}
+                            options={availableModels}
+                            placeholder="e.g. llama3"
+                        />
+                        <EditableModelSelect
+                            label="Improvement Model"
+                            value={modelImprove}
+                            onChange={setModelImprove}
+                            options={availableModels}
+                            placeholder="e.g. mistral"
+                        />
+                        <EditableModelSelect
+                            label="Vision Model"
+                            value={modelVision}
+                            onChange={setModelVision}
+                            options={availableModels}
+                            placeholder="e.g. llava"
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs text-slate-400 mb-1">Gen Model (Optional)</label>
-                            <input
-                                type="text"
-                                value={modelGen}
-                                onChange={(e) => setModelGen(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
-                                placeholder="e.g. llama3"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs text-slate-400 mb-1">Improve Model (Optional)</label>
-                            <input
-                                type="text"
-                                value={modelImprove}
-                                onChange={(e) => setModelImprove(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
-                                placeholder="e.g. mistral"
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-xs text-slate-400 mb-1">Vision Model (Optional)</label>
-                            <input
-                                type="text"
-                                value={modelVision}
-                                onChange={(e) => setModelVision(e.target.value)}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
-                                placeholder="e.g. llava"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
+
+                    <div className="flex gap-2 pt-2">
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
@@ -146,6 +281,12 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-slate-500">Gen Model</span>
                                 <span className="text-slate-300 font-mono">{endpoint.model_gen}</span>
+                            </div>
+                        )}
+                        {endpoint.model_improve && (
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-500">Imp Model</span>
+                                <span className="text-slate-300 font-mono">{endpoint.model_improve}</span>
                             </div>
                         )}
                         {endpoint.model_vision && (
