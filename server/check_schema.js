@@ -11,21 +11,15 @@ const config = {
 
 const pool = new Pool(config);
 
-async function checkSchema() {
+async function check() {
     try {
-        const tables = ['prompts', 'gallery_items'];
-        for (const table of tables) {
-            console.log(`\n--- ${table.toUpperCase()} ---`);
-            const res = await pool.query(`
-                SELECT column_name, data_type
-                FROM information_schema.columns
-                WHERE table_name = $1
-                ORDER BY column_name
-            `, [table]);
-            res.rows.forEach(row => {
-                console.log(`${row.column_name.padEnd(25)} | ${row.data_type}`);
-            });
-        }
+        const res = await pool.query(`
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_name = 'prompts'
+        `);
+        console.log('--- PROMPTS COLUMNS ---');
+        res.rows.forEach(row => console.log(`${row.column_name}: ${row.data_type}`));
     } catch (e) {
         console.error(e);
     } finally {
@@ -33,4 +27,4 @@ async function checkSchema() {
     }
 }
 
-checkSchema();
+check();

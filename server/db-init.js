@@ -89,10 +89,14 @@ async function initSchema() {
         await addColumn(pool, 'prompts', 'is_favorite', 'BOOLEAN DEFAULT FALSE');
         await addColumn(pool, 'prompts', 'is_template', 'BOOLEAN DEFAULT FALSE');
         await addColumn(pool, 'prompts', 'model', 'TEXT');
+        await addColumn(pool, 'prompts', 'category', 'TEXT');
         await addColumn(pool, 'prompts', 'revised_prompt', 'TEXT');
         await addColumn(pool, 'prompts', 'seed', 'INTEGER');
         await addColumn(pool, 'prompts', 'aspect_ratio', 'TEXT');
         await addColumn(pool, 'prompts', 'use_custom_aspect_ratio', 'BOOLEAN DEFAULT FALSE');
+        await addColumn(pool, 'prompts', 'gallery_item_id', 'UUID');
+        await addColumn(pool, 'prompts', 'use_count', 'INTEGER DEFAULT 0');
+        await addColumn(pool, 'prompts', 'last_used_at', 'TIMESTAMP WITH TIME ZONE');
 
 
         // Tags
@@ -163,9 +167,17 @@ async function initSchema() {
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
+        await addColumn(pool, 'gallery_items', 'prompt_id', 'UUID');
+        await addColumn(pool, 'gallery_items', 'rating', 'INTEGER DEFAULT 0');
         await addColumn(pool, 'gallery_items', 'model_used', 'TEXT');
-        await addColumn(pool, 'gallery_items', 'model', 'TEXT'); // Fix: Add correct column name expected by frontend
+        await addColumn(pool, 'gallery_items', 'model', 'TEXT');
         await addColumn(pool, 'gallery_items', 'is_favorite', 'BOOLEAN DEFAULT FALSE');
+        await addColumn(pool, 'gallery_items', 'local_path', 'TEXT');
+        await addColumn(pool, 'gallery_items', 'metadata', "JSONB DEFAULT '{}'");
+        await addColumn(pool, 'gallery_items', 'width', 'INTEGER');
+        await addColumn(pool, 'gallery_items', 'height', 'INTEGER');
+        await addColumn(pool, 'gallery_items', 'character_id', 'UUID');
+        await addColumn(pool, 'gallery_items', 'collection_id', 'UUID');
 
 
         // Collections
