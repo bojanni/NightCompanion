@@ -247,29 +247,15 @@ export function ConfigurationWizard({
                             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                                 <Cpu size={20} className="text-amber-400" /> Local Providers
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-6">
                                 <LocalEndpointCard
                                     type="ollama"
                                     endpoint={localEndpoints.find(e => e.provider === 'ollama')}
                                     actionLoading={actionLoading}
                                     onSave={async (url, mGen, mImp, mVis) => {
-                                        // Re-using logic from Settings.tsx via duplication for now or we should pass handler
-                                        // Ideally we should pass a specific handler or move the logic to a hook/service
-                                        // For simplicity/speed in this refactor, I'll allow inline definition or require props.
-                                        // ConfigurationWizard props expects standard handlers but LocalEndpointCard expects onSave signature.
-                                        // I will implement a wrapper here.
-
-                                        // Actually, let's keep it simple. LocalEndpointCard expects onSaveUrl...
-                                        // Wait, LocalEndpointCard prop onSave signature is (url, gen, imp) => void.
-                                        // I need to implement the API call here.
                                         setActionLoading('ollama');
                                         try {
-                                            // Should import db? Or move this logic to service? 
-                                            // I'll import DB for now as it's quick.
-                                            // Wait, ConfigurationWizard shouldn't have direct DB access ideally, but Settings.tsx does.
-                                            // I'll assume DB import is available or we should import it.
-                                            // Let's import { db } from '../../lib/api';
-                                            const { db } = await import('../../lib/api'); // Dynamic import or top level
+                                            const { db } = await import('../../lib/api');
                                             const existing = localEndpoints.find(e => e.provider === 'ollama');
                                             await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
                                             await db.from('user_local_endpoints').insert({
@@ -296,7 +282,6 @@ export function ConfigurationWizard({
                                         finally { setActionLoading(null); }
                                     }}
                                     onSetActive={async (role) => {
-                                        // Similar wrapper
                                         setActionLoading(`ollama-${role}`);
                                         try {
                                             const endpoint = localEndpoints.find(e => e.provider === 'ollama');
@@ -304,8 +289,7 @@ export function ConfigurationWizard({
                                                 ? (endpoint?.model_gen || endpoint?.model_name)
                                                 : role === 'improvement'
                                                     ? (endpoint?.model_improve || endpoint?.model_name)
-                                                    : (endpoint?.model_vision || endpoint?.model_name); // Vision
-                                            // Vision check
+                                                    : (endpoint?.model_vision || endpoint?.model_name);
                                             const isRoleActive = role === 'generation' ? endpoint?.is_active_gen : role === 'improvement' ? endpoint?.is_active_improve : endpoint?.is_active_vision;
                                             await setActiveProvider('ollama', model || '', !isRoleActive, role);
                                             await loadKeys(); await loadLocalEndpoints();
