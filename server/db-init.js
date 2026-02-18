@@ -164,6 +164,7 @@ async function initSchema() {
             );
         `);
         await addColumn(pool, 'gallery_items', 'model_used', 'TEXT');
+        await addColumn(pool, 'gallery_items', 'model', 'TEXT'); // Fix: Add correct column name expected by frontend
         await addColumn(pool, 'gallery_items', 'is_favorite', 'BOOLEAN DEFAULT FALSE');
 
 
