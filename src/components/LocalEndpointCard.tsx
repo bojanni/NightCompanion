@@ -156,9 +156,9 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
     const isDeleting = actionLoading === `${type}-delete`;
 
     // Determine active roles for styling
-    const isGenActive = endpoint ? (endpoint.is_active_gen && (endpoint.model_gen || endpoint.model_name) === modelGen) : false;
-    const isImpActive = endpoint ? (endpoint.is_active_improve && (endpoint.model_improve || endpoint.model_name) === modelImprove) : false;
-    const isVisActive = endpoint ? (endpoint.is_active_vision && (endpoint.model_vision || endpoint.model_name) === modelVision) : false;
+    const isGenActive = !!(endpoint?.is_active_gen && (endpoint?.model_gen || endpoint?.model_name) === modelGen);
+    const isImpActive = !!(endpoint?.is_active_improve && (endpoint?.model_improve || endpoint?.model_name) === modelImprove);
+    const isVisActive = !!(endpoint?.is_active_vision && (endpoint?.model_vision || endpoint?.model_name) === modelVision);
 
     const handleFetchModels = async () => {
         if (!url) {

@@ -286,8 +286,9 @@ export default function StyleProfile() {
 function groupKeywordsByCategory(keywords: KeywordStat[]): Record<string, KeywordStat[]> {
   const grouped: Record<string, KeywordStat[]> = {};
   for (const kw of keywords) {
-    if (!grouped[kw.category]) grouped[kw.category] = [];
-    grouped[kw.category].push(kw);
+    const cat = kw.category;
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat]!.push(kw);
   }
   return grouped;
 }
