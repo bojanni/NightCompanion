@@ -628,6 +628,15 @@ router.post('/', async (req, res) => {
     } catch (err) {
         console.error('AI Service Error:', err.message);
 
+        // Handle connection refused / fetch failed (Local AI down)
+        if (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED')) {
+            return res.status(503).json({
+                error: 'Could not connect to AI provider',
+                details: 'Please ensure your Local AI (Ollama/LM Studio) is running and the URL is correct.',
+                hint: 'Check settings or try testing the connection.'
+            });
+        }
+
         // Ensure we send a useful error message back to the client
         const isOperational = err.message.includes('Provider Error') || err.message.includes('safety') || err.message.includes('Rate limit');
         res.status(500).json({
