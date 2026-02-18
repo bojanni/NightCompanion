@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
-  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X,
+  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X, Calendar
 } from 'lucide-react';
+import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
 import Modal from '../components/Modal';
@@ -566,6 +567,21 @@ export default function Prompts() {
                       </button>
                     </div>
 
+
+
+                    <div className="flex items-center gap-3 text-[10px] text-slate-500 mb-2">
+                      <span className="flex items-center gap-1" title={`Created: ${formatDate(prompt.created_at)}`}>
+                        <Calendar size={10} />
+                        {formatDate(prompt.created_at).split(' ')[0]}
+                      </span>
+                      {prompt.updated_at !== prompt.created_at && (
+                        <span className="flex items-center gap-1" title={`Updated: ${formatDate(prompt.updated_at)}`}>
+                          <Clock size={10} />
+                          {formatDate(prompt.updated_at).split(' ')[1]}
+                        </span>
+                      )}
+                    </div>
+
                     <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">{prompt.content}</p>
 
                     <div className="h-20 overflow-hidden mb-4">
@@ -739,54 +755,57 @@ export default function Prompts() {
               );
             })}
           </AnimatePresence>
-        </motion.div>
-      )}
+        </motion.div >
+      )
+      }
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-            disabled={currentPage === 0}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft size={16} />
-            Previous
-          </button>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
-              if (
-                page === 0 ||
-                page === totalPages - 1 ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                  >
-                    {page + 1}
-                  </button>
-                );
-              } else if (page === currentPage - 2 || page === currentPage + 2) {
-                return <span key={page} className="text-slate-600 px-2">...</span>;
-              }
-              return null;
-            })}
+      {
+        totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
+                if (
+                  page === 0 ||
+                  page === totalPages - 1 ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                        }`}
+                    >
+                      {page + 1}
+                    </button>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <span key={page} className="text-slate-600 px-2">...</span>;
+                }
+                return null;
+              })}
+            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage === totalPages - 1}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
           </div>
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-            disabled={currentPage === totalPages - 1}
-            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
+        )
+      }
 
       <Modal
         open={showEditor}
@@ -936,6 +955,6 @@ export default function Prompts() {
           );
         })()}
       </Modal>
-    </div>
+    </div >
   );
 }
