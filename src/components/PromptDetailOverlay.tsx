@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink, Clock } from 'lucide-react';
 import type { Prompt, Tag } from '../lib/types';
 import { MODELS } from '../lib/models-data';
+import { formatDate } from '../lib/date-utils';
 import TagBadge from './TagBadge';
 import StarRating from './StarRating';
 
@@ -130,9 +131,17 @@ export default function PromptDetailOverlay({
                 <div className="w-full md:w-[30%] flex flex-col border-l border-slate-800 bg-slate-900/50">
                     <div className="p-8 border-b border-slate-800">
                         <h2 className="text-2xl font-bold text-white mb-2">{prompt.title || 'Untitled Prompt'}</h2>
-                        <div className="flex items-center gap-2 text-slate-400 text-sm">
-                            <Database size={14} />
-                            <span>Model: {modelName}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-slate-400 text-sm">
+                            <div className="flex items-center gap-2">
+                                <Database size={14} />
+                                <span>Model: {modelName}</span>
+                            </div>
+                            {prompt.created_at && (
+                                <div className="flex items-center gap-2">
+                                    <Clock size={14} />
+                                    <span>Created: {formatDate(prompt.created_at)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
