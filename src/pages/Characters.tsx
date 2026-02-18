@@ -26,7 +26,8 @@ function CharacterCard({
   details,
   onToggleExpand,
   onEdit,
-  onDelete
+  onDelete,
+  onViewImage
 }: {
   char: Character;
   isExpanded: boolean;
@@ -34,6 +35,7 @@ function CharacterCard({
   onToggleExpand: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onViewImage: (url: string) => void;
 }) {
   const mainImage = char.images?.find(img => img.isMain) || { url: char.reference_image_url };
   const additionalImages = (char.images || []).filter(img => img.url !== mainImage.url);
@@ -95,7 +97,13 @@ function CharacterCard({
       </div>
 
       <div className="px-5 pb-5">
-        <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors">
+        <div
+          className="relative aspect-square rounded-xl overflow-hidden bg-slate-950 border border-slate-800 group-hover:border-slate-700 transition-colors cursor-zoom-in"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (mainImage.url) onViewImage(mainImage.url);
+          }}
+        >
           {mainImage.url ? (
             <img src={mainImage.url} alt={char.name} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
           ) : (
@@ -104,14 +112,21 @@ function CharacterCard({
             </div>
           )}
           {mainImage.url && (
-            <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-sm text-[8px] font-bold px-1.5 py-0.5 rounded-md text-white uppercase tracking-wider">Main</div>
+            <div className="absolute top-2 right-2 bg-blue-600/80 backdrop-blur-sm text-[8px] font-bold px-1.5 py-0.5 rounded-md text-white uppercase tracking-wider shadow-sm z-10">Main</div>
           )}
         </div>
 
         {additionalImages.length > 0 && (
           <div className="grid grid-cols-4 gap-2 mt-2">
             {additionalImages.slice(0, 4).map((img, idx) => (
-              <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+              <div
+                key={img.id}
+                className="relative aspect-square rounded-lg overflow-hidden border border-slate-800 bg-slate-950 cursor-zoom-in hover:border-slate-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewImage(img.url);
+                }}
+              >
                 <img src={img.url} className="w-full h-full object-cover" alt="Gallery" />
                 {idx === 3 && additionalImages.length > 4 && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] font-bold text-white">
@@ -175,6 +190,9 @@ export default function Characters() {
   const [editingChar, setEditingChar] = useState<Character | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, CharacterDetail[]>>({});
+
+  // Lightbox State
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState<string>('');
@@ -440,6 +458,7 @@ export default function Characters() {
                   handleDeleteCharacter(char.id);
                 }
               }}
+              onViewImage={(url) => setLightboxImage(url)}
             />
           ))}
         </div>
@@ -718,6 +737,35 @@ export default function Characters() {
           </div>
         </div>
       )}
+
+      {/* Full Image Lightbox */}
+      <AnimatePresence>
+        {lightboxImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxImage(null)}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
+          >
+            <button
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20 text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              src={lightboxImage}
+              alt="Full view"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
