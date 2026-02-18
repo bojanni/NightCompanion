@@ -16,7 +16,7 @@ async function check() {
         const res = await pool.query(`
             SELECT table_name, column_name, data_type
             FROM information_schema.columns
-            WHERE table_name IN ('prompts', 'gallery_items')
+            WHERE table_name IN ('prompts', 'gallery_items', 'characters')
             ORDER BY table_name, column_name
         `);
         console.log('--- SCHEMA Check ---');

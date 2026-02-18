@@ -137,10 +137,12 @@ async function initSchema() {
                 description TEXT,
                 reference_image_url TEXT,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                images JSONB DEFAULT '[]'
             );
         `);
         await addColumn(pool, 'characters', 'reference_image_url', 'TEXT');
+        await addColumn(pool, 'characters', 'images', "JSONB DEFAULT '[]'");
 
         // Character Details
         await pool.query(`
