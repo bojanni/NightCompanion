@@ -287,8 +287,9 @@ function groupKeywordsByCategory(keywords: KeywordStat[]): Record<string, Keywor
   const grouped: Record<string, KeywordStat[]> = {};
   for (const kw of keywords) {
     const cat = kw.category;
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat]!.push(kw);
+    const list = grouped[cat] || [];
+    list.push(kw);
+    grouped[cat] = list;
   }
   return grouped;
 }

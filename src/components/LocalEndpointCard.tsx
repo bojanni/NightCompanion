@@ -174,10 +174,11 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
             toast.success(`Found ${models.length} models`);
 
             // Auto-fill if empty and models found
-            if (models.length > 0) {
-                if (!modelGen) setModelGen(models[0].id);
-                if (!modelImprove) setModelImprove(models[0].id);
-                if (!modelVision) setModelVision(models[0].id);
+            if (models.length > 0 && models[0]) {
+                const firstId = models[0].id;
+                if (!modelGen) setModelGen(firstId);
+                if (!modelImprove) setModelImprove(firstId);
+                if (!modelVision) setModelVision(firstId);
             }
         } catch (e) {
             console.error(e);

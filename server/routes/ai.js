@@ -283,10 +283,10 @@ async function listModels(providerConfig) {
         // Ollama: GET /api/tags
         // LM Studio: GET /v1/models
 
-        let url = endpoint_url.replace(/\/$/, '');
+        let urlClean = endpoint_url.trim().replace(/\/+$/, '');
 
         // Attempt to find the base URL if the user included '/v1'
-        const baseUrl = url.endsWith('/v1') ? url.slice(0, -3) : url;
+        const baseUrl = urlClean.replace(/\/v1$/i, '');
 
         // 1. Try LM Studio specific API (http://localhost:1234/api/v1/models)
         try {
@@ -369,10 +369,9 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         const textUser = typeof user === 'string' ? user : user.find(p => p.type === 'text')?.text || '';
 
         // Normalize URL: remove trailing slash and /v1 suffix to get base
-        let baseUrl = providerConfig.endpoint_url.replace(/\/$/, '');
-        if (baseUrl.endsWith('/v1')) {
-            baseUrl = baseUrl.slice(0, -3);
-        }
+        // Normalize URL: remove trailing slash and /v1 suffix to get base
+        let baseUrl = providerConfig.endpoint_url.trim().replace(/\/+$/, '');
+        baseUrl = baseUrl.replace(/\/v1$/i, '');
 
         // Always use OpenAI compatible endpoint for chat as requested
         const url = `${baseUrl}/v1/chat/completions`;
