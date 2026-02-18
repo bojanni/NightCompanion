@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
@@ -48,6 +49,7 @@ const DynamicColorElement = ({
 const PAGE_SIZE = 24;
 
 export default function Gallery() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -445,6 +447,29 @@ export default function Gallery() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Handle URL query parameter to open lightbox
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (openId && !loading) {
+      // First check if item is already loaded
+      const item = items.find(i => i.id === openId);
+      if (item) {
+        setLightboxImage(item);
+        // Clear the query param to prevent re-opening on navigation
+        setSearchParams({}, { replace: true });
+      } else if (items.length > 0) {
+        // Item not in current page, fetch it directly
+        db.from('gallery_items').select('*').eq('id', openId).single()
+          .then(({ data }: { data: GalleryItem | null }) => {
+            if (data) {
+              setLightboxImage(data);
+              setSearchParams({}, { replace: true });
+            }
+          });
+      }
+    }
+  }, [items, loading, searchParams, setSearchParams]);
 
   function handleFilterCollectionChange(collectionId: string | null) {
     setFilterCollection(collectionId);
