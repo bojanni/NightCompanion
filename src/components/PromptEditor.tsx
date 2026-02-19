@@ -819,88 +819,86 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       </div>
 
 
-      {!isLinked && (
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-slate-300">Gallery Images</label>
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-slate-300">Gallery Images</label>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {/* Existing Gallery Items */}
-            {galleryItems.map((item) => (
-              <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
-                <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {/* Existing Gallery Items */}
+          {galleryItems.map((item) => (
+            <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
+              <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
 
-                {/* Overlay Actions */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
-                  {prompt?.gallery_item_id === item.id ? (
-                    <span className="text-[10px] text-green-400 font-medium flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
-                      <CheckCircle size={10} /> Main Image
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => handleSetMainImage(item.id)}
-                      className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded-lg border border-slate-600 w-full"
-                    >
-                      Make Main
-                    </button>
-                  )}
-
+              {/* Overlay Actions */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                {prompt?.gallery_item_id === item.id ? (
+                  <span className="text-[10px] text-green-400 font-medium flex items-center gap-1 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
+                    <CheckCircle size={10} /> Main Image
+                  </span>
+                ) : (
                   <button
-                    onClick={() => { setManagingCollectionFor(item.id); setShowCollectionManager(true); }}
-                    className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded-lg border border-slate-600 w-full flex items-center justify-center gap-1"
+                    onClick={() => handleSetMainImage(item.id)}
+                    className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded-lg border border-slate-600 w-full"
                   >
-                    <FolderPlus size={10} /> Collection
+                    Make Main
                   </button>
+                )}
 
-                  {item.collection_id && (
-                    <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 truncate max-w-full">
-                      In Collection
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            {/* New Upload Previews */}
-            {filePreviews.map((preview, idx) => (
-              <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
-                <img src={preview} alt="Upload preview" className="w-full h-full object-cover opacity-75" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-medium text-white drop-shadow-md">Queued</span>
-                </div>
                 <button
-                  onClick={() => {
-                    setFilePreviews(prev => prev.filter((_, i) => i !== idx));
-                    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
-                  }}
-                  className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                  onClick={() => { setManagingCollectionFor(item.id); setShowCollectionManager(true); }}
+                  className="text-[10px] bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded-lg border border-slate-600 w-full flex items-center justify-center gap-1"
                 >
-                  <X size={12} />
+                  <FolderPlus size={10} /> Collection
                 </button>
-              </div>
-            ))}
 
-            {/* Upload Button */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="aspect-square border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-800/30 hover:bg-slate-800/50 gap-2"
-            >
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
-                <Plus size={16} />
+                {item.collection_id && (
+                  <span className="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 truncate max-w-full">
+                    In Collection
+                  </span>
+                )}
               </div>
-              <span className="text-xs text-slate-400 font-medium">Add Image</span>
             </div>
-          </div>
+          ))}
 
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-            accept="image/*"
-            className="hidden"
-            multiple
-          />
+          {/* New Upload Previews */}
+          {filePreviews.map((preview, idx) => (
+            <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
+              <img src={preview} alt="Upload preview" className="w-full h-full object-cover opacity-75" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xs font-medium text-white drop-shadow-md">Queued</span>
+              </div>
+              <button
+                onClick={() => {
+                  setFilePreviews(prev => prev.filter((_, i) => i !== idx));
+                  setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+                }}
+                className="absolute top-1 right-1 p-1 bg-red-500/80 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+
+          {/* Upload Button */}
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="aspect-square border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors bg-slate-800/30 hover:bg-slate-800/50 gap-2"
+          >
+            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
+              <Plus size={16} />
+            </div>
+            <span className="text-xs text-slate-400 font-medium">Add Image</span>
+          </div>
         </div>
-      )}
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageSelect}
+          accept="image/*"
+          className="hidden"
+          multiple
+        />
+      </div>
 
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-700">
         <button

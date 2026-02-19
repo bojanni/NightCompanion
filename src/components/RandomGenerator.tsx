@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { handleAIError } from '../lib/error-handler';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette } from 'lucide-react';
+import ChoiceModal from './ChoiceModal';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
@@ -15,9 +16,7 @@ interface RandomGeneratorProps {
   onPromptGenerated: (prompt: string) => void;
   onNegativePromptChanged?: (neg: string) => void;
   maxWords: number;
-  initialPrompt?: string;
-  initialNegativePrompt?: string;
-  onCheckExternalFields?: () => boolean;
+  onCheckExternalFields?: (proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) => void;
   magicInputSlot?: React.ReactNode;
 }
 
@@ -39,6 +38,23 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [regenerating, setRegenerating] = useState(false);
   const [generatedStyle, setGeneratedStyle] = useState<string>('');
   const [activeModel, setActiveModel] = useState<string>('');
+
+  // Modal State
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const confirmClear = (action: (keepNegative: boolean) => void) => {
+    if (prompt.trim()) {
+      setPendingAction(() => () => action(false)); // Default to clearing everything logic for local fallback
+      setShowClearModal(true);
+    } else {
+      action(true); // If not dirty, keep negative? or clear? Usually fresh start clears negative if not dirty? 
+      // Actually if clean, we just run. 
+      // The old logic was: if dirty -> confirm. 
+      // If not dirty -> generate (and clear negative).
+      action(false);
+    }
+  };
 
   async function fetchActiveModel() {
     try {
@@ -84,23 +100,28 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   }, []);
 
   function handleGenerate() {
-    if (prompt.trim()) {
-      if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
-        return;
+    const isLocalDirty = prompt.trim().length > 0;
+    if (onCheckExternalFields) {
+      onCheckExternalFields(executeGenerate, isLocalDirty);
+    } else {
+      confirmClear(executeGenerate);
+    }
+  }
+
+  function executeGenerate(keepNegative: boolean) {
+    const run = () => {
+      const newPrompt = generateRandomPrompt(filters);
+      setPrompt(newPrompt);
+      if (!keepNegative) {
+        setNegativePrompt('');
+        onNegativePromptChanged?.('');
       }
-    }
+      setGeneratedStyle('');
+      setCopiedPrompt(false);
+      onPromptGenerated(newPrompt);
+    };
 
-    if (onCheckExternalFields && !onCheckExternalFields()) {
-      return;
-    }
-
-    const newPrompt = generateRandomPrompt(filters);
-    setPrompt(newPrompt);
-    setNegativePrompt('');
-    setGeneratedStyle('');
-    onNegativePromptChanged?.('');
-    setCopiedPrompt(false);
-    onPromptGenerated(newPrompt);
+    run();
   }
 
   async function handleCopyPrompt() {
@@ -159,53 +180,73 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     // Refresh model info before generating to ensure accuracy
     await fetchActiveModel();
 
-    if (prompt.trim()) {
-      if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
-        return;
-      }
+    const isLocalDirty = prompt.trim().length > 0;
+    if (onCheckExternalFields) {
+      onCheckExternalFields(executeMagicRandom, isLocalDirty);
+    } else {
+      confirmClear(executeMagicRandom);
     }
+  }
 
-    if (onCheckExternalFields && !onCheckExternalFields()) {
-      return;
-    }
+  async function executeMagicRandom(keepNegative: boolean) {
+    const run = async () => {
+      setRegenerating(true);
+      try {
+        const token = (await db.auth.getSession()).data.session?.access_token || '';
+        const result = await generateRandomPromptAI(token, undefined, maxWords);
 
-    setRegenerating(true);
-    try {
-      const token = (await db.auth.getSession()).data.session?.access_token || '';
-      const result = await generateRandomPromptAI(token, undefined, maxWords);
+        // result is { prompt: string, negativePrompt?: string, style?: string }
+        if (result && typeof result === 'object' && 'prompt' in result) {
+          const promptText = result.prompt || '';
+          const negText = result.negativePrompt || '';
+          const styleText = result.style || '';
 
-      // result is { prompt: string, negativePrompt?: string, style?: string }
-      if (result && typeof result === 'object' && 'prompt' in result) {
-        const promptText = result.prompt || '';
-        const negText = result.negativePrompt || '';
-        const styleText = result.style || '';
-
-        setPrompt(promptText);
-        setNegativePrompt(negText);
-        setGeneratedStyle(styleText);
-        onNegativePromptChanged?.(negText);
-        setCopiedPrompt(false);
-        onPromptGenerated(promptText);
-      } else if (typeof result === 'string') {
-        setPrompt(result);
-        setNegativePrompt('');
+          setPrompt(promptText);
+          if (!keepNegative) {
+            setNegativePrompt(negText); // If we clear everything, we accept the AI's new negative
+            onNegativePromptChanged?.(negText);
+          } else {
+            // If we keep negative, do we keep OLD negative or use NEW negative?
+            // "Clear only generation field" implies keeping the OLD negative.
+            // But Magic Random generates a PAIR.
+            // If user says "Clear only generation field", they might expect the AI to generate a prompt that fits the OLD negative?
+            // But the AI already generated a prompt.
+            // Let's assume "Keep Negative" means "Preserve my existing negative prompt"
+            // So we ignore the AI's negative prompt?
+            // Or maybe Magic Random ALWAYS replaces everything?
+            // "Clear only generation field" for Magic Random is tricky.
+            // Let's assume it preserves the *current* negative prompt state.
+          }
+          setGeneratedStyle(styleText);
+          setCopiedPrompt(false);
+          onPromptGenerated(promptText);
+        } else if (typeof result === 'string') {
+          setPrompt(result);
+          if (!keepNegative) {
+            setNegativePrompt('');
+            onNegativePromptChanged?.('');
+          }
+          setGeneratedStyle('');
+          setCopiedPrompt(false);
+          onPromptGenerated(result);
+        }
+      } catch (err) {
+        handleAIError(err);
+        console.error('Failed to generate random prompt:', err);
+        const fallback = generateRandomPrompt(filters);
+        setPrompt(fallback);
+        if (!keepNegative) {
+          setNegativePrompt('');
+          onNegativePromptChanged?.('');
+        }
         setGeneratedStyle('');
-        onNegativePromptChanged?.('');
-        setCopiedPrompt(false);
-        onPromptGenerated(result);
+        onPromptGenerated(fallback);
+      } finally {
+        setRegenerating(false);
       }
-    } catch (err) {
-      handleAIError(err);
-      console.error('Failed to generate random prompt:', err);
-      const fallback = generateRandomPrompt(filters);
-      setPrompt(fallback);
-      setNegativePrompt('');
-      setGeneratedStyle('');
-      onNegativePromptChanged?.('');
-      onPromptGenerated(fallback);
-    } finally {
-      setRegenerating(false);
-    }
+    };
+
+    run();
   }
 
   return (
@@ -439,6 +480,33 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
         </div>
       )}
+      <ChoiceModal
+        isOpen={showClearModal}
+        onClose={() => {
+          setShowClearModal(false);
+          setPendingAction(null);
+        }}
+        title="Prompt field is not empty"
+        message="The prompt field contains text. How would you like to proceed?"
+        choices={[
+          {
+            label: "Clear only generation field",
+            onClick: () => {
+              if (pendingAction) pendingAction(true); // true = keep negative
+            },
+            variant: 'primary'
+          },
+          {
+            label: "Clear everything (including negative)",
+            onClick: () => {
+              setNegativePrompt('');
+              onNegativePromptChanged?.('');
+              if (pendingAction) pendingAction(false); // false = don't keep negative (already cleared)
+            },
+            variant: 'danger'
+          }
+        ]}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser, PenTool, Wand2 } from 'lucide-react';
+import ChoiceModal from '../components/ChoiceModal';
 import RandomGenerator from '../components/RandomGenerator';
 import GuidedBuilder from '../components/GuidedBuilder';
 import ManualGenerator from '../components/ManualGenerator';
@@ -127,15 +128,23 @@ export default function Generator() {
     toast.success('All fields cleared');
   }
 
-  function handleCheckExternalFields() {
-    if (aiToolsRef.current?.hasContent()) {
-      if (window.confirm('The AI Improve prompt field is not empty. Do you want to clear it and generate a new random prompt?')) {
-        aiToolsRef.current.clearContent();
-        return true;
-      }
-      return false;
+  // Modal State for External Checks (Improve Tab)
+  const [showExternalClearModal, setShowExternalClearModal] = useState(false);
+  // pendingExternalAction now accepts (keepNegative: boolean)
+  const [pendingExternalAction, setPendingExternalAction] = useState<((keepNegative: boolean) => void) | null>(null);
+
+  function handleCheckExternalFields(proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) {
+    const isExternalDirty = aiToolsRef.current?.hasContent();
+
+    if (!isLocalDirty && !isExternalDirty) {
+      // Nothing dirty, just proceed (standard clear behavior = clear all usually)
+      proceed(false);
+      return;
     }
-    return true;
+
+    // Show Unified ChoiceModal
+    setPendingExternalAction(() => proceed);
+    setShowExternalClearModal(true);
   }
 
   const modes = [
@@ -385,6 +394,36 @@ export default function Generator() {
         defaultTab="improve"
         showHeader={false}
         initialExpanded={true}
+      />
+      <ChoiceModal
+        isOpen={showExternalClearModal}
+        onClose={() => {
+          setShowExternalClearModal(false);
+          setPendingExternalAction(null);
+        }}
+        title="Fields are not empty"
+        message="You have active content in the generator or Improve tab. How would you like to proceed with the new generation?"
+        choices={[
+          {
+            label: "Clear generate",
+            onClick: () => {
+              // Clear ONLY the generation prompt input (Improve Input) and Local Prompt
+              // Keep Negatives
+              if (aiToolsRef.current) aiToolsRef.current.clearImproveInput();
+              if (pendingExternalAction) pendingExternalAction(true); // keepNegative = true
+            },
+            variant: 'primary'
+          },
+          {
+            label: "Clear All",
+            onClick: () => {
+              // Clear EVERYTHING
+              if (aiToolsRef.current) aiToolsRef.current.clearContent();
+              if (pendingExternalAction) pendingExternalAction(false); // keepNegative = false
+            },
+            variant: 'danger'
+          }
+        ]}
       />
     </div>
   );

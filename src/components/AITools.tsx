@@ -41,6 +41,7 @@ export interface AIToolsRef {
   clearContent: () => void;
   setInputContent: (content: string) => void;
   setNegativeInputContent: (content: string) => void;
+  clearImproveInput: () => void;
 }
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
@@ -157,6 +158,10 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     setNegativeInputContent: (content: string) => {
       setNegativeInput(content);
       setExpanded(true);
+    },
+    clearImproveInput: () => {
+      setImproveInput('');
+      setImproveResult('');
     }
   }));
 

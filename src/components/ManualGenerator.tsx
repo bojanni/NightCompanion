@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2, X, Wand2 } from 'lucide-react';
+import ChoiceModal from './ChoiceModal';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
@@ -41,6 +42,19 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     const [unifying, setUnifying] = useState(false);
     const [optimizing, setOptimizing] = useState(false);
     const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
+
+    // Modal State
+    const [showClearModal, setShowClearModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+    const confirmClear = (action: () => void, index: number) => {
+        if (prompts[index] && prompts[index].trim().length > 0) {
+            setPendingAction(() => action);
+            setShowClearModal(true);
+        } else {
+            action();
+        }
+    };
 
     const fullPrompt = [
         ...prompts.filter(p => p.trim()),
@@ -88,11 +102,10 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     }
 
     async function handleAIGenerate(index: number) {
-        if (prompts[index] && prompts[index].trim().length > 0) {
-            if (!window.confirm('The prompt field is not empty. Do you want to clear it and generate a new one?')) {
-                return;
-            }
-        }
+        confirmClear(() => executeAIGenerate(index), index);
+    }
+
+    async function executeAIGenerate(index: number) {
         setGenerating(true);
         try {
             const token = (await db.auth.getSession()).data.session?.access_token || '';
@@ -566,6 +579,32 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                     </div>
                 </div>
             )}
+            <ChoiceModal
+                isOpen={showClearModal}
+                onClose={() => {
+                    setShowClearModal(false);
+                    setPendingAction(null);
+                }}
+                title="Prompt section is not empty"
+                message="This prompt section contains text. How would you like to proceed?"
+                choices={[
+                    {
+                        label: "Clear generate",
+                        onClick: () => {
+                            if (pendingAction) pendingAction();
+                        },
+                        variant: 'primary'
+                    },
+                    {
+                        label: "Clear All",
+                        onClick: () => {
+                            setNegativePrompt('');
+                            if (pendingAction) pendingAction();
+                        },
+                        variant: 'danger'
+                    }
+                ]}
+            />
         </div>
     );
 }
