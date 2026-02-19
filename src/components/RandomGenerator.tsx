@@ -284,7 +284,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               <div className="flex justify-center gap-3">
                 <button
                   onClick={handleGenerate}
-                  disabled={saving || regenerating}
+                  disabled={saving || regenerating || showClearModal}
                   className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
                 >
                   Standard Random
@@ -292,7 +292,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
                 <button
                   onClick={handleMagicRandom}
-                  disabled={saving || regenerating}
+                  disabled={saving || regenerating || showClearModal}
                   className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
                 >
                   {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
@@ -337,7 +337,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             <div className="flex justify-center gap-3">
               <button
                 onClick={handleGenerate}
-                disabled={saving || regenerating}
+                disabled={saving || regenerating || showClearModal}
                 className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
               >
                 Standard Random
@@ -345,7 +345,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
               <button
                 onClick={handleMagicRandom}
-                disabled={saving || regenerating}
+                disabled={saving || regenerating || showClearModal}
                 className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
               >
                 {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}

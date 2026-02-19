@@ -409,7 +409,7 @@ export default function Generator() {
             onClick: () => {
               // Clear ONLY the generation prompt input (Improve Input) and Local Prompt
               // Keep Negatives
-              if (aiToolsRef.current) aiToolsRef.current.clearImproveInput();
+              // We do NOT clear Improve Input here anymore to limit scope to "this generation"
               if (pendingExternalAction) pendingExternalAction(true); // keepNegative = true
             },
             variant: 'primary'

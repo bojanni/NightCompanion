@@ -363,7 +363,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                             <div className="absolute bottom-2 right-2 flex gap-1.5 transform scale-90 origin-bottom-right">
                                 <button
                                     onClick={() => handleStandardGenerate(index)}
-                                    disabled={generating}
+                                    disabled={generating || showClearModal}
                                     className="p-1.5 text-slate-400 bg-slate-800/80 hover:bg-slate-700 hover:text-white rounded-lg transition-colors disabled:opacity-50"
                                     title="Generate random fragment"
                                 >
@@ -371,7 +371,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                 </button>
                                 <button
                                     onClick={() => handleAIGenerate(index)}
-                                    disabled={generating}
+                                    disabled={generating || showClearModal}
                                     className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-lg hover:bg-teal-500/20 transition-all disabled:opacity-50"
                                     title="Generate with AI"
                                 >
