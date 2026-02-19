@@ -186,7 +186,8 @@ async function callGemini(apiKey, system, user, maxTokens = 1500) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            contents: [{ parts: [{ text: system + '\n\n' + textUser }] }]
+            systemInstruction: { parts: [{ text: system }] },
+            contents: [{ parts: [{ text: textUser }] }]
         })
     });
     const data = await res.json();
