@@ -3,13 +3,14 @@ import {
     ArrowRight, ArrowLeft, Check, Zap, Sparkles, Eye,
     Cpu, LayoutDashboard, Database, Loader2
 } from 'lucide-react';
-import { PROVIDERS } from '../../lib/providers';
+import { PROVIDERS as PROVIDER_LIST } from '../../lib/providers';
 import { ProviderConfigForm } from './ProviderConfigForm';
-import { LocalEndpointCard } from '../../components/LocalEndpointCard'; // Adjust path if moved
+import { LocalEndpointCard } from '../../components/LocalEndpointCard';
 import type { ApiKeyInfo, LocalEndpoint } from '../../lib/api-keys-service';
 import { setActiveProvider } from '../../lib/api-keys-service';
 import type { ModelOption } from '../../lib/provider-models';
 import { toast } from 'sonner';
+import { AI_ROLES, PROVIDERS, LOCAL_PROVIDERS } from '../../lib/constants';
 
 interface ConfigurationWizardProps {
     keys: ApiKeyInfo[];
@@ -23,6 +24,19 @@ interface ConfigurationWizardProps {
 }
 
 type SetupType = 'quick' | 'advanced' | 'local';
+
+// Helper function to get model for a specific role
+function getModelForRole(endpoint: LocalEndpoint | ApiKeyInfo | undefined, role: string): string | undefined {
+    if (!endpoint) return undefined;
+
+    // Check specific role models first
+    if (role === AI_ROLES.GENERATION && endpoint.model_gen) return endpoint.model_gen;
+    if (role === AI_ROLES.IMPROVEMENT && endpoint.model_improve) return endpoint.model_improve;
+    if (role === AI_ROLES.VISION && endpoint.model_vision) return endpoint.model_vision;
+
+    // Fallback to generic model name
+    return endpoint.model_name;
+}
 
 export function ConfigurationWizard({
     keys, localEndpoints, onComplete, loadKeys, loadLocalEndpoints, getToken, dynamicModels, setDynamicModels
@@ -66,10 +80,8 @@ export function ConfigurationWizard({
             if (roleGen) {
                 const provider = keys.find(k => k.provider === roleGen) || localEndpoints.find(e => e.provider === roleGen);
                 if (provider) {
-                    const model = 'endpoint_url' in provider
-                        ? (provider.model_gen || provider.model_name)
-                        : (provider.model_gen || provider.model_name);
-                    await setActiveProvider(roleGen, model || '', true, 'generation');
+                    const model = getModelForRole(provider, AI_ROLES.GENERATION);
+                    await setActiveProvider(roleGen, model || '', true, AI_ROLES.GENERATION as any);
                 }
             }
 
@@ -77,17 +89,18 @@ export function ConfigurationWizard({
             if (roleImprove) {
                 const provider = keys.find(k => k.provider === roleImprove) || localEndpoints.find(e => e.provider === roleImprove);
                 if (provider) {
-                    const model = 'endpoint_url' in provider
-                        ? (provider.model_improve || provider.model_name)
-                        : (provider.model_improve || provider.model_name);
-                    await setActiveProvider(roleImprove, model || '', true, 'improvement');
+                    const model = getModelForRole(provider, AI_ROLES.IMPROVEMENT);
+                    await setActiveProvider(roleImprove, model || '', true, AI_ROLES.IMPROVEMENT as any);
                 }
             }
 
             // Save Vision Role
             if (roleVision) {
-                // For vision, model might not be strictly required yet in backend logic if using default, but pass empty str
-                await setActiveProvider(roleVision, '', true, 'vision');
+                // For vision, model might not be strictly required yet in backend logic if using default, but pass empty str if undefined
+                // But generally we should try to set a model if we have one
+                const provider = keys.find(k => k.provider === roleVision) || localEndpoints.find(e => e.provider === roleVision);
+                const model = provider ? getModelForRole(provider, AI_ROLES.VISION) : '';
+                await setActiveProvider(roleVision, model || '', true, AI_ROLES.VISION as any);
             }
 
             await loadKeys();
@@ -106,29 +119,16 @@ export function ConfigurationWizard({
 
     // Filtering providers based on setup type
     const getVisibleProviders = () => {
-        if (setupType === 'quick') return PROVIDERS.filter(p => p.id === 'openai'); // Just OpenAI for quick start
+        if (setupType === 'quick') return PROVIDER_LIST.filter(p => p.id === PROVIDERS.OPENAI); // Just OpenAI for quick start
         if (setupType === 'local') return []; // Only local endpoints
-        return PROVIDERS; // advanced shows all
+        return PROVIDER_LIST; // advanced shows all
     };
 
-    const getModelDisplay = (providerId: string, role: 'generation' | 'improvement' | 'vision') => {
+    const getModelDisplay = (providerId: string, role: string) => {
         if (!providerId) return null;
         const provider = keys.find(k => k.provider === providerId) || localEndpoints.find(e => e.provider === providerId);
         if (!provider) return null;
-
-        let model = '';
-        if ('endpoint_url' in provider) {
-            // Local Endpoint
-            if (role === 'generation') model = provider.model_gen || provider.model_name || '';
-            else if (role === 'improvement') model = provider.model_improve || provider.model_name || '';
-            else if (role === 'vision') model = provider.model_vision || provider.model_name || '';
-        } else {
-            // Cloud Provider (ApiKeyInfo)
-            if (role === 'generation') model = provider.model_gen || provider.model_name || '';
-            else if (role === 'improvement') model = provider.model_improve || provider.model_name || '';
-            else if (role === 'vision') model = provider.model_vision || provider.model_name || '';
-        }
-        return model;
+        return getModelForRole(provider, role) || '';
     };
 
     const showLocal = setupType === 'local' || setupType === 'advanced';
@@ -249,17 +249,17 @@ export function ConfigurationWizard({
                             </h3>
                             <div className="space-y-6">
                                 <LocalEndpointCard
-                                    type="ollama"
-                                    endpoint={localEndpoints.find(e => e.provider === 'ollama')}
+                                    type={LOCAL_PROVIDERS.OLLAMA}
+                                    endpoint={localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA)}
                                     actionLoading={actionLoading}
                                     onSave={async (url, mGen, mImp, mVis) => {
                                         setActionLoading('ollama');
                                         try {
                                             const { db } = await import('../../lib/api');
-                                            const existing = localEndpoints.find(e => e.provider === 'ollama');
-                                            await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
+                                            const existing = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA);
+                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
                                             await db.from('user_local_endpoints').insert({
-                                                provider: 'ollama', endpoint_url: url, model_name: mGen,
+                                                provider: LOCAL_PROVIDERS.OLLAMA, endpoint_url: url, model_name: mGen,
                                                 model_gen: mGen, model_improve: mImp, model_vision: mVis,
                                                 is_active: existing?.is_active ?? false,
                                                 is_active_gen: existing?.is_active_gen ?? false,
@@ -275,7 +275,7 @@ export function ConfigurationWizard({
                                         setActionLoading('ollama-delete');
                                         try {
                                             const { db } = await import('../../lib/api');
-                                            await db.from('user_local_endpoints').delete().eq('provider', 'ollama');
+                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
                                             await loadLocalEndpoints();
                                             toast.success('Ollama removed');
                                         } catch (_) { toast.error('Failed to remove'); }
@@ -284,31 +284,31 @@ export function ConfigurationWizard({
                                     onSetActive={async (role) => {
                                         setActionLoading(`ollama-${role}`);
                                         try {
-                                            const endpoint = localEndpoints.find(e => e.provider === 'ollama');
-                                            const model = role === 'generation'
-                                                ? (endpoint?.model_gen || endpoint?.model_name)
-                                                : role === 'improvement'
-                                                    ? (endpoint?.model_improve || endpoint?.model_name)
-                                                    : (endpoint?.model_vision || endpoint?.model_name);
-                                            const isRoleActive = role === 'generation' ? endpoint?.is_active_gen : role === 'improvement' ? endpoint?.is_active_improve : endpoint?.is_active_vision;
-                                            await setActiveProvider('ollama', model || '', !isRoleActive, role);
+                                            const endpoint = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA);
+                                            // Refactored to use helper
+                                            const model = getModelForRole(endpoint, role);
+                                            const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
+                                                : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
+                                                    : endpoint?.is_active_vision;
+
+                                            await setActiveProvider(LOCAL_PROVIDERS.OLLAMA, model || '', !isRoleActive, role as any);
                                             await loadKeys(); await loadLocalEndpoints();
                                         } catch (_) { toast.error('Failed toggle'); }
                                         finally { setActionLoading(null); }
                                     }}
                                 />
                                 <LocalEndpointCard
-                                    type="lmstudio"
-                                    endpoint={localEndpoints.find(e => e.provider === 'lmstudio')}
+                                    type={LOCAL_PROVIDERS.LMSTUDIO}
+                                    endpoint={localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO)}
                                     actionLoading={actionLoading}
                                     onSave={async (url, mGen, mImp, mVis) => {
                                         setActionLoading('lmstudio');
                                         try {
                                             const { db } = await import('../../lib/api');
-                                            const existing = localEndpoints.find(e => e.provider === 'lmstudio');
-                                            await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
+                                            const existing = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO);
+                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
                                             await db.from('user_local_endpoints').insert({
-                                                provider: 'lmstudio', endpoint_url: url, model_name: mGen,
+                                                provider: LOCAL_PROVIDERS.LMSTUDIO, endpoint_url: url, model_name: mGen,
                                                 model_gen: mGen, model_improve: mImp, model_vision: mVis,
                                                 is_active: existing?.is_active ?? false,
                                                 is_active_gen: existing?.is_active_gen ?? false,
@@ -324,7 +324,7 @@ export function ConfigurationWizard({
                                         setActionLoading('lmstudio-delete');
                                         try {
                                             const { db } = await import('../../lib/api');
-                                            await db.from('user_local_endpoints').delete().eq('provider', 'lmstudio');
+                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
                                             await loadLocalEndpoints();
                                             toast.success('LM Studio removed');
                                         } catch (_) { toast.error('Failed to remove'); }
@@ -333,14 +333,12 @@ export function ConfigurationWizard({
                                     onSetActive={async (role) => {
                                         setActionLoading(`lmstudio-${role}`);
                                         try {
-                                            const endpoint = localEndpoints.find(e => e.provider === 'lmstudio');
-                                            const model = role === 'generation'
-                                                ? (endpoint?.model_gen || endpoint?.model_name)
-                                                : role === 'improvement'
-                                                    ? (endpoint?.model_improve || endpoint?.model_name)
-                                                    : (endpoint?.model_vision || endpoint?.model_name);
-                                            const isRoleActive = role === 'generation' ? endpoint?.is_active_gen : role === 'improvement' ? endpoint?.is_active_improve : endpoint?.is_active_vision;
-                                            await setActiveProvider('lmstudio', model || '', !isRoleActive, role);
+                                            const endpoint = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO);
+                                            const model = getModelForRole(endpoint, role);
+                                            const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
+                                                : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
+                                                    : endpoint?.is_active_vision;
+                                            await setActiveProvider(LOCAL_PROVIDERS.LMSTUDIO, model || '', !isRoleActive, role as any);
                                             await loadKeys(); await loadLocalEndpoints();
                                         } catch (_) { toast.error('Failed toggle'); }
                                         finally { setActionLoading(null); }
@@ -391,17 +389,17 @@ export function ConfigurationWizard({
                                     {[...keys, ...localEndpoints].map(p => (
                                         <option key={p.provider} value={p.provider}>
                                             {'endpoint_url' in p
-                                                ? (p.provider === 'ollama' ? 'Ollama (Local)' : 'LM Studio (Local)')
-                                                : PROVIDERS.find(prom => prom.id === p.provider)?.name || p.provider
+                                                ? (p.provider === LOCAL_PROVIDERS.OLLAMA ? 'Ollama (Local)' : 'LM Studio (Local)')
+                                                : PROVIDER_LIST.find(prom => prom.id === p.provider)?.name || p.provider
                                             }
                                         </option>
                                     ))}
                                 </select>
-                                {roleGen && getModelDisplay(roleGen, 'generation') && (
+                                {roleGen && getModelDisplay(roleGen, AI_ROLES.GENERATION) && (
                                     <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
                                         <span className="text-slate-500 font-medium">Selected Model</span>
-                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleGen, 'generation') || ''}>
-                                            {getModelDisplay(roleGen, 'generation')}
+                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleGen, AI_ROLES.GENERATION) || ''}>
+                                            {getModelDisplay(roleGen, AI_ROLES.GENERATION)}
                                         </span>
                                     </div>
                                 )}
@@ -428,17 +426,17 @@ export function ConfigurationWizard({
                                     {[...keys, ...localEndpoints].map(p => (
                                         <option key={p.provider} value={p.provider}>
                                             {'endpoint_url' in p
-                                                ? (p.provider === 'ollama' ? 'Ollama (Local)' : 'LM Studio (Local)')
-                                                : PROVIDERS.find(prom => prom.id === p.provider)?.name || p.provider
+                                                ? (p.provider === LOCAL_PROVIDERS.OLLAMA ? 'Ollama (Local)' : 'LM Studio (Local)')
+                                                : PROVIDER_LIST.find(prom => prom.id === p.provider)?.name || p.provider
                                             }
                                         </option>
                                     ))}
                                 </select>
-                                {roleImprove && getModelDisplay(roleImprove, 'improvement') && (
+                                {roleImprove && getModelDisplay(roleImprove, AI_ROLES.IMPROVEMENT) && (
                                     <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
                                         <span className="text-slate-500 font-medium">Selected Model</span>
-                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleImprove, 'improvement') || ''}>
-                                            {getModelDisplay(roleImprove, 'improvement')}
+                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleImprove, AI_ROLES.IMPROVEMENT) || ''}>
+                                            {getModelDisplay(roleImprove, AI_ROLES.IMPROVEMENT)}
                                         </span>
                                     </div>
                                 )}
@@ -465,17 +463,17 @@ export function ConfigurationWizard({
                                     {[...keys, ...localEndpoints].map(p => (
                                         <option key={p.provider} value={p.provider}>
                                             {'endpoint_url' in p
-                                                ? (p.provider === 'ollama' ? 'Ollama (Local)' : 'LM Studio (Local)')
-                                                : PROVIDERS.find(prom => prom.id === p.provider)?.name || p.provider
+                                                ? (p.provider === LOCAL_PROVIDERS.OLLAMA ? 'Ollama (Local)' : 'LM Studio (Local)')
+                                                : PROVIDER_LIST.find(prom => prom.id === p.provider)?.name || p.provider
                                             }
                                         </option>
                                     ))}
                                 </select>
-                                {roleVision && getModelDisplay(roleVision, 'vision') && (
+                                {roleVision && getModelDisplay(roleVision, AI_ROLES.VISION) && (
                                     <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
                                         <span className="text-slate-500 font-medium">Selected Model</span>
-                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleVision, 'vision') || ''}>
-                                            {getModelDisplay(roleVision, 'vision')}
+                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleVision, AI_ROLES.VISION) || ''}>
+                                            {getModelDisplay(roleVision, AI_ROLES.VISION)}
                                         </span>
                                     </div>
                                 )}
