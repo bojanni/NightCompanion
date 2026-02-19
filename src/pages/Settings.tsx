@@ -8,6 +8,7 @@ import { Dashboard } from './Settings/Dashboard';
 import { ConfigurationWizard } from './Settings/ConfigurationWizard';
 import { toast } from 'sonner';
 import type { ModelOption } from '../lib/provider-models';
+import { ProviderHealthProvider } from '../lib/provider-health';
 
 export default function Settings() {
   const [view, setView] = useState<'dashboard' | 'wizard'>('dashboard');
@@ -100,56 +101,58 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {view === 'dashboard' ? (
-        <div className="space-y-12">
-          <Dashboard
-            activeGen={activeGen}
-            activeImprove={activeImprove}
-            activeVision={activeVision}
-            onConfigure={() => setView('wizard')}
-            configuredCount={configuredCount}
-            keys={keys}
-            localEndpoints={localEndpoints}
-            dynamicModels={dynamicModels}
-            setDynamicModels={setDynamicModels}
-            onRefreshData={refreshData}
-            getToken={getToken}
-          />
+    <ProviderHealthProvider>
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {view === 'dashboard' ? (
+          <div className="space-y-12">
+            <Dashboard
+              activeGen={activeGen}
+              activeImprove={activeImprove}
+              activeVision={activeVision}
+              onConfigure={() => setView('wizard')}
+              configuredCount={configuredCount}
+              keys={keys}
+              localEndpoints={localEndpoints}
+              dynamicModels={dynamicModels}
+              setDynamicModels={setDynamicModels}
+              onRefreshData={refreshData}
+              getToken={getToken}
+            />
 
-          <div className="pt-8 border-t border-slate-800">
-            <button
-              onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
-              className="flex items-center justify-between w-full group"
-            >
-              <h2 className="text-xl font-bold text-white group-hover:text-teal-400 transition-colors">Data Management</h2>
-              <ChevronDown
-                className={`text-slate-500 group-hover:text-teal-400 transition-all duration-300 ${isDataManagementOpen ? 'rotate-180' : ''}`}
-              />
-            </button>
+            <div className="pt-8 border-t border-slate-800">
+              <button
+                onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
+                className="flex items-center justify-between w-full group"
+              >
+                <h2 className="text-xl font-bold text-white group-hover:text-teal-400 transition-colors">Data Management</h2>
+                <ChevronDown
+                  className={`text-slate-500 group-hover:text-teal-400 transition-all duration-300 ${isDataManagementOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
 
-            <div className={`grid transition-all duration-300 ease-in-out ${isDataManagementOpen ? 'grid-rows-[1fr] opacity-100 mt-6' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
-              <div className="overflow-hidden">
-                <DataManagement />
+              <div className={`grid transition-all duration-300 ease-in-out ${isDataManagementOpen ? 'grid-rows-[1fr] opacity-100 mt-6' : 'grid-rows-[0fr] opacity-0 mt-0'}`}>
+                <div className="overflow-hidden">
+                  <DataManagement />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ) : (
-        <ConfigurationWizard
-          keys={keys}
-          localEndpoints={localEndpoints}
-          onComplete={() => {
-            refreshData();
-            setView('dashboard');
-          }}
-          loadKeys={loadKeys}
-          loadLocalEndpoints={loadLocalEndpoints}
-          getToken={getToken}
-          dynamicModels={dynamicModels}
-          setDynamicModels={setDynamicModels}
-        />
-      )}
-    </div>
+        ) : (
+          <ConfigurationWizard
+            keys={keys}
+            localEndpoints={localEndpoints}
+            onComplete={() => {
+              refreshData();
+              setView('dashboard');
+            }}
+            loadKeys={loadKeys}
+            loadLocalEndpoints={loadLocalEndpoints}
+            getToken={getToken}
+            dynamicModels={dynamicModels}
+            setDynamicModels={setDynamicModels}
+          />
+        )}
+      </div>
+    </ProviderHealthProvider>
   );
 }
