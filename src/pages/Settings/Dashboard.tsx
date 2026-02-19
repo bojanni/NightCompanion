@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Zap, Sparkles, Eye, Settings, AlertTriangle, ChevronDown, RefreshCw } from 'lucide-react';
+import { Zap, Sparkles, Eye, Settings, AlertTriangle, ChevronDown, RefreshCw, BadgeDollarSign } from 'lucide-react';
+
 import type { ApiKeyInfo, LocalEndpoint } from '../../lib/api-keys-service';
 import type { ModelOption } from '../../lib/provider-models';
 import { setActiveProvider } from '../../lib/api-keys-service';
@@ -208,6 +209,47 @@ function ProviderStatusCard({
         }
     };
 
+    const handleTestPricing = async () => {
+        if (!activeProvider) return;
+        setLoading(true);
+        try {
+            const token = await getToken();
+            const models = await listModels(token, activeProvider.provider);
+
+            // Check for pricing
+            const modelsWithPricing = models.filter(m => m.pricing);
+
+            if (modelsWithPricing.length > 0) {
+                const sample = modelsWithPricing.find(m => m.id === activeModelName) || modelsWithPricing[0];
+
+                if (sample) {
+                    const pricingInfo = sample.pricing ?
+                        `Prompt: ${sample.pricing.prompt}, Completion: ${sample.pricing.completion}` :
+                        'Pricing available';
+
+                    toast.success(`Pricing verified! Found ${modelsWithPricing.length} models with pricing.`, {
+                        description: `${sample.name}: ${pricingInfo}`
+                    });
+                }
+            } else {
+                toast.warning('No pricing data found for this provider.', {
+                    description: 'The provider may not support pricing info or it is not configured.'
+                });
+            }
+
+            // Update state to reflect any new data
+            setDynamicModels(prev => ({
+                ...prev,
+                [activeProvider.provider]: models
+            }));
+        } catch (err) {
+            toast.error('Failed to test pricing');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleRefreshModels = async () => {
         if (!activeProvider) return;
         setLoading(true);
@@ -299,14 +341,24 @@ function ProviderStatusCard({
                     <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-300">
                         <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold flex items-center justify-between">
                             <span>Model</span>
-                            <button
-                                onClick={handleRefreshModels}
-                                disabled={loading}
-                                className="text-slate-500 hover:text-white transition-colors"
-                                title="Refresh Models"
-                            >
-                                <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleTestPricing}
+                                    disabled={loading}
+                                    className="text-slate-500 hover:text-green-400 transition-colors"
+                                    title="Test Pricing Retrieval"
+                                >
+                                    <BadgeDollarSign size={12} className={loading ? "animate-pulse" : ""} />
+                                </button>
+                                <button
+                                    onClick={handleRefreshModels}
+                                    disabled={loading}
+                                    className="text-slate-500 hover:text-white transition-colors"
+                                    title="Refresh Models"
+                                >
+                                    <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+                                </button>
+                            </div>
                         </div>
 
                         {activeModelsList.length > 0 ? (
@@ -319,7 +371,7 @@ function ProviderStatusCard({
                                 >
                                     {activeModelsList.map(m => (
                                         <option key={m.id} value={m.id}>
-                                            {m.name || m.id}
+                                            {m.name || m.id} {m.pricing ? '($)' : ''}
                                         </option>
                                     ))}
                                 </select>
@@ -333,7 +385,10 @@ function ProviderStatusCard({
                                     disabled
                                     className="w-full bg-slate-900/30 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-400 italic"
                                 />
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <button onClick={handleTestPricing} className="p-1 hover:bg-slate-700 rounded transition-colors" title="Test Pricing">
+                                        <BadgeDollarSign size={12} className="text-slate-500 hover:text-green-400" />
+                                    </button>
                                     <button onClick={handleRefreshModels} className="p-1 hover:bg-slate-700 rounded transition-colors">
                                         <RefreshCw size={12} className={loading ? "animate-spin text-teal-500" : "text-slate-500"} />
                                     </button>
