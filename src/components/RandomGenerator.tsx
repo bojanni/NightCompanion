@@ -440,9 +440,11 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 <span className="text-xs font-medium text-slate-400">Generated with <span className="text-amber-400">{activeModel}</span></span>
               )}
               {activeModelPricing && (
-                <div className="flex items-center gap-2 mb-1 px-1 justify-end">
-                  <span className="text-[10px] text-slate-500">
-                    Est. Cost: <span className="text-slate-300 font-mono">{estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}</span>
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50 w-fit ml-auto">
+                  <Coins size={12} className="text-amber-400" />
+                  <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
+                  <span className="text-[10px] text-amber-300 font-mono">
+                    {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}
                   </span>
                 </div>
               )}
