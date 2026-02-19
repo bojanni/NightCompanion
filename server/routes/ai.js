@@ -121,16 +121,17 @@ async function getActiveProvider(role = 'generation') {
     return null;
 }
 
+// Helper to build standard message array
+function buildMessages(system, user) {
+    const messages = [];
+    if (system) messages.push({ role: 'system', content: system });
+    messages.push({ role: 'user', content: user });
+    return messages;
+}
+
 // Minimal implementation of AI calls using fetch
 async function callOpenAI(apiKey, system, user, maxTokens = 1500) {
-    const messages = [{ role: 'system', content: system }];
-
-    if (typeof user === 'string') {
-        messages.push({ role: 'user', content: user });
-    } else {
-        // Handle multimodal input
-        messages.push({ role: 'user', content: user });
-    }
+    const messages = buildMessages(system, user);
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -150,12 +151,8 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500) {
 }
 
 async function callAnthropic(apiKey, system, user, maxTokens = 1500) {
-    let messages = [];
-    if (typeof user === 'string') {
-        messages.push({ role: 'user', content: user });
-    } else {
-        messages.push({ role: 'user', content: user });
-    }
+    // Anthropic separates system prompt
+    const messages = buildMessages(null, user);
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -165,7 +162,7 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'claude-3-opus-20240229',
+            model: 'claude-3-5-sonnet-20241022', // Updated to latest efficient model
             max_tokens: maxTokens,
             system: system,
             messages: messages
@@ -198,12 +195,7 @@ async function callGemini(apiKey, system, user, maxTokens = 1500) {
 }
 
 async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
-    const messages = [{ role: 'system', content: system }];
-    if (typeof user === 'string') {
-        messages.push({ role: 'user', content: user });
-    } else {
-        messages.push({ role: 'user', content: user });
-    }
+    const messages = buildMessages(system, user);
 
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -268,15 +260,10 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
 }
 
 async function callTogether(apiKey, system, user, model, maxTokens = 1500) {
-    const messages = [{ role: 'system', content: system }];
-    if (typeof user === 'string') {
-        messages.push({ role: 'user', content: user });
-    } else {
-        // Together supports vision on some models, but we'll stick to text for now unless using specific vision models
-        // For simplicity, flattening content to text if array
-        const textContent = Array.isArray(user) ? user.find(p => p.type === 'text')?.text || '' : user;
-        messages.push({ role: 'user', content: textContent });
-    }
+    // Together supports vision on some models, but we'll stick to text for now unless using specific vision models
+    // For simplicity, flattening content to text if array
+    const textUser = Array.isArray(user) ? (user.find(p => p.type === 'text')?.text || '') : user;
+    const messages = buildMessages(system, textUser);
 
     const res = await fetch('https://api.together.xyz/v1/chat/completions', {
         method: 'POST',
