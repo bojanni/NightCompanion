@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { handleAIError } from '../lib/error-handler';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser } from 'lucide-react';
 import ChoiceModal from './ChoiceModal';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
-import { generateRandomPromptAI } from '../lib/ai-service';
+import { generateRandomPromptAI, listModels, ModelListItem } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
 
@@ -72,7 +72,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     }
   };
 
-  async function fetchActiveModel() {
+  const fetchActiveModel = useCallback(async () => {
     try {
       await db.auth.getSession();
 
@@ -97,6 +97,32 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             }
           }
         } catch { /* ignore */ }
+
+        // If activeKey is openrouter but we don't have pricing, try to fetch it
+        if (activeKey.provider === 'openrouter' && !activeModelPricing) {
+          // We need a token or at least call the endpoint.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          db.auth.getSession().then(({ data: { session } }: any) => {
+            const token = session?.access_token || '';
+            listModels(token, 'openrouter').then((routerModels: ModelListItem[]) => {
+              // Update cache
+              try {
+                const existingCache = localStorage.getItem('cachedModels');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const cache: any = existingCache ? JSON.parse(existingCache) : {};
+                cache['openrouter'] = routerModels;
+                localStorage.setItem('cachedModels', JSON.stringify(cache));
+
+                // Update state
+                const found = routerModels.find((m) => m.id === model);
+                if (found?.pricing) {
+                  setActiveModelPricing(found.pricing);
+                }
+              } catch (e) { console.error("Failed to update cache", e); }
+            }).catch((err: unknown) => console.error("Failed to fetch openrouter models", err));
+          });
+        }
+
         setActiveModelPricing(undefined);
         return;
       }
@@ -118,7 +144,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     } catch (e) {
       console.error('Failed to fetch active model', e);
     }
-  }
+  }, [activeModelPricing]);
 
   // Fetch active model on mount and focus
   useEffect(() => {
@@ -127,7 +153,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     const onFocus = () => fetchActiveModel();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, []);
+  }, [fetchActiveModel]);
 
   function handleGenerate() {
     const isLocalDirty = prompt.trim().length > 0;
@@ -413,12 +439,23 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 </div>
               )}
             </div>
-            <textarea
-              value={prompt}
-              onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none h-32"
-              placeholder="Positive prompt..."
-            />
+            <div className="relative">
+              <textarea
+                value={prompt}
+                onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none h-32 pr-10"
+                placeholder="Positive prompt..."
+              />
+              {prompt && (
+                <button
+                  onClick={() => { setPrompt(''); onPromptGenerated(''); }}
+                  className="absolute top-3 right-3 text-slate-500 hover:text-slate-300 transition-colors"
+                  title="Clear prompt"
+                >
+                  <Eraser size={14} />
+                </button>
+              )}
+            </div>
 
             {supportsNegativePrompt(topSuggestion?.model.id || '') && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">

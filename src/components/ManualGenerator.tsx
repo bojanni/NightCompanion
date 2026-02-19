@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2, X, Wand2 } from 'lucide-react';
 import ChoiceModal from './ChoiceModal';
 import { db } from '../lib/api';
@@ -8,6 +8,7 @@ import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForMod
 import { analyzePrompt, supportsNegativePrompt, ModelInfo } from '../lib/models-data';
 import { handleAIError } from '../lib/error-handler';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
+import { listModels, ModelListItem } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
 
 function estimateCost(modelPromptPrice: string | undefined, modelCompletionPrice: string | undefined, currentPromptLength: number, maxWords: number): string | null {
@@ -61,7 +62,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     const [unifying, setUnifying] = useState(false);
     const [optimizing, setOptimizing] = useState(false);
     const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
-    const [_activeModel, setActiveModel] = useState<string>('');
+    const [, setActiveModel] = useState<string>('');
     const [activeModelPricing, setActiveModelPricing] = useState<{ prompt: string, completion: string } | undefined>(undefined);
 
     // Modal State
@@ -135,6 +136,28 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                         }
                     }
                 } catch { /* ignore */ }
+
+                // If activeKey is openrouter but we don't have pricing, try to fetch it
+                if (activeKey.provider === 'openrouter' && !activeModelPricing) {
+                    db.auth.getSession().then(({ data: { session } }) => {
+                        const token = session?.access_token || '';
+                        listModels(token, 'openrouter').then((routerModels: ModelListItem[]) => {
+                            try {
+                                const existingCache = localStorage.getItem('cachedModels');
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const cache: any = existingCache ? JSON.parse(existingCache) : {};
+                                cache['openrouter'] = routerModels;
+                                localStorage.setItem('cachedModels', JSON.stringify(cache));
+
+                                const found = routerModels.find((m) => m.id === model);
+                                if (found?.pricing) {
+                                    setActiveModelPricing(found.pricing);
+                                }
+                            } catch (e) { console.error("Failed to update cache", e); }
+                        }).catch((err: unknown) => console.error("Failed to fetch openrouter models", err));
+                    });
+                }
+
                 setActiveModelPricing(undefined);
                 return;
             }
@@ -164,7 +187,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         const onFocus = () => fetchActiveModel();
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);
-    }, []);
+    }, [fetchActiveModel]);
 
     // Persist manual generator state
     useEffect(() => {
