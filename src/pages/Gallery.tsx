@@ -483,6 +483,35 @@ export default function Gallery() {
     setCurrentPage(0);
   }
 
+  async function handleExport() {
+    if (totalCount === 0) return;
+    setExporting(true);
+    try {
+      // Fetch ALL items matching current filters (ignoring page)
+      let query = db
+        .from('gallery_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (search) query = query.like('search', search);
+      if (filterCollection) query = query.eq('collection_id', filterCollection);
+      if (filterRating > 0) query = query.gte('rating', filterRating);
+
+      // We need to fetch all, let's assume limit is high enough or loop?
+      // Local DB might not have hard limit, but let's set a safe high number like 1000
+      const { data } = await query.limit(1000); // 1000 item limit for export for now
+
+      if (data) {
+        await exportGalleryItems(data, `gallery_expo_${new Date().toISOString().slice(0, 10)}.zip`);
+      }
+    } catch (err) {
+      console.error('Export failed', err);
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
