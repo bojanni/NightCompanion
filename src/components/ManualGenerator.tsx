@@ -7,6 +7,25 @@ import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForModel, generateNegativePrompt } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt, ModelInfo } from '../lib/models-data';
 import { handleAIError } from '../lib/error-handler';
+import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
+import { listApiKeys } from '../lib/api-keys-service';
+
+function estimateCost(modelPromptPrice: string | undefined, modelCompletionPrice: string | undefined, currentPromptLength: number, maxWords: number): string | null {
+    if (!modelPromptPrice || !modelCompletionPrice) return null;
+    const promptPrice = parseFloat(modelPromptPrice);
+    const completionPrice = parseFloat(modelCompletionPrice);
+    if (isNaN(promptPrice) || isNaN(completionPrice)) return null;
+
+    // Estimate tokens: 1 word ~ 1.33 tokens.
+    // Input: current prompt words
+    const inputTokens = currentPromptLength * 1.33;
+    // Output: maxWords
+    const outputTokens = maxWords * 1.33;
+
+    const total = (inputTokens * promptPrice) + (outputTokens * completionPrice);
+    if (total < 0.0001) return '< $0.0001';
+    return `~ $${total.toFixed(4)}`;
+}
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -42,6 +61,8 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     const [unifying, setUnifying] = useState(false);
     const [optimizing, setOptimizing] = useState(false);
     const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
+    const [_activeModel, setActiveModel] = useState<string>('');
+    const [activeModelPricing, setActiveModelPricing] = useState<{ prompt: string, completion: string } | undefined>(undefined);
 
     // Modal State
     const [showClearModal, setShowClearModal] = useState(false);
@@ -88,6 +109,62 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
         return () => clearTimeout(timeout);
     }, [positivePrompt]);
+
+    async function fetchActiveModel() {
+        try {
+            await db.auth.getSession();
+
+            // Check cloud providers FIRST (matches Settings precedence)
+            const keys = await listApiKeys();
+            const activeKey = keys.find(k => k.is_active_gen || k.is_active); // Prioritize gen flag
+
+            if (activeKey) {
+                const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
+                const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
+                setActiveModel(`${providerName} ${model}`);
+
+                // Try to find pricing in cached styles
+                try {
+                    const cached = localStorage.getItem('cachedModels');
+                    if (cached) {
+                        const models = JSON.parse(cached)[activeKey.provider] as ModelOption[];
+                        const modelData = models?.find(m => m.id === model);
+                        if (modelData?.pricing) {
+                            setActiveModelPricing(modelData.pricing);
+                            return;
+                        }
+                    }
+                } catch { /* ignore */ }
+                setActiveModelPricing(undefined);
+                return;
+            }
+
+            // Check local endpoints fallback
+            const { data: localData } = await db
+                .from('user_local_endpoints')
+                .select('*')
+                .eq('is_active_gen', true) // Check for generation specific flag
+                .single();
+
+            if (localData) {
+                const modelName = localData.model_gen || localData.model_name;
+                setActiveModel(`${localData.provider === 'ollama' ? 'Ollama' : 'LM Studio'} (${modelName})`);
+                return;
+            }
+
+            setActiveModel('');
+        } catch (e) {
+            console.error('Failed to fetch active model', e);
+        }
+    }
+
+    // Fetch active model on mount and focus
+    useEffect(() => {
+        fetchActiveModel();
+        const onFocus = () => fetchActiveModel();
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, []);
 
     // Persist manual generator state
     useEffect(() => {
@@ -314,6 +391,15 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                         <h3 className="text-base font-semibold text-white">Manual Builder</h3>
                         <p className="text-sm text-slate-400">Combine multiple prompts to create complex scenes</p>
                     </div>
+
+                    {activeModelPricing && (
+                        <div className="flex items-center gap-2 mb-1 px-1 justify-end ml-auto mr-4">
+                            <span className="text-[10px] text-slate-500">
+                                Est. Cost: <span className="text-slate-300 font-mono">{estimateCost(activeModelPricing.prompt, activeModelPricing.completion, fullPrompt.split(' ').length, maxWords)}</span>
+                            </span>
+                        </div>
+                    )}
+
                     <button
                         onClick={handleAddPrompt}
                         disabled={prompts.length >= 3}

@@ -96,7 +96,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               return;
             }
           }
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
         setActiveModelPricing(undefined);
         return;
       }
@@ -404,15 +404,15 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               )}
               {activeModel && (
                 <span className="text-xs font-medium text-slate-400">Generated with <span className="text-amber-400">{activeModel}</span></span>
+              )}
+              {activeModelPricing && (
+                <div className="flex items-center gap-2 mb-1 px-1 justify-end">
+                  <span className="text-[10px] text-slate-500">
+                    Est. Cost: <span className="text-slate-300 font-mono">{estimateCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}</span>
+                  </span>
                 </div>
               )}
-            {activeModelPricing && (
-              <div className="flex items-center gap-2 mb-1 px-1 justify-end">
-                <span className="text-[10px] text-slate-500">
-                  Est. Cost: <span className="text-slate-300 font-mono">{estimateCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}</span>
-                </span>
-              </div>
-            )}
+            </div>
             <textarea
               value={prompt}
               onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
@@ -485,64 +485,62 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               Guided Mode
             </button>
           </div>
-        </div>
 
           {topSuggestion && (
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Compass size={13} className="text-amber-400" />
-            <span className="text-xs font-medium text-amber-400">Suggested Model</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                {topSuggestion.reasons[0]}
-                {!supportsNegativePrompt(topSuggestion.model.id) && (
-                  <span className="block text-red-400 mt-0.5">Note: Negative prompts disabled for this model.</span>
-                )}
-                {topSuggestion.model.recommendedPreset && (
-                  <span className="block text-teal-400 mt-0.5 font-medium">
-                    Recommended Preset: {topSuggestion.model.recommendedPreset}
-                  </span>
-                )}
-              </p>
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Compass size={13} className="text-amber-400" />
+                <span className="text-xs font-medium text-amber-400">Suggested Model</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {topSuggestion.reasons[0]}
+                    {!supportsNegativePrompt(topSuggestion.model.id) && (
+                      <span className="block text-red-400 mt-0.5">Note: Negative prompts disabled for this model.</span>
+                    )}
+                    {topSuggestion.model.recommendedPreset && (
+                      <span className="block text-teal-400 mt-0.5 font-medium">
+                        Recommended Preset: {topSuggestion.model.recommendedPreset}
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
+              </div>
             </div>
-            <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
-          </div>
+          )}
         </div>
       )}
 
+      <ChoiceModal
+        isOpen={showClearModal}
+        onClose={() => {
+          setShowClearModal(false);
+          setPendingAction(null);
+        }}
+        title="Prompt field is not empty"
+        message="The prompt field contains text. How would you like to proceed?"
+        choices={[
+          {
+            label: "Clear generate",
+            onClick: () => {
+              if (pendingAction) pendingAction(true); // true = keep negative
+            },
+            variant: 'primary'
+          },
+          {
+            label: "Clear All",
+            onClick: () => {
+              setNegativePrompt('');
+              onNegativePromptChanged?.('');
+              if (pendingAction) pendingAction(false); // false = don't keep negative (already cleared)
+            },
+            variant: 'danger'
+          }
+        ]}
+      />
     </div>
-  )
-}
-<ChoiceModal
-  isOpen={showClearModal}
-  onClose={() => {
-    setShowClearModal(false);
-    setPendingAction(null);
-  }}
-  title="Prompt field is not empty"
-  message="The prompt field contains text. How would you like to proceed?"
-  choices={[
-    {
-      label: "Clear generate",
-      onClick: () => {
-        if (pendingAction) pendingAction(true); // true = keep negative
-      },
-      variant: 'primary'
-    },
-    {
-      label: "Clear All",
-      onClick: () => {
-        setNegativePrompt('');
-        onNegativePromptChanged?.('');
-        if (pendingAction) pendingAction(false); // false = don't keep negative (already cleared)
-      },
-      variant: 'danger'
-    }
-  ]}
-/>
-    </div >
   );
 }
