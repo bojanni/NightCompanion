@@ -3,8 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
-  ChevronLeft, ChevronRight, Link,
+  ChevronLeft, ChevronRight, Link, Download,
 } from 'lucide-react';
+import { exportGalleryItems } from '../lib/export-utils';
 import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
 import type { GalleryItem, Prompt, Collection } from '../lib/types';
@@ -58,6 +59,7 @@ export default function Gallery() {
   const [filterRating, setFilterRating] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [exporting, setExporting] = useState(false);
 
   const [showItemEditor, setShowItemEditor] = useState(false);
   const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
@@ -513,6 +515,15 @@ export default function Gallery() {
           >
             <FolderOpen size={14} />
             New Collection
+            New Collection
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={totalCount === 0 || exporting}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors border border-slate-700 disabled:opacity-50"
+          >
+            {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            Export
           </button>
           <button
             onClick={() => openItemEditor(null)}
