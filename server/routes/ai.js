@@ -352,7 +352,12 @@ async function listModels(providerConfig) {
     if (provider === 'openrouter') {
         const res = await fetch('https://openrouter.ai/api/v1/models');
         const data = await res.json();
-        return data.data.map(m => ({ id: m.id, name: m.name, description: m.description })); // OpenRouter returns proper list
+        return data.data.map(m => ({
+            id: m.id,
+            name: m.name,
+            description: m.description,
+            pricing: m.pricing
+        })); // OpenRouter returns proper list
     }
 
     if (provider === 'together') {

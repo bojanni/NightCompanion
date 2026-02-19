@@ -300,6 +300,12 @@ export interface ModelListItem {
   id: string;
   name: string;
   description?: string;
+  pricing?: {
+    prompt: string;
+    completion: string;
+    image?: string;
+    request?: string;
+  };
 }
 
 export async function listModels(

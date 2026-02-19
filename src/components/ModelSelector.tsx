@@ -6,6 +6,12 @@ interface ModelOption {
     name: string;
     description?: string;
     provider: string;
+    pricing?: {
+        prompt: string;
+        completion: string;
+        image?: string;
+        request?: string;
+    };
 }
 
 interface ProviderInfo {
@@ -260,6 +266,17 @@ export default function ModelSelector({
     );
 }
 
+function formatPrice(priceStr: string | undefined): string {
+    if (!priceStr) return '';
+    const price = parseFloat(priceStr);
+    if (isNaN(price)) return '';
+    // Convert to per 1M tokens
+    const perMillion = price * 1000000;
+
+    if (perMillion < 0.01) return '<$0.01';
+    return `$${perMillion.toFixed(2)}`;
+}
+
 // ForwardRef for scrolling
 const ModelItem = forwardRef<HTMLDivElement, {
     model: ModelOption,
@@ -286,49 +303,64 @@ const ModelItem = forwardRef<HTMLDivElement, {
             <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-teal-500/20 text-teal-300' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-300'
                 }`}>
                 <Cpu size={16} />
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className={`text-sm font-medium truncate ${isSelected ? 'text-teal-200' : 'text-slate-200'}`}>
-                        {model.name}
-                    </span>
-                    {isSelected && <Check size={14} className="text-teal-400 flex-shrink-0" />}
-                </div>
-
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
-                        {providerName || model.provider}
-                    </span>
-                    {model.id.includes('free') && (
-                        <span className="text-emerald-400">Free</span>
-                    )}
-                </div>
-
-                {/* Description - Summary */}
-                {model.description && (
-                    <div className="relative group/desc">
-                        <p
-                            className={`text-[11px] leading-relaxed text-slate-400 ${expanded ? '' : 'line-clamp-2'}`}
-                            title={!expanded ? model.description : undefined}
-                        >
-                            {model.description}
-                        </p>
-                        {model.description.length > 80 && (
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                                className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors focus:underline focus:outline-none"
-                                tabIndex={-1} // Prevent tabbing to this for now to keep nav simple
-                            >
-                                {expanded ? 'Show less' : 'More info'}
-                                <Info size={10} />
-                            </button>
-                        )}
-                    </div>
+                {model.id.includes('free') && (
+                    <span className="text-emerald-400">Free</span>
                 )}
             </div>
         </div>
+
+                {/* Pricing Info */ }
+    {
+        model.pricing && (
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5 bg-slate-800/50 px-1.5 py-0.5 rounded w-fit">
+                <span className="text-slate-400">In: {formatPrice(model.pricing.prompt)}/1M</span>
+                <span className="text-slate-600">|</span>
+                <span className="text-slate-400">Out: {formatPrice(model.pricing.completion)}/1M</span>
+            </div>
+        )
+    }
+
+    {/* Description - Summary */ }
+    <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2 mb-0.5">
+            <span className={`text-sm font-medium truncate ${isSelected ? 'text-teal-200' : 'text-slate-200'}`}>
+                {model.name}
+            </span>
+            {isSelected && <Check size={14} className="text-teal-400 flex-shrink-0" />}
+        </div>
+
+        <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5">
+            <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                {providerName || model.provider}
+            </span>
+            {model.id.includes('free') && (
+                <span className="text-emerald-400">Free</span>
+            )}
+        </div>
+
+        {/* Description - Summary */}
+        {model.description && (
+            <div className="relative group/desc">
+                <p
+                    className={`text-[11px] leading-relaxed text-slate-400 ${expanded ? '' : 'line-clamp-2'}`}
+                    title={!expanded ? model.description : undefined}
+                >
+                    {model.description}
+                </p>
+                {model.description.length > 80 && (
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                        className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors focus:underline focus:outline-none"
+                        tabIndex={-1} // Prevent tabbing to this for now to keep nav simple
+                    >
+                        {expanded ? 'Show less' : 'More info'}
+                        <Info size={10} />
+                    </button>
+                )}
+            </div>
+        )}
+    </div>
+        </div >
     );
 });

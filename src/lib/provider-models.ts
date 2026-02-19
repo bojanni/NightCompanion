@@ -4,6 +4,12 @@ export interface ModelOption {
   description?: string;
   provider?: string;
   capabilities?: ('vision' | 'code' | 'chat')[];
+  pricing?: {
+    prompt: string;
+    completion: string;
+    image?: string;
+    request?: string;
+  };
 }
 
 export const PROVIDER_MODELS: Record<string, ModelOption[]> = {
