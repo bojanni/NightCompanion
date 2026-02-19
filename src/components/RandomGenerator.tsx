@@ -7,7 +7,24 @@ import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import { db } from '../lib/api';
 import { generateRandomPromptAI } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
-import { getDefaultModelForProvider } from '../lib/provider-models';
+import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
+
+function estimateCost(modelPromptPrice: string | undefined, modelCompletionPrice: string | undefined, currentPromptLength: number, maxWords: number): string | null {
+  if (!modelPromptPrice || !modelCompletionPrice) return null;
+  const promptPrice = parseFloat(modelPromptPrice);
+  const completionPrice = parseFloat(modelCompletionPrice);
+  if (isNaN(promptPrice) || isNaN(completionPrice)) return null;
+
+  // Estimate tokens: 1 word ~ 1.33 tokens.
+  // Input: current prompt words
+  const inputTokens = currentPromptLength * 1.33;
+  // Output: maxWords
+  const outputTokens = maxWords * 1.33;
+
+  const total = (inputTokens * promptPrice) + (outputTokens * completionPrice);
+  if (total < 0.0001) return '< $0.0001';
+  return `~ $${total.toFixed(4)}`;
+}
 
 interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
@@ -40,6 +57,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [regenerating, setRegenerating] = useState(false);
   const [generatedStyle, setGeneratedStyle] = useState<string>('');
   const [activeModel, setActiveModel] = useState<string>('');
+  const [activeModelPricing, setActiveModelPricing] = useState<{ prompt: string, completion: string } | undefined>(undefined);
 
   // Modal State
   const [showClearModal, setShowClearModal] = useState(false);
@@ -66,6 +84,20 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         const model = activeKey.model_gen || activeKey.model_name || getDefaultModelForProvider(activeKey.provider);
         const providerName = activeKey.provider.charAt(0).toUpperCase() + activeKey.provider.slice(1);
         setActiveModel(`${providerName} ${model}`);
+
+        // Try to find pricing in cached styles
+        try {
+          const cached = localStorage.getItem('cachedModels');
+          if (cached) {
+            const models = JSON.parse(cached)[activeKey.provider] as ModelOption[];
+            const modelData = models?.find(m => m.id === model);
+            if (modelData?.pricing) {
+              setActiveModelPricing(modelData.pricing);
+              return;
+            }
+          }
+        } catch (e) { /* ignore */ }
+        setActiveModelPricing(undefined);
         return;
       }
 
@@ -371,140 +403,146 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 </div>
               )}
               {activeModel && (
-                <div className="flex items-center gap-2 mb-1 px-1">
-                  <Sparkles size={12} className="text-amber-400" />
-                  <span className="text-xs font-medium text-slate-400">Generated with <span className="text-amber-400">{activeModel}</span></span>
+                <span className="text-xs font-medium text-slate-400">Generated with <span className="text-amber-400">{activeModel}</span></span>
                 </div>
               )}
-              <textarea
-                value={prompt}
-                onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none h-32"
-                placeholder="Positive prompt..."
-              />
+            {activeModelPricing && (
+              <div className="flex items-center gap-2 mb-1 px-1 justify-end">
+                <span className="text-[10px] text-slate-500">
+                  Est. Cost: <span className="text-slate-300 font-mono">{estimateCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}</span>
+                </span>
+              </div>
+            )}
+            <textarea
+              value={prompt}
+              onChange={(e) => { setPrompt(e.target.value); onPromptGenerated(e.target.value); }}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none h-32"
+              placeholder="Positive prompt..."
+            />
 
-              {supportsNegativePrompt(topSuggestion?.model.id || '') && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="text-[10px] text-red-300 font-bold uppercase">Negative Prompt</p>
-                    <span className={`text-[10px] font-mono ${negativePrompt.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
-                      {negativePrompt.length}/600
-                    </span>
-                  </div>
-                  <textarea
-                    value={negativePrompt}
-                    onChange={(e) => {
-                      const val = e.target.value.slice(0, 600);
-                      setNegativePrompt(val);
-                      onNegativePromptChanged?.(val);
-                    }}
-                    maxLength={600}
-                    className="w-full bg-transparent border-0 p-0 text-xs text-red-200/80 leading-relaxed focus:outline-none focus:ring-0 placeholder-red-900/50 resize-none h-16"
-                    placeholder="blurred, low quality, watermark, distorted..."
-                  />
+            {supportsNegativePrompt(topSuggestion?.model.id || '') && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[10px] text-red-300 font-bold uppercase">Negative Prompt</p>
+                  <span className={`text-[10px] font-mono ${negativePrompt.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                    {negativePrompt.length}/600
+                  </span>
                 </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={handleCopyPrompt}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
-              >
-                {copiedPrompt ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                {copiedPrompt ? 'Copied' : 'Copy Prompt'}
-              </button>
-              {supportsNegativePrompt(topSuggestion?.model.id || '') && negativePrompt && (
-                <button
-                  onClick={handleCopyNegative}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-red-300 text-xs rounded-lg hover:bg-slate-700 hover:text-red-200 transition-colors"
-                >
-                  {copiedNeg ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                  {copiedNeg ? 'Copied' : 'Copy Negative'}
-                </button>
-              )}
-              {onSwitchToManual && (
-                <button
-                  onClick={() => onSwitchToManual(prompt, negativePrompt)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-teal-400 text-xs rounded-lg hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
-                >
-                  <PenTool size={11} />
-                  Edit in Manual
-                </button>
-              )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50 ml-auto"
-              >
-                <Save size={12} />
-                Save to Library
-              </button>
-              <button
-                onClick={() => onSwitchToGuided(prompt)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
-              >
-                <ArrowRight size={12} />
-                Guided Mode
-              </button>
-            </div>
+                <textarea
+                  value={negativePrompt}
+                  onChange={(e) => {
+                    const val = e.target.value.slice(0, 600);
+                    setNegativePrompt(val);
+                    onNegativePromptChanged?.(val);
+                  }}
+                  maxLength={600}
+                  className="w-full bg-transparent border-0 p-0 text-xs text-red-200/80 leading-relaxed focus:outline-none focus:ring-0 placeholder-red-900/50 resize-none h-16"
+                  placeholder="blurred, low quality, watermark, distorted..."
+                />
+              </div>
+            )}
           </div>
 
-          {topSuggestion && (
-            <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Compass size={13} className="text-amber-400" />
-                <span className="text-xs font-medium text-amber-400">Suggested Model</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {topSuggestion.reasons[0]}
-                    {!supportsNegativePrompt(topSuggestion.model.id) && (
-                      <span className="block text-red-400 mt-0.5">Note: Negative prompts disabled for this model.</span>
-                    )}
-                    {topSuggestion.model.recommendedPreset && (
-                      <span className="block text-teal-400 mt-0.5 font-medium">
-                        Recommended Preset: {topSuggestion.model.recommendedPreset}
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
-              </div>
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCopyPrompt}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
+            >
+              {copiedPrompt ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              {copiedPrompt ? 'Copied' : 'Copy Prompt'}
+            </button>
+            {supportsNegativePrompt(topSuggestion?.model.id || '') && negativePrompt && (
+              <button
+                onClick={handleCopyNegative}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-red-300 text-xs rounded-lg hover:bg-slate-700 hover:text-red-200 transition-colors"
+              >
+                {copiedNeg ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                {copiedNeg ? 'Copied' : 'Copy Negative'}
+              </button>
+            )}
+            {onSwitchToManual && (
+              <button
+                onClick={() => onSwitchToManual(prompt, negativePrompt)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-teal-400 text-xs rounded-lg hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
+              >
+                <PenTool size={11} />
+                Edit in Manual
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50 ml-auto"
+            >
+              <Save size={12} />
+              Save to Library
+            </button>
+            <button
+              onClick={() => onSwitchToGuided(prompt)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
+            >
+              <ArrowRight size={12} />
+              Guided Mode
+            </button>
+          </div>
+        </div>
 
+          {topSuggestion && (
+        <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Compass size={13} className="text-amber-400" />
+            <span className="text-xs font-medium text-amber-400">Suggested Model</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {topSuggestion.reasons[0]}
+                {!supportsNegativePrompt(topSuggestion.model.id) && (
+                  <span className="block text-red-400 mt-0.5">Note: Negative prompts disabled for this model.</span>
+                )}
+                {topSuggestion.model.recommendedPreset && (
+                  <span className="block text-teal-400 mt-0.5 font-medium">
+                    Recommended Preset: {topSuggestion.model.recommendedPreset}
+                  </span>
+                )}
+              </p>
+            </div>
+            <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
+          </div>
         </div>
       )}
-      <ChoiceModal
-        isOpen={showClearModal}
-        onClose={() => {
-          setShowClearModal(false);
-          setPendingAction(null);
-        }}
-        title="Prompt field is not empty"
-        message="The prompt field contains text. How would you like to proceed?"
-        choices={[
-          {
-            label: "Clear generate",
-            onClick: () => {
-              if (pendingAction) pendingAction(true); // true = keep negative
-            },
-            variant: 'primary'
-          },
-          {
-            label: "Clear All",
-            onClick: () => {
-              setNegativePrompt('');
-              onNegativePromptChanged?.('');
-              if (pendingAction) pendingAction(false); // false = don't keep negative (already cleared)
-            },
-            variant: 'danger'
-          }
-        ]}
-      />
+
     </div>
+  )
+}
+<ChoiceModal
+  isOpen={showClearModal}
+  onClose={() => {
+    setShowClearModal(false);
+    setPendingAction(null);
+  }}
+  title="Prompt field is not empty"
+  message="The prompt field contains text. How would you like to proceed?"
+  choices={[
+    {
+      label: "Clear generate",
+      onClick: () => {
+        if (pendingAction) pendingAction(true); // true = keep negative
+      },
+      variant: 'primary'
+    },
+    {
+      label: "Clear All",
+      onClick: () => {
+        setNegativePrompt('');
+        onNegativePromptChanged?.('');
+        if (pendingAction) pendingAction(false); // false = don't keep negative (already cleared)
+      },
+      variant: 'danger'
+    }
+  ]}
+/>
+    </div >
   );
 }
