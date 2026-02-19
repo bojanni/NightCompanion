@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { handleAIError } from '../lib/error-handler';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser, Coins } from 'lucide-react';
 import ChoiceModal from './ChoiceModal';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
@@ -8,23 +8,9 @@ import { db } from '../lib/api';
 import { generateRandomPromptAI, listModels, ModelListItem } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
+import { estimateLLMCost } from '../lib/pricing';
 
-function estimateCost(modelPromptPrice: string | undefined, modelCompletionPrice: string | undefined, currentPromptLength: number, maxWords: number): string | null {
-  if (!modelPromptPrice || !modelCompletionPrice) return null;
-  const promptPrice = parseFloat(modelPromptPrice);
-  const completionPrice = parseFloat(modelCompletionPrice);
-  if (isNaN(promptPrice) || isNaN(completionPrice)) return null;
 
-  // Estimate tokens: 1 word ~ 1.33 tokens.
-  // Input: current prompt words
-  const inputTokens = currentPromptLength * 1.33;
-  // Output: maxWords
-  const outputTokens = maxWords * 1.33;
-
-  const total = (inputTokens * promptPrice) + (outputTokens * completionPrice);
-  if (total < 0.0001) return '< $0.0001';
-  return `~ $${total.toFixed(4)}`;
-}
 
 interface RandomGeneratorProps {
   onSwitchToGuided: (prompt: string) => void;
@@ -356,6 +342,17 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                   {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                   {regenerating ? 'Generating...' : 'Magic Random (AI)'}
                 </button>
+                {activeModelPricing && (
+                  <div className="flex flex-col justify-center items-start">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                      <Coins size={12} className="text-amber-400" />
+                      <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
+                      <span className="text-[10px] text-amber-300 font-mono">
+                        {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, 50, maxWords)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <span className="text-[10px] text-slate-500 italic">
@@ -409,6 +406,17 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                 {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                 {regenerating ? 'Generating...' : 'Magic Random (AI)'}
               </button>
+              {activeModelPricing && (
+                <div className="flex flex-col justify-center items-start">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                    <Coins size={12} className="text-amber-400" />
+                    <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
+                    <span className="text-[10px] text-amber-300 font-mono">
+                      {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, 50, maxWords)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <span className="text-[10px] text-slate-500 italic">
@@ -434,7 +442,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               {activeModelPricing && (
                 <div className="flex items-center gap-2 mb-1 px-1 justify-end">
                   <span className="text-[10px] text-slate-500">
-                    Est. Cost: <span className="text-slate-300 font-mono">{estimateCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}</span>
+                    Est. Cost: <span className="text-slate-300 font-mono">{estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}</span>
                   </span>
                 </div>
               )}

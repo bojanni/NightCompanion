@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2, X, Wand2 } from 'lucide-react';
+import { Copy, Save, Check, Plus, Minus, Info, Shuffle, Sparkles, Loader2, X, Wand2, Coins } from 'lucide-react';
 import ChoiceModal from './ChoiceModal';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
@@ -11,22 +11,7 @@ import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models'
 import { listModels, ModelListItem } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
 
-function estimateCost(modelPromptPrice: string | undefined, modelCompletionPrice: string | undefined, currentPromptLength: number, maxWords: number): string | null {
-    if (!modelPromptPrice || !modelCompletionPrice) return null;
-    const promptPrice = parseFloat(modelPromptPrice);
-    const completionPrice = parseFloat(modelCompletionPrice);
-    if (isNaN(promptPrice) || isNaN(completionPrice)) return null;
-
-    // Estimate tokens: 1 word ~ 1.33 tokens.
-    // Input: current prompt words
-    const inputTokens = currentPromptLength * 1.33;
-    // Output: maxWords
-    const outputTokens = maxWords * 1.33;
-
-    const total = (inputTokens * promptPrice) + (outputTokens * completionPrice);
-    if (total < 0.0001) return '< $0.0001';
-    return `~ $${total.toFixed(4)}`;
-}
+import { estimateLLMCost } from '../lib/pricing';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -111,7 +96,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         return () => clearTimeout(timeout);
     }, [positivePrompt]);
 
-    async function fetchActiveModel() {
+    const fetchActiveModel = useCallback(async () => {
         try {
             await db.auth.getSession();
 
@@ -139,8 +124,8 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
                 // If activeKey is openrouter but we don't have pricing, try to fetch it
                 if (activeKey.provider === 'openrouter' && !activeModelPricing) {
-                    db.auth.getSession().then(({ data: { session } }) => {
-                        const token = session?.access_token || '';
+                    db.auth.getSession().then(({ data }: { data: { session: { access_token: string } | null } }) => {
+                        const token = data.session?.access_token || '';
                         listModels(token, 'openrouter').then((routerModels: ModelListItem[]) => {
                             try {
                                 const existingCache = localStorage.getItem('cachedModels');
@@ -179,7 +164,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         } catch (e) {
             console.error('Failed to fetch active model', e);
         }
-    }
+    }, [activeModelPricing]);
 
     // Fetch active model on mount and focus
     useEffect(() => {
@@ -418,7 +403,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                     {activeModelPricing && (
                         <div className="flex items-center gap-2 mb-1 px-1 justify-end ml-auto mr-4">
                             <span className="text-[10px] text-slate-500">
-                                Est. Cost: <span className="text-slate-300 font-mono">{estimateCost(activeModelPricing.prompt, activeModelPricing.completion, fullPrompt.split(' ').length, maxWords)}</span>
+                                Est. Cost: <span className="text-slate-300 font-mono">{estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, fullPrompt.split(' ').length, maxWords)}</span>
                             </span>
                         </div>
                     )}
@@ -487,6 +472,17 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                                     {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                                     <span className="hidden sm:inline">Generate with AI</span>
                                 </button>
+                                {activeModelPricing && (
+                                    <div className="flex flex-col justify-center items-start ml-2">
+                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                                            <Coins size={12} className="text-amber-400" />
+                                            <span className="text-[10px] text-slate-400 font-medium">Est.</span>
+                                            <span className="text-[10px] text-amber-300 font-mono">
+                                                {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, prompt.split(' ').length, maxWords)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ))}

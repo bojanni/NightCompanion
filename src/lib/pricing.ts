@@ -73,3 +73,29 @@ export function calculateMaxGenerations(
   if (costPerImage <= 0) return 0;
   return Math.floor(creditBalance / costPerImage);
 }
+
+export function estimateLLMCost(
+  modelPromptPrice: string | undefined,
+  modelCompletionPrice: string | undefined,
+  currentPromptLength: number,
+  maxWords: number
+): string | null {
+  if (!modelPromptPrice || !modelCompletionPrice) return null;
+  const promptPrice = parseFloat(modelPromptPrice);
+  const completionPrice = parseFloat(modelCompletionPrice);
+  if (isNaN(promptPrice) || isNaN(completionPrice)) return null;
+
+  // Estimate tokens: 1 word ~ 1.33 tokens.
+  // Input: current prompt words
+  // Input tokens are based on the current prompt length (plus some buffer for system/hidden context if we wanted to be precise, but simply words * 1.33 is a good enough estimate for user display)
+  const inputTokens = Math.max(1, currentPromptLength) * 1.33;
+
+  // Output: maxWords
+  // Output tokens are based on the max requested length
+  const outputTokens = maxWords * 1.33;
+
+  const total = (inputTokens * promptPrice) + (outputTokens * completionPrice);
+
+  if (total < 0.0001) return '< $0.0001';
+  return `~ $${total.toFixed(4)}`;
+}
