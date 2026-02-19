@@ -33,8 +33,8 @@ export default function Models({ }: ModelsProps) {
             key={id}
             onClick={() => setActiveTab(id)}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeTab === id
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'text-slate-400 hover:text-white'
               }`}
           >
             <Icon size={16} />
@@ -71,16 +71,7 @@ export default function Models({ }: ModelsProps) {
               <span className="text-xs font-medium px-2 py-0.5 bg-slate-700 text-slate-300 rounded-md">
                 {selectedModel.provider}
               </span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${selectedModel.creditCost === 'low'
-                  ? 'bg-emerald-500/10 text-emerald-400'
-                  : selectedModel.creditCost === 'medium'
-                    ? 'bg-amber-500/10 text-amber-400'
-                    : selectedModel.creditCost === 'high'
-                      ? 'bg-orange-500/10 text-orange-400'
-                      : 'bg-red-500/10 text-red-400'
-                }`}>
-                {selectedModel.creditCost} cost
-              </span>
+
             </div>
             <p className="text-sm text-slate-300 leading-relaxed">{selectedModel.description}</p>
 

@@ -58,8 +58,6 @@ async function initSchema() {
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 email TEXT UNIQUE NOT NULL,
                 user_metadata JSONB DEFAULT '{}',
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
         // Ensure columns exist (evolution) - No longer needed since we force create, but keeping for reference if shared with other tables
@@ -299,15 +297,7 @@ async function initSchema() {
             );
         `);
 
-        // Model Usage
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS model_usage (
-                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                model_name TEXT,
-                usage_count INTEGER DEFAULT 0,
-                last_used TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            );
-        `);
+
 
         // Style Keywords
         await pool.query(`

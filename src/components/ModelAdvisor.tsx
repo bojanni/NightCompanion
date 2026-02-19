@@ -1,17 +1,12 @@
 import { useState } from 'react';
-import { Search, Zap, Star, Clock, Coins, ChevronRight } from 'lucide-react';
+import { Search, Zap, Star, Clock, ChevronRight } from 'lucide-react';
 import { analyzePrompt, type ModelInfo } from '../lib/models-data';
 
 interface ModelAdvisorProps {
   onSelectModel: (model: ModelInfo) => void;
 }
 
-const COST_COLORS: Record<string, string> = {
-  low: 'text-emerald-400',
-  medium: 'text-amber-400',
-  high: 'text-orange-400',
-  'very high': 'text-red-400',
-};
+
 
 function RatingDots({ value, max = 5, color }: { value: number; max?: number; color: string }) {
   return (
@@ -69,9 +64,8 @@ export default function ModelAdvisor({ onSelectModel }: ModelAdvisorProps) {
               {topResults.map(({ model, score, reasons }, idx) => (
                 <div
                   key={model.id}
-                  className={`relative bg-slate-900 border rounded-2xl p-5 transition-all hover:border-slate-600 cursor-pointer ${
-                    idx === 0 ? 'border-amber-500/30 ring-1 ring-amber-500/10' : 'border-slate-800'
-                  }`}
+                  className={`relative bg-slate-900 border rounded-2xl p-5 transition-all hover:border-slate-600 cursor-pointer ${idx === 0 ? 'border-amber-500/30 ring-1 ring-amber-500/10' : 'border-slate-800'
+                    }`}
                   onClick={() => onSelectModel(model)}
                 >
                   {idx === 0 && (
@@ -122,10 +116,7 @@ export default function ModelAdvisor({ onSelectModel }: ModelAdvisorProps) {
                       Speed
                       <RatingDots value={model.speedRating} color="bg-teal-400" />
                     </div>
-                    <div className={`flex items-center gap-1.5 ${COST_COLORS[model.creditCost]}`}>
-                      <Coins size={11} />
-                      {model.creditCost}
-                    </div>
+
                   </div>
                 </div>
               ))}
@@ -147,7 +138,7 @@ export default function ModelAdvisor({ onSelectModel }: ModelAdvisorProps) {
                       <p className="text-[10px] text-slate-500">{model.provider}</p>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-2">
-                      <span className={`text-[10px] ${COST_COLORS[model.creditCost]}`}>{model.creditCost}</span>
+
                       <span className="text-xs font-medium text-slate-500">{score}</span>
                     </div>
                   </div>

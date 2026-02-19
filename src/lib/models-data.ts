@@ -7,7 +7,6 @@ export interface ModelInfo {
   weaknesses: string[];
   bestFor: string[];
   styleTags: string[];
-  creditCost: 'low' | 'medium' | 'high' | 'very high';
   qualityRating: number;
   speedRating: number;
   keywords: string[];
@@ -66,7 +65,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'illustration', 'portrait'],
     styleTags: ['photorealistic', 'artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['realistic', 'detail', 'bytedance', 'seedream'],
@@ -80,7 +79,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'illustration'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['fast', 'high resolution', '2k', '4k', 'multimodal'],
@@ -94,7 +93,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'illustration'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['improved', 'quality', 'seedream'],
@@ -110,7 +109,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'illustration', 'concept art'],
     styleTags: ['artistic', 'illustration'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['flux', 'dev', 'baseline', 'general'],
@@ -124,7 +123,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'editing'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 5,
     keywords: ['fast', 'distilled', 'editing', 'klein'],
@@ -138,7 +137,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['interactive', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 5,
     keywords: ['fast', 'real-time', 'interactive', 'klein'],
@@ -152,7 +151,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['real-time', 'general'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['quality', 'sub-second', 'real-time', 'klein'],
@@ -166,7 +165,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost?'],
     bestFor: ['general', 'illustration'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['general', 'purpose', 'flux'],
@@ -180,7 +179,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'illustration'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['ultra', 'resolution', 'pro', 'flux'],
@@ -194,7 +193,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['editing', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['editing', 'natural language', 'kontext'],
@@ -208,7 +207,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['editing', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['powerful', 'editing', 'pro', 'kontext'],
@@ -224,7 +223,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['editing', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['editing', 'enhanced', 'regeneration', 'qwen'],
@@ -240,7 +239,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Video focused?'],
     bestFor: ['cinematic', 'general'],
     styleTags: ['cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['fast', 'video', 'cinematic', 'seedance'],
@@ -256,7 +255,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 5,
     keywords: ['affordable', 'quality', 'fast', 'turbo'],
@@ -272,7 +271,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['artistic', 'illustration'],
     styleTags: ['artistic', 'illustration'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['stunning', 'artistic', 'clarity', 'detail', 'hidream'],
@@ -286,7 +285,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['artistic', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 5,
     keywords: ['fast', 'cheaper', 'artistic', 'hidream'],
@@ -302,7 +301,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['improved', 'performance', 'nano banana'],
@@ -316,7 +315,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['google', 'gemini', 'flash', 'start image'],
@@ -332,7 +331,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost (updated)'],
     bestFor: ['artistic', 'general'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['fast', 'art', 'realism', 'dreamina'],
@@ -348,7 +347,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'photography'],
     styleTags: ['photorealistic', 'artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['google', 'imagen', 'ultra', 'latest'],
@@ -362,7 +361,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['photorealistic', 'artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['fast', 'cheaper', 'imagen', 'google'],
@@ -376,7 +375,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'typography'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['adherence', 'typography', 'google', 'imagen'],
@@ -392,7 +391,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'typography'],
     styleTags: ['artistic', 'illustration'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['latest', 'best', 'ideogram', 'quality'],
@@ -406,7 +405,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'typography'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['latest', 'ideogram'],
@@ -420,7 +419,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'typography'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['affordable', 'adherence', 'typography', 'ideogram'],
@@ -434,7 +433,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'typography'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 5,
     keywords: ['faster', 'cheaper', 'turbo', 'ideogram'],
@@ -450,7 +449,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'editing'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['medium', 'quality', 'editing', 'gpt', 'openai'],
@@ -464,7 +463,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'editing'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['high', 'quality', 'editing', 'gpt', 'openai'],
@@ -478,7 +477,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['flagship', 'medium', 'gpt', 'openai'],
@@ -492,7 +491,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['flagship', 'high', 'gpt', 'openai'],
@@ -507,7 +506,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low quality', 'Medium cost'],
     bestFor: ['prototyping', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 3,
     speedRating: 5,
     keywords: ['fast', 'cheap', 'prototyp', 'gpt'],
@@ -521,7 +520,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low quality', 'Medium cost'],
     bestFor: ['prototyping', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 3,
     speedRating: 5,
     keywords: ['fast', 'cheap', 'prototyp', 'gpt'],
@@ -537,7 +536,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['typography', 'vector', 'general'],
     styleTags: ['artistic', 'illustration'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['spelling', 'typography', 'vector', 'recraft'],
@@ -553,7 +552,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'typography'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['adherence', 'text', 'nightcafe'],
@@ -569,7 +568,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['typography', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['faster', 'cheaper', 'typography', 'turbo', 'ideogram'],
@@ -583,7 +582,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost', 'Older'],
     bestFor: ['typography', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['typography', 'first', 'ideogram'],
@@ -597,7 +596,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 5,
     keywords: ['faster', 'cheaper', 'turbo', 'ideogram'],
@@ -613,7 +612,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['video', 'general'],
     styleTags: ['cinematic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['video', 'audio', 'synchronized', 'seedance'],
@@ -629,7 +628,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Cost N/A (assume medium)'],
     bestFor: ['video', 'general'],
     styleTags: ['cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['video', 'advancements', 'pixverse'],
@@ -645,7 +644,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'flux', 'juggernaut', 'rundiffusion'],
@@ -659,7 +658,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Less powerful', 'Medium cost'],
     bestFor: ['general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['cheaper', 'faster', 'lite', 'juggernaut'],
@@ -673,7 +672,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['adherence', 'retrained', 'xl', 'juggernaut'],
@@ -687,7 +686,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['adherence', 'lightning', 'xl', 'juggernaut'],
@@ -701,7 +700,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'cinematic', 'xl', 'juggernaut'],
@@ -717,7 +716,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['photorealism', 'faces', 'realvisxl'],
@@ -731,7 +730,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost? (csv says $$$$$)'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['photorealism', 'faces', 'lightning', 'realvisxl'],
@@ -745,7 +744,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['photorealism', 'faces', 'realvisxl'],
@@ -759,7 +758,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['photorealism', 'faces', 'lightning', 'realvisxl'],
@@ -775,7 +774,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['general', 'aesthetic'],
     styleTags: ['artistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['detailed', 'aesthetic', 'lightning', 'boltning'],
@@ -789,7 +788,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'fantasy'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['realism', 'cg', 'lightning', 'atomix'],
@@ -803,7 +802,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['mashup', 'popular', 'moste'],
@@ -817,7 +816,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general', 'illustration'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['resolution', 'simple', 'stable core'],
@@ -831,7 +830,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Upscaler only'],
     bestFor: ['upscaling'],
     styleTags: ['artistic', 'photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['upscaler', 'detail', 'clarity'],
@@ -845,7 +844,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost', 'Older'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['stable diffusion', 'xl', 'standard'],
@@ -859,7 +858,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realistic', 'fluently'],
@@ -873,7 +872,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['realistic', 'lightning', 'fluently'],
@@ -887,7 +886,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['illustration', 'cartoon'],
     styleTags: ['illustration', 'artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['cartoon', 'realistic', 'sdxl'],
@@ -901,7 +900,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['fantasy', 'concept art'],
     styleTags: ['fantasy', 'illustration'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['fantasy', 'concept', 'art', 'starlight'],
@@ -915,7 +914,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['fantasy', 'cinematic'],
     styleTags: ['fantasy', 'cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['fantasy', 'cinematic', 'mysterious'],
@@ -930,7 +929,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['versatile', 'dreamshaper', 'lykon'],
@@ -944,7 +943,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'cinematic', 'juggernaut'],
@@ -958,7 +957,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'cinematic', 'juggernaut'],
@@ -972,7 +971,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'cinematic', 'juggernaut'],
@@ -986,7 +985,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['realism', 'cinematic', 'lightning', 'juggernaut'],
@@ -1000,7 +999,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'cinematic', 'juggernaut'],
@@ -1014,7 +1013,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['anime', 'illustration'],
     styleTags: ['anime', 'illustration'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['anime', 'blue pencil', 'illustration'],
@@ -1028,7 +1027,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['anime', 'illustration'],
     styleTags: ['anime', 'illustration'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['anime', 'high quality', 'animagine'],
@@ -1042,7 +1041,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['photorealism', 'faces', 'realmix'],
@@ -1056,7 +1055,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['anime', 'illustration'],
     styleTags: ['anime', 'illustration'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['anime', 'stylized', 'art', 'lykon'],
@@ -1070,7 +1069,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['fantasy', 'general'],
     styleTags: ['fantasy', 'artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['authentic', 'fantasy', 'world', 'virtual'],
@@ -1084,7 +1083,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['photorealistic', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['photorealistic', 'merged', 'cherry picker'],
@@ -1098,7 +1097,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost (actually checked: $-$$$) -> Low'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['fast', 'cheap', 'quality', 'lcm'],
@@ -1112,7 +1111,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['dpo', 'aligned', 'quality', 'sdxl'],
@@ -1126,7 +1125,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'portrait'],
     styleTags: ['artistic', 'illustration'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['versatile', 'faces', 'dreamshaper'],
@@ -1140,7 +1139,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['photorealism', 'faces', 'realistic vision'],
@@ -1154,7 +1153,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['photorealistic', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'lykon', 'absolute'],
@@ -1168,7 +1167,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['general', 'fantasy'],
     styleTags: ['fantasy', 'artistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['dreamshaper', 'alternative', 'neverending'],
@@ -1182,7 +1181,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['illustration', 'character', '3d'],
     styleTags: ['artistic', 'illustration'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['3d', 'cartoon', 'character', 'animation'],
@@ -1196,7 +1195,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['fantasy', 'character', 'portrait'],
     styleTags: ['fantasy', 'illustration'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['rpg', 'character', 'portrait', 'fantasy'],
@@ -1210,7 +1209,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['anime', 'fantasy', 'illustration'],
     styleTags: ['anime', 'fantasy', 'illustration'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['anime', 'fantasy', 'art', 'blue pencil'],
@@ -1224,7 +1223,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['illustration', 'character'],
     styleTags: ['illustration', 'artistic'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['comic', 'character', 'arthemy'],
@@ -1238,7 +1237,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['illustration', 'cute'],
     styleTags: ['illustration', 'artistic'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['cute', 'drawing', 'rabbit'],
@@ -1252,7 +1251,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['fantasy', 'dark'],
     styleTags: ['fantasy', 'artistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['dark', 'imagination', 'nightmare'],
@@ -1266,7 +1265,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low cost'],
     bestFor: ['photography', 'animal'],
     styleTags: ['photorealistic'],
-    creditCost: 'low',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['animals', 'pets', 'breeds', 'wildlife'],
@@ -1280,7 +1279,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['illustration', 'cartoon'],
     styleTags: ['illustration', 'artistic'],
-    creditCost: 'very high',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['pixar', 'cartoon', 'style', 'realcartoon'],
@@ -1294,7 +1293,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['artistic', 'illustration'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['art', '2sd', 'skaterbyte'],
@@ -1308,7 +1307,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['photorealistic', 'cinematic'],
     styleTags: ['photorealistic', 'cinematic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realism', 'cinematic', 'reborn', 'juggernaut'],
@@ -1322,7 +1321,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['dpo', 'aligned', 'sd1.5'],
@@ -1336,7 +1335,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['original', 'openai', 'dalle'],
@@ -1351,7 +1350,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost', 'Old'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['stable diffusion', 'popular', '1.5'],
@@ -1365,7 +1364,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost', 'Old'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['stable diffusion', 'original', '1.4'],
@@ -1379,7 +1378,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Cost N/A'],
     bestFor: ['abstract'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['coherent', 'clip', 'diffusion'],
@@ -1393,7 +1392,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Cost N/A'],
     bestFor: ['abstract', 'artistic'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['artistic', 'vqgan', 'clip'],
@@ -1407,7 +1406,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Low quality', 'Cost N/A'],
     bestFor: ['style transfer'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 1,
     speedRating: 1,
     keywords: ['style transfer', 'original'],
@@ -1423,7 +1422,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['latest', 'enhancement', 'qwen'],
@@ -1437,7 +1436,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['editing', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['preserve', 'texture', 'editing', 'qwen'],
@@ -1451,7 +1450,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['typography', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['typography', 'qwen'],
@@ -1465,7 +1464,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Lower resolution', 'Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'low',
+
     qualityRating: 4,
     speedRating: 3,
     keywords: ['cheaper', 'resolution', 'qwen'],
@@ -1479,7 +1478,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['editing'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['editing', 'advanced', 'qwen'],
@@ -1495,7 +1494,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general', 'illustration'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['improved', 'quality', 'speed', 'flux', 'pro'],
@@ -1509,7 +1508,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['High cost'],
     bestFor: ['typography', 'design', 'general'],
     styleTags: ['artistic'],
-    creditCost: 'high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['typography', 'design', 'flux', 'dev'],
@@ -1523,7 +1522,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['complex', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['grounded', 'context', 'quality', 'flux', 'pro'],
@@ -1537,7 +1536,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['photorealistic', 'portrait'],
     styleTags: ['photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['realistic', 'anatomy', 'flux', 'lite'],
@@ -1551,7 +1550,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Less powerful', 'Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['cheaper', 'faster', 'schnell', 'flux'],
@@ -1565,7 +1564,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['full power', 'pro', 'flux'],
@@ -1579,7 +1578,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['editing'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['cheaper', 'faster', 'editing', 'kontext'],
@@ -1595,7 +1594,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['photorealistic', 'artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 5,
     keywords: ['faster', 'cheaper', 'imagen', 'google'],
@@ -1609,7 +1608,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Very high cost'],
     bestFor: ['typography', 'general'],
     styleTags: ['photorealistic'],
-    creditCost: 'very high',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['adherence', 'typography', 'imagen', 'google'],
@@ -1625,7 +1624,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 3,
     keywords: ['full power', 'hidream'],
@@ -1641,7 +1640,7 @@ export const MODELS: ModelInfo[] = [
     weaknesses: ['Medium cost'],
     bestFor: ['general'],
     styleTags: ['artistic'],
-    creditCost: 'medium',
+
     qualityRating: 5,
     speedRating: 4,
     keywords: ['latest', 'turbo', 'ideogram'],

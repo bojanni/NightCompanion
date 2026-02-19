@@ -134,9 +134,10 @@ export function handleAIError(error: unknown) {
     }
 
     // 1. Rate Limits / Quotas
-    if (lowerMsg.includes('rate limit') || lowerMsg.includes('429') || lowerMsg.includes('insufficient credits') || lowerMsg.includes('quota')) {
+    // 1. Rate Limits / Quotas
+    if (lowerMsg.includes('rate limit') || lowerMsg.includes('429') || lowerMsg.includes('quota')) {
         toast.error('AI Service Busy or Limit Reached', {
-            description: 'The AI provider is currently overloaded or you have run out of free credits. Please try again later, or switch to a different model in settings.',
+            description: 'The AI provider is currently overloaded. Please try again later, or switch to a different model in settings.',
             duration: 8000,
         });
         return;

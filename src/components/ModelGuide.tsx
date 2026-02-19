@@ -1,16 +1,11 @@
 import { useState, useMemo } from 'react';
 import {
-  Search, Star, Clock, Coins, ChevronDown, ChevronUp,
+  Search, Star, Clock, ChevronDown, ChevronUp,
   CheckCircle2, XCircle, Filter,
 } from 'lucide-react';
 import { MODELS, STYLE_FILTERS } from '../lib/models-data';
 
-const COST_COLORS: Record<string, string> = {
-  low: 'text-emerald-400 bg-emerald-500/10',
-  medium: 'text-amber-400 bg-amber-500/10',
-  high: 'text-orange-400 bg-orange-500/10',
-  'very high': 'text-red-400 bg-red-500/10',
-};
+
 
 function RatingDots({ value, max = 5, color }: { value: number; max?: number; color: string }) {
   return (
@@ -67,11 +62,10 @@ export default function ModelGuide() {
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
-            showFilters || styleFilter
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors border ${showFilters || styleFilter
               ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
               : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-          }`}
+            }`}
         >
           <Filter size={14} />
           Style
@@ -82,9 +76,8 @@ export default function ModelGuide() {
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => setStyleFilter(null)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-              !styleFilter ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'
-            }`}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!styleFilter ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white'
+              }`}
           >
             All
           </button>
@@ -92,11 +85,10 @@ export default function ModelGuide() {
             <button
               key={style}
               onClick={() => setStyleFilter(styleFilter === style ? null : style)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all capitalize ${
-                styleFilter === style
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all capitalize ${styleFilter === style
                   ? 'bg-amber-500/10 text-amber-400'
                   : 'text-slate-400 hover:text-white bg-slate-800/50'
-              }`}
+                }`}
             >
               {style}
             </button>
@@ -122,9 +114,7 @@ export default function ModelGuide() {
                     <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded-md">
                       {model.provider}
                     </span>
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${COST_COLORS[model.creditCost]}`}>
-                      {model.creditCost}
-                    </span>
+
                   </div>
                   <p className="text-xs text-slate-400 line-clamp-1">{model.description}</p>
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -230,13 +220,7 @@ export default function ModelGuide() {
                       <span className="text-xs text-slate-400">Speed:</span>
                       <span className="text-xs font-medium text-white">{model.speedRating}/5</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Coins size={13} className={COST_COLORS[model.creditCost].split(' ')[0]} />
-                      <span className="text-xs text-slate-400">Cost:</span>
-                      <span className={`text-xs font-medium ${COST_COLORS[model.creditCost].split(' ')[0]}`}>
-                        {model.creditCost}
-                      </span>
-                    </div>
+
                   </div>
                 </div>
               )}

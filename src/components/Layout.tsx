@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
   LayoutDashboard, Sparkles, Users, Image, Compass, Wand2,
-  LogOut, Flame, Settings, Fingerprint, FlaskConical, Coins,
+  LogOut, Flame, Settings, Fingerprint, FlaskConical,
   Wrench, Clock, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const navItems = [
   { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
   { to: '/style', icon: Fingerprint, label: 'Style Profile' },
   { to: '/timeline', icon: Clock, label: 'Timeline' },
-  { to: '/cost-calculator', icon: Coins, label: 'Cost Calculator' },
+
   { to: '/tools', icon: Wrench, label: 'AI Tools' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
