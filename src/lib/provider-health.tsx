@@ -23,7 +23,12 @@ export function ProviderHealthProvider({ children }: { children: React.ReactNode
         // Set loading state
         setHealth(prev => ({
             ...prev,
-            [providerId]: { ...prev[providerId], status: 'loading', lastCheck: Date.now() } // Keep previous latency/error while loading? Or reset? Let's keep data but change status.
+            [providerId]: {
+                ...prev[providerId],
+                status: 'loading',
+                lastCheck: Date.now(),
+                latency: prev[providerId]?.latency ?? null
+            } as ProviderHealth
         }));
 
         const startTime = performance.now();
@@ -57,8 +62,7 @@ export function ProviderHealthProvider({ children }: { children: React.ReactNode
                 [providerId]: {
                     status: 'ok',
                     latency,
-                    lastCheck: Date.now(),
-                    error: undefined
+                    lastCheck: Date.now()
                 } as ProviderHealth
             }));
 

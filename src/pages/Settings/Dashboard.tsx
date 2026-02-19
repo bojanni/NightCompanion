@@ -7,7 +7,7 @@ import { setActiveProvider } from '../../lib/api-keys-service';
 import { listModels } from '../../lib/ai-service';
 import { getDefaultModelForProvider } from '../../lib/provider-models';
 import { toast } from 'sonner';
-import { COMMON_TIMEZONES, getUserTimezone, setUserTimezone } from '../../lib/date-utils';
+
 
 interface DashboardProps {
     activeGen: ApiKeyInfo | LocalEndpoint | undefined;
@@ -124,11 +124,19 @@ interface ProviderStatusCardProps {
     colorClass: 'amber' | 'teal' | 'violet';
 }
 
+import { useEffect } from 'react';
+import { useProviderHealth } from '../../lib/provider-health';
+
+// ... imports remain the same
+
+// ... Dashboard component remains mostly the same, just props passthrough if needed
+
 function ProviderStatusCard({
     role, label, description, icon: Icon, activeProvider, allProviders,
     dynamicModels, setDynamicModels, onRefreshData, getToken, colorClass
 }: ProviderStatusCardProps) {
     const [loading, setLoading] = useState(false);
+    const { health, checkHealth } = useProviderHealth();
 
     // Helper to determine the unique ID of a provider entry
     const getProviderId = (p: ApiKeyInfo | LocalEndpoint) => {
@@ -137,16 +145,29 @@ function ProviderStatusCard({
     };
 
     const currentProviderId = activeProvider ? getProviderId(activeProvider) : '';
+    const providerHealth = activeProvider ? health[currentProviderId] : undefined;
+
+    // Check health on mount or when active provider changes
+    useEffect(() => {
+        if (activeProvider && !providerHealth) {
+            checkHealth(currentProviderId, activeProvider);
+        }
+    }, [activeProvider, currentProviderId, providerHealth, checkHealth]);
+
+    const handleHealthCheck = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (activeProvider) {
+            checkHealth(currentProviderId, activeProvider);
+        }
+    };
 
     const getModels = (p: ApiKeyInfo | LocalEndpoint) => {
+        // ... (existing implementation)
         const providerKey = p.provider;
-        // Prefer dynamic models if available, otherwise empty (will trigger fetch optionally?)
-        // Actually we should probably have static models fallback if available in provider-models.ts
-        // But since we can't easily import everything here without prop drilling or imports...
-        // Let's rely on dynamicModels which should be populated or we can fetch.
         return dynamicModels[providerKey] || [];
     };
 
+    // ... handleProviderChange and handleModelChange remain the same
     const handleProviderChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newId = e.target.value;
         if (!newId) return; // distinct "none" case?
@@ -169,6 +190,11 @@ function ProviderStatusCard({
 
             await setActiveProvider(newProvider.provider, modelToUse, true, role);
             await onRefreshData();
+
+            // Trigger health check for new provider
+            const newProviderId = getProviderId(newProvider);
+            checkHealth(newProviderId, newProvider);
+
             toast.success(`${label} provider changed to ${newProvider.provider}`);
         } catch (err) {
             toast.error('Failed to change provider');
@@ -183,22 +209,7 @@ function ProviderStatusCard({
         const newModel = e.target.value;
         setLoading(true);
         try {
-            // updateModels requires updating ALL roles. This is tricky if we don't know the other roles' models.
-            // But wait, updateModels updates the PREFERENCES for that provider.
-            // setActiveProvider updates the ACTIVE status and can also set the model for that specific role?
-            // Looking at `api-keys-service.ts`:
-            // setActiveProvider(provider, modelName, active, role)
-
             await setActiveProvider(activeProvider.provider, newModel, true, role);
-
-            // Also update the preference so it sticks?
-            // updateModels(provider, gen, improve, vision)
-            // We'd need to know the current values for other roles to not overwrite them.
-            // For now, setActiveProvider with role seems sufficient to switch the current active model usage.
-            // But to persist it as "preferred model for this role" in the DB column (model_gen etc), 
-            // the backend `set-active` action should handle that.
-            // Let's verify backend `set-active`... usually it sets `is_active_role` = true AND `model_role` = modelName.
-
             await onRefreshData();
             toast.success(`${label} model updated`);
         } catch (err) {
@@ -210,6 +221,7 @@ function ProviderStatusCard({
     };
 
     const handleTestPricing = async () => {
+        // ... (existing implementation)
         if (!activeProvider) return;
         setLoading(true);
         try {
@@ -251,6 +263,7 @@ function ProviderStatusCard({
     };
 
     const handleRefreshModels = async () => {
+        // ... (existing implementation)
         if (!activeProvider) return;
         setLoading(true);
         try {
@@ -263,6 +276,10 @@ function ProviderStatusCard({
                 ...prev,
                 [activeProvider.provider]: models
             }));
+
+            // Also refresh health
+            checkHealth(currentProviderId, activeProvider);
+
             toast.success('Models refreshed');
         } catch (err) {
             toast.error('Failed to refresh models');
@@ -272,7 +289,9 @@ function ProviderStatusCard({
         }
     };
 
+
     // Color mappings
+    // ... (existing mappings)
     const bgColors = {
         amber: 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40',
         teal: 'bg-teal-500/5 border-teal-500/20 hover:border-teal-500/40',
@@ -303,10 +322,40 @@ function ProviderStatusCard({
                 <div className={`p-3 rounded-xl ${activeProvider ? iconBgColors[colorClass] : 'bg-slate-800 text-slate-500'}`}>
                     <Icon size={24} />
                 </div>
-                {activeProvider && <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${activeBadgeColors[colorClass]}`}>Active</div>}
+                {activeProvider && (
+                    <div className="flex flex-col items-end gap-1">
+                        <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${activeBadgeColors[colorClass]}`}>Active</div>
+
+                        {/* Health Status Indicator */}
+                        {providerHealth && (
+                            <div
+                                onClick={handleHealthCheck}
+                                className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors hover:bg-slate-800/50 ${providerHealth.status === 'ok' ? 'text-green-500' :
+                                    providerHealth.status === 'error' ? 'text-red-500' :
+                                        'text-slate-500'
+                                    }`}
+                                title={providerHealth.error || 'Click to re-check health'}
+                            >
+                                <div className={`w-1.5 h-1.5 rounded-full ${providerHealth.status === 'ok' ? 'bg-green-500' :
+                                    providerHealth.status === 'error' ? 'bg-red-500' :
+                                        'bg-slate-500 animate-pulse'
+                                    }`} />
+
+                                {providerHealth.status === 'loading' ? (
+                                    <span>checking...</span>
+                                ) : providerHealth.status === 'error' ? (
+                                    <span>error</span>
+                                ) : (
+                                    <span>{providerHealth.latency}ms</span>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <h3 className="text-lg font-semibold text-white mb-1">{label}</h3>
+            {/* ... rest of the component */}
             <p className="text-sm text-slate-400 mb-6 h-10">{description}</p>
 
             <div className="space-y-4">
