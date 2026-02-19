@@ -16,6 +16,8 @@ interface RandomGeneratorProps {
   onPromptGenerated: (prompt: string) => void;
   onNegativePromptChanged?: (neg: string) => void;
   maxWords: number;
+  initialPrompt?: string;
+  initialNegativePrompt?: string;
   onCheckExternalFields?: (proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) => void;
   magicInputSlot?: React.ReactNode;
 }
@@ -41,17 +43,13 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
   // Modal State
   const [showClearModal, setShowClearModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [pendingAction, setPendingAction] = useState<((keepNegative: boolean) => void) | null>(null);
 
   const confirmClear = (action: (keepNegative: boolean) => void) => {
     if (prompt.trim()) {
-      setPendingAction(() => () => action(false)); // Default to clearing everything logic for local fallback
+      setPendingAction(() => action);
       setShowClearModal(true);
     } else {
-      action(true); // If not dirty, keep negative? or clear? Usually fresh start clears negative if not dirty? 
-      // Actually if clean, we just run. 
-      // The old logic was: if dirty -> confirm. 
-      // If not dirty -> generate (and clear negative).
       action(false);
     }
   };
@@ -490,14 +488,14 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         message="The prompt field contains text. How would you like to proceed?"
         choices={[
           {
-            label: "Clear only generation field",
+            label: "Clear generate",
             onClick: () => {
               if (pendingAction) pendingAction(true); // true = keep negative
             },
             variant: 'primary'
           },
           {
-            label: "Clear everything (including negative)",
+            label: "Clear All",
             onClick: () => {
               setNegativePrompt('');
               onNegativePromptChanged?.('');
