@@ -325,32 +325,32 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             </div>
 
             <div className="flex flex-col items-center gap-4 mt-auto">
-              <div className="flex justify-center gap-3">
-                <button
-                  onClick={handleGenerate}
-                  disabled={saving || regenerating || showClearModal}
-                  className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
-                >
-                  Standard Random
-                </button>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={handleGenerate}
+                    disabled={saving || regenerating || showClearModal}
+                    className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
+                  >
+                    Standard Random
+                  </button>
 
-                <button
-                  onClick={handleMagicRandom}
-                  disabled={saving || regenerating || showClearModal}
-                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
-                >
-                  {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  {regenerating ? 'Generating...' : 'Magic Random (AI)'}
-                </button>
+                  <button
+                    onClick={handleMagicRandom}
+                    disabled={saving || regenerating || showClearModal}
+                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
+                  >
+                    {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                    {regenerating ? 'Generating...' : 'Magic Random (AI)'}
+                  </button>
+                </div>
                 {activeModelPricing && (
-                  <div className="flex flex-col justify-center items-start">
-                    <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
-                      <Coins size={12} className="text-amber-400" />
-                      <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
-                      <span className="text-[10px] text-amber-300 font-mono">
-                        {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, 50, maxWords)}
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                    <Coins size={12} className="text-amber-400" />
+                    <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
+                    <span className="text-[10px] text-amber-300 font-mono">
+                      {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, 50, maxWords)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -389,32 +389,32 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
           </div>
 
           <div className="flex flex-col items-center gap-4">
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={handleGenerate}
-                disabled={saving || regenerating || showClearModal}
-                className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
-              >
-                Standard Random
-              </button>
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={handleGenerate}
+                  disabled={saving || regenerating || showClearModal}
+                  className="px-6 py-3 bg-slate-800 text-slate-200 font-medium rounded-xl hover:bg-slate-700 transition-all border border-slate-700 text-sm"
+                >
+                  Standard Random
+                </button>
 
-              <button
-                onClick={handleMagicRandom}
-                disabled={saving || regenerating || showClearModal}
-                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
-              >
-                {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {regenerating ? 'Generating...' : 'Magic Random (AI)'}
-              </button>
+                <button
+                  onClick={handleMagicRandom}
+                  disabled={saving || regenerating || showClearModal}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium rounded-xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 text-sm flex items-center gap-2"
+                >
+                  {regenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {regenerating ? 'Generating...' : 'Magic Random (AI)'}
+                </button>
+              </div>
               {activeModelPricing && (
-                <div className="flex flex-col justify-center items-start">
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
-                    <Coins size={12} className="text-amber-400" />
-                    <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
-                    <span className="text-[10px] text-amber-300 font-mono">
-                      {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, 50, maxWords)}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                  <Coins size={12} className="text-amber-400" />
+                  <span className="text-[10px] text-slate-400 font-medium">Est. Cost</span>
+                  <span className="text-[10px] text-amber-300 font-mono">
+                    {estimateLLMCost(activeModelPricing.prompt, activeModelPricing.completion, 50, maxWords)}
+                  </span>
                 </div>
               )}
             </div>
