@@ -66,87 +66,110 @@ router.post('/', async (req, res) => {
         } else if (action === 'set-active') {
             const { role, modelName } = req.body;
             const isActive = req.body.active !== false;
+            const client = await pool.connect();
 
-            if (role === 'generation') {
-                await pool.query('UPDATE user_api_keys SET is_active_gen = false');
-                await pool.query('UPDATE user_local_endpoints SET is_active_gen = false');
-                if (isActive) {
-                    const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active_gen = true, model_gen = COALESCE($2, model_gen, model_name) WHERE provider = $1 RETURNING *',
-                        [provider, modelName]
-                    );
-                    if (updateKeys.rows.length === 0) {
-                        await pool.query(
-                            'UPDATE user_local_endpoints SET is_active_gen = true, model_gen = COALESCE($2, model_gen, model_name) WHERE provider = $1',
-                            [provider, modelName]
-                        );
-                    }
-                }
-            } else if (role === 'improvement') {
-                await pool.query('UPDATE user_api_keys SET is_active_improve = false');
-                await pool.query('UPDATE user_local_endpoints SET is_active_improve = false');
-                if (isActive) {
-                    const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active_improve = true, model_improve = COALESCE($2, model_improve, model_name) WHERE provider = $1 RETURNING *',
-                        [provider, modelName]
-                    );
-                    if (updateKeys.rows.length === 0) {
-                        await pool.query(
-                            'UPDATE user_local_endpoints SET is_active_improve = true, model_improve = COALESCE($2, model_improve, model_name) WHERE provider = $1',
-                            [provider, modelName]
-                        );
-                    }
-                }
-            } else if (role === 'vision') {
-                await pool.query('UPDATE user_api_keys SET is_active_vision = false');
-                await pool.query('UPDATE user_local_endpoints SET is_active_vision = false');
-                if (isActive) {
-                    const updateKeys = await pool.query(
-                        'UPDATE user_api_keys SET is_active_vision = true, model_vision = COALESCE($2, model_vision, model_name) WHERE provider = $1 RETURNING *',
-                        [provider, modelName]
-                    );
-                    if (updateKeys.rows.length === 0) {
-                        await pool.query(
-                            'UPDATE user_local_endpoints SET is_active_vision = true, model_vision = COALESCE($2, model_vision, model_name) WHERE provider = $1',
-                            [provider, modelName]
-                        );
-                    }
-                }
-            } else {
-                // FALLBACK: Legacy behavior (set all)
-                await pool.query('UPDATE user_api_keys SET is_active = false, is_active_gen = false, is_active_improve = false, is_active_vision = false');
-                await pool.query('UPDATE user_local_endpoints SET is_active = false, is_active_gen = false, is_active_improve = false, is_active_vision = false');
+            try {
+                await client.query('BEGIN');
 
-                if (isActive) {
-                    await pool.query(
-                        'UPDATE user_api_keys SET is_active = true, is_active_gen = true, is_active_improve = true, is_active_vision = true WHERE provider = $1',
-                        [provider]
-                    );
-                    await pool.query(
-                        'UPDATE user_local_endpoints SET is_active = true, is_active_gen = true, is_active_improve = true, is_active_vision = true WHERE provider = $1',
-                        [provider]
-                    );
+                if (role === 'generation') {
+                    await client.query('UPDATE user_api_keys SET is_active_gen = false');
+                    await client.query('UPDATE user_local_endpoints SET is_active_gen = false');
+                    if (isActive) {
+                        const updateKeys = await client.query(
+                            'UPDATE user_api_keys SET is_active_gen = true, model_gen = COALESCE($2, model_gen, model_name) WHERE provider = $1 RETURNING *',
+                            [provider, modelName]
+                        );
+                        if (updateKeys.rows.length === 0) {
+                            await client.query(
+                                'UPDATE user_local_endpoints SET is_active_gen = true, model_gen = COALESCE($2, model_gen, model_name) WHERE provider = $1',
+                                [provider, modelName]
+                            );
+                        }
+                    }
+                } else if (role === 'improvement') {
+                    await client.query('UPDATE user_api_keys SET is_active_improve = false');
+                    await client.query('UPDATE user_local_endpoints SET is_active_improve = false');
+                    if (isActive) {
+                        const updateKeys = await client.query(
+                            'UPDATE user_api_keys SET is_active_improve = true, model_improve = COALESCE($2, model_improve, model_name) WHERE provider = $1 RETURNING *',
+                            [provider, modelName]
+                        );
+                        if (updateKeys.rows.length === 0) {
+                            await client.query(
+                                'UPDATE user_local_endpoints SET is_active_improve = true, model_improve = COALESCE($2, model_improve, model_name) WHERE provider = $1',
+                                [provider, modelName]
+                            );
+                        }
+                    }
+                } else if (role === 'vision') {
+                    await client.query('UPDATE user_api_keys SET is_active_vision = false');
+                    await client.query('UPDATE user_local_endpoints SET is_active_vision = false');
+                    if (isActive) {
+                        const updateKeys = await client.query(
+                            'UPDATE user_api_keys SET is_active_vision = true, model_vision = COALESCE($2, model_vision, model_name) WHERE provider = $1 RETURNING *',
+                            [provider, modelName]
+                        );
+                        if (updateKeys.rows.length === 0) {
+                            await client.query(
+                                'UPDATE user_local_endpoints SET is_active_vision = true, model_vision = COALESCE($2, model_vision, model_name) WHERE provider = $1',
+                                [provider, modelName]
+                            );
+                        }
+                    }
+                } else {
+                    // FALLBACK: Legacy behavior (set all)
+                    await client.query('UPDATE user_api_keys SET is_active = false, is_active_gen = false, is_active_improve = false, is_active_vision = false');
+                    await client.query('UPDATE user_local_endpoints SET is_active = false, is_active_gen = false, is_active_improve = false, is_active_vision = false');
+
+                    if (isActive) {
+                        await client.query(
+                            'UPDATE user_api_keys SET is_active = true, is_active_gen = true, is_active_improve = true, is_active_vision = true WHERE provider = $1',
+                            [provider]
+                        );
+                        await client.query(
+                            'UPDATE user_local_endpoints SET is_active = true, is_active_gen = true, is_active_improve = true, is_active_vision = true WHERE provider = $1',
+                            [provider]
+                        );
+                    }
                 }
+
+                // ✨ CRITICAL: Sync legacy is_active flag with new roles (is_active = gen OR improve OR vision)
+                await client.query('UPDATE user_api_keys SET is_active = (is_active_gen OR is_active_improve OR is_active_vision)');
+                await client.query('UPDATE user_local_endpoints SET is_active = (is_active_gen OR is_active_improve OR is_active_vision)');
+
+                await client.query('COMMIT');
+                res.json({ success: true, active: isActive, role });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
             }
-
-            // ✨ CRITICAL: Sync legacy is_active flag with new roles (is_active = gen OR improve OR vision)
-            await pool.query('UPDATE user_api_keys SET is_active = (is_active_gen OR is_active_improve OR is_active_vision)');
-            await pool.query('UPDATE user_local_endpoints SET is_active = (is_active_gen OR is_active_improve OR is_active_vision)');
-            res.json({ success: true, active: isActive, role });
         } else if (action === 'update-models') {
             const { modelGen, modelImprove, modelVision } = req.body;
+            const client = await pool.connect();
 
-            // Try updating both tables, one will succeed
-            await pool.query(
-                'UPDATE user_api_keys SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve), model_vision = COALESCE($3, model_vision) WHERE provider = $4',
-                [modelGen, modelImprove, modelVision, provider]
-            );
-            await pool.query(
-                'UPDATE user_local_endpoints SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve), model_vision = COALESCE($3, model_vision) WHERE provider = $4',
-                [modelGen, modelImprove, modelVision, provider]
-            );
+            try {
+                await client.query('BEGIN');
 
-            res.json({ success: true });
+                // Try updating both tables, one will succeed
+                await client.query(
+                    'UPDATE user_api_keys SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve), model_vision = COALESCE($3, model_vision) WHERE provider = $4',
+                    [modelGen, modelImprove, modelVision, provider]
+                );
+                await client.query(
+                    'UPDATE user_local_endpoints SET model_gen = COALESCE($1, model_gen), model_improve = COALESCE($2, model_improve), model_vision = COALESCE($3, model_vision) WHERE provider = $4',
+                    [modelGen, modelImprove, modelVision, provider]
+                );
+
+                await client.query('COMMIT');
+                res.json({ success: true });
+            } catch (error) {
+                await client.query('ROLLBACK');
+                throw error;
+            } finally {
+                client.release();
+            }
         } else {
             // Backward compatibility for standard POST without action
             if (provider && apiKey) {
