@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const { applyProviderFilter } = require('../lib/query-helpers');
 
 // Get all local endpoints for user
 router.get('/', async (req, res) => {
@@ -34,27 +35,22 @@ router.post('/', async (req, res) => {
     }
 });
 
+
+
+// ... (existing code)
+
 // Bulk update local endpoints (e.g. set all inactive)
 router.put('/', async (req, res) => {
     try {
         const { is_active } = req.body;
         const { provider } = req.query;
 
-        let query = 'UPDATE user_local_endpoints SET is_active = $1';
-        const params = [is_active];
+        let baseQuery = 'UPDATE user_local_endpoints SET is_active = $1';
+        let params = [is_active];
 
-        if (provider) {
-            if (provider.startsWith('neq.')) {
-                const val = provider.substring(4); // Remove 'neq.'
-                query += ' WHERE provider != $2';
-                params.push(val);
-            } else {
-                query += ' WHERE provider = $2';
-                params.push(provider);
-            }
-        }
+        const { query, params: finalParams } = applyProviderFilter(baseQuery, params, provider);
 
-        const result = await pool.query(query, params);
+        const result = await pool.query(query, finalParams);
         res.json({ success: true, updated: result.rowCount });
     } catch (err) {
         console.error('Error updating local endpoints:', err);
