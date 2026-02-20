@@ -71,18 +71,38 @@ export default function BatchTesting() {
 
   async function loadTestDetails(testId: string) {
     try {
-      const { data: prompts, error } = await db
+      // 1. Fetch prompts
+      const { data: prompts, error: promptsError } = await db
         .from('batch_test_prompts')
-        .select(`
-          *,
-          results:batch_test_results(*)
-        `)
+        .select('*')
         .eq('batch_test_id', testId)
         .order('sort_order');
 
-      if (error) throw error;
+      if (promptsError) throw promptsError;
 
-      setSelectedTest((prev) => (prev ? { ...prev, prompts: prompts || [] } : null));
+      if (!prompts || prompts.length === 0) {
+        setSelectedTest((prev) => (prev ? { ...prev, prompts: [] } : null));
+        return;
+      }
+
+      // 2. Fetch results for these prompts
+      const promptIds = prompts.map((p: { id: string }) => p.id);
+      const { data: results, error: resultsError } = await db
+        .from('batch_test_results')
+        .select('*')
+        .in('batch_test_prompt_id', promptIds);
+
+      if (resultsError) throw resultsError;
+
+      // 3. Join data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const joinedPrompts = prompts.map((prompt: any) => ({
+        ...prompt,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        results: results?.filter((r: any) => r.batch_test_prompt_id === prompt.id) || []
+      }));
+
+      setSelectedTest((prev) => (prev ? { ...prev, prompts: joinedPrompts } : null));
     } catch (e) {
       console.error('Failed to load test details:', e);
     }
