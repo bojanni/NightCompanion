@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import Dashboard from './pages/Dashboard';
 import Prompts from './pages/Prompts';
@@ -19,7 +20,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<Layout />}>
+        <Route element={
+          <ErrorBoundary>
+            <Layout />
+          </ErrorBoundary>
+        }>
           <Route path="/" element={<Dashboard />} />
           <Route path="/generator" element={<Generator />} />
           <Route path="/prompts" element={<Prompts />} />
