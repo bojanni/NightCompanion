@@ -202,7 +202,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       if (error) throw error;
       toast.success('Main image updated');
       onSave(); // Reload parent
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update main image');
     }
   }
@@ -219,7 +219,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       toast.success(colId ? 'Added to collection' : 'Removed from collection');
       setManagingCollectionFor(null);
       setShowCollectionManager(false);
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update collection');
     }
   }
@@ -597,7 +597,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
                           setStartImage(data.url);
                           toast.success('Start image uploaded');
                         }
-                      } catch (err) {
+                      } catch (_err) {
                         toast.error('Failed to upload start image');
                       }
                     }}
@@ -679,9 +679,9 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
 
         {showNewTag && (
           <div className="p-3 bg-slate-700/30 rounded-xl space-y-3">
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex-1 min-w-[120px]">
-                <label className="block text-xs text-slate-400 mb-1">Search or Create</label>
+            <div className="flex flex-col gap-3">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Search or Create Tag</label>
                 <input
                   value={newTagName}
                   onChange={(e) => setNewTagName(e.target.value)}
@@ -689,87 +689,88 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
                   className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40"
                   autoFocus
                 />
+
+                {/* Autocomplete Suggestions Container */}
+                {newTagName.trim() && (
+                  <div className="mt-2 p-2 bg-slate-800/80 border border-slate-700/50 rounded-lg max-h-40 overflow-y-auto">
+                    {allTags.filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id)).length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {allTags
+                          .filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id))
+                          .slice(0, 15)
+                          .map(tag => (
+                            <button
+                              key={tag.id}
+                              onClick={() => { toggleTag(tag.id); setNewTagName(''); }}
+                              className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-slate-500 rounded-md text-xs text-white transition-all flex items-center gap-1.5"
+                            >
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color || '#64748b' }} />
+                              {tag.name}
+                            </button>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic px-1 py-0.5">No existing tags match "{newTagName}". You can create it below.</p>
+                    )}
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Color</label>
-                <div className="flex gap-1">
-                  {TAG_COLORS.map((c) => {
-                    const colorMap: Record<string, string> = {
-                      '#d97706': 'bg-amber-600',
-                      '#dc2626': 'bg-red-600',
-                      '#059669': 'bg-emerald-600',
-                      '#2563eb': 'bg-blue-600',
-                      '#7c3aed': 'bg-violet-600',
-                      '#db2777': 'bg-pink-600',
-                      '#0891b2': 'bg-cyan-600',
-                      '#65a30d': 'bg-lime-600'
-                    };
-                    return (
-                      <button
-                        key={c}
-                        onClick={() => setNewTagColor(c)}
-                        className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''} ${colorMap[c] || 'bg-slate-600'}`}
-                        aria-label={`Select color ${c}`}
-                        title={`Select color ${c}`}
-                      />
-                    );
-                  })}
+
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/50 mt-1">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">New Tag Color</label>
+                  <div className="flex gap-1">
+                    {TAG_COLORS.map((c) => {
+                      const colorMap: Record<string, string> = {
+                        '#d97706': 'bg-amber-600',
+                        '#dc2626': 'bg-red-600',
+                        '#059669': 'bg-emerald-600',
+                        '#2563eb': 'bg-blue-600',
+                        '#7c3aed': 'bg-violet-600',
+                        '#db2777': 'bg-pink-600',
+                        '#0891b2': 'bg-cyan-600',
+                        '#65a30d': 'bg-lime-600'
+                      };
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => setNewTagColor(c)}
+                          className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''} ${colorMap[c] || 'bg-slate-600'}`}
+                          aria-label={`Select color ${c}`}
+                          title={`Select color ${c}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Category</label>
+                  <select
+                    value={newTagCategory}
+                    onChange={(e) => setNewTagCategory(e.target.value)}
+                    className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none"
+                    aria-label="Select tag category"
+                  >
+                    {TAG_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">Category</label>
-                <select
-                  value={newTagCategory}
-                  onChange={(e) => setNewTagCategory(e.target.value)}
-                  className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none"
-                  aria-label="Select tag category"
-                >
-                  {TAG_CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-1">
+
+              <div className="flex items-center justify-between pt-2 mt-2">
+                <button onClick={() => setShowNewTag(false)} className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors">
+                  Cancel
+                </button>
                 <button
                   onClick={handleCreateTag}
                   disabled={!newTagName.trim() || allTags.some(t => t.name.toLowerCase() === newTagName.trim().toLowerCase() && selectedTagIds.includes(t.id))}
                   className="px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create
-                </button>
-                <button onClick={() => setShowNewTag(false)} className="p-1.5 text-slate-400 hover:text-white" aria-label="Close tag creator">
-                  <X size={14} />
+                  Create New Tag
                 </button>
               </div>
             </div>
-
-            {/* Existing Tags Suggestions */}
-            {newTagName.trim() && (
-              <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-700/50">
-                {allTags
-                  .filter(t =>
-                    t.name.toLowerCase().includes(newTagName.toLowerCase()) &&
-                    !selectedTagIds.includes(t.id)
-                  )
-                  .slice(0, 8)
-                  .map(tag => (
-                    <button
-                      key={tag.id}
-                      onClick={() => {
-                        toggleTag(tag.id);
-                        setNewTagName('');
-                      }}
-                      className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-md text-xs text-slate-300 hover:text-white hover:border-slate-500 transition-colors flex items-center gap-1"
-                    >
-                      <Plus size={10} />
-                      {tag.name}
-                    </button>
-                  ))}
-                {allTags.filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id)).length === 0 && (
-                  <span className="text-xs text-slate-500 italic">No existing tags match. Create new?</span>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -917,22 +918,24 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         </button>
       </div>
       {/* Collection Manager Modal Overlay */}
-      {showCollectionManager && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }}>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Manage Collection</h3>
-              <button onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }} className="text-slate-400 hover:text-white">
-                <X size={20} />
-              </button>
+      {
+        showCollectionManager && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }}>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Manage Collection</h3>
+                <button onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }} className="text-slate-400 hover:text-white">
+                  <X size={20} />
+                </button>
+              </div>
+              <CollectionManager
+                onSelect={(colId) => handleAddToCollection(colId)}
+                selectedId={galleryItems.find(g => g.id === managingCollectionFor)?.collection_id ?? null}
+              />
             </div>
-            <CollectionManager
-              onSelect={(colId) => handleAddToCollection(colId)}
-              selectedId={galleryItems.find(g => g.id === managingCollectionFor)?.collection_id ?? null}
-            />
           </div>
-        </div>
-      )}
+        )
+      }
     </div >
   );
 }
