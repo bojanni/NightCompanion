@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, X, FileImage } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DropZoneProps {
@@ -62,14 +62,16 @@ export default function DropZone({
 
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
-            validateAndPassFile(files[0]);
+            const file = files[0];
+            if (file) validateAndPassFile(file);
         }
     }, [validateAndPassFile]);
 
     const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            validateAndPassFile(files[0]);
+            const file = files[0];
+            if (file) validateAndPassFile(file);
         }
         // Reset input value to allow selecting same file again
         e.target.value = '';

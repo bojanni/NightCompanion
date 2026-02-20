@@ -158,7 +158,12 @@ export default function PromptDetailOverlay({
                             <p className="mb-4">No image linked to this prompt</p>
 
                             <DropZone
-                                onFileSelect={(file) => handleImageUpload({ target: { files: [file] } } as any)}
+                                onFileSelect={(file) => {
+                                    const syntheticEvent = {
+                                        target: { files: [file] }
+                                    } as unknown as React.ChangeEvent<HTMLInputElement>;
+                                    handleImageUpload(syntheticEvent);
+                                }}
                                 className="w-full"
                             >
                                 <div className="flex flex-col items-center gap-3 py-6">

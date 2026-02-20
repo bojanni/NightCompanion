@@ -7,7 +7,7 @@ import {
   analyzeImage, batchAnalyzeImages, resizeImageToBase64,
 } from '../lib/ai-service';
 import type { ImageAnalysisResult, BatchAnalysisResult } from '../lib/ai-service';
-import { db } from '../lib/api';
+
 import SingleAnalysis from './analysis/SingleAnalysis';
 import ComparisonResults from './analysis/ComparisonResults';
 import { handleAIError } from '../lib/error-handler';
@@ -220,4 +220,102 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
   }, [onUpdate]);
 
   const handleUrlChange = useCallback((url: string) => {
-    ```
+    onUpdate({ url, previewUrl: url });
+  }, [onUpdate]);
+
+  const clearImage = useCallback(() => {
+    onUpdate({ file: null, url: '', previewUrl: '' });
+    if (fileRef.current) fileRef.current.value = '';
+  }, [onUpdate]);
+
+  return (
+    <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-3 space-y-2 relative animate-in fade-in zoom-in-95 duration-200">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => { onUpdate({ inputMode: 'upload' }); clearImage(); }}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${slot.inputMode === 'upload'
+              ? 'bg-cyan-500/15 text-cyan-300'
+              : 'text-slate-500 hover:text-slate-400'
+              }`}
+          >
+            <Upload size={9} /> File
+          </button>
+          <button
+            onClick={() => { onUpdate({ inputMode: 'url' }); clearImage(); }}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${slot.inputMode === 'url'
+              ? 'bg-cyan-500/15 text-cyan-300'
+              : 'text-slate-500 hover:text-slate-400'
+              }`}
+          >
+            <Link2 size={9} /> URL
+          </button>
+        </div>
+        {canRemove && (
+          <button
+            onClick={onRemove}
+            className="w-5 h-5 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-500 hover:text-red-400 transition-colors"
+            title="Remove image slot"
+          >
+            <X size={10} />
+          </button>
+        )}
+      </div>
+
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" title="Upload Image" />
+
+      {!hasImage ? (
+        slot.inputMode === 'upload' ? (
+          <DropZone
+            onFileSelect={(file) => onUpdate({ file, previewUrl: URL.createObjectURL(file) })}
+            className="w-full border-slate-700/50 hover:border-cyan-500/30 bg-slate-900/20 py-4"
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Upload size={16} className="text-slate-600" />
+              <span className="text-[10px] text-slate-500">Drop or click</span>
+            </div>
+          </DropZone>
+        ) : (
+          <input
+            type="url"
+            value={slot.url}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            placeholder="https://..."
+            className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2 text-[10px] text-white placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500/40"
+            title="Image URL"
+          />
+        )
+      ) : (
+        <div className="relative group">
+          <img
+            src={slot.previewUrl}
+            alt="Preview"
+            className="w-full h-24 object-contain rounded-lg bg-slate-950/50 border border-slate-800"
+            onError={() => onUpdate({ previewUrl: '' })}
+          />
+          <button
+            onClick={clearImage}
+            className="absolute top-1 right-1 w-6 h-6 bg-black/70 backdrop-blur-sm rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/80"
+            title="Remove image"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      <div className="pt-1">
+        <label className="text-[9px] uppercase tracking-wider text-slate-500 font-bold mb-1 block">Model</label>
+        <select
+          value={slot.model}
+          onChange={(e) => onUpdate({ model: e.target.value })}
+          className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500/40 appearance-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+          title="Select AI Model"
+        >
+          {AI_MODELS.map((m) => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
