@@ -11,6 +11,7 @@ import { db } from '../lib/api';
 import SingleAnalysis from './analysis/SingleAnalysis';
 import ComparisonResults from './analysis/ComparisonResults';
 import { handleAIError } from '../lib/error-handler';
+import DropZone from './DropZone';
 
 import { AI_MODELS } from '../lib/types';
 
@@ -219,98 +220,4 @@ function ImageSlot({ slot, canRemove, onUpdate, onRemove }: ImageSlotProps) {
   }, [onUpdate]);
 
   const handleUrlChange = useCallback((url: string) => {
-    onUpdate({ url, previewUrl: url });
-  }, [onUpdate]);
-
-  const clearImage = useCallback(() => {
-    onUpdate({ file: null, url: '', previewUrl: '' });
-    if (fileRef.current) fileRef.current.value = '';
-  }, [onUpdate]);
-
-  return (
-    <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-3 space-y-2 relative">
-      {canRemove && (
-        <button
-          onClick={onRemove}
-          className="absolute top-2 right-2 z-10 w-5 h-5 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-red-400 transition-colors"
-          aria-label="Remove image"
-          title="Remove image"
-        >
-          <X size={10} />
-        </button>
-      )}
-
-      <div className="flex gap-1.5">
-        <button
-          onClick={() => { onUpdate({ inputMode: 'upload' }); clearImage(); }}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${slot.inputMode === 'upload'
-            ? 'bg-cyan-500/15 text-cyan-300'
-            : 'text-slate-500 hover:text-slate-400'
-            }`}
-        >
-          <Upload size={9} /> File
-        </button>
-        <button
-          onClick={() => { onUpdate({ inputMode: 'url' }); clearImage(); }}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] transition-all ${slot.inputMode === 'url'
-            ? 'bg-cyan-500/15 text-cyan-300'
-            : 'text-slate-500 hover:text-slate-400'
-            }`}
-        >
-          <Link2 size={9} /> URL
-        </button>
-      </div>
-
-      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" title="Upload Image" />
-
-      {!hasImage ? (
-        slot.inputMode === 'upload' ? (
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="w-full border border-dashed border-slate-700 rounded-lg py-6 flex flex-col items-center gap-1 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all group"
-            title="Upload an image"
-          >
-            <Upload size={16} className="text-slate-600 group-hover:text-cyan-400" />
-            <span className="text-[10px] text-slate-500">Upload image</span>
-          </button>
-        ) : (
-          <input
-            type="url"
-            value={slot.url}
-            onChange={(e) => handleUrlChange(e.target.value)}
-            placeholder="https://..."
-            className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-2 text-[10px] text-white placeholder-slate-600 font-mono focus:outline-none focus:border-cyan-500/40"
-            title="Image URL"
-          />
-        )
-      ) : (
-        <div className="relative">
-          <img
-            src={slot.previewUrl}
-            alt="Preview"
-            className="w-full h-24 object-cover rounded-lg bg-slate-800/50"
-            onError={() => onUpdate({ previewUrl: '' })}
-          />
-          <button
-            onClick={clearImage}
-            className="absolute top-1 right-1 w-5 h-5 bg-slate-900/80 rounded-full flex items-center justify-center text-slate-400 hover:text-white"
-            title="Remove image"
-          >
-            <X size={9} />
-          </button>
-        </div>
-      )}
-
-      <select
-        value={slot.model}
-        onChange={(e) => onUpdate({ model: e.target.value })}
-        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-slate-300 focus:outline-none focus:border-cyan-500/40 appearance-none"
-        title="Select AI Model"
-      >
-        {AI_MODELS.map((m) => (
-          <option key={m} value={m}>{m}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
+    ```

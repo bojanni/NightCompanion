@@ -6,19 +6,22 @@ import { Toaster } from 'sonner';
 import App from './App.tsx';
 import './index.css';
 import { queryClient } from './lib/query-client';
+import { ThemeProvider } from './context/ThemeContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
-      <Toaster
-        position="bottom-right"
-        theme="dark"
-        richColors
-        closeButton
-        duration={4000}
-      />
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ThemeProvider defaultTheme="dark" storageKey="nightcompanion-theme">
+        <App />
+        <Toaster
+          position="bottom-right"
+          theme="system" // Let Sonner adapt to system/app theme
+          richColors
+          closeButton
+          duration={4000}
+        />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>
 );

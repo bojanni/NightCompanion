@@ -3,8 +3,10 @@ import { useState } from 'react';
 import {
   Wrench, Clock, ChevronLeft, ChevronRight,
   LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
-  Compass, FlaskConical, Fingerprint, Settings, Menu, Flame
+  Compass, FlaskConical, Fingerprint, Settings, Menu, Flame,
+  Moon, Sun
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,6 +29,8 @@ const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
 export default function Layout() {
   const location = useLocation();
   const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
+
+  const { theme, setTheme } = useTheme();
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('sidebar_collapsed') === 'true'; }
@@ -63,6 +67,22 @@ export default function Layout() {
             title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
+
+        {/* Theme Toggle */}
+        <div className={`px-3 py-2 ${collapsed ? 'flex justify-center' : ''}`}>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800 w-full ${collapsed ? 'justify-center' : ''}`}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+          >
+            {theme === 'dark' ? <Sun size={18} className="shrink-0" /> : <Moon size={18} className="shrink-0" />}
+            {!collapsed && (
+              <span className="animate-in fade-in slide-in-from-left-2 duration-300">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+            )}
           </button>
         </div>
 

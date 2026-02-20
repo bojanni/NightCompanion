@@ -8,6 +8,7 @@ import TagBadge from './TagBadge';
 import StarRating from './StarRating';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
+import DropZone from './DropZone';
 
 interface PromptDetailOverlayProps {
     prompt: Prompt;
@@ -152,24 +153,26 @@ export default function PromptDetailOverlay({
                             className="max-w-full max-h-[70vh] md:max-h-[85vh] object-contain rounded-xl shadow-2xl"
                         />
                     ) : (
-                        <div className="flex flex-col items-center gap-4 text-slate-500 py-20">
+                        <div className="flex flex-col items-center gap-4 text-slate-500 py-10 w-full max-w-sm px-6">
                             <Database size={64} strokeWidth={1} />
-                            <p>No image linked to this prompt</p>
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors mt-2"
+                            <p className="mb-4">No image linked to this prompt</p>
+
+                            <DropZone
+                                onFileSelect={(file) => handleImageUpload({ target: { files: [file] } } as any)}
+                                className="w-full"
                             >
-                                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                                {isUploading ? 'Uploading...' : 'Add Image'}
-                            </button>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleImageUpload}
-                            />
+                                <div className="flex flex-col items-center gap-3 py-6">
+                                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                                        {isUploading ? <Loader2 size={24} className="animate-spin text-amber-500" /> : <Plus size={24} />}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-slate-200">
+                                            {isUploading ? 'Uploading...' : 'Add Start Image'}
+                                        </p>
+                                        <p className="text-xs text-slate-500 mt-1">Drag & drop or click</p>
+                                    </div>
+                                </div>
+                            </DropZone>
                         </div>
                     )}
 
