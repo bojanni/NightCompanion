@@ -87,7 +87,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         // If activeKey is openrouter but we don't have pricing, try to fetch it
         if (activeKey.provider === 'openrouter' && !activeModelPricing) {
           // We need a token or at least call the endpoint.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           const token = '';
           listModels(token, 'openrouter').then((routerModels: ModelListItem[]) => {
             // Update cache
@@ -208,7 +208,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       is_template: false,
       is_favorite: false,
       model: activeModel,
-      suggested_model: topSuggestion ? topSuggestion.model : undefined
+      suggested_model: topSuggestion ? topSuggestion.model.id : undefined
     });
     setSaving(false);
     onSaved();

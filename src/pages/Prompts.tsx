@@ -61,7 +61,7 @@ export default function Prompts() {
       .order('created_at', { ascending: false });
 
     if (search) {
-      // @ts-ignore - Custom search param handled by our backend
+      // Custom search param handled by our backend
       query = query.like('search', search);
     }
 
@@ -624,7 +624,17 @@ export default function Prompts() {
                           <div className="flex items-center gap-1.5 min-w-0 pl-3 border-l border-slate-800/50">
                             <Sparkles size={12} className="text-teal-500 shrink-0" />
                             <span className="text-[10px] font-medium text-slate-400 truncate" title={`Suggested: ${prompt.suggested_model}`}>
-                              {prompt.suggested_model}
+                              {(() => {
+                                try {
+                                  if (prompt.suggested_model?.startsWith('{')) {
+                                    const parsed = JSON.parse(prompt.suggested_model);
+                                    return parsed.name || parsed.id || prompt.suggested_model;
+                                  }
+                                  return prompt.suggested_model;
+                                } catch {
+                                  return prompt.suggested_model;
+                                }
+                              })()}
                             </span>
                           </div>
                         )}
