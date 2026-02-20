@@ -4,6 +4,7 @@ import { db } from '../lib/api';
 import type { Prompt, Tag } from '../lib/types';
 import { handleError, showSuccess } from '../lib/error-handler';
 import { toast } from 'sonner';
+import { mapNightcafeAlgorithmToModelId } from '../lib/nightcafe-parser';
 
 const PAGE_SIZE = 20;
 
@@ -38,6 +39,7 @@ export function usePromptsState() {
     const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number; model?: string } | null>(null);
     const [detailViewIndex, setDetailViewIndex] = useState<number | null>(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+    const [importingNightcafe, setImportingNightcafe] = useState(false);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -169,6 +171,61 @@ export function usePromptsState() {
         }
     }
 
+    async function handleImportNightcafeUrl(url: string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const electron = (window as any).electron;
+        if (!electron?.fetchNightcafe) {
+            toast.error('NightCafe import is not available in your environment');
+            return;
+        }
+
+        setImportingNightcafe(true);
+        const toastId = toast.loading('Importing from NightCafe...');
+
+        try {
+            const data = await electron.fetchNightcafe(url);
+
+            if (!data || !data.prompt) {
+                throw new Error('Could not extract data from NightCafe URL');
+            }
+
+            const modelId = mapNightcafeAlgorithmToModelId(data.algorithm);
+
+            // Insert Prompt
+            const newPromptData = {
+                title: data.title || 'NightCafe Creation',
+                content: data.prompt,
+                rating: 0,
+                is_favorite: false,
+                is_template: false,
+            };
+
+            const { data: insertedPrompt, error: promptError } = await db.from('prompts').insert([newPromptData]).select().single();
+            if (promptError) throw promptError;
+
+            // Insert Gallery Item (since NC creations have images)
+            if (insertedPrompt && data.imageUrl) {
+                const newGalleryItemData = {
+                    title: data.title || 'NightCafe Creation',
+                    image_url: data.imageUrl,
+                    prompt_used: data.prompt,
+                    prompt_id: insertedPrompt.id,
+                    model: modelId,
+                    rating: 0
+                };
+                await db.from('gallery_items').insert([newGalleryItemData]);
+            }
+
+            toast.success('Successfully imported from NightCafe', { id: toastId });
+            loadData(); // refresh prompts & images
+        } catch (err) {
+            console.error('NightCafe import failed:', err);
+            toast.error(err instanceof Error ? err.message : 'Failed to import from NightCafe', { id: toastId });
+        } finally {
+            setImportingNightcafe(false);
+        }
+    }
+
     function getTagsForPrompt(promptId: string): Tag[] {
         const tagIds = promptTagMap[promptId] || [];
         return tags.filter(t => tagIds.includes(t.id));
@@ -204,6 +261,7 @@ export function usePromptsState() {
         lightboxImage, setLightboxImage,
         detailViewIndex, setDetailViewIndex,
         deleteConfirmId, setDeleteConfirmId,
+        importingNightcafe, setImportingNightcafe,
         filtered,
 
         // Actions
@@ -211,6 +269,7 @@ export function usePromptsState() {
         handleDelete,
         handleRatePrompt,
         handleToggleFavorite,
+        handleImportNightcafeUrl,
         getTagsForPrompt,
     };
 }

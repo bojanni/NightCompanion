@@ -454,7 +454,6 @@ export default function Gallery() {
           >
             <FolderOpen size={14} />
             New Collection
-            New Collection
           </button>
           <button
             onClick={handleExport}
@@ -470,7 +469,7 @@ export default function Gallery() {
             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 text-sm font-medium rounded-xl hover:bg-indigo-500/20 transition-colors border border-indigo-500/20 disabled:opacity-50"
           >
             {importingNightcafe ? <Loader2 size={14} className="animate-spin" /> : <Plus size={16} />}
-            Import NC URL
+            Import From NightCafe
           </button>
           <button
             onClick={() => openItemEditor(null)}

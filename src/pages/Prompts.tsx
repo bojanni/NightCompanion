@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
-  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X, Calendar
+  SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X, Calendar, Loader2
 } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
@@ -60,8 +60,13 @@ export default function Prompts() {
     handleDelete,
     handleRatePrompt,
     handleToggleFavorite,
+    importingNightcafe,
+    handleImportNightcafeUrl,
     getTagsForPrompt,
   } = usePromptsState();
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
 
   useEffect(() => {
     // Debounce search to avoid too many requests
@@ -328,16 +333,26 @@ export default function Prompts() {
           <h1 className="text-2xl font-bold text-white">Prompts</h1>
           <p className="text-slate-400 mt-1">{totalCount} prompts in your library</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingPrompt(null);
-            setShowEditor(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
-        >
-          <Plus size={16} />
-          New Prompt
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            disabled={importingNightcafe}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 text-sm font-medium rounded-xl hover:bg-indigo-500/20 transition-colors border border-indigo-500/20 disabled:opacity-50"
+          >
+            {importingNightcafe ? <Loader2 size={14} className="animate-spin" /> : <Plus size={16} />}
+            Import From NightCafe
+          </button>
+          <button
+            onClick={() => {
+              setEditingPrompt(null);
+              setShowEditor(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
+          >
+            <Plus size={16} />
+            New Prompt
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
@@ -893,6 +908,56 @@ export default function Prompts() {
           }
         ]}
       />
+        ]}
+      />
+
+      <Modal
+        open={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setImportUrl('');
+        }}
+        title="Import from NightCafe"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Paste a NightCafe creation URL here to automatically pull the image, prompt, and model into your library.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">NightCafe URL</label>
+            <input
+              type="text"
+              value={importUrl}
+              onChange={(e) => setImportUrl(e.target.value)}
+              placeholder="https://creator.nightcafe.studio/creation/..."
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              onClick={() => {
+                setShowImportModal(false);
+                setImportUrl('');
+              }}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!importUrl) return;
+                setShowImportModal(false);
+                await handleImportNightcafeUrl(importUrl);
+                setImportUrl('');
+              }}
+              disabled={!importUrl}
+              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Import
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div >
   );
 }
