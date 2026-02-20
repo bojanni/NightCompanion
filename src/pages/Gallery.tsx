@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
@@ -8,7 +7,7 @@ import {
 import { exportGalleryItems } from '../lib/export-utils';
 import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
-import type { GalleryItem, Prompt, Collection } from '../lib/types';
+import type { GalleryItem, Prompt } from '../lib/types';
 import Modal from '../components/Modal';
 import ChoiceModal from '../components/ChoiceModal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
@@ -54,13 +53,14 @@ const PAGE_SIZE = 24;
 export default function Gallery() {
   const {
     items, setItems,
-    collections, setCollections,
-    loading, setLoading,
+    collections,
+    loading,
     search, setSearch,
     filterCollection, setFilterCollection,
     filterRating, setFilterRating,
     currentPage, setCurrentPage,
-    totalCount, setTotalCount,
+    totalCount,
+    exporting, setExporting,
     showItemEditor, setShowItemEditor,
     editingItem, setEditingItem,
     showCollectionEditor, setShowCollectionEditor,
@@ -80,9 +80,9 @@ export default function Gallery() {
     collColor, setCollColor,
     showPromptSelector, setShowPromptSelector,
     linkingImage, setLinkingImage,
-    linkedPrompts, setLinkedPrompts,
+    linkedPrompts,
     lightboxImage, setLightboxImage,
-    allPrompts, setAllPrompts,
+    allPrompts,
     promptSuggestions, setPromptSuggestions,
     showPromptSuggestions, setShowPromptSuggestions,
     promptSearchValue, setPromptSearchValue,
@@ -91,12 +91,17 @@ export default function Gallery() {
     selectedPromptId, setSelectedPromptId,
     deleteItemConfirmId, setDeleteItemConfirmId,
     deleteCollectionConfirmId, setDeleteCollectionConfirmId,
+    importingNightcafe,
+    handleImportNightcafeUrl,
     loadData,
     handleDeleteItem,
     handleUpdateRating,
     handleDeleteCollection,
     searchParams, setSearchParams
   } = useGalleryState();
+
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
 
   const allModels = ALL_MODELS;
   const allProviders = [
@@ -460,6 +465,14 @@ export default function Gallery() {
             Export
           </button>
           <button
+            onClick={() => setShowImportModal(true)}
+            disabled={importingNightcafe}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 text-sm font-medium rounded-xl hover:bg-indigo-500/20 transition-colors border border-indigo-500/20 disabled:opacity-50"
+          >
+            {importingNightcafe ? <Loader2 size={14} className="animate-spin" /> : <Plus size={16} />}
+            Import NC URL
+          </button>
+          <button
             onClick={() => openItemEditor(null)}
             className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
           >
@@ -602,7 +615,7 @@ export default function Gallery() {
                 <div className="p-3">
                   <h3 className="text-xs font-medium text-white truncate">{item.title || 'Untitled'}</h3>
                   <div className="flex items-center justify-between mt-1.5">
-                    <StarRating rating={item.rating} onChange={(r) => updateRatingAction(item, r)} size={11} />
+                    <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
                     {item.collection_id && (
                       <span className="text-[10px] text-slate-500 truncate ml-2">
                         {getCollectionName(item.collection_id)}
@@ -1171,6 +1184,54 @@ export default function Gallery() {
           }
         ]}
       />
+
+      <Modal
+        open={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setImportUrl('');
+        }}
+        title="Import from NightCafe"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Paste a NightCafe creation URL here to automatically pull the image, prompt, and model into your gallery.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">NightCafe URL</label>
+            <input
+              type="text"
+              value={importUrl}
+              onChange={(e) => setImportUrl(e.target.value)}
+              placeholder="https://creator.nightcafe.studio/creation/..."
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              onClick={() => {
+                setShowImportModal(false);
+                setImportUrl('');
+              }}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={async () => {
+                if (!importUrl) return;
+                setShowImportModal(false);
+                await handleImportNightcafeUrl(importUrl);
+                setImportUrl('');
+              }}
+              disabled={!importUrl}
+              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Import
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

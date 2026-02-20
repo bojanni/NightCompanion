@@ -1,11 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { db } from '../lib/api';
 import type { GalleryItem, Prompt, Collection } from '../lib/types';
-import { exportGalleryItems } from '../lib/export-utils';
-import { generateFromDescription } from '../lib/ai-service';
-import { ALL_MODELS } from '../lib/provider-models';
+import { mapNightcafeAlgorithmToModelId } from '../lib/nightcafe-parser';
 
 const PAGE_SIZE = 24;
 
@@ -58,6 +56,7 @@ export function useGalleryState() {
     const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
     const [deleteItemConfirmId, setDeleteItemConfirmId] = useState<string | null>(null);
     const [deleteCollectionConfirmId, setDeleteCollectionConfirmId] = useState<string | null>(null);
+    const [importingNightcafe, setImportingNightcafe] = useState(false);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -165,6 +164,46 @@ export function useGalleryState() {
         }
     }
 
+    async function handleImportNightcafeUrl(url: string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const electron = (window as any).electron;
+        if (!electron?.fetchNightcafe) {
+            toast.error('NightCafe import is not available in your environment');
+            return;
+        }
+
+        setImportingNightcafe(true);
+        const toastId = toast.loading('Importing from NightCafe...');
+
+        try {
+            const data = await electron.fetchNightcafe(url);
+
+            if (!data || !data.imageUrl) {
+                throw new Error('Could not extract image data from URL');
+            }
+
+            const modelId = mapNightcafeAlgorithmToModelId(data.algorithm);
+
+            const newItemData = {
+                title: data.title || 'NightCafe Creation',
+                image_url: data.imageUrl,
+                prompt_used: data.prompt || '',
+                model: modelId,
+                rating: 0
+            };
+
+            await db.from('gallery_items').insert([newItemData]);
+
+            toast.success('Successfully imported from NightCafe', { id: toastId });
+            loadData(); // refresh gallery
+        } catch (err) {
+            console.error('NightCafe import failed:', err);
+            toast.error(err instanceof Error ? err.message : 'Failed to import from NightCafe', { id: toastId });
+        } finally {
+            setImportingNightcafe(false);
+        }
+    }
+
     return {
         // State
         searchParams, setSearchParams,
@@ -207,11 +246,13 @@ export function useGalleryState() {
         selectedPromptId, setSelectedPromptId,
         deleteItemConfirmId, setDeleteItemConfirmId,
         deleteCollectionConfirmId, setDeleteCollectionConfirmId,
+        importingNightcafe, setImportingNightcafe,
 
         // Actions
         loadData,
         handleDeleteItem,
         handleUpdateRating,
         handleDeleteCollection,
+        handleImportNightcafeUrl,
     };
 }

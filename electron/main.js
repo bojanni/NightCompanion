@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -47,6 +47,88 @@ function startServer() {
         stdio: 'inherit'
     });
 }
+
+ipcMain.handle('fetch-nightcafe', async (event, targetUrl) => {
+    return new Promise((resolve, reject) => {
+        let hiddenWindow = new BrowserWindow({
+            width: 800,
+            height: 600,
+            show: false,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true
+            }
+        });
+
+        let checking = false;
+
+        const timeout = setTimeout(() => {
+            if (hiddenWindow) {
+                hiddenWindow.close();
+                hiddenWindow = null;
+            }
+            reject(new Error('Timeout fetching NightCafe URL. The service might be protecting against bots too heavily right now.'));
+        }, 30000);
+
+        const checkContent = async () => {
+            if (!hiddenWindow || checking) return;
+            checking = true;
+            try {
+                const result = await hiddenWindow.webContents.executeJavaScript(`
+                    (() => {
+                        const script = document.getElementById('__NEXT_DATA__');
+                        return script ? script.textContent : null;
+                    })();
+                `);
+
+                if (result) {
+                    const data = JSON.parse(result);
+                    const job = data.props?.pageProps?.job;
+                    if (job) {
+                        clearTimeout(timeout);
+                        resolve({
+                            title: job.title || '',
+                            prompt: job.prompt || '',
+                            algorithm: job.algorithm || '',
+                            imageUrl: job.result?.url || ''
+                        });
+                        hiddenWindow.close();
+                        hiddenWindow = null;
+                        return; // resolved
+                    }
+                }
+            } catch (err) {
+                // Ignore script errors during page load
+            }
+            checking = false;
+        };
+
+        hiddenWindow.webContents.on('did-finish-load', () => {
+            checkContent();
+        });
+
+        // Also check periodically in case did-finish-load fired too early or late
+        const interval = setInterval(() => {
+            if (hiddenWindow) {
+                checkContent();
+            } else {
+                clearInterval(interval);
+            }
+        }, 1000);
+
+        hiddenWindow.loadURL(targetUrl, {
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }).catch(err => {
+            clearTimeout(timeout);
+            clearInterval(interval);
+            if (hiddenWindow) {
+                hiddenWindow.close();
+                hiddenWindow = null;
+            }
+            reject(err);
+        });
+    });
+});
 
 app.whenReady().then(() => {
     startServer();
