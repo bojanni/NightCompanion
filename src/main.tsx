@@ -7,6 +7,7 @@ import App from './App.tsx';
 import './index.css';
 import { queryClient } from './lib/query-client';
 import { ThemeProvider } from './context/ThemeContext';
+import './i18n';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

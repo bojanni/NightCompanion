@@ -57,7 +57,8 @@ async function initSchema() {
             CREATE TABLE user_profiles (
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
                 email TEXT UNIQUE NOT NULL,
-                user_metadata JSONB DEFAULT '{}'
+                user_metadata JSONB DEFAULT '{}',
+                language TEXT DEFAULT 'nl'
             );
         `);
         // Ensure columns exist (evolution) - No longer needed since we force create, but keeping for reference if shared with other tables
@@ -66,6 +67,7 @@ async function initSchema() {
         // Ensure columns exist (evolution)
         await addColumn(pool, 'user_profiles', 'email', 'TEXT UNIQUE NOT NULL');
         await addColumn(pool, 'user_profiles', 'user_metadata', "JSONB DEFAULT '{}'");
+        await addColumn(pool, 'user_profiles', 'language', "TEXT DEFAULT 'nl'");
 
 
         // Prompts
@@ -344,8 +346,8 @@ async function initSchema() {
 
         const defaultUser = '88ea3bcb-d9a8-44b5-ac26-c90885a74686';
         await pool.query(`
-            INSERT INTO user_profiles (id, email, user_metadata)
-            VALUES ($1, 'local@user.com', '{"name": "Local User"}')
+            INSERT INTO user_profiles (id, email, user_metadata, language)
+            VALUES ($1, 'local@user.com', '{"name": "Local User"}', 'nl')
             ON CONFLICT (email) DO NOTHING
         `, [defaultUser]);
 

@@ -1,0 +1,106 @@
+{
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "add": "Add"
+    },
+    "nav": {
+        "dashboard": "Dashboard",
+        "gallery": "Gallery",
+        "characters": "Characters",
+        "prompts": "Prompts",
+        "settings": "Settings",
+        "generator": "Generator",
+        "models": "Models",
+        "batchTesting": "Batch Testing",
+        "styleProfile": "Style Profile",
+        "statistics": "Statistics",
+        "timeline": "Timeline",
+        "aiTools": "AI Tools",
+        "expandSidebar": "Expand Sidebar",
+        "collapseSidebar": "Collapse Sidebar",
+        "lightMode": "Light Mode",
+        "darkMode": "Dark Mode"
+    },
+    "aiTools": {
+        "title": "AI Tools",
+        "subtitle": "Optional AI-powered features",
+        "tabs": {
+            "improve": "Improve",
+            "improveDesc": "Enhance a prompt",
+            "generate": "Describe",
+            "generateDesc": "Natural language",
+            "analyze": "My Style",
+            "analyzeDesc": "Analyze patterns",
+            "diagnose": "Diagnose",
+            "diagnoseDesc": "Fix issues"
+        },
+        "improve": {
+            "placeholder": "Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style...",
+            "negativeLabel": "Negative Prompt",
+            "optional": "(optional)",
+            "negativePlaceholder": "Things to avoid, e.g. blurry, deformed, low quality, extra limbs...",
+            "button": "Improve Prompt",
+            "buttonLoading": "Improving...",
+            "copy": "Copy",
+            "copied": "Copied",
+            "saveToLibrary": "Save to Library",
+            "clear": "Clear",
+            "accept": "Accept Changes",
+            "discard": "Discard",
+            "use": "Use"
+        },
+        "describe": {
+            "placeholder": "Describe what you want in plain language, e.g. \"Something like my deer character but in a winter setting with northern lights\"",
+            "stylePrefs": "Style preferences",
+            "set": "set",
+            "optionalGuide": "Optional: guide the AI by setting preferences. Your top-rated prompts and saved characters are automatically included as context.",
+            "wordCount": "Word Count:",
+            "globalSetting": "Global setting",
+            "clearAll": "Clear all preferences",
+            "button": "Generate Prompt",
+            "buttonLoading": "Generating...",
+            "useResult": "Use Result"
+        },
+        "analyze": {
+            "description": "AI will analyze your saved prompts to identify your unique artistic style, recurring themes, and suggest new directions.",
+            "button": "Analyze My Style",
+            "buttonLoading": "Analyzing...",
+            "signature": "Your Style Signature",
+            "profile": "Style Profile",
+            "themes": "Recurring Themes",
+            "techniques": "Top Techniques",
+            "suggestions": "Suggested New Directions",
+            "reanalyze": "Re-analyze"
+        },
+        "diagnose": {
+            "promptPlaceholder": "Paste the prompt that produced poor results...",
+            "issuePlaceholder": "Describe what went wrong, e.g. \"The lighting was flat and the character looked deformed\"",
+            "button": "Diagnose Issue",
+            "buttonLoading": "Diagnosing...",
+            "likelyCause": "Likely Cause",
+            "fixes": "Fixes to Try",
+            "improvedLabel": "Improved Prompt"
+        },
+        "common": {
+            "useThis": "Use This Prompt",
+            "pasteGenerated": "Paste Generated"
+        },
+        "settings": {
+            "title": "Settings",
+            "language": {
+                "title": "Language",
+                "subtitle": "Choose your preferred language for the interface",
+                "dutch": "Dutch",
+                "english": "English",
+                "saveSuccess": "Language preference saved"
+            },
+            "dataManagement": "Data Management",
+            "apiKeys": "API Keys",
+            "localEndpoints": "Local Endpoints",
+            "configuration": "Configuration"
+        }
+    }
+}

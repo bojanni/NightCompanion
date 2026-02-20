@@ -1,0 +1,106 @@
+{
+    "common": {
+        "save": "Opslaan",
+        "cancel": "Annuleren",
+        "delete": "Verwijderen",
+        "edit": "Bewerken",
+        "add": "Toevoegen"
+    },
+    "nav": {
+        "dashboard": "Dashboard",
+        "gallery": "Gallerij",
+        "characters": "Personages",
+        "prompts": "Prompts",
+        "settings": "Instellingen",
+        "generator": "Generator",
+        "models": "Modellen",
+        "batchTesting": "Batch Testen",
+        "styleProfile": "Stijlprofiel",
+        "statistics": "Statistieken",
+        "timeline": "Tijdlijn",
+        "aiTools": "AI Hulpmiddelen",
+        "expandSidebar": "Zijbalk uitklappen",
+        "collapseSidebar": "Zijbalk inklappen",
+        "lightMode": "Lichte Modus",
+        "darkMode": "Donkere Modus"
+    },
+    "aiTools": {
+        "title": "AI Hulpmiddelen",
+        "subtitle": "Optionele AI-aangedreven functies",
+        "tabs": {
+            "improve": "Verbeteren",
+            "improveDesc": "Verbeter een prompt",
+            "generate": "Beschrijven",
+            "generateDesc": "Natuurlijke taal",
+            "analyze": "Mijn Stijl",
+            "analyzeDesc": "Patronen analyseren",
+            "diagnose": "Diagnose",
+            "diagnoseDesc": "Problemen oplossen"
+        },
+        "improve": {
+            "placeholder": "Plak je prompt hier en AI zal deze verbeteren met betere technische termen, atmosfeer en stijl...",
+            "negativeLabel": "Negatieve Prompt",
+            "optional": "(optioneel)",
+            "negativePlaceholder": "Dingen om te vermijden, bijv. wazig, misvormd, lage kwaliteit...",
+            "button": "Stijl Verbeteren",
+            "buttonLoading": "Verbeteren...",
+            "copy": "Kopiëren",
+            "copied": "Gekopieerd",
+            "saveToLibrary": "Opslaan in Bibliotheek",
+            "clear": "Wissen",
+            "accept": "Wijzigingen Accepteren",
+            "discard": "Negeren",
+            "use": "Gebruiken"
+        },
+        "describe": {
+            "placeholder": "Beschrijf wat je wilt in gewone taal, bijv. \"Iets als mijn hert-personage maar in een winterse setting met noorderlicht\"",
+            "stylePrefs": "Stijlvoorkeuren",
+            "set": "ingesteld",
+            "optionalGuide": "Optioneel: stuur de AI door voorkeuren in te stellen. Je top-beoordeelde prompts en opgeslagen personages worden automatisch als context opgenomen.",
+            "wordCount": "Aantal woorden:",
+            "globalSetting": "Globale instelling",
+            "clearAll": "Wis alle voorkeuren",
+            "button": "Prompt Genereren",
+            "buttonLoading": "Genereren...",
+            "useResult": "Gebruik Resultaat"
+        },
+        "analyze": {
+            "description": "AI zal je opgeslagen prompts analyseren om je unieke artistieke stijl en terugkerende thema's te identificeren, en nieuwe richtingen voorstellen.",
+            "button": "Analyseer Mijn Stijl",
+            "buttonLoading": "Analyseren...",
+            "signature": "Jouw Stijlhandtekening",
+            "profile": "Stijlprofiel",
+            "themes": "Terugkerende Thema's",
+            "techniques": "Top Technieken",
+            "suggestions": "Voorgestelde Nieuwe Richtingen",
+            "reanalyze": "Opnieuw analyseren"
+        },
+        "diagnose": {
+            "promptPlaceholder": "Plak de prompt die slechte resultaten gaf...",
+            "issuePlaceholder": "Beschrijf wat er misging, bijv. \"De belichting was vlak en het personage zag er misvormd uit\"",
+            "button": "Diagnose Stellen",
+            "buttonLoading": "Analyseren...",
+            "likelyCause": "Waarschijnlijke Oorzaak",
+            "fixes": "Oplossingen om te proberen",
+            "improvedLabel": "Verbeterde Prompt"
+        },
+        "common": {
+            "useThis": "Gebruik deze prompt",
+            "pasteGenerated": "Plak Gegeneerd"
+        },
+        "settings": {
+            "title": "Instellingen",
+            "language": {
+                "title": "Taal",
+                "subtitle": "Kies je voorkeurstaal voor de interface",
+                "dutch": "Nederlands",
+                "english": "Engels",
+                "saveSuccess": "Taalvoorkeur opgeslagen"
+            },
+            "dataManagement": "Gegevensbeheer",
+            "apiKeys": "API Sleutels",
+            "localEndpoints": "Lokale Endpoints",
+            "configuration": "Configuratie"
+        }
+    }
+}

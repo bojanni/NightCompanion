@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Wrench, Clock, ChevronLeft, ChevronRight,
   LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
@@ -9,25 +10,25 @@ import {
 import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/generator', icon: Wand2, label: 'Generator' },
-  { to: '/prompts', icon: Sparkles, label: 'Prompts' },
-  { to: '/characters', icon: Users, label: 'Characters' },
-  { to: '/gallery', icon: ImageIcon, label: 'Gallery' },
-  { to: '/models', icon: Compass, label: 'Models' },
-  { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
-  { to: '/style', icon: Fingerprint, label: 'Style Profile' },
-  { to: '/statistics', icon: BarChart2, label: 'Statistics' },
-  { to: '/timeline', icon: Clock, label: 'Timeline' },
+  { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+  { to: '/generator', icon: Wand2, labelKey: 'nav.generator' },
+  { to: '/prompts', icon: Sparkles, labelKey: 'nav.prompts' },
+  { to: '/characters', icon: Users, labelKey: 'nav.characters' },
+  { to: '/gallery', icon: ImageIcon, labelKey: 'nav.gallery' },
+  { to: '/models', icon: Compass, labelKey: 'nav.models' },
+  { to: '/batch-testing', icon: FlaskConical, labelKey: 'nav.batchTesting' },
+  { to: '/style', icon: Fingerprint, labelKey: 'nav.styleProfile' },
+  { to: '/statistics', icon: BarChart2, labelKey: 'nav.statistics' },
+  { to: '/timeline', icon: Clock, labelKey: 'nav.timeline' },
 
-  { to: '/tools', icon: Wrench, label: 'AI Tools' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/tools', icon: Wrench, labelKey: 'nav.aiTools' },
+  { to: '/settings', icon: Settings, labelKey: 'nav.settings' },
 ];
 
 // Full-width: these pages use all available horizontal space
 const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
-
 export default function Layout() {
+  const { t } = useTranslation();
   const location = useLocation();
   const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
 
@@ -65,7 +66,7 @@ export default function Layout() {
           <button
             onClick={toggleSidebar}
             className={`text-slate-500 hover:text-white transition-colors ${collapsed ? 'absolute left-1/2 -translate-x-1/2 top-20' : 'block'}`}
-            title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            title={collapsed ? t('nav.expandSidebar') : t('nav.collapseSidebar')}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
@@ -76,19 +77,19 @@ export default function Layout() {
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800 w-full ${collapsed ? 'justify-center' : ''}`}
-            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            title={theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
           >
             {theme === 'dark' ? <Sun size={18} className="shrink-0" /> : <Moon size={18} className="shrink-0" />}
             {!collapsed && (
               <span className="animate-in fade-in slide-in-from-left-2 duration-300">
-                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                {theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
               </span>
             )}
           </button>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-x-hidden">
-          {navItems.map(({ to, icon: Icon, label }) => (
+          {navItems.map(({ to, icon: Icon, labelKey }) => (
             <NavLink
               key={to}
               to={to}
@@ -98,11 +99,11 @@ export default function Layout() {
                 ${isActive ? 'bg-amber-500/10 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-white hover:bg-slate-800'}
                 ${collapsed ? 'justify-center' : ''}`
               }
-              title={collapsed ? label : undefined}
+              title={collapsed ? t(labelKey) : undefined}
             >
               <Icon size={18} className="shrink-0" />
               {!collapsed && (
-                <span className="animate-in fade-in slide-in-from-left-2 duration-300">{label}</span>
+                <span className="animate-in fade-in slide-in-from-left-2 duration-300">{t(labelKey)}</span>
               )}
             </NavLink>
           ))}

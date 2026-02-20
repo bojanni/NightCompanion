@@ -1,4 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Sparkles, Brain, MessageSquare, AlertTriangle,
   Loader2, Copy, Check, ArrowRight, ChevronDown, ChevronUp, Eraser, ArrowUp, Save,
@@ -46,11 +47,11 @@ export interface AIToolsRef {
 
 type Tab = 'improve' | 'analyze' | 'generate' | 'diagnose';
 
-const TABS: { id: Tab; label: string; icon: typeof Sparkles; desc: string }[] = [
-  { id: 'improve', label: 'Improve', icon: Sparkles, desc: 'Enhance a prompt' },
-  { id: 'generate', label: 'Describe', icon: MessageSquare, desc: 'Natural language' },
-  { id: 'analyze', label: 'My Style', icon: Brain, desc: 'Analyze patterns' },
-  { id: 'diagnose', label: 'Diagnose', icon: AlertTriangle, desc: 'Fix issues' },
+const TABS: { id: Tab; labelKey: string; icon: typeof Sparkles; descKey: string }[] = [
+  { id: 'improve', labelKey: 'aiTools.tabs.improve', icon: Sparkles, descKey: 'aiTools.tabs.improveDesc' },
+  { id: 'generate', labelKey: 'aiTools.tabs.generate', icon: MessageSquare, descKey: 'aiTools.tabs.generateDesc' },
+  { id: 'analyze', labelKey: 'aiTools.tabs.analyze', icon: Brain, descKey: 'aiTools.tabs.analyzeDesc' },
+  { id: 'diagnose', labelKey: 'aiTools.tabs.diagnose', icon: AlertTriangle, descKey: 'aiTools.tabs.diagnoseDesc' },
 ];
 
 const AITOOLS_STORAGE_KEY = 'nightcompanion_aitools_state';
@@ -69,6 +70,7 @@ function loadAIToolsState<T>(key: string, fallback: T): T {
 }
 
 const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved, allowedTabs, defaultTab = 'improve', showHeader = true, initialExpanded = false }, ref) => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>(() => {
     // If allowedTabs is set, ensure we start on an allowed tab
     if (allowedTabs && allowedTabs.length > 0 && !allowedTabs.includes(defaultTab)) {
@@ -415,8 +417,8 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               <Brain size={16} className="text-teal-400" />
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-semibold text-white">AI Tools</h3>
-              <p className="text-[11px] text-slate-500">Optional AI-powered features</p>
+              <h3 className="text-sm font-semibold text-white">{t('aiTools.title')}</h3>
+              <p className="text-[11px] text-slate-500">{t('aiTools.subtitle')}</p>
             </div>
           </div>
           {expanded ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
@@ -427,7 +429,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         <div className="p-5 bg-slate-900/50 space-y-5">
           {visibleTabs.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
-              {visibleTabs.map(({ id, label, icon: Icon, desc }) => (
+              {visibleTabs.map(({ id, labelKey, icon: Icon, descKey }) => (
                 <button
                   key={id}
                   onClick={() => { setTab(id); }}
@@ -437,8 +439,8 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
                     }`}
                 >
                   <Icon size={15} className={tab === id ? 'text-teal-400' : 'text-slate-500'} />
-                  <p className={`text-xs font-medium mt-1.5 ${tab === id ? 'text-teal-300' : 'text-slate-300'}`}>{label}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">{desc}</p>
+                  <p className={`text-xs font-medium mt-1.5 ${tab === id ? 'text-teal-300' : 'text-slate-300'}`}>{t(labelKey)}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{t(descKey)}</p>
                 </button>
               ))}
             </div>
@@ -546,6 +548,7 @@ function ImproveTab({
   suggestedModel: ModelInfo | null;
   activeModel?: string;
 }) {
+  const { t } = useTranslation();
   const [showDiff, setShowDiff] = useState(true);
 
   const diff = result ? diffWords(input, result) : [];
@@ -565,21 +568,21 @@ function ImproveTab({
             <div className="flex items-center gap-2 px-1">
               <Sparkles size={14} className="text-teal-400" />
               <h3 className="text-xs font-medium text-slate-300">
-                Improve prompt with <span className="text-teal-400">{activeModel}</span>
+                {t('aiTools.improve.button')} with <span className="text-teal-400">{activeModel}</span>
               </h3>
             </div>
           )}
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Paste your prompt here and AI will enhance it with better technical terms, atmosphere, and style..."
+            placeholder={t('aiTools.improve.placeholder')}
             className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
           />
           <div>
             {supportsNegativePrompt(suggestedModel?.id || '') ? (
               <>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[11px] font-medium text-slate-400 block">Negative Prompt <span className="text-slate-600">(optional)</span></label>
+                  <label className="text-[11px] font-medium text-slate-400 block">{t('aiTools.improve.negativeLabel')} <span className="text-slate-600">{t('aiTools.improve.optional')}</span></label>
                   <span className={`text-[10px] font-mono ${negativeInput.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
                     {negativeInput.length}/600
                   </span>
@@ -588,7 +591,7 @@ function ImproveTab({
                   value={negativeInput}
                   onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
                   maxLength={600}
-                  placeholder="Things to avoid, e.g. blurry, deformed, low quality, extra limbs..."
+                  placeholder={t('aiTools.improve.negativePlaceholder')}
                   className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
                 />
               </>
@@ -684,7 +687,7 @@ function ImproveTab({
               className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              {loading ? 'Improving...' : 'Improve Prompt'}
+              {loading ? t('aiTools.improve.buttonLoading') : t('aiTools.improve.button')}
             </button>
 
             {input && (
@@ -694,7 +697,7 @@ function ImproveTab({
                 title="Copy current text"
               >
                 {copied === 'input-copy' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                {copied === 'input-copy' ? 'Copied' : 'Copy'}
+                {copied === 'input-copy' ? t('aiTools.improve.copied') : t('aiTools.improve.copy')}
               </button>
             )}
 
@@ -719,7 +722,7 @@ function ImproveTab({
                 title="Save current text to library"
               >
                 <Save size={14} />
-                Save to Library
+                {t('aiTools.improve.saveToLibrary')}
               </button>
             )}
 
@@ -730,7 +733,7 @@ function ImproveTab({
                 title="Clear Input"
               >
                 <Eraser size={14} />
-                Clear
+                {t('aiTools.improve.clear')}
               </button>
             )}
           </>
@@ -741,13 +744,13 @@ function ImproveTab({
               className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-sm font-medium rounded-xl hover:bg-emerald-600/30 transition-all"
             >
               <Check size={14} />
-              Accept Changes
+              {t('aiTools.improve.accept')}
             </button>
             <button
               onClick={onClear}
               className="px-4 py-2.5 text-slate-400 hover:text-white text-sm transition-colors border border-transparent hover:border-slate-700 rounded-xl"
             >
-              Discard
+              {t('aiTools.improve.discard')}
             </button>
 
             <button
@@ -756,7 +759,7 @@ function ImproveTab({
               className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 text-xs rounded-lg hover:bg-amber-500/20 transition-colors border border-amber-500/30 disabled:opacity-50"
             >
               <Save size={11} />
-              Save to Library
+              {t('aiTools.improve.saveToLibrary')}
             </button>
             <button
               onClick={() => onCopy(result, 'improve')}
@@ -816,6 +819,7 @@ function GenerateTab({
   onSave: (text: string) => void;
   generatedPrompt?: string | undefined;
 }) {
+  const { t } = useTranslation();
   const [showPrefs, setShowPrefs] = useState(false);
 
   return (
@@ -823,7 +827,7 @@ function GenerateTab({
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder='Describe what you want in plain language, e.g. "Something like my deer character but in a winter setting with northern lights"'
+        placeholder={t('aiTools.describe.placeholder')}
         className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
       />
 
@@ -832,9 +836,9 @@ function GenerateTab({
         className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-400 transition-colors"
       >
         {showPrefs ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        Style preferences {(preferences.style || preferences.mood || preferences.subject || preferences.maxWords) && (
+        {t('aiTools.describe.stylePrefs')} {(preferences.style || preferences.mood || preferences.subject || preferences.maxWords) && (
           <span className="text-teal-400 ml-1">
-            ({[preferences.style, preferences.mood, preferences.subject, preferences.maxWords].filter(Boolean).length} set)
+            ({[preferences.style, preferences.mood, preferences.subject, preferences.maxWords].filter(Boolean).length} {t('aiTools.describe.set')})
           </span>
         )}
       </button>
@@ -842,7 +846,7 @@ function GenerateTab({
       {showPrefs && (
         <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 space-y-3">
           <p className="text-[11px] text-slate-500 mb-1">
-            Optional: guide the AI by setting preferences. Your top-rated prompts and saved characters are automatically included as context.
+            {t('aiTools.describe.optionalGuide')}
           </p>
 
           <PreferenceRow
@@ -865,8 +869,8 @@ function GenerateTab({
           />
 
           <div className="flex items-center gap-2 mb-2 p-3 bg-slate-900/50 border border-slate-700/50 rounded-lg">
-            <span className="text-[11px] font-medium text-slate-400">Word Count:</span>
-            <span className="text-[11px] font-medium text-teal-400">Global setting ({preferences.maxWords || 70})</span>
+            <span className="text-[11px] font-medium text-slate-400">{t('aiTools.describe.wordCount')}</span>
+            <span className="text-[11px] font-medium text-teal-400">{t('aiTools.describe.globalSetting')} ({preferences.maxWords || 70})</span>
           </div>
 
           {(preferences.style || preferences.mood || preferences.subject || preferences.maxWords) && (
@@ -874,7 +878,7 @@ function GenerateTab({
               onClick={() => setPreferences({})}
               className="text-[11px] text-slate-500 hover:text-red-400 transition-colors"
             >
-              Clear all preferences
+              {t('aiTools.describe.clearAll')}
             </button>
           )}
         </div>
@@ -887,7 +891,7 @@ function GenerateTab({
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
-          {loading ? 'Generating...' : 'Generate Prompt'}
+          {loading ? t('aiTools.describe.buttonLoading') : t('aiTools.describe.button')}
         </button>
 
         {input && (
@@ -919,7 +923,7 @@ function GenerateTab({
             title="Use result as input for another pass"
           >
             <ArrowUp size={14} />
-            Use Result
+            {t('aiTools.describe.useResult')}
           </button>
         )}
       </div>
@@ -965,12 +969,13 @@ function AnalyzeTab({
   loading: boolean;
   onAnalyze: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       {!result && (
         <div className="text-center py-4">
           <p className="text-sm text-slate-400 mb-3">
-            AI will analyze your saved prompts to identify your unique artistic style, recurring themes, and suggest new directions.
+            {t('aiTools.analyze.description')}
           </p>
           <button
             onClick={onAnalyze}
@@ -978,7 +983,7 @@ function AnalyzeTab({
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15 mx-auto"
           >
             {loading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-            {loading ? 'Analyzing...' : 'Analyze My Style'}
+            {loading ? t('aiTools.analyze.buttonLoading') : t('aiTools.analyze.button')}
           </button>
         </div>
       )}
@@ -986,18 +991,18 @@ function AnalyzeTab({
       {result && (
         <div className="space-y-4">
           <div className="bg-teal-500/5 border border-teal-500/15 rounded-xl p-4">
-            <p className="text-xs font-medium text-teal-400 mb-1">Your Style Signature</p>
+            <p className="text-xs font-medium text-teal-400 mb-1">{t('aiTools.analyze.signature')}</p>
             <p className="text-sm text-white font-medium italic">"{result.signature}"</p>
           </div>
 
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-2">Style Profile</p>
+            <p className="text-xs font-medium text-slate-400 mb-2">{t('aiTools.analyze.profile')}</p>
             <p className="text-sm text-slate-300 leading-relaxed">{result.profile}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-2">Recurring Themes</p>
+              <p className="text-xs font-medium text-slate-400 mb-2">{t('aiTools.analyze.themes')}</p>
               <div className="space-y-1.5">
                 {result.themes.map((t, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
@@ -1008,7 +1013,7 @@ function AnalyzeTab({
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium text-slate-400 mb-2">Top Techniques</p>
+              <p className="text-xs font-medium text-slate-400 mb-2">{t('aiTools.analyze.techniques')}</p>
               <div className="space-y-1.5">
                 {result.techniques.map((t, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
@@ -1021,7 +1026,7 @@ function AnalyzeTab({
           </div>
 
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-2">Suggested New Directions</p>
+            <p className="text-xs font-medium text-slate-400 mb-2">{t('aiTools.analyze.suggestions')}</p>
             <div className="space-y-1.5">
               {result.suggestions.map((s, i) => (
                 <div key={i} className="bg-slate-800/50 rounded-lg px-3 py-2 text-xs text-slate-300">
@@ -1035,7 +1040,7 @@ function AnalyzeTab({
             onClick={onAnalyze}
             className="text-xs text-slate-500 hover:text-teal-400 transition-colors"
           >
-            Re-analyze
+            {t('aiTools.analyze.reanalyze')}
           </button>
         </div>
       )}
@@ -1060,18 +1065,19 @@ function DiagnoseTab({
   onSave: (text: string) => void;
   generatedPrompt?: string | undefined;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3">
       <textarea
         value={promptInput}
         onChange={(e) => setPromptInput(e.target.value)}
-        placeholder="Paste the prompt that produced poor results..."
+        placeholder={t('aiTools.diagnose.promptPlaceholder')}
         className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-20 focus:outline-none focus:border-teal-500/40"
       />
       <textarea
         value={issue}
         onChange={(e) => setIssue(e.target.value)}
-        placeholder='Describe what went wrong, e.g. "The lighting was flat and the character looked deformed"'
+        placeholder={t('aiTools.diagnose.issuePlaceholder')}
         className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-20 focus:outline-none focus:border-teal-500/40"
       />
       <div className="flex flex-wrap items-center gap-2">
@@ -1081,7 +1087,7 @@ function DiagnoseTab({
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white text-sm font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all disabled:opacity-50 shadow-lg shadow-teal-500/15"
         >
           {loading ? <Loader2 size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
-          {loading ? 'Diagnosing...' : 'Diagnose Issue'}
+          {loading ? t('aiTools.diagnose.buttonLoading') : t('aiTools.diagnose.button')}
         </button>
 
         {(promptInput || issue) && (
@@ -1091,7 +1097,7 @@ function DiagnoseTab({
             title="Clear Inputs"
           >
             <Eraser size={14} />
-            Clear
+            {t('aiTools.improve.clear')}
           </button>
         )}
 
@@ -1113,7 +1119,7 @@ function DiagnoseTab({
             title="Use improved prompt as input"
           >
             <ArrowUp size={14} />
-            Use Result
+            {t('aiTools.describe.useResult')}
           </button>
         )}
       </div>
@@ -1121,12 +1127,12 @@ function DiagnoseTab({
       {result && (
         <div className="space-y-3">
           <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4">
-            <p className="text-xs font-medium text-amber-400 mb-1">Likely Cause</p>
+            <p className="text-xs font-medium text-amber-400 mb-1">{t('aiTools.diagnose.likelyCause')}</p>
             <p className="text-sm text-slate-300">{result.cause}</p>
           </div>
 
           <div>
-            <p className="text-xs font-medium text-slate-400 mb-2">Fixes to Try</p>
+            <p className="text-xs font-medium text-slate-400 mb-2">{t('aiTools.diagnose.fixes')}</p>
             <div className="space-y-1.5">
               {result.fixes.map((f, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
@@ -1145,7 +1151,7 @@ function DiagnoseTab({
             onCopy={onCopy}
             onUse={() => onUse(result.improvedPrompt)}
             onSave={() => onSave(result.improvedPrompt)}
-            label="Improved Prompt"
+            label={t('aiTools.diagnose.improvedLabel')}
           />
         </div>
       )}
@@ -1165,6 +1171,7 @@ function PromptResult({
   onSave?: () => void;
   label?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4">
       {label && <p className="text-xs font-medium text-teal-400 mb-2">{label}</p>}
@@ -1175,7 +1182,7 @@ function PromptResult({
           className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/50 text-slate-300 text-xs rounded-lg hover:bg-slate-700 transition-colors"
         >
           {copied === id ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-          {copied === id ? 'Copied' : 'Copy'}
+          {copied === id ? t('aiTools.improve.copied') : t('aiTools.improve.copy')}
         </button>
         {onSave && (
           <button
@@ -1192,7 +1199,7 @@ function PromptResult({
           className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500/10 text-teal-400 text-xs rounded-lg hover:bg-teal-500/20 transition-colors"
         >
           <ArrowRight size={11} />
-          Use This Prompt
+          {t('aiTools.common.useThis')}
         </button>
       </div>
     </div>

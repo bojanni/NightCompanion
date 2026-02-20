@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown, Languages, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
 import type { ApiKeyInfo, LocalEndpoint } from '../lib/api-keys-service';
@@ -11,11 +12,13 @@ import type { ModelOption } from '../lib/provider-models';
 import { ProviderHealthProvider } from '../lib/provider-health';
 
 export default function Settings() {
+  const { t, i18n } = useTranslation();
   const [view, setView] = useState<'dashboard' | 'wizard'>('dashboard');
   const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDataManagementOpen, setIsDataManagementOpen] = useState(false);
+  const [savingLang, setSavingLang] = useState(false);
 
   // Shared state for dynamic models cache to avoid refetching too often
   const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
@@ -63,6 +66,25 @@ export default function Settings() {
     }
   }, []);
 
+  const changeLanguage = async (lng: string) => {
+    setSavingLang(true);
+    try {
+      await i18n.changeLanguage(lng);
+      // Persist to DB
+      const { error } = await db
+        .from('user_profiles')
+        .update({ language: lng })
+        .eq('id', 'default'); // Assuming default ID from db-init.js
+
+      if (error) console.error('Failed to save language to DB:', error);
+      else toast.success(t('settings.language.saveSuccess'));
+    } catch (e) {
+      console.error('Failed to change language:', e);
+    } finally {
+      setSavingLang(false);
+    }
+  };
+
   const refreshData = useCallback(async () => {
     // Don't set global loading true to avoid flicker on minor updates, 
     // providing components handle their own action loading states.
@@ -105,6 +127,42 @@ export default function Settings() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {view === 'dashboard' ? (
           <div className="space-y-12">
+            {/* Language Section */}
+            <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-10 h-10 bg-indigo-500/10 rounded-xl flex items-center justify-center shrink-0">
+                  <Languages size={20} className="text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{t('settings.language.title')}</h2>
+                  <p className="text-sm text-slate-400 mt-1">{t('settings.language.subtitle')}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { id: 'nl', name: t('settings.language.dutch'), flag: '🇳🇱' },
+                  { id: 'en', name: t('settings.language.english'), flag: '🇺🇸' }
+                ].map((lang) => (
+                  <button
+                    key={lang.id}
+                    onClick={() => changeLanguage(lang.id)}
+                    disabled={savingLang}
+                    className={`flex items-center justify-between p-4 rounded-xl border transition-all ${i18n.language === lang.id
+                      ? 'bg-teal-500/10 border-teal-500/40 text-teal-400'
+                      : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600 hover:text-white'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{lang.flag}</span>
+                      <span className="font-medium">{lang.name}</span>
+                    </div>
+                    {i18n.language === lang.id && <Check size={18} className="text-teal-400" />}
+                  </button>
+                ))}
+              </div>
+            </section>
+
             <Dashboard
               activeGen={activeGen}
               activeImprove={activeImprove}
@@ -124,7 +182,7 @@ export default function Settings() {
                 onClick={() => setIsDataManagementOpen(!isDataManagementOpen)}
                 className="flex items-center justify-between w-full group"
               >
-                <h2 className="text-xl font-bold text-white group-hover:text-teal-400 transition-colors">Data Management</h2>
+                <h2 className="text-xl font-bold text-white group-hover:text-teal-400 transition-colors uppercase tracking-wider text-sm opacity-50 px-1">{t('settings.dataManagement')}</h2>
                 <ChevronDown
                   className={`text-slate-500 group-hover:text-teal-400 transition-all duration-300 ${isDataManagementOpen ? 'rotate-180' : ''}`}
                 />
