@@ -95,6 +95,7 @@ async function initSchema() {
         await addColumn(pool, 'prompts', 'gallery_item_id', 'UUID');
         await addColumn(pool, 'prompts', 'use_count', 'INTEGER DEFAULT 0');
         await addColumn(pool, 'prompts', 'last_used_at', 'TIMESTAMP WITH TIME ZONE');
+        await addColumn(pool, 'prompts', 'suggested_model', 'TEXT');
 
 
         // Tags
