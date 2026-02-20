@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X, Calendar
@@ -21,106 +20,46 @@ import { handleError, showSuccess } from '../lib/error-handler';
 import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import PromptDetailOverlay from '../components/PromptDetailOverlay';
+import { usePromptsState } from '../hooks/usePromptsState';
 
 const PAGE_SIZE = 20;
 
 export default function Prompts() {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [promptTagMap, setPromptTagMap] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterTag, setFilterTag] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<'all' | 'templates' | 'favorites'>('all');
-  const [showEditor, setShowEditor] = useState(false);
-  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
-  const [showVariations, setShowVariations] = useState(false);
-  const [variationBase, setVariationBase] = useState('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyPrompt, setHistoryPrompt] = useState<Prompt | null>(null);
-  const [showImprover, setShowImprover] = useState(false);
-  const [improverPrompt, setImproverPrompt] = useState<Prompt | null>(null);
-  const [showOptimizer, setShowOptimizer] = useState(false);
-  const [optimizerPrompt, setOptimizerPrompt] = useState<Prompt | null>(null);
-  const [showImageSelector, setShowImageSelector] = useState(false);
-  const [linkingPrompt, setLinkingPrompt] = useState<Prompt | null>(null);
-  const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] }>({});
-  const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number; model?: string } | null>(null);
-  const [detailViewIndex, setDetailViewIndex] = useState<number | null>(null);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-
-    let query = db
-      .from('prompts')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
-
-    if (search) {
-      // Custom search param handled by our backend
-      query = query.like('search', search);
-    }
-
-    if (filterType === 'templates') {
-      query = query.eq('is_template', true);
-    } else if (filterType === 'favorites') {
-      query = query.eq('is_favorite', true);
-    }
-
-    const { data: promptsData, count } = await query
-      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
-
-    const [tagsRes, ptRes] = await Promise.all([
-      db.from('tags').select('*').order('name').limit(5000),
-      promptsData ? db.from('prompt_tags').select('*').in('prompt_id', promptsData.map((p: Prompt) => p.id)) : Promise.resolve({ data: [] }),
-    ]);
-
-    setPrompts(promptsData ?? []);
-    setTags(tagsRes.data ?? []);
-    setTotalCount(count ?? 0);
-
-    const map: Record<string, string[]> = {};
-    (ptRes.data ?? []).forEach((pt: { prompt_id: string; tag_id: string }) => {
-      if (!map[pt.prompt_id]) map[pt.prompt_id] = [];
-      map[pt.prompt_id]!.push(pt.tag_id);
-    });
-    setPromptTagMap(map);
-
-    // Load linked images
-    if (promptsData && promptsData.length > 0) {
-      const { data: galleryData } = await db
-        .from('gallery_items')
-        .select('id, image_url, title, prompt_id, rating, model')
-        .in('prompt_id', promptsData.map((p: Prompt) => p.id));
-
-      const imageMap: { [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] } = {};
-      (galleryData ?? []).forEach((img: { id: string; image_url: string; title: string; prompt_id: string | null; rating: number; model?: string }) => {
-        if (img.prompt_id) {
-          if (!imageMap[img.prompt_id]) {
-            imageMap[img.prompt_id] = [];
-          }
-          imageMap[img.prompt_id]!.push({
-            id: img.id,
-            image_url: img.image_url,
-            title: img.title,
-            rating: img.rating ?? 0,
-            ...(img.model ? { model: img.model } : {})
-          });
-        }
-      });
-      setLinkedImages(imageMap);
-    } else {
-      setLinkedImages({});
-    }
-
-    setLoading(false);
-  }, [currentPage, filterType, search]); // Added search dependency
-
-  const [searchParams, setSearchParams] = useSearchParams();
+  const {
+    searchParams, setSearchParams,
+    prompts, setPrompts,
+    tags,
+    promptTagMap,
+    loading,
+    search, setSearch,
+    filterTag, setFilterTag,
+    filterType, setFilterType,
+    showEditor, setShowEditor,
+    editingPrompt, setEditingPrompt,
+    showVariations, setShowVariations,
+    variationBase, setVariationBase,
+    copiedId, setCopiedId,
+    showFilters, setShowFilters,
+    currentPage, setCurrentPage,
+    totalCount,
+    showHistory, setShowHistory,
+    historyPrompt, setHistoryPrompt,
+    showImprover, setShowImprover,
+    improverPrompt, setImproverPrompt,
+    showOptimizer, setShowOptimizer,
+    optimizerPrompt, setOptimizerPrompt,
+    showImageSelector, setShowImageSelector,
+    linkingPrompt, setLinkingPrompt,
+    linkedImages, setLinkedImages,
+    lightboxImage, setLightboxImage,
+    detailViewIndex, setDetailViewIndex,
+    filtered,
+    loadData,
+    handleDelete,
+    handleRatePrompt,
+    handleToggleFavorite,
+    getTagsForPrompt,
+  } = usePromptsState();
 
   useEffect(() => {
     // Debounce search to avoid too many requests
@@ -147,64 +86,11 @@ export default function Prompts() {
     }
   }, [prompts, searchParams, detailViewIndex, setSearchParams]);
 
-  const filtered = useMemo(() => {
-    let result = prompts;
 
-    // Search is now handled by backend
 
-    if (filterTag) {
-      result = result.filter((p) => promptTagMap[p.id]?.includes(filterTag));
-    }
 
-    return result;
-  }, [prompts, filterTag, promptTagMap]);
 
-  async function handleDelete(id: string) {
-    if (!window.confirm('Are you sure you want to delete this prompt?')) return;
-    try {
-      const { error } = await db.from('prompts').delete().eq('id', id);
-      if (error) throw error;
 
-      setPrompts((prev) => prev.filter((p) => p.id !== id));
-      showSuccess('Prompt deleted successfully!');
-    } catch (err) {
-      handleError(err, 'DeletePrompt', { promptId: id });
-    }
-  }
-
-  async function handleRatePrompt(id: string, rating: number) {
-    try {
-      const { error } = await db.from('prompts').update({ rating }).eq('id', id);
-      if (error) throw error;
-      setPrompts(prev => prev.map(p => p.id === id ? { ...p, rating } : p));
-
-      // Sync rating to all linked images
-      await db.from('gallery_items').update({ rating }).eq('prompt_id', id);
-
-      // Update local state for linked images if they are in the current view
-      setLinkedImages(prev => {
-        if (!prev[id]) return prev;
-        return {
-          ...prev,
-          [id]: prev[id]!.map(img => ({ ...img, rating }))
-        };
-      });
-    } catch (err) {
-      handleError(err, 'RatePrompt', { promptId: id });
-    }
-  }
-
-  async function handleToggleFavorite(prompt: Prompt) {
-    try {
-      const newVal = !prompt.is_favorite;
-      const { error } = await db.from('prompts').update({ is_favorite: newVal }).eq('id', prompt.id);
-      if (error) throw error;
-
-      setPrompts((prev) => prev.map((p) => (p.id === prompt.id ? { ...p, is_favorite: newVal } : p)));
-    } catch (err) {
-      handleError(err, 'ToggleFavorite', { promptId: prompt.id });
-    }
-  }
 
   async function handleCopy(content: string, id: string) {
     try {
@@ -217,10 +103,7 @@ export default function Prompts() {
     }
   }
 
-  function getTagsForPrompt(promptId: string): Tag[] {
-    const tagIds = promptTagMap[promptId] ?? [];
-    return tags.filter((t) => tagIds.includes(t.id));
-  }
+
 
   async function handleRestoreVersion(content: string) {
     if (historyPrompt) {
