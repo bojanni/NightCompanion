@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const logger = require('../lib/logger');
 const { applyProviderFilter } = require('../lib/query-helpers');
 
 // Get all local endpoints for user
@@ -11,7 +12,7 @@ router.get('/', async (req, res) => {
         );
         res.json(result.rows);
     } catch (err) {
-        console.error('Error fetching local endpoints:', err);
+        logger.error('Error fetching local endpoints:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -30,7 +31,7 @@ router.post('/', async (req, res) => {
 
         res.json(result.rows[0]);
     } catch (err) {
-        console.error('Error creating local endpoint:', err);
+        logger.error('Error creating local endpoint:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -51,7 +52,7 @@ router.put('/', async (req, res) => {
         const result = await pool.query(query, finalParams);
         res.json({ success: true, updated: result.rowCount });
     } catch (err) {
-        console.error('Error updating local endpoints:', err);
+        logger.error('Error updating local endpoints:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -88,7 +89,7 @@ router.patch('/:id', async (req, res) => {
 
         res.json(result.rows[0]);
     } catch (err) {
-        console.error('Error updating local endpoint:', err);
+        logger.error('Error updating local endpoint:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -109,7 +110,7 @@ router.delete('/:id?', async (req, res) => {
 
         res.json({ success: true });
     } catch (err) {
-        console.error('Error deleting local endpoint:', err);
+        logger.error('Error deleting local endpoint:', err);
         res.status(500).json({ error: err.message });
     }
 });

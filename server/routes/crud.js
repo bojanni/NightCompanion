@@ -1,5 +1,6 @@
 const express = require('express');
 const { pool } = require('../db');
+const logger = require('../lib/logger');
 
 const createCrudRouter = (tableName, searchableColumns = []) => {
     const router = express.Router();
@@ -112,7 +113,7 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
             const result = await pool.query(queryText, values);
             res.json(result.rows);
         } catch (err) {
-            console.error(`Error fetching ${tableName}:`, err);
+            logger.error(`Error fetching ${tableName}:`, err);
             // Retry without order if created_at failed (fallback)
             if (err.message.includes('column "created_at" does not exist')) {
                 try {
@@ -205,7 +206,7 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
                 res.status(201).json(result.rows[0]);
             }
         } catch (err) {
-            console.error(`Error creating in ${tableName}:`, err);
+            logger.error(`Error creating in ${tableName}:`, err);
             res.status(500).json({ error: err.message });
         }
     });
@@ -254,14 +255,14 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
         RETURNING *
       `;
 
-            console.log(`[CRUD] Updating ${tableName}:`, query);
-            console.log(`[CRUD] Values:`, values);
+            logger.debug(`[CRUD] Updating ${tableName}: ${query}`);
+            logger.debug(`[CRUD] Values: ${JSON.stringify(values)}`);
 
             const result = await pool.query(query, values);
             if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
             res.json(result.rows[0]);
         } catch (err) {
-            console.error(`[CRUD] Error updating ${tableName}:`, err);
+            logger.error(`[CRUD] Error updating ${tableName}:`, err);
             res.status(500).json({ error: err.message });
         }
     });
@@ -319,7 +320,7 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
             const result = await pool.query(query, values);
             res.json(result.rows);
         } catch (err) {
-            console.error(`Error batch updating ${tableName}:`, err);
+            logger.error(`Error batch updating ${tableName}:`, err);
             res.status(500).json({ error: err.message });
         }
     });
@@ -342,7 +343,7 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
             await pool.query(query, values);
             res.json({ status: 'deleted' });
         } catch (err) {
-            console.error(`Error deleting from ${tableName}:`, err);
+            logger.error(`Error deleting from ${tableName}:`, err);
             res.status(500).json({ error: err.message });
         }
     });

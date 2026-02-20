@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { decrypt } = require('../lib/crypto');
+const logger = require('../lib/logger');
 
 const LANGUAGE_INSTRUCTION = "CRITICAL: All output, including descriptions, reasoning, and analysis, MUST use English (UK) spelling and terminology (e.g., 'colour', 'centre', 'maximise').";
 
@@ -217,7 +218,7 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
         let errorMsg = 'OpenRouter error';
         try {
             const errorData = await res.json();
-            console.error('OpenRouter API Error Details:', JSON.stringify(errorData, null, 2));
+            logger.error('OpenRouter API Error Details: ' + JSON.stringify(errorData, null, 2));
 
             // OpenRouter errors can be nested in various ways
             if (errorData.error && typeof errorData.error === 'object') {
@@ -236,7 +237,7 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
             }
         } catch (e) {
             const text = await res.text();
-            console.error('OpenRouter API Error Text:', text);
+            logger.error('OpenRouter API Error Text: ' + text);
             errorMsg = text.slice(0, 200); // Limit length
         }
         throw new Error(`OpenRouter Provider Error: ${errorMsg}`);
@@ -245,7 +246,7 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
     const data = await res.json();
 
     // Log full data for debugging format
-    console.log('[OpenRouter] Full Response Data:', JSON.stringify(data, null, 2).substring(0, 1000));
+    logger.debug('[OpenRouter] Full Response Data: ' + JSON.stringify(data, null, 2).substring(0, 1000));
 
     if (!data.choices || data.choices.length === 0) {
         throw new Error('OpenRouter returned no choices: ' + JSON.stringify(data));
@@ -255,7 +256,7 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500) {
     const content = choice.message?.content || choice.text; // Fallback for older/different APIs
 
     // Log the raw content for debugging
-    console.log('[OpenRouter] Raw content received:', content ? content.substring(0, 200) + '...' : 'null/undefined');
+    logger.debug('[OpenRouter] Raw content received: ' + (content ? content.substring(0, 200) + '...' : 'null/undefined'));
 
     return content;
 }
@@ -388,7 +389,7 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
 
         // Always use OpenAI compatible endpoint for chat as requested
         const url = `${baseUrl}/v1/chat/completions`;
-        console.log(`[AI Service] Calling Local URL: ${url} with model: ${providerConfig.model_name}`);
+        logger.debug(`[AI Service] Calling Local URL: ${url} with model: ${providerConfig.model_name}`);
         const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -413,7 +414,7 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         }
 
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error('Invalid Local AI response:', JSON.stringify(data).substring(0, 500));
+            logger.error('Invalid Local AI response: ' + JSON.stringify(data).substring(0, 500));
             throw new Error('Invalid response format from Local AI Provider: Missing choices/message');
         }
 
@@ -698,14 +699,14 @@ router.post('/', async (req, res) => {
                 if (jsonStr) {
                     parsedResult = JSON.parse(jsonStr);
                 } else {
-                    console.warn('No JSON found in response');
+                    logger.warn('No JSON found in response');
                     // Return a safe fallback structure if possible, or just the raw text
                     parsedResult = { error: "Failed to parse AI response", raw: result };
                 }
             } catch (e) {
-                console.warn('Failed to parse JSON response:', e);
+                logger.warn('Failed to parse JSON response:', e);
                 // Return raw text if parsing fails, but helpful to log what it was
-                console.log('Raw output was:', result);
+                logger.debug('Raw output was: ' + result);
                 parsedResult = { error: "Invalid JSON from AI", raw: result };
             }
         }
@@ -713,7 +714,7 @@ router.post('/', async (req, res) => {
         res.json({ result: parsedResult });
 
     } catch (err) {
-        console.error('AI Service Error:', err.message);
+        logger.error('AI Service Error:', err.message);
 
         // Handle connection refused / fetch failed (Local AI down)
         if (err.message.includes('fetch failed') || err.message.includes('ECONNREFUSED')) {

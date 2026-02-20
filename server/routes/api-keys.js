@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const logger = require('../lib/logger');
 const { encrypt, maskKey } = require('../lib/crypto');
 const { applyProviderFilter } = require('../lib/query-helpers');
 
@@ -11,7 +12,7 @@ router.get('/', async (req, res) => {
         );
         res.json({ keys: result.rows }); // Wrap in keys object to match expected format
     } catch (err) {
-        console.error('Error fetching API keys:', err);
+        logger.error('Error fetching API keys:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -33,7 +34,7 @@ router.put('/', async (req, res) => {
         res.json({ success: true, updated: result.rowCount });
     } catch (err) {
 
-        console.error('Error updating API keys:', err);
+        logger.error('Error updating API keys:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -188,7 +189,7 @@ router.post('/', async (req, res) => {
             }
         }
     } catch (err) {
-        console.error('Error managing API key:', err);
+        logger.error('Error managing API key:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -199,7 +200,7 @@ router.delete('/:provider', async (req, res) => {
         await pool.query('DELETE FROM user_api_keys WHERE provider = $1', [req.params.provider]);
         res.json({ success: true });
     } catch (err) {
-        console.error('Error deleting API key:', err);
+        logger.error('Error deleting API key:', err);
         res.status(500).json({ error: err.message });
     }
 });

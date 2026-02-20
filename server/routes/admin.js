@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
+const logger = require('../lib/logger');
 
 // Reset Database (Clear all data except settings)
 router.post('/reset-db', async (req, res) => {
     try {
-        console.log('⚠️  Database reset requested');
+        logger.info('⚠️  Database reset requested');
 
         // 1. Get all table names in public schema
         const tablesResult = await pool.query(`
@@ -32,7 +33,7 @@ router.post('/reset-db', async (req, res) => {
             return res.json({ success: true, message: 'No tables to wipe' });
         }
 
-        console.log('🗑️  Wiping tables:', tablesToWipe.join(', '));
+        logger.info('🗑️  Wiping tables: ' + tablesToWipe.join(', '));
 
         // 3. Truncate tables
         // CASCADE is important to handle foreign keys
@@ -48,7 +49,7 @@ router.post('/reset-db', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('❌ Database reset failed:', err);
+        logger.error('❌ Database reset failed:', err);
         res.status(500).json({ error: err.message });
     }
 });

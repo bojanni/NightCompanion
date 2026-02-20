@@ -1,10 +1,6 @@
 require('dotenv').config();
 
-console.log('🔍 ENV CHECK:');
-console.log('  DB_PASSWORD exists?', !!process.env.DB_PASSWORD);
-console.log('  DB_PASSWORD length:', process.env.DB_PASSWORD?.length);
-console.log('  DB_USER:', process.env.DB_USER);
-
+const logger = require('./lib/logger');
 const express = require('express');
 const cors = require('cors');
 const { pool } = require('./db');
@@ -22,7 +18,6 @@ const createCrudRouter = require('./routes/crud');
 const apiKeysRouter = require('./routes/api-keys');
 const localEndpointsRouter = require('./routes/local-endpoints');
 
-// Mount generic CRUD routes
 // Mount generic CRUD routes
 app.use('/api/prompts', createCrudRouter('prompts', ['title', 'content', 'notes']));
 app.use('/api/tags', createCrudRouter('tags', ['name']));
@@ -49,8 +44,6 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
@@ -62,7 +55,7 @@ app.get('/api/db-test', async (req, res) => {
     const result = await pool.query('SELECT NOW()');
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Database connection error:', err);
+    logger.error('Database connection error:', err);
     res.status(500).json({
       error: 'Database connection failed',
       details: err.message,
@@ -73,11 +66,11 @@ app.get('/api/db-test', async (req, res) => {
 
 // Initialize DB and start server
 initSchema().then(() => {
-  console.log('✅ Database check complete.');
+  logger.info('✅ Database check complete.');
   app.listen(port, () => {
-    console.log(`✅ Server running on http://localhost:${port}`);
+    logger.info(`✅ Server running on http://localhost:${port}`);
   });
 }).catch(err => {
-  console.error('❌ Failed to initialize database:', err);
+  logger.error('❌ Failed to initialize database:', err);
   process.exit(1);
 });
