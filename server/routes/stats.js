@@ -25,10 +25,11 @@ router.get('/', async (req, res) => {
         // The tags table has a usage_count column that we can query directly
         const topTagsQuery = `
             SELECT 
-                name, 
-                usage_count 
-            FROM tags 
-            WHERE usage_count > 0 
+                t.name, 
+                COUNT(pt.prompt_id) as usage_count 
+            FROM tags t
+            JOIN prompt_tags pt ON t.id = pt.tag_id
+            GROUP BY t.id, t.name
             ORDER BY usage_count DESC 
             LIMIT 30;
         `;

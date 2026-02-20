@@ -106,6 +106,7 @@ async function initSchema() {
                 usage_count INTEGER DEFAULT 0
             );
         `);
+        await addColumn(pool, 'tags', 'usage_count', 'INTEGER DEFAULT 0');
 
         // Prompt Tags (Junction)
         await pool.query(`
