@@ -37,6 +37,7 @@ export function usePromptsState() {
     const [linkedImages, setLinkedImages] = useState<{ [key: string]: { id: string; image_url: string; title: string; rating: number; model?: string }[] }>({});
     const [lightboxImage, setLightboxImage] = useState<{ id: string; image_url: string; title: string; rating: number; model?: string } | null>(null);
     const [detailViewIndex, setDetailViewIndex] = useState<number | null>(null);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -123,7 +124,6 @@ export function usePromptsState() {
     }, [prompts, filterTag, promptTagMap]);
 
     async function handleDelete(id: string) {
-        if (!window.confirm('Are you sure you want to delete this prompt?')) return;
         try {
             const { error } = await db.from('prompts').delete().eq('id', id);
             if (error) throw error;
@@ -203,6 +203,7 @@ export function usePromptsState() {
         linkedImages, setLinkedImages,
         lightboxImage, setLightboxImage,
         detailViewIndex, setDetailViewIndex,
+        deleteConfirmId, setDeleteConfirmId,
         filtered,
 
         // Actions

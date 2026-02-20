@@ -4,6 +4,7 @@ import { db } from '../lib/api';
 import PromptVariationGenerator from '../components/PromptVariationGenerator';
 import ResultsComparisonMatrix from '../components/ResultsComparisonMatrix';
 import { generatePromptVariations } from '../lib/ai-service';
+import ChoiceModal from '../components/ChoiceModal';
 
 
 interface BatchTest {
@@ -41,6 +42,7 @@ export default function BatchTesting() {
   const [newTestPrompt, setNewTestPrompt] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTests();
@@ -172,8 +174,6 @@ export default function BatchTesting() {
   }
 
   async function deleteTest(testId: string) {
-    if (!confirm('Delete this batch test and all its results?')) return;
-
     try {
       const { error } = await db.from('batch_tests').delete().eq('id', testId);
 
@@ -329,7 +329,7 @@ export default function BatchTesting() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteTest(test.id);
+                          setDeleteConfirmId(test.id);
                         }}
                         className="text-slate-500 hover:text-red-400 transition-colors"
                         aria-label="Delete test"
@@ -431,6 +431,25 @@ export default function BatchTesting() {
           )}
         </div>
       </div>
+
+      <ChoiceModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Delete Batch Test"
+        message="Delete this batch test and all its results? This action cannot be undone."
+        choices={[
+          {
+            label: 'Delete',
+            variant: 'danger',
+            onClick: () => {
+              if (deleteConfirmId) {
+                deleteTest(deleteConfirmId);
+                setDeleteConfirmId(null);
+              }
+            }
+          }
+        ]}
+      />
     </div>
   );
 }

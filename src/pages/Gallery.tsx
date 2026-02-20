@@ -10,6 +10,7 @@ import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
 import type { GalleryItem, Prompt, Collection } from '../lib/types';
 import Modal from '../components/Modal';
+import ChoiceModal from '../components/ChoiceModal';
 import { GallerySkeleton } from '../components/GallerySkeleton';
 import StarRating from '../components/StarRating';
 import PromptSelector from '../components/PromptSelector';
@@ -88,6 +89,8 @@ export default function Gallery() {
     autoGenerateTitle, setAutoGenerateTitle,
     generatingTitle, setGeneratingTitle,
     selectedPromptId, setSelectedPromptId,
+    deleteItemConfirmId, setDeleteItemConfirmId,
+    deleteCollectionConfirmId, setDeleteCollectionConfirmId,
     loadData,
     handleDeleteItem,
     handleUpdateRating,
@@ -515,7 +518,7 @@ export default function Gallery() {
                 {coll.name}
               </DynamicColorElement>
               <button
-                onClick={() => deleteCollectionAction(coll.id)}
+                onClick={() => setDeleteCollectionConfirmId(coll.id)}
                 className="px-1.5 py-1.5 rounded-r-xl text-xs border border-l-0 border-slate-700 text-slate-600 hover:text-red-400 transition-colors"
                 aria-label="Delete collection"
               >
@@ -587,7 +590,7 @@ export default function Gallery() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteItem(item.id);
+                        setDeleteItemConfirmId(item.id);
                       }}
                       className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-red-500/70 transition-colors"
                       title="Delete item"
@@ -1130,6 +1133,44 @@ export default function Gallery() {
           </div>
         )}
       </Modal>
+      {/* Choice Modals */}
+      <ChoiceModal
+        isOpen={deleteCollectionConfirmId !== null}
+        onClose={() => setDeleteCollectionConfirmId(null)}
+        title="Delete Collection"
+        message="Delete this collection? Items will remain in the gallery."
+        choices={[
+          {
+            label: 'Delete',
+            variant: 'danger',
+            onClick: () => {
+              if (deleteCollectionConfirmId) {
+                handleDeleteCollection(deleteCollectionConfirmId);
+                setDeleteCollectionConfirmId(null);
+              }
+            }
+          }
+        ]}
+      />
+
+      <ChoiceModal
+        isOpen={deleteItemConfirmId !== null}
+        onClose={() => setDeleteItemConfirmId(null)}
+        title="Delete Image"
+        message="Are you sure you want to delete this image?"
+        choices={[
+          {
+            label: 'Delete',
+            variant: 'danger',
+            onClick: () => {
+              if (deleteItemConfirmId) {
+                handleDeleteItem(deleteItemConfirmId);
+                setDeleteItemConfirmId(null);
+              }
+            }
+          }
+        ]}
+      />
     </div>
   );
 }

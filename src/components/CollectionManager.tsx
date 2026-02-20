@@ -3,6 +3,7 @@ import { Plus, X, FolderOpen, Edit3, Trash2, Check, Palette } from 'lucide-react
 import { db } from '../lib/api';
 import type { Collection } from '../lib/types';
 import { toast } from 'sonner';
+import ChoiceModal from './ChoiceModal';
 
 interface CollectionManagerProps {
     onSelect?: (collectionId: string) => void;
@@ -29,6 +30,7 @@ export default function CollectionManager({ onSelect, selectedId, className = ''
     const [collections, setCollections] = useState<Collection[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     // Form State
     const [name, setName] = useState('');
@@ -102,7 +104,6 @@ export default function CollectionManager({ onSelect, selectedId, className = ''
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('Are you sure? Images in this collection will not be deleted, just unlinked.')) return;
         try {
             const { error } = await db.from('collections').delete().eq('id', id);
             if (error) throw error;
@@ -223,7 +224,7 @@ export default function CollectionManager({ onSelect, selectedId, className = ''
                                     <Edit3 size={12} />
                                 </button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(collection.id); }}
+                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(collection.id); }}
                                     className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg"
                                     title="Delete"
                                 >
@@ -234,6 +235,25 @@ export default function CollectionManager({ onSelect, selectedId, className = ''
                     ))
                 )}
             </div>
+
+            <ChoiceModal
+                isOpen={deleteConfirmId !== null}
+                onClose={() => setDeleteConfirmId(null)}
+                title="Delete Collection"
+                message="Are you sure? Images in this collection will not be deleted, just unlinked."
+                choices={[
+                    {
+                        label: 'Delete',
+                        variant: 'danger',
+                        onClick: () => {
+                            if (deleteConfirmId) {
+                                handleDelete(deleteConfirmId);
+                                setDeleteConfirmId(null);
+                            }
+                        }
+                    }
+                ]}
+            />
         </div>
     );
 }

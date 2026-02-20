@@ -56,6 +56,8 @@ export function useGalleryState() {
     const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
     const [generatingTitle, setGeneratingTitle] = useState(false);
     const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
+    const [deleteItemConfirmId, setDeleteItemConfirmId] = useState<string | null>(null);
+    const [deleteCollectionConfirmId, setDeleteCollectionConfirmId] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -122,7 +124,6 @@ export function useGalleryState() {
     }, [currentPage, filterCollection, filterRating, search]);
 
     async function handleDeleteItem(id: string) {
-        if (!window.confirm('Are you sure you want to delete this image?')) return;
         try {
             await db.from('gallery_items').delete().eq('id', id);
             setItems(prev => prev.filter(i => i.id !== id));
@@ -153,7 +154,6 @@ export function useGalleryState() {
     }
 
     async function handleDeleteCollection(id: string) {
-        if (!window.confirm('Delete this collection? Items will remain in the gallery.')) return;
         try {
             await db.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
             await db.from('collections').delete().eq('id', id);
@@ -205,6 +205,8 @@ export function useGalleryState() {
         autoGenerateTitle, setAutoGenerateTitle,
         generatingTitle, setGeneratingTitle,
         selectedPromptId, setSelectedPromptId,
+        deleteItemConfirmId, setDeleteItemConfirmId,
+        deleteCollectionConfirmId, setDeleteCollectionConfirmId,
 
         // Actions
         loadData,

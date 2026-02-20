@@ -16,6 +16,7 @@ import {
   useDeleteCharacterDetail
 } from '../hooks/useCharacters';
 import { describeCharacter } from '../lib/ai-service';
+import ChoiceModal from '../components/ChoiceModal';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 12;
@@ -189,6 +190,7 @@ export default function Characters() {
   const [showEditor, setShowEditor] = useState(false);
   const [editingChar, setEditingChar] = useState<Character | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, CharacterDetail[]>>({});
 
   // Lightbox State
@@ -454,9 +456,7 @@ export default function Characters() {
               }}
               onEdit={() => openEditor(char)}
               onDelete={() => {
-                if (confirm('Are you sure you want to delete this character?')) {
-                  handleDeleteCharacter(char.id);
-                }
+                setDeleteConfirmId(char.id);
               }}
               onViewImage={(url) => setLightboxImage(url)}
             />
@@ -766,6 +766,25 @@ export default function Characters() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ChoiceModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Delete Character"
+        message="Are you sure you want to delete this character? This action cannot be undone."
+        choices={[
+          {
+            label: 'Delete',
+            variant: 'danger',
+            onClick: () => {
+              if (deleteConfirmId) {
+                handleDeleteCharacter(deleteConfirmId);
+                setDeleteConfirmId(null);
+              }
+            }
+          }
+        ]}
+      />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import PromptDetailOverlay from '../components/PromptDetailOverlay';
 import { usePromptsState } from '../hooks/usePromptsState';
+import ChoiceModal from '../components/ChoiceModal';
 
 const PAGE_SIZE = 20;
 
@@ -53,6 +54,7 @@ export default function Prompts() {
     linkedImages, setLinkedImages,
     lightboxImage, setLightboxImage,
     detailViewIndex, setDetailViewIndex,
+    deleteConfirmId, setDeleteConfirmId,
     filtered,
     loadData,
     handleDelete,
@@ -651,7 +653,7 @@ export default function Prompts() {
                           {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(prompt.id); }}
+                          onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(prompt.id); }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
                           title="Delete"
                         >
@@ -872,6 +874,25 @@ export default function Prompts() {
           );
         })()}
       </Modal>
+
+      <ChoiceModal
+        isOpen={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Delete Prompt"
+        message="Are you sure you want to delete this prompt? This action cannot be undone."
+        choices={[
+          {
+            label: 'Delete',
+            variant: 'danger',
+            onClick: () => {
+              if (deleteConfirmId) {
+                handleDelete(deleteConfirmId);
+                setDeleteConfirmId(null);
+              }
+            }
+          }
+        ]}
+      />
     </div >
   );
 }

@@ -41,12 +41,10 @@ export function PromptHistory({ promptId, currentContent, onRestore }: PromptHis
   }, [loadVersions]);
 
   const handleRestore = async (version: PromptVersion) => {
-    if (window.confirm(`Restore to version ${version.version_number}? This will create a new version with this content.`)) {
-      if (onRestore) {
-        onRestore(version.content);
-      }
-      setSelectedVersion(null);
+    if (onRestore) {
+      onRestore(version.content);
     }
+    setSelectedVersion(null);
   };
 
   const toggleExpand = (versionId: string) => {
