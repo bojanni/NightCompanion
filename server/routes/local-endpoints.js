@@ -37,8 +37,6 @@ router.post('/', async (req, res) => {
 
 
 
-// ... (existing code)
-
 // Bulk update local endpoints (e.g. set all inactive)
 router.put('/', async (req, res) => {
     try {

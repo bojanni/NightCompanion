@@ -2,6 +2,8 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
   Wrench, Clock, ChevronLeft, ChevronRight,
+  LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
+  Compass, FlaskConical, Fingerprint, Settings, Menu, Flame
 } from 'lucide-react';
 
 const navItems = [
@@ -9,7 +11,7 @@ const navItems = [
   { to: '/generator', icon: Wand2, label: 'Generator' },
   { to: '/prompts', icon: Sparkles, label: 'Prompts' },
   { to: '/characters', icon: Users, label: 'Characters' },
-  { to: '/gallery', icon: Image, label: 'Gallery' },
+  { to: '/gallery', icon: ImageIcon, label: 'Gallery' },
   { to: '/models', icon: Compass, label: 'Models' },
   { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
   { to: '/style', icon: Fingerprint, label: 'Style Profile' },
