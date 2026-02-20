@@ -91,7 +91,7 @@ export default function Prompts() {
         }, { replace: true });
       }
     }
-  }, [prompts, searchParams, detailViewIndex, setSearchParams]);
+  }, [prompts, searchParams, detailViewIndex, setSearchParams, setDetailViewIndex]);
 
 
 
@@ -906,8 +906,6 @@ export default function Prompts() {
               }
             }
           }
-        ]}
-      />
         ]}
       />
 
