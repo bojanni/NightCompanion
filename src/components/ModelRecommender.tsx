@@ -38,8 +38,8 @@ export default function ModelRecommender({ generatedPrompt }: ModelRecommenderPr
     setLoading(true);
     setResults(null);
     try {
-      const { data } = await db.auth.getSession();
-      const token = data.session?.access_token ?? '';
+      // const { data } = await db.auth.getSession();
+      const token = '';
       const result = await recommendModels(prompt, { ...(budget ? { budget } : {}) }, token);
 
       const augmentedResults: ModelRecommendation[] = (result.recommendations ?? []).map(rec => {

@@ -2,48 +2,7 @@
 const API_URL = 'http://localhost:3000/api';
 
 class LocalApiClient {
-    auth = {
-        getUser: async () => {
-            // Always return a mock user for Single Tenant mode
-            return {
-                data: {
-                    user: {
-                        id: '00000000-0000-0000-0000-000000000000',
-                        email: 'local@user.com',
-                        aud: 'authenticated',
-                        role: 'authenticated'
-                    }
-                },
-                error: null
-            };
-        },
-        getSession: async () => {
-            const { data } = await this.auth.getUser();
-            return {
-                data: { session: data.user ? { user: data.user, access_token: 'mock-token' } : null },
-                error: null
-            };
-        },
-        onAuthStateChange: (callback: (event: string, session: unknown) => void) => {
-            this.auth.getSession().then(({ data }) => {
-                if (data.session) {
-                    callback('SIGNED_IN', data.session);
-                }
-            });
-            return { data: { subscription: { unsubscribe: () => { } } } };
-        },
-        signInWithPassword: async () => {
-            // Auto login for local development
-            return { data: { session: null, user: null }, error: null };
-        },
-        signUp: async () => {
-            return { data: { session: null, user: null }, error: null };
-        },
-        signOut: async () => {
-            window.location.reload();
-            return { error: null };
-        }
-    };
+
 
     from(table: string) {
         return new QueryBuilder(table);

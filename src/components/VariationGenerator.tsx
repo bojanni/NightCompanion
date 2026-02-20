@@ -87,10 +87,10 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
     if (useAI) {
       setIsGenerating(true);
       try {
-        const { data: { session } } = await db.auth.getSession();
+        // const { data: { session } } = await db.auth.getSession();
         // Allow generation without token for local dev if backend supports it (it does via mock)
         // But let's pass an empty string or dummy if no session
-        const token = session?.access_token || 'dummy-token';
+        const token = 'dummy-token';
 
         const aiVariations = await generatePromptVariations(basePrompt, token, count, strategy);
 
@@ -133,7 +133,8 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
   async function handleRegenerateWithAI(idx: number) {
     setRegeneratingIdx(idx);
     try {
-      const { data: { session } } = await db.auth.getSession();
+      // const { data: { session } } = await db.auth.getSession();
+      const session = { access_token: 'dummy-token' };
       if (!session?.access_token) {
         console.error('No session available');
         setRegeneratingIdx(null);

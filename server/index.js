@@ -49,14 +49,7 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Mock Auth Route
-app.get('/api/auth/user', (req, res) => {
-  res.json({
-    id: '88ea3bcb-d9a8-44b5-ac26-c90885a74686',
-    email: 'user@example.com',
-    user_metadata: { name: 'Local User' }
-  });
-});
+
 
 // Health check
 app.get('/api/health', (req, res) => {

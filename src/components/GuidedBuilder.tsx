@@ -117,7 +117,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
     setAiLoading(true);
     try {
       const currentPrompt = buildGuidedPrompt(selections, additions, customInputs);
-      const token = (await db.auth.getSession()).data.session?.access_token || '';
+      const token = '';
 
       const improved = await generateFromDescription(
         `Complete and polish this image prompt based on these attributes: ${currentPrompt}`,

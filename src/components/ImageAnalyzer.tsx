@@ -73,8 +73,8 @@ export default function ImageAnalyzer({ onPromptGenerated }: ImageAnalyzerProps)
     resetResults();
 
     try {
-      const { data } = await db.auth.getSession();
-      const token = data.session?.access_token ?? '';
+      // const { data } = await db.auth.getSession();
+      const token = '';
 
       if (filledSlots.length === 1) {
         const slot = filledSlots[0];

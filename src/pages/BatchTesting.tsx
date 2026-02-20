@@ -128,7 +128,7 @@ export default function BatchTesting() {
 
     setGenerating(true);
     try {
-      const token = (await db.auth.getSession()).data.session?.access_token ?? '';
+      const token = '';
       const variations = await generatePromptVariations(selectedTest.base_prompt, token);
 
       const existingCount = selectedTest.prompts?.length || 1;

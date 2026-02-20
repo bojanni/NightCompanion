@@ -27,8 +27,8 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
         setLoading(true);
         // ... (rest of function logic remains same, but omitted for brevity in thought, inclusion in tool call required)
         try {
-            const { data: { session } } = await db.auth.getSession();
-            const token = session?.access_token ?? '';
+            // const { data: { session } } = await db.auth.getSession();
+            const token = '';
 
             // Get some context for better generation
             const [charsRes, topPromptsRes] = await Promise.all([

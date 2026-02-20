@@ -193,7 +193,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     async function executeAIGenerate(index: number) {
         setGenerating(true);
         try {
-            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const token = '';
             const result = await generateRandomPromptAI(token, undefined, maxWords);
             if (result && typeof result === 'object' && 'prompt' in result) {
                 const newPrompts = [...prompts];
@@ -238,7 +238,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         setUnifying(true);
         try {
             // First, get the session token
-            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const token = '';
 
             // Use just the positive prompts for unification context + negative for context if needed?
             // improvePromptWithNegative takes (token, prompt, negativePrompt).
@@ -282,7 +282,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         if (!positivePrompt.trim()) return;
         setOptimizing(true);
         try {
-            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const token = '';
             const result = await optimizePromptForModel(
                 positivePrompt,
                 suggestedModel?.name || 'DALL-E 3',
@@ -314,7 +314,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
     async function handleGenerateNegative() {
         setGenerating(true);
         try {
-            const token = (await db.auth.getSession()).data.session?.access_token || '';
+            const token = '';
             const result = await generateNegativePrompt(token);
             if (result) {
                 setNegativePrompt(result);

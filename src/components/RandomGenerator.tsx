@@ -60,7 +60,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
   const fetchActiveModel = useCallback(async () => {
     try {
-      await db.auth.getSession();
+      // await db.auth.getSession();
 
       // Check cloud providers FIRST (matches Settings precedence)
       const keys = await listApiKeys();
@@ -88,25 +88,23 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         if (activeKey.provider === 'openrouter' && !activeModelPricing) {
           // We need a token or at least call the endpoint.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          db.auth.getSession().then(({ data: { session } }: any) => {
-            const token = session?.access_token || '';
-            listModels(token, 'openrouter').then((routerModels: ModelListItem[]) => {
-              // Update cache
-              try {
-                const existingCache = localStorage.getItem('cachedModels');
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const cache: any = existingCache ? JSON.parse(existingCache) : {};
-                cache['openrouter'] = routerModels;
-                localStorage.setItem('cachedModels', JSON.stringify(cache));
+          const token = '';
+          listModels(token, 'openrouter').then((routerModels: ModelListItem[]) => {
+            // Update cache
+            try {
+              const existingCache = localStorage.getItem('cachedModels');
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const cache: any = existingCache ? JSON.parse(existingCache) : {};
+              cache['openrouter'] = routerModels;
+              localStorage.setItem('cachedModels', JSON.stringify(cache));
 
-                // Update state
-                const found = routerModels.find((m) => m.id === model);
-                if (found?.pricing) {
-                  setActiveModelPricing(found.pricing);
-                }
-              } catch (e) { console.error("Failed to update cache", e); }
-            }).catch((err: unknown) => console.error("Failed to fetch openrouter models", err));
-          });
+              // Update state
+              const found = routerModels.find((m) => m.id === model);
+              if (found?.pricing) {
+                setActiveModelPricing(found.pricing);
+              }
+            } catch (e) { console.error("Failed to update cache", e); }
+          }).catch((err: unknown) => console.error("Failed to fetch openrouter models", err));
         }
 
         setActiveModelPricing(undefined);
@@ -234,7 +232,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     const run = async () => {
       setRegenerating(true);
       try {
-        const token = (await db.auth.getSession()).data.session?.access_token || '';
+        const token = '';
         const result = await generateRandomPromptAI(token, undefined, maxWords);
 
         // result is { prompt: string, negativePrompt?: string, style?: string }

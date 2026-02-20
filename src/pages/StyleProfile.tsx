@@ -67,8 +67,8 @@ export default function StyleProfile() {
   async function handleAnalyze() {
     setAnalyzing(true);
     try {
-      const { data: session } = await db.auth.getSession();
-      const token = session.session?.access_token ?? '';
+      // const { data: session } = await db.auth.getSession();
+      const token = '';
 
       const { data: prompts } = await db
         .from('prompts')

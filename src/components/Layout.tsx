@@ -1,14 +1,8 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
-  LayoutDashboard, Sparkles, Users, Image, Compass, Wand2,
-  LogOut, Flame, Settings, Fingerprint, FlaskConical,
   Wrench, Clock, ChevronLeft, ChevronRight,
 } from 'lucide-react';
-
-interface LayoutProps {
-  onSignOut: () => void;
-}
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -28,7 +22,7 @@ const navItems = [
 // Full-width: these pages use all available horizontal space
 const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
 
-export default function Layout({ onSignOut }: LayoutProps) {
+export default function Layout() {
   const location = useLocation();
   const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
 
@@ -91,18 +85,6 @@ export default function Layout({ onSignOut }: LayoutProps) {
           ))}
         </nav>
 
-        <div className="px-3 py-4 border-t border-slate-800">
-          <button
-            onClick={onSignOut}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-all w-full whitespace-nowrap ${collapsed ? 'justify-center' : ''}`}
-            title={collapsed ? 'Sign Out' : undefined}
-          >
-            <LogOut size={18} className="shrink-0" />
-            {!collapsed && (
-              <span className="animate-in fade-in slide-in-from-left-2 duration-300">Sign Out</span>
-            )}
-          </button>
-        </div>
       </aside>
 
       {/* ── Main ── */}
