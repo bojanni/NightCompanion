@@ -69,6 +69,9 @@ export interface CharacterDetail {
   created_at: string;
 }
 
+export type MediaType = 'image' | 'video';
+export type StorageMode = 'url' | 'local' | 'both';
+
 export interface GalleryItem {
   id: string;
   title: string;
@@ -82,6 +85,11 @@ export interface GalleryItem {
   created_at: string;
   updated_at?: string;
   model?: string;
+  media_type: MediaType;
+  video_url?: string;
+  thumbnail_url?: string;
+  duration_seconds?: number;
+  storage_mode: StorageMode;
 }
 
 export interface Collection {

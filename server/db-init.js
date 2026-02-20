@@ -185,7 +185,13 @@ async function initSchema() {
         await addColumn(pool, 'gallery_items', 'height', 'INTEGER');
         await addColumn(pool, 'gallery_items', 'character_id', 'UUID');
         await addColumn(pool, 'gallery_items', 'collection_id', 'UUID');
+        await addColumn(pool, 'gallery_items', 'media_type', "TEXT NOT NULL DEFAULT 'image' CHECK (media_type IN ('image', 'video'))");
+        await addColumn(pool, 'gallery_items', 'video_url', 'TEXT');
+        await addColumn(pool, 'gallery_items', 'video_local_path', 'TEXT');
+        await addColumn(pool, 'gallery_items', 'thumbnail_url', 'TEXT');
         await addColumn(pool, 'gallery_items', 'created_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
+        await addColumn(pool, 'gallery_items', 'duration_seconds', 'INTEGER');
+        await addColumn(pool, 'gallery_items', 'storage_mode', "TEXT DEFAULT 'url' CHECK (storage_mode IN ('url', 'local', 'both'))");
         await addColumn(pool, 'gallery_items', 'updated_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
 
 
