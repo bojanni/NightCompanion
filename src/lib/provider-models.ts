@@ -52,6 +52,14 @@ export const PROVIDER_MODELS: Record<string, ModelOption[]> = {
   ],
 };
 
+export interface FlatModelOption extends ModelOption {
+  provider: string;
+}
+
+export const ALL_MODELS: FlatModelOption[] = Object.entries(PROVIDER_MODELS).flatMap(([provider, models]) =>
+  models.map(m => ({ ...m, provider }))
+);
+
 export function getModelsForProvider(provider: string): ModelOption[] {
   return PROVIDER_MODELS[provider] || [];
 }

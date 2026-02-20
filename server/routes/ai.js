@@ -315,9 +315,9 @@ async function listModels(providerConfig) {
         } catch (e) { /* ignore */ }
 
         // 3. Keep original provided URL attempt (e.g. if user has a custom proxy ending in /v1)
-        if (url !== baseUrl) {
+        if (urlClean !== baseUrl) {
             try {
-                const res = await fetch(`${url}/models`);
+                const res = await fetch(`${urlClean}/models`);
                 if (res.ok) {
                     const data = await res.json();
                     return data.data.map(m => ({ id: m.id, name: m.id }));
@@ -425,7 +425,6 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         case 'openai': return callOpenAI(apiKey, system, user, maxTokens);
         case 'anthropic': return callAnthropic(apiKey, system, user, maxTokens);
         case 'gemini': return callGemini(apiKey, system, user, maxTokens);
-        case 'gemini': return callGemini(apiKey, system, user, maxTokens);
         case 'openrouter': return callOpenRouter(apiKey, system, user, providerConfig.modelName, maxTokens);
         case 'together': return callTogether(apiKey, system, user, providerConfig.modelName, maxTokens);
         default: throw new Error(`Unknown provider: ${provider}`);
@@ -521,7 +520,6 @@ router.post('/', async (req, res) => {
             if (payload.negativePrompt) {
                 userPrompt += `Negative Prompt: "${payload.negativePrompt}"\n`;
             }
-            userPrompt += `\nTask: Rewrite the prompt to be optimal for ${payload.targetModel}.`;
             userPrompt += `\nTask: Rewrite the prompt to be optimal for ${payload.targetModel}.`;
             maxTokens = 1500;
 

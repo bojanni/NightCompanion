@@ -18,7 +18,7 @@ import { generateFromDescription } from '../lib/ai-service';
 import { toast } from 'sonner';
 import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PROVIDER_MODELS } from '../lib/provider-models';
+import { ALL_MODELS } from '../lib/provider-models';
 
 interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
@@ -94,10 +94,9 @@ export default function Gallery() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
 
+
   // Flattened models for the selector
-  const allModels = Object.entries(PROVIDER_MODELS).flatMap(([provider, models]) =>
-    models.map(m => ({ ...m, provider }))
-  );
+  const allModels = ALL_MODELS;
   const allProviders = [
     { id: 'openai', name: 'OpenAI', type: 'cloud' as const },
     { id: 'gemini', name: 'Google Gemini', type: 'cloud' as const },
