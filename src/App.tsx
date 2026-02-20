@@ -15,6 +15,7 @@ import CostDemo from './pages/CostDemo';
 import VersioningGuide from './pages/VersioningGuide';
 import Tools from './pages/Tools';
 import Timeline from './pages/Timeline';
+import Statistics from './pages/Statistics';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/versioning-guide" element={<VersioningGuide />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/tools" element={<Tools />} />
+          <Route path="/statistics" element={<Statistics />} />
           <Route path="/timeline" element={<Timeline />} />
         </Route>
       </Routes>

@@ -3,8 +3,8 @@ import { useState } from 'react';
 import {
   Wrench, Clock, ChevronLeft, ChevronRight,
   LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
-  Compass, FlaskConical, Fingerprint, Settings, Menu, Flame,
-  Moon, Sun
+  Compass, FlaskConical, Fingerprint, Settings, Flame,
+  Moon, Sun, BarChart2
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -17,6 +17,7 @@ const navItems = [
   { to: '/models', icon: Compass, label: 'Models' },
   { to: '/batch-testing', icon: FlaskConical, label: 'Batch Testing' },
   { to: '/style', icon: Fingerprint, label: 'Style Profile' },
+  { to: '/statistics', icon: BarChart2, label: 'Statistics' },
   { to: '/timeline', icon: Clock, label: 'Timeline' },
 
   { to: '/tools', icon: Wrench, label: 'AI Tools' },
