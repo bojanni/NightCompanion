@@ -99,7 +99,7 @@ export function ProviderConfigForm({
     const isSaving = actionLoading === provider.id;
     const isDeleting = actionLoading === `${provider.id}-delete`;
     const isFetching = actionLoading === `${provider.id}-fetch`;
-    const canFetch = ['openrouter', 'together', 'openai', 'gemini'].includes(provider.id);
+    const canFetch = ['openrouter', 'together', 'openai', 'gemini', 'deepinfra'].includes(provider.id);
 
     const handleSave = async () => {
         setActionLoading(provider.id);
