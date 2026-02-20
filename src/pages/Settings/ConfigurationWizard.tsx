@@ -10,7 +10,7 @@ import type { ApiKeyInfo, LocalEndpoint } from '../../lib/api-keys-service';
 import { setActiveProvider } from '../../lib/api-keys-service';
 import type { ModelOption } from '../../lib/provider-models';
 import { toast } from 'sonner';
-import { AI_ROLES, PROVIDERS, LOCAL_PROVIDERS } from '../../lib/constants';
+import { AI_ROLES, PROVIDERS, LOCAL_PROVIDERS, AIRole } from '../../lib/constants';
 
 interface ConfigurationWizardProps {
     keys: ApiKeyInfo[];
@@ -81,7 +81,7 @@ export function ConfigurationWizard({
                 const provider = keys.find(k => k.provider === roleGen) || localEndpoints.find(e => e.provider === roleGen);
                 if (provider) {
                     const model = getModelForRole(provider, AI_ROLES.GENERATION);
-                    await setActiveProvider(roleGen, model || '', true, AI_ROLES.GENERATION as any);
+                    await setActiveProvider(roleGen, model || '', true, AI_ROLES.GENERATION);
                 }
             }
 
@@ -90,7 +90,7 @@ export function ConfigurationWizard({
                 const provider = keys.find(k => k.provider === roleImprove) || localEndpoints.find(e => e.provider === roleImprove);
                 if (provider) {
                     const model = getModelForRole(provider, AI_ROLES.IMPROVEMENT);
-                    await setActiveProvider(roleImprove, model || '', true, AI_ROLES.IMPROVEMENT as any);
+                    await setActiveProvider(roleImprove, model || '', true, AI_ROLES.IMPROVEMENT);
                 }
             }
 
@@ -100,7 +100,7 @@ export function ConfigurationWizard({
                 // But generally we should try to set a model if we have one
                 const provider = keys.find(k => k.provider === roleVision) || localEndpoints.find(e => e.provider === roleVision);
                 const model = provider ? getModelForRole(provider, AI_ROLES.VISION) : '';
-                await setActiveProvider(roleVision, model || '', true, AI_ROLES.VISION as any);
+                await setActiveProvider(roleVision, model || '', true, AI_ROLES.VISION);
             }
 
             await loadKeys();
@@ -268,7 +268,7 @@ export function ConfigurationWizard({
                                             });
                                             await loadLocalEndpoints();
                                             toast.success('Ollama config saved');
-                                        } catch (_) { toast.error('Failed to save Ollama'); }
+                                        } catch { toast.error('Failed to save Ollama'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onDelete={async () => {
@@ -278,7 +278,7 @@ export function ConfigurationWizard({
                                             await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
                                             await loadLocalEndpoints();
                                             toast.success('Ollama removed');
-                                        } catch (_) { toast.error('Failed to remove'); }
+                                        } catch { toast.error('Failed to remove'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onSetActive={async (role) => {
@@ -291,9 +291,9 @@ export function ConfigurationWizard({
                                                 : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
                                                     : endpoint?.is_active_vision;
 
-                                            await setActiveProvider(LOCAL_PROVIDERS.OLLAMA, model || '', !isRoleActive, role as any);
+                                            await setActiveProvider(LOCAL_PROVIDERS.OLLAMA, model || '', !isRoleActive, role as AIRole);
                                             await loadKeys(); await loadLocalEndpoints();
-                                        } catch (_) { toast.error('Failed toggle'); }
+                                        } catch { toast.error('Failed toggle'); }
                                         finally { setActionLoading(null); }
                                     }}
                                 />
@@ -317,7 +317,7 @@ export function ConfigurationWizard({
                                             });
                                             await loadLocalEndpoints();
                                             toast.success('LM Studio config saved');
-                                        } catch (_) { toast.error('Failed to save LM Studio'); }
+                                        } catch { toast.error('Failed to save LM Studio'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onDelete={async () => {
@@ -327,7 +327,7 @@ export function ConfigurationWizard({
                                             await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
                                             await loadLocalEndpoints();
                                             toast.success('LM Studio removed');
-                                        } catch (_) { toast.error('Failed to remove'); }
+                                        } catch { toast.error('Failed to remove'); }
                                         finally { setActionLoading(null); }
                                     }}
                                     onSetActive={async (role) => {
@@ -338,7 +338,7 @@ export function ConfigurationWizard({
                                             const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
                                                 : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
                                                     : endpoint?.is_active_vision;
-                                            await setActiveProvider(LOCAL_PROVIDERS.LMSTUDIO, model || '', !isRoleActive, role as any);
+                                            await setActiveProvider(LOCAL_PROVIDERS.LMSTUDIO, model || '', !isRoleActive, role as AIRole);
                                             await loadKeys(); await loadLocalEndpoints();
                                         } catch (_) { toast.error('Failed toggle'); }
                                         finally { setActionLoading(null); }

@@ -8,6 +8,12 @@ export interface OptimizationSuggestion {
   priority: 'high' | 'medium' | 'low';
 }
 
+export interface AnalysisResult {
+  clarityScore: number;
+  detailScore: number;
+  specificityScore: number;
+}
+
 export interface OptimizationResult {
   originalPrompt: string;
   optimizedPrompt: string;
@@ -16,19 +22,11 @@ export interface OptimizationResult {
     original: number;
     optimized: number;
   };
-  improvements: {
-    clarity: number;
-    detail: number;
-    specificity: number;
-  };
+  improvements: AnalysisResult;
 }
 
 export async function optimizePrompt(
-  prompt: string,
-  context?: {
-    modelId?: string;
-    category?: string;
-  }
+  prompt: string
 ): Promise<OptimizationResult> {
   const suggestions: OptimizationSuggestion[] = [];
 
@@ -111,9 +109,9 @@ export async function optimizePrompt(
       optimized: calculatePromptScore(optimizedPrompt)
     },
     improvements: {
-      clarity: analysis.clarityScore,
-      detail: analysis.detailScore,
-      specificity: analysis.specificityScore
+      clarityScore: analysis.clarityScore,
+      detailScore: analysis.detailScore,
+      specificityScore: analysis.specificityScore
     }
   };
 }

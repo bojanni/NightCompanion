@@ -1,3 +1,4 @@
+import { AIRole } from './constants';
 const API_URL = 'http://localhost:3000/api/user_api_keys';
 
 async function callKeyService(method: string, endpoint: string = '', body?: Record<string, unknown>) {
@@ -59,7 +60,7 @@ export async function deleteApiKey(provider: string): Promise<void> {
   await callKeyService('DELETE', `/${provider}`);
 }
 
-export async function setActiveProvider(provider: string, modelName: string, active: boolean = true, role?: 'generation' | 'improvement' | 'vision'): Promise<void> {
+export async function setActiveProvider(provider: string, modelName: string, active: boolean = true, role?: AIRole): Promise<void> {
   await callKeyService('POST', '', { action: 'set-active', provider, modelName, active, role });
 }
 

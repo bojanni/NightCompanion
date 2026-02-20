@@ -1,27 +1,30 @@
 import { useState, useRef } from 'react';
 import { Download, Upload, AlertTriangle, Loader2, Database, FileJson, Trash2, X } from 'lucide-react';
+import { z } from 'zod';
 import { db } from '../lib/api';
 import { handleError, showSuccess } from '../lib/error-handler';
 
-type TableRow = Record<string, unknown>;
+const TableRowSchema = z.record(z.string(), z.unknown());
 
-interface BackupData {
-  version: string;
-  exported_at: string;
-  data: {
-    prompts: TableRow[];
-    characters: TableRow[];
-    character_details: TableRow[];
-    gallery: TableRow[];
-    tags: TableRow[];
-    prompt_tags: TableRow[];
-    model_usage: TableRow[];
-    prompt_versions: TableRow[];
-    style_learning: TableRow[];
-    batch_tests: TableRow[];
-    batch_test_results: TableRow[];
-  };
-}
+const BackupSchema = z.object({
+  version: z.string(),
+  exported_at: z.string(),
+  data: z.object({
+    prompts: z.array(TableRowSchema),
+    characters: z.array(TableRowSchema),
+    character_details: z.array(TableRowSchema),
+    gallery: z.array(TableRowSchema),
+    tags: z.array(TableRowSchema),
+    prompt_tags: z.array(TableRowSchema),
+    model_usage: z.array(TableRowSchema),
+    prompt_versions: z.array(TableRowSchema),
+    style_learning: z.array(TableRowSchema),
+    batch_tests: z.array(TableRowSchema),
+    batch_test_results: z.array(TableRowSchema),
+  }),
+});
+
+type BackupData = z.infer<typeof BackupSchema>;
 
 export function DataManagement() {
   const [exporting, setExporting] = useState(false);
@@ -105,21 +108,6 @@ export function DataManagement() {
     }
   };
 
-  const validateBackup = (backup: unknown): backup is BackupData => {
-    const b = backup as Record<string, unknown>;
-    if (!b.version || !b.exported_at || !b.data) {
-      return false;
-    }
-
-    const requiredTables = [
-      'prompts', 'characters', 'character_details', 'gallery', 'tags',
-      'prompt_tags', 'model_usage', 'prompt_versions', 'style_learning',
-      'batch_tests', 'batch_test_results'
-    ];
-
-    const data = b.data as Record<string, unknown>;
-    return requiredTables.every(table => Array.isArray(data[table]));
-  };
 
   const importData = async (file: File) => {
     setImporting(true);
@@ -127,11 +115,9 @@ export function DataManagement() {
 
     try {
       const text = await file.text();
-      const backup = JSON.parse(text);
+      const rawData = JSON.parse(text);
 
-      if (!validateBackup(backup)) {
-        throw new Error('Invalid backup file format');
-      }
+      const backup = BackupSchema.parse(rawData);
 
       const stats: Record<string, number> = {};
 

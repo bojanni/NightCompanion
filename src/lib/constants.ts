@@ -4,6 +4,8 @@ export const AI_ROLES = {
     VISION: 'vision'
 } as const;
 
+export type AIRole = typeof AI_ROLES[keyof typeof AI_ROLES];
+
 export const PROVIDERS = {
     OPENAI: 'openai',
     ANTHROPIC: 'anthropic',
