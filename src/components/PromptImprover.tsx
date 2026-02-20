@@ -21,11 +21,11 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
     setImprovement(null);
 
     try {
-      const { data: { session } } = await db.auth.getSession();
-      if (!session) {
-        toast.error('Please sign in to use AI improvements');
-        return;
-      }
+      // const { data: { session } } = await db.auth.getSession();
+      // if (!session) {
+      //   toast.error('Please sign in to use AI improvements');
+      //   return;
+      // }
 
       // Check for feature specific preference
       let apiPrefs = undefined;
@@ -38,7 +38,8 @@ export function PromptImprover({ prompt, onApply }: PromptImproverProps) {
         console.error('Failed to load prompt improver prefs', e);
       }
 
-      const result = await improvePromptDetailed(prompt, session.access_token, apiPrefs);
+      const token = '';
+      const result = await improvePromptDetailed(prompt, token, apiPrefs);
       setImprovement(result);
     } catch (err) {
       handleAIError(err);

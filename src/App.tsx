@@ -15,25 +15,26 @@ import VersioningGuide from './pages/VersioningGuide';
 import Tools from './pages/Tools';
 import Timeline from './pages/Timeline';
 
-return (
-  <BrowserRouter>
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/generator" element={<Generator />} />
-        <Route path="/prompts" element={<Prompts />} />
-        <Route path="/characters" element={<Characters />} />
-        <Route path="/gallery" element={<Gallery />} />
-        <Route path="/models" element={<Models />} />
-        <Route path="/batch-testing" element={<BatchTesting />} />
-        <Route path="/style" element={<StyleProfile />} />
-        <Route path="/cost-calculator" element={<CostDemo />} />
-        <Route path="/versioning-guide" element={<VersioningGuide />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/tools" element={<Tools />} />
-        <Route path="/timeline" element={<Timeline />} />
-      </Route>
-    </Routes>
-  </BrowserRouter>
-);
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/generator" element={<Generator />} />
+          <Route path="/prompts" element={<Prompts />} />
+          <Route path="/characters" element={<Characters />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/models" element={<Models />} />
+          <Route path="/batch-testing" element={<BatchTesting />} />
+          <Route path="/style" element={<StyleProfile />} />
+          <Route path="/cost-calculator" element={<CostDemo />} />
+          <Route path="/versioning-guide" element={<VersioningGuide />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/tools" element={<Tools />} />
+          <Route path="/timeline" element={<Timeline />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }

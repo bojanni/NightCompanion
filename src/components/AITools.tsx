@@ -200,9 +200,9 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   }, []);
 
   async function getToken() {
-    await db.auth.getUser(); // Get user for later just in case, though usually not needed for local insert if RLS disabled
-    const { data } = await db.auth.getSession();
-    return data.session?.access_token ?? '';
+    // await db.auth.getUser(); 
+    // const { data } = await db.auth.getSession();
+    return '';
   }
 
   async function handleCopy(text: string, id: string) {
