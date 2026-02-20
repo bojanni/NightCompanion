@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Trash2, Edit3, Image, FolderOpen,
@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ALL_MODELS } from '../lib/provider-models';
+import { useGalleryState } from '../hooks/useGalleryState';
 
 interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
@@ -50,52 +51,50 @@ const DynamicColorElement = ({
 const PAGE_SIZE = 24;
 
 export default function Gallery() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterCollection, setFilterCollection] = useState<string | null>(null);
-  const [filterRating, setFilterRating] = useState(0);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [exporting, setExporting] = useState(false);
+  const {
+    items, setItems,
+    collections, setCollections,
+    loading, setLoading,
+    search, setSearch,
+    filterCollection, setFilterCollection,
+    filterRating, setFilterRating,
+    currentPage, setCurrentPage,
+    totalCount, setTotalCount,
+    showItemEditor, setShowItemEditor,
+    editingItem, setEditingItem,
+    showCollectionEditor, setShowCollectionEditor,
+    selectedItem, setSelectedItem,
+    formTitle, setFormTitle,
+    formImageUrl, setFormImageUrl,
+    formPromptUsed, setFormPromptUsed,
+    formRating, setFormRating,
+    formCollectionId, setFormCollectionId,
+    formNotes, setFormNotes,
+    saving, setSaving,
+    formModel, setFormModel,
+    formErrors, setFormErrors,
+    formTouched, setFormTouched,
+    collName, setCollName,
+    collDesc, setCollDesc,
+    collColor, setCollColor,
+    showPromptSelector, setShowPromptSelector,
+    linkingImage, setLinkingImage,
+    linkedPrompts, setLinkedPrompts,
+    lightboxImage, setLightboxImage,
+    allPrompts, setAllPrompts,
+    promptSuggestions, setPromptSuggestions,
+    showPromptSuggestions, setShowPromptSuggestions,
+    promptSearchValue, setPromptSearchValue,
+    autoGenerateTitle, setAutoGenerateTitle,
+    generatingTitle, setGeneratingTitle,
+    selectedPromptId, setSelectedPromptId,
+    loadData,
+    handleDeleteItem,
+    handleUpdateRating,
+    handleDeleteCollection,
+    searchParams, setSearchParams
+  } = useGalleryState();
 
-  const [showItemEditor, setShowItemEditor] = useState(false);
-  const [editingItem, setEditingItem] = useState<GalleryItem | null>(null);
-  const [showCollectionEditor, setShowCollectionEditor] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
-
-  const [formTitle, setFormTitle] = useState('');
-  const [formImageUrl, setFormImageUrl] = useState('');
-  const [formPromptUsed, setFormPromptUsed] = useState('');
-  const [formRating, setFormRating] = useState(0);
-  const [formCollectionId, setFormCollectionId] = useState<string>('');
-  const [formNotes, setFormNotes] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [formModel, setFormModel] = useState('');
-
-  const [collName, setCollName] = useState('');
-  const [collDesc, setCollDesc] = useState('');
-  const [collColor, setCollColor] = useState('#d97706');
-  const [showPromptSelector, setShowPromptSelector] = useState(false);
-  const [linkingImage, setLinkingImage] = useState<GalleryItem | null>(null);
-  const [linkedPrompts, setLinkedPrompts] = useState<{ [key: string]: { id: string; content: string; title: string } }>({});
-  const [lightboxImage, setLightboxImage] = useState<GalleryItem | null>(null);
-  const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
-  const [promptSuggestions, setPromptSuggestions] = useState<Prompt[]>([]);
-  const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
-  const [promptSearchValue, setPromptSearchValue] = useState('');
-  const [autoGenerateTitle, setAutoGenerateTitle] = useState(true);
-  const [generatingTitle, setGeneratingTitle] = useState(false);
-  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
-
-  // Form validation state
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
-
-
-  // Flattened models for the selector
   const allModels = ALL_MODELS;
   const allProviders = [
     { id: 'openai', name: 'OpenAI', type: 'cloud' as const },
@@ -104,64 +103,6 @@ export default function Gallery() {
     { id: 'openrouter', name: 'OpenRouter', type: 'cloud' as const },
     { id: 'together', name: 'Together AI', type: 'cloud' as const },
   ];
-
-
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-
-    let query = db
-      .from('gallery_items')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false });
-
-    if (search) {
-      query = query.like('search', search);
-    }
-
-    if (filterCollection) {
-      query = query.eq('collection_id', filterCollection);
-    }
-
-    if (filterRating > 0) {
-      query = query.gte('rating', filterRating);
-    }
-
-    const { data: itemsData, count } = await query
-      .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
-
-    const [collRes, promptsRes] = await Promise.all([
-      db.from('collections').select('*').order('name'),
-      db.from('prompts').select('id, title, content').order('title'),
-    ]);
-
-    // Load linked prompts
-    if (itemsData && itemsData.length > 0) {
-      const itemsWithPrompts = itemsData.filter((item: GalleryItem) => item.prompt_id);
-      if (itemsWithPrompts.length > 0) {
-        const { data: promptsData } = await db
-          .from('prompts')
-          .select('id, content, title')
-          .in('id', itemsWithPrompts.map((item: GalleryItem) => item.prompt_id));
-
-        const promptMap: { [key: string]: { id: string; content: string; title: string } } = {};
-        (promptsData ?? []).forEach((prompt: Pick<Prompt, 'id' | 'content' | 'title'>) => {
-          promptMap[prompt.id] = { id: prompt.id, content: prompt.content, title: prompt.title };
-        });
-        setLinkedPrompts(promptMap);
-      } else {
-        setLinkedPrompts({});
-      }
-    } else {
-      setLinkedPrompts({});
-    }
-
-    setItems(itemsData ?? []);
-    setCollections(collRes.data ?? []);
-    setAllPrompts(promptsRes.data as Prompt[] ?? []);
-    setTotalCount(count ?? 0);
-    setLoading(false);
-  }, [currentPage, filterCollection, filterRating, search]); // Added search dependency
 
   useEffect(() => {
     // Debounce search
@@ -248,36 +189,9 @@ export default function Gallery() {
     }
   }
 
-  async function handleDeleteItem(id: string) {
-    if (!window.confirm('Are you sure you want to delete this image?')) return;
-    try {
-      await db.from('gallery_items').delete().eq('id', id);
-      setItems(prev => prev.filter(i => i.id !== id));
-      setTotalCount(prev => Math.max(0, prev - 1));
-      if (selectedItem?.id === id) setSelectedItem(null);
-      toast.success('Image deleted');
-    } catch (error) {
-      console.error('Failed to delete item:', error);
-      toast.error('Failed to delete image');
-    }
-  }
 
-  async function handleUpdateRating(item: GalleryItem, rating: number) {
-    try {
-      await db.from('gallery_items').update({ rating }).eq('id', item.id);
-      setItems(prev => prev.map(i => (i.id === item.id ? { ...i, rating } : i)));
-      if (selectedItem?.id === item.id) setSelectedItem({ ...item, rating });
-      if (lightboxImage?.id === item.id) setLightboxImage({ ...item, rating });
 
-      if (item.prompt_id) {
-        await db.from('prompts').update({ rating }).eq('id', item.prompt_id);
-        await db.from('gallery_items').update({ rating }).eq('prompt_id', item.prompt_id);
-      }
-    } catch (err) {
-      console.error('Failed to update rating:', err);
-      toast.error('Failed to update rating');
-    }
-  }
+
 
   async function handleSaveCollection() {
     if (!collName.trim()) return;
@@ -300,18 +214,7 @@ export default function Gallery() {
     }
   }
 
-  async function handleDeleteCollection(id: string) {
-    if (!window.confirm('Delete this collection? Items will remain in the gallery.')) return;
-    try {
-      await db.from('gallery_items').update({ collection_id: null }).eq('collection_id', id);
-      await db.from('collections').delete().eq('id', id);
-      if (filterCollection === id) setFilterCollection(null);
-      toast.success('Collection deleted');
-      loadData();
-    } catch {
-      toast.error('Failed to delete collection');
-    }
-  }
+
 
   async function handleLinkPrompt(image: GalleryItem) {
     setLinkingImage(image);
@@ -612,7 +515,7 @@ export default function Gallery() {
                 {coll.name}
               </DynamicColorElement>
               <button
-                onClick={() => handleDeleteCollection(coll.id)}
+                onClick={() => deleteCollectionAction(coll.id)}
                 className="px-1.5 py-1.5 rounded-r-xl text-xs border border-l-0 border-slate-700 text-slate-600 hover:text-red-400 transition-colors"
                 aria-label="Delete collection"
               >
@@ -696,7 +599,7 @@ export default function Gallery() {
                 <div className="p-3">
                   <h3 className="text-xs font-medium text-white truncate">{item.title || 'Untitled'}</h3>
                   <div className="flex items-center justify-between mt-1.5">
-                    <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
+                    <StarRating rating={item.rating} onChange={(r) => updateRatingAction(item, r)} size={11} />
                     {item.collection_id && (
                       <span className="text-[10px] text-slate-500 truncate ml-2">
                         {getCollectionName(item.collection_id)}
