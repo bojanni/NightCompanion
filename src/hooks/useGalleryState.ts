@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { db } from '../lib/api';
-import type { GalleryItem, Prompt, Collection } from '../lib/types';
+import type { GalleryItem, Prompt, Collection, MediaType, StorageMode } from '../lib/types';
 import { mapNightcafeAlgorithmToModelId } from '../lib/nightcafe-parser';
 
 const PAGE_SIZE = 24;
@@ -34,6 +34,12 @@ export function useGalleryState() {
     const [formNotes, setFormNotes] = useState('');
     const [saving, setSaving] = useState(false);
     const [formModel, setFormModel] = useState('');
+    const [formMediaType, setFormMediaType] = useState<MediaType>('image');
+    const [formVideoUrl, setFormVideoUrl] = useState('');
+    const [formVideoLocalPath, setFormVideoLocalPath] = useState('');
+    const [formThumbnailUrl, setFormThumbnailUrl] = useState('');
+    const [formDurationSeconds, setFormDurationSeconds] = useState<number | undefined>(undefined);
+    const [formStorageMode, setFormStorageMode] = useState<StorageMode>('url');
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [formTouched, setFormTouched] = useState<Record<string, boolean>>({});
 
@@ -228,6 +234,12 @@ export function useGalleryState() {
         formNotes, setFormNotes,
         saving, setSaving,
         formModel, setFormModel,
+        formMediaType, setFormMediaType,
+        formVideoUrl, setFormVideoUrl,
+        formVideoLocalPath, setFormVideoLocalPath,
+        formThumbnailUrl, setFormThumbnailUrl,
+        formDurationSeconds, setFormDurationSeconds,
+        formStorageMode, setFormStorageMode,
         formErrors, setFormErrors,
         formTouched, setFormTouched,
         collName, setCollName,

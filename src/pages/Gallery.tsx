@@ -20,6 +20,7 @@ import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ALL_MODELS } from '../lib/provider-models';
 import { useGalleryState } from '../hooks/useGalleryState';
+import MediaRenderer from '../components/MediaRenderer';
 
 interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
@@ -86,6 +87,12 @@ export default function Gallery() {
     promptSuggestions, setPromptSuggestions,
     showPromptSuggestions, setShowPromptSuggestions,
     promptSearchValue, setPromptSearchValue,
+    formMediaType, setFormMediaType,
+    formVideoUrl, setFormVideoUrl,
+    formVideoLocalPath, setFormVideoLocalPath,
+    formThumbnailUrl, setFormThumbnailUrl,
+    formDurationSeconds, setFormDurationSeconds,
+    formStorageMode, setFormStorageMode,
     autoGenerateTitle, setAutoGenerateTitle,
     generatingTitle, setGeneratingTitle,
     selectedPromptId, setSelectedPromptId,
@@ -153,6 +160,12 @@ export default function Gallery() {
     setFormCollectionId(item?.collection_id ?? '');
     setFormModel(item?.model ?? '');
     setFormNotes(item?.notes ?? '');
+    setFormMediaType(item?.media_type ?? 'image');
+    setFormVideoUrl(item?.video_url ?? '');
+    setFormVideoLocalPath(item?.video_local_path ?? '');
+    setFormThumbnailUrl(item?.thumbnail_url ?? '');
+    setFormDurationSeconds(item?.duration_seconds);
+    setFormStorageMode(item?.storage_mode ?? 'url');
     setPromptSearchValue('');
     setPromptSuggestions([]);
     setShowPromptSuggestions(false);
@@ -170,22 +183,35 @@ export default function Gallery() {
 
     setSaving(true);
     try {
-      const itemData = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const itemData: any = {
         title: formTitle,
         image_url: formImageUrl,
         prompt_used: formPromptUsed,
         prompt_id: selectedPromptId,
         rating: formRating,
         collection_id: formCollectionId || null,
-        model: formModel || null,
+        model: formModel || undefined,
         notes: formNotes,
+        media_type: formMediaType,
+        video_url: formVideoUrl || undefined,
+        video_local_path: formVideoLocalPath || undefined,
+        thumbnail_url: formThumbnailUrl || undefined,
+        duration_seconds: formDurationSeconds,
+        storage_mode: formStorageMode,
       };
 
+      const cleanData = Object.fromEntries(
+        Object.entries(itemData).filter(([, v]) => v !== undefined)
+      );
+
       if (editingItem) {
-        await db.from('gallery_items').update(itemData).eq('id', editingItem.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (db.from('gallery_items') as any).update(cleanData).eq('id', editingItem.id);
         toast.success('Image updated successfully');
       } else {
-        await db.from('gallery_items').insert(itemData);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (db.from('gallery_items') as any).insert(cleanData);
         toast.success('Image added to gallery');
       }
       setShowItemEditor(false);
@@ -232,12 +258,27 @@ export default function Gallery() {
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormImageUrl(reader.result as string);
-      setFormTouched(prev => ({ ...prev, imageUrl: true }));
-    };
-    reader.readAsDataURL(file);
+
+    const isVideo = file.type.startsWith('video/');
+
+    if (isVideo) {
+      setFormMediaType('video');
+      // For local preview of video
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormVideoUrl(reader.result as string);
+        setFormTouched(prev => ({ ...prev, videoUrl: true }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFormMediaType('image');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormImageUrl(reader.result as string);
+        setFormTouched(prev => ({ ...prev, imageUrl: true }));
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   function searchPrompts(query: string) {
@@ -381,7 +422,7 @@ export default function Gallery() {
           });
       }
     }
-  }, [items, loading, searchParams, setSearchParams]);
+  }, [items, loading, searchParams, setSearchParams, setLightboxImage]);
 
   function handleFilterCollectionChange(collectionId: string | null) {
     setFilterCollection(collectionId);
@@ -576,17 +617,11 @@ export default function Gallery() {
                 className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0"
               >
                 <div className="aspect-square bg-slate-800 relative overflow-hidden cursor-pointer" onClick={() => openLightbox(item)}>
-                  {item.image_url ? (
-                    <img
-                      src={item.image_url}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Image size={32} className="text-slate-700" />
-                    </div>
-                  )}
+                  <MediaRenderer
+                    item={item}
+                    autoPlay
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
@@ -754,42 +789,70 @@ export default function Gallery() {
               )}
             </div>
           </div>
+          <div className="flex gap-2 p-1 bg-slate-800 rounded-xl mb-4">
+            <button
+              onClick={() => setFormMediaType('image')}
+              className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${formMediaType === 'image' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              Image
+            </button>
+            <button
+              onClick={() => setFormMediaType('video')}
+              className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${formMediaType === 'video' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+            >
+              Video
+            </button>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">
-              Image <span className="text-red-400">*</span>
+              {formMediaType === 'video' ? 'Video' : 'Image'} <span className="text-red-400">*</span>
             </label>
             <div className="space-y-3">
               <div className="flex gap-2">
                 <input
-                  value={formImageUrl}
-                  onChange={(e) => setFormImageUrl(e.target.value)}
-                  onBlur={() => handleFieldBlur('imageUrl')}
-                  placeholder="Paste URL or upload image below..."
-                  className={`flex-1 px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm ${formTouched.imageUrl && formErrors.imageUrl ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
+                  value={formMediaType === 'video' ? formVideoUrl : formImageUrl}
+                  onChange={(e) => formMediaType === 'video' ? setFormVideoUrl(e.target.value) : setFormImageUrl(e.target.value)}
+                  onBlur={() => handleFieldBlur(formMediaType === 'video' ? 'videoUrl' : 'imageUrl')}
+                  placeholder={formMediaType === 'video' ? "Paste video URL or upload below..." : "Paste image URL or upload below..."}
+                  className={`flex-1 px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm ${(formTouched.imageUrl || formTouched.videoUrl) && (formErrors.imageUrl || formErrors.videoUrl) ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
                 />
                 <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer transition-colors text-sm font-medium">
-                  <Image size={16} />
+                  {formMediaType === 'video' ? <Loader2 size={16} /> : <Image size={16} />}
                   Upload
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={formMediaType === 'video' ? "video/*" : "image/*"}
                     onChange={handleImageUpload}
                     className="hidden"
                   />
                 </label>
               </div>
-              {formTouched.imageUrl && formErrors.imageUrl && (
-                <p className="text-xs text-red-400 mt-1">{formErrors.imageUrl}</p>
+
+              {formMediaType === 'video' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-1">Thumbnail URL (optional)</label>
+                  <input
+                    value={formThumbnailUrl}
+                    onChange={(e) => setFormThumbnailUrl(e.target.value)}
+                    placeholder="Paste thumbnail URL..."
+                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                  />
+                </div>
               )}
-              {formImageUrl && (
-                <img
-                  src={formImageUrl}
-                  alt="Preview"
-                  className="w-full h-32 rounded-xl object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+
+              {((formMediaType === 'image' && formImageUrl) || (formMediaType === 'video' && (formVideoUrl || formThumbnailUrl))) && (
+                <div className="rounded-xl overflow-hidden bg-slate-800 h-32 relative">
+                  <MediaRenderer
+                    item={{
+                      media_type: formMediaType,
+                      image_url: formImageUrl,
+                      video_url: formVideoUrl,
+                      thumbnail_url: formThumbnailUrl,
+                    } as any}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -942,15 +1005,13 @@ export default function Gallery() {
       >
         {selectedItem && (
           <div className="space-y-4">
-            {selectedItem.image_url && (
-              <div className="rounded-xl overflow-hidden bg-slate-700">
-                <img
-                  src={selectedItem.image_url}
-                  alt={selectedItem.title}
-                  className="w-full max-h-[400px] object-contain"
-                />
-              </div>
-            )}
+            <div className="rounded-xl overflow-hidden bg-slate-700">
+              <MediaRenderer
+                item={selectedItem}
+                controls
+                className="w-full max-h-[400px] object-contain"
+              />
+            </div>
             <div className="flex items-center justify-between">
               <StarRating
                 rating={selectedItem.rating}
@@ -1030,16 +1091,16 @@ export default function Gallery() {
       >
         {lightboxImage && (
           <div className="relative">
-            {/* Image */}
+            {/* Image/Video */}
             <div className="relative bg-slate-950 rounded-xl overflow-hidden group">
               {/* Background Blur Effect */}
               <div
                 className="absolute inset-0 bg-cover bg-center blur-3xl opacity-30 scale-110"
-                style={{ backgroundImage: `url(${lightboxImage.image_url})` }}
+                style={{ backgroundImage: `url(${lightboxImage.image_url || lightboxImage.thumbnail_url})` }}
               />
-              <img
-                src={lightboxImage.image_url}
-                alt={lightboxImage.title}
+              <MediaRenderer
+                item={lightboxImage}
+                controls
                 className="relative z-10 w-full max-h-[70vh] object-contain transition-transform duration-500"
               />
             </div>

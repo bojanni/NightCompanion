@@ -87,6 +87,7 @@ export interface GalleryItem {
   model?: string;
   media_type: MediaType;
   video_url?: string;
+  video_local_path?: string;
   thumbnail_url?: string;
   duration_seconds?: number;
   storage_mode: StorageMode;

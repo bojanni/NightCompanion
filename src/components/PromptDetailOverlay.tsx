@@ -1,24 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink, Clock, Plus, Loader2 } from 'lucide-react';
-import type { Prompt, Tag } from '../lib/types';
+import { db } from '../lib/api';
+import { toast } from 'sonner';
+import DropZone from './DropZone';
+import MediaRenderer from './MediaRenderer';
+import type { Prompt, Tag, GalleryItem } from '../lib/types';
 import { MODELS } from '../lib/models-data';
 import { formatDate } from '../lib/date-utils';
 import TagBadge from './TagBadge';
 import StarRating from './StarRating';
-import { db } from '../lib/api';
-import { toast } from 'sonner';
-import DropZone from './DropZone';
 
 interface PromptDetailOverlayProps {
     prompt: Prompt;
     tags: Tag[];
-    images?: { id: string; image_url: string; title: string; rating: number; model?: string }[];
+    images?: GalleryItem[];
     onClose: () => void;
     onNext: () => void;
     onPrev: () => void;
     onRate?: (rating: number) => void;
-    onImageUploaded?: (image: { id: string; image_url: string; title: string; rating: number; model?: string }) => void;
+    onImageUploaded?: (item: GalleryItem) => void;
 }
 
 export default function PromptDetailOverlay({
@@ -51,16 +52,15 @@ export default function PromptDetailOverlay({
         };
     }, [onNext, onPrev, onClose]);
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
+    const handleImageUpload = async (file: File) => {
         setIsUploading(true);
+        const isVideo = file.type.startsWith('video/');
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append(isVideo ? 'video' : 'image', file);
 
         try {
-            const uploadRes = await fetch('http://localhost:3000/api/upload', {
+            const apiEndpoint = isVideo ? 'http://localhost:3000/api/upload/video' : 'http://localhost:3000/api/upload';
+            const uploadRes = await fetch(apiEndpoint, {
                 method: 'POST',
                 body: formData
             });
@@ -68,34 +68,32 @@ export default function PromptDetailOverlay({
 
             if (data.success) {
                 // Create gallery item
-                const { data: galleryItem, error } = await db.from('gallery_items').insert({
-                    title: prompt.title || 'Uploaded Image',
-                    image_url: data.url,
+                const newItem = {
+                    title: prompt.title || 'Uploaded Media',
+                    image_url: isVideo ? (data.thumbnail_url || data.url) : data.url,
+                    video_url: isVideo ? data.url : undefined,
+                    media_type: isVideo ? 'video' : 'image',
                     prompt_used: prompt.content,
                     prompt_id: prompt.id,
                     rating: 0,
-                    model: prompt.model || null,
+                    model: prompt.model || undefined,
                     created_at: new Date().toISOString()
-                }).select().maybeSingle();
+                };
+
+                const { data: galleryItem, error } = await db.from('gallery_items').insert(newItem).select().maybeSingle();
 
                 if (error) throw error;
 
                 if (galleryItem) {
-                    toast.success('Image uploaded and linked');
-                    onImageUploaded?.({
-                        id: galleryItem.id,
-                        image_url: galleryItem.image_url,
-                        title: galleryItem.title,
-                        rating: galleryItem.rating,
-                        model: galleryItem.model
-                    });
+                    toast.success('Media uploaded and linked');
+                    onImageUploaded?.(galleryItem);
                 }
             } else {
-                toast.error('Failed to upload image');
+                toast.error('Failed to upload media');
             }
         } catch (error) {
             console.error('Upload error:', error);
-            toast.error('Error uploading image');
+            toast.error('Error uploading media');
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -147,9 +145,9 @@ export default function PromptDetailOverlay({
                 {/* Left Side: Image */}
                 <div className="w-full md:w-[70%] bg-slate-800/50 relative overflow-hidden flex items-center justify-center p-4">
                     {mainImage ? (
-                        <img
-                            src={mainImage.image_url}
-                            alt={mainImage.title}
+                        <MediaRenderer
+                            item={mainImage}
+                            controls
                             className="max-w-full max-h-[70vh] md:max-h-[85vh] object-contain rounded-xl shadow-2xl"
                         />
                     ) : (
@@ -159,10 +157,7 @@ export default function PromptDetailOverlay({
 
                             <DropZone
                                 onFileSelect={(file) => {
-                                    const syntheticEvent = {
-                                        target: { files: [file] }
-                                    } as unknown as React.ChangeEvent<HTMLInputElement>;
-                                    handleImageUpload(syntheticEvent);
+                                    handleImageUpload(file);
                                 }}
                                 className="w-full"
                             >

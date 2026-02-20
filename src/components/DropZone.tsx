@@ -12,8 +12,8 @@ interface DropZoneProps {
 
 export default function DropZone({
     onFileSelect,
-    accept = 'image/*',
-    maxSizeMB = 5,
+    accept = 'image/*,video/*',
+    maxSizeMB = 50,
     className = '',
     children
 }: DropZoneProps) {
@@ -103,7 +103,7 @@ export default function DropZone({
                         <Upload size={24} />
                     </div>
                     <p className="text-sm font-medium text-foreground mb-1">
-                        {isDragActive ? 'Drop image here' : 'Click or drag image'}
+                        {isDragActive ? 'Drop media here' : 'Click or drag media'}
                     </p>
                     <p className="text-xs text-muted-foreground">
                         Max size {maxSizeMB}MB
