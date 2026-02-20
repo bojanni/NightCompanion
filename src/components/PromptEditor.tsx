@@ -202,7 +202,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       if (error) throw error;
       toast.success('Main image updated');
       onSave(); // Reload parent
-    } catch (_err) {
+    } catch {
       toast.error('Failed to update main image');
     }
   }
@@ -219,7 +219,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       toast.success(colId ? 'Added to collection' : 'Removed from collection');
       setManagingCollectionFor(null);
       setShowCollectionManager(false);
-    } catch (_err) {
+    } catch {
       toast.error('Failed to update collection');
     }
   }
@@ -597,7 +597,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
                           setStartImage(data.url);
                           toast.success('Start image uploaded');
                         }
-                      } catch (_err) {
+                      } catch {
                         toast.error('Failed to upload start image');
                       }
                     }}
