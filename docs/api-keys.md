@@ -13,25 +13,31 @@ This document explains the new API key management system with encryption.
 ## Files Created
 
 ### 1. Encryption Library
+
 **Location:** [`server/lib/encryption.js`](file:///c:/Users/bojan/OneDrive/Documenten/GitHub/NightCompanion/server/lib/encryption.js)
 
 Implements AES-256-GCM encryption/decryption:
+
 - `encrypt(text)` - Returns `{encrypted, iv, authTag}`
 - `decrypt(encrypted, iv, authTag)` - Returns plain text
 
 ### 2. API Routes
+
 **Location:** [`server/routes/api-keys.js`](file:///c:/Users/bojan/OneDrive/Documenten/GitHub/NightCompanion/server/routes/api-keys.js)
 
 Endpoints:
+
 - `GET /api/api-keys` - List all API keys (masked)
 - `POST /api/api-keys` - Add or update an API key
 - `GET /api/api-keys/:provider/decrypt` - Retrieve decrypted key (internal use)
 - `DELETE /api/api-keys/:provider` - Delete an API key
 
 ### 3. Database Migration
+
 **Location:** [`supabase/migrations/20260208214700_add_encryption_fields.sql`](file:///c:/Users/bojan/OneDrive/Documenten/GitHub/NightCompanion/supabase/migrations/20260208214700_add_encryption_fields.sql)
 
 Added columns to `user_api_keys`:
+
 - `iv` (text) - Initialization vector for encryption
 - `auth_tag` (text) - Authentication tag for GCM mode
 
@@ -40,6 +46,7 @@ Added columns to `user_api_keys`:
 ### 1. Environment Configuration
 
 Add to `.env`:
+
 ```bash
 ENCRYPTION_KEY=your_64_character_hex_key_here
 ```
@@ -49,8 +56,9 @@ The encryption key is automatically added to your `.env` file. **Keep this secur
 ### 2. Database Schema
 
 Run the migration to add encryption fields:
+
 ```bash
-node server/scripts/setup-db.js
+node server/db-init.js
 ```
 
 ## API Usage
@@ -69,6 +77,7 @@ Content-Type: application/json
 ```
 
 Response:
+
 ```json
 {
   "id": "uuid",
@@ -87,6 +96,7 @@ GET /api/api-keys
 ```
 
 Response:
+
 ```json
 [
   {
@@ -107,6 +117,7 @@ GET /api/api-keys/openai/decrypt
 ```
 
 Response:
+
 ```json
 {
   "api_key": "sk-proj-abc123..."
@@ -120,6 +131,7 @@ DELETE /api/api-keys/openai
 ```
 
 Response:
+
 ```json
 {
   "status": "deleted"
@@ -136,11 +148,13 @@ Response:
 ## Testing
 
 Test the encryption library:
+
 ```bash
 node server/scripts/test-encryption.js
 ```
 
 Check the database schema:
+
 ```bash
 node server/scripts/check-api-keys-schema.js
 ```
