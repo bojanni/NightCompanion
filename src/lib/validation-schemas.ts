@@ -15,7 +15,7 @@ export const CharacterSchema = z.object({
 });
 
 export const ApiKeySchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'replicate', 'stability', 'midjourney', 'gemini', 'openrouter', 'together']),
+  provider: z.enum(['openai', 'anthropic', 'replicate', 'stability', 'midjourney', 'gemini', 'openrouter', 'together', 'deepinfra']),
   api_key: z.string().min(10, 'API key too short').max(500, 'API key too long'),
   is_active: z.boolean().default(true)
 });

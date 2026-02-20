@@ -62,4 +62,11 @@ export const PROVIDERS = [
         docsUrl: 'https://www.perplexity.ai/settings/api',
         placeholder: 'pplx-...',
     },
+    {
+        id: 'deepinfra',
+        name: 'DeepInfra',
+        description: 'Blazing fast inference for open-source models at low cost.',
+        docsUrl: 'https://deepinfra.com/dash/api_keys',
+        placeholder: '...',
+    },
 ];

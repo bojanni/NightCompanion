@@ -50,6 +50,13 @@ export const PROVIDER_MODELS: Record<string, ModelOption[]> = {
     { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', description: 'Efficient & capable', capabilities: ['chat'] },
     { id: 'Gryphe/MythoMax-L2-13b', name: 'MythoMax 13B', description: 'Roleplay specialized', capabilities: ['chat'] },
   ],
+  deepinfra: [
+    { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B', description: 'Powerful instruction model', capabilities: ['chat'] },
+    { id: 'meta-llama/Meta-Llama-3.1-405B-Instruct', name: 'Llama 3.1 405B', description: 'Massive instruction model', capabilities: ['chat'] },
+    { id: 'microsoft/WizardLM-2-8x22B', name: 'WizardLM 2 8x22B', description: 'Microsoft MOE', capabilities: ['chat'] },
+    { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B', description: 'Strong multi-lingual model', capabilities: ['chat'] },
+    { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', description: 'Fast and efficient', capabilities: ['chat'] },
+  ],
 };
 
 export interface FlatModelOption extends ModelOption {

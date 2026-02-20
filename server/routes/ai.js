@@ -284,6 +284,27 @@ async function callTogether(apiKey, system, user, model, maxTokens = 1500) {
     return data.choices[0].message.content;
 }
 
+async function callDeepInfra(apiKey, system, user, model, maxTokens = 1500) {
+    const textUser = Array.isArray(user) ? (user.find(p => p.type === 'text')?.text || '') : user;
+    const messages = buildMessages(system, textUser);
+
+    const res = await fetch('https://api.deepinfra.com/v1/openai/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: model || 'meta-llama/Llama-3.3-70B-Instruct',
+            messages: messages,
+            max_tokens: maxTokens
+        })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'DeepInfra API error');
+    return data.choices[0].message.content;
+}
+
 async function listModels(providerConfig) {
     const { provider, apiKey, endpoint_url } = providerConfig;
 
@@ -373,6 +394,14 @@ async function listModels(providerConfig) {
         return data.models.map(m => ({ id: m.name.replace('models/', ''), name: m.displayName, description: m.description }));
     }
 
+    if (provider === 'deepinfra') {
+        const res = await fetch('https://api.deepinfra.com/v1/openai/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        const data = await res.json();
+        return data.data.filter(m => !m.id.includes('vllm')).map(m => ({ id: m.id, name: m.id, description: m.description }));
+    }
+
     return [];
 }
 
@@ -428,6 +457,7 @@ async function callAI(providerConfig, system, user, maxTokens = 1500) {
         case 'gemini': return callGemini(apiKey, system, user, maxTokens);
         case 'openrouter': return callOpenRouter(apiKey, system, user, providerConfig.modelName, maxTokens);
         case 'together': return callTogether(apiKey, system, user, providerConfig.modelName, maxTokens);
+        case 'deepinfra': return callDeepInfra(apiKey, system, user, providerConfig.modelName, maxTokens);
         default: throw new Error(`Unknown provider: ${provider}`);
     }
 }

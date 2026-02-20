@@ -10,6 +10,7 @@ export const PROVIDERS = {
     GEMINI: 'google', // google/gemini often referred to as 'google' provider id in this app
     OPENROUTER: 'openrouter',
     TOGETHER: 'together',
+    DEEPINFRA: 'deepinfra',
     OLLAMA: 'ollama',
     LMSTUDIO: 'lmstudio'
 } as const;
