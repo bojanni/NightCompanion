@@ -333,7 +333,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         content,
         title: title.trim() || 'Untitled',
         is_template: isTemplate,
-        rating: rating,
+        rating: rating ?? 0,
         tags: []
       });
 
@@ -341,7 +341,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         title: validated.title,
         content: validated.content,
         notes,
-        rating: validated.rating,
+        rating: rating ?? 0,
         model: model || null,
         is_template: validated.is_template,
         is_favorite: isFavorite,
@@ -424,7 +424,8 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       setSaving(false);
       onSave();
     } catch (error) {
-      console.error('Validation error:', error);
+      console.error('Save error:', error);
+      toast.error('Failed to save prompt. Please check all fields.');
       setSaving(false);
     }
   }
