@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react';
-import {
-    ArrowRight, ArrowLeft, Check, Zap, Sparkles, Eye,
-    Cpu, LayoutDashboard, Database, Loader2
-} from 'lucide-react';
+import { useState } from 'react';
+import { Check, Cpu } from 'lucide-react';
 import { PROVIDERS as PROVIDER_LIST } from '../../lib/providers';
 import { ProviderConfigForm } from './ProviderConfigForm';
 import { LocalEndpointCard } from '../../components/LocalEndpointCard';
@@ -10,7 +7,7 @@ import type { ApiKeyInfo, LocalEndpoint } from '../../lib/api-keys-service';
 import { setActiveProvider } from '../../lib/api-keys-service';
 import type { ModelOption } from '../../lib/provider-models';
 import { toast } from 'sonner';
-import { AI_ROLES, PROVIDERS, LOCAL_PROVIDERS, AIRole } from '../../lib/constants';
+import { AI_ROLES, LOCAL_PROVIDERS, AIRole } from '../../lib/constants';
 
 interface ConfigurationWizardProps {
     keys: ApiKeyInfo[];
@@ -18,488 +15,172 @@ interface ConfigurationWizardProps {
     onComplete: () => void;
     loadKeys: () => Promise<void>;
     loadLocalEndpoints: () => Promise<void>;
-    getToken: () => Promise<string>;
     dynamicModels: Record<string, ModelOption[]>;
     setDynamicModels: React.Dispatch<React.SetStateAction<Record<string, ModelOption[]>>>;
+    // getToken kept optional for backward compat but not used
+    getToken?: () => Promise<string>;
 }
 
-type SetupType = 'quick' | 'advanced' | 'local';
-
-// Helper function to get model for a specific role
 function getModelForRole(endpoint: LocalEndpoint | ApiKeyInfo | undefined, role: string): string | undefined {
     if (!endpoint) return undefined;
-
-    // Check specific role models first
     if (role === AI_ROLES.GENERATION && endpoint.model_gen) return endpoint.model_gen;
     if (role === AI_ROLES.IMPROVEMENT && endpoint.model_improve) return endpoint.model_improve;
     if (role === AI_ROLES.VISION && endpoint.model_vision) return endpoint.model_vision;
-
-    // Fallback to generic model name
     return endpoint.model_name;
 }
 
+const getToken = async () => 'mock-token';
+
 export function ConfigurationWizard({
-    keys, localEndpoints, onComplete, loadKeys, loadLocalEndpoints, getToken, dynamicModels, setDynamicModels
+    keys, localEndpoints, onComplete, loadKeys, loadLocalEndpoints, dynamicModels, setDynamicModels
 }: ConfigurationWizardProps) {
-    const [step, setStep] = useState<1 | 2 | 3>(1);
-    const [setupType, setSetupType] = useState<SetupType | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-    // ROLES STATE for Step 3
-    const [roleGen, setRoleGen] = useState<string>('');
-    const [roleImprove, setRoleImprove] = useState<string>('');
-    const [roleVision, setRoleVision] = useState<string>('');
-
-    // Initialize roles based on current active providers
-    useEffect(() => {
-        const activeGen = keys.find(k => k.is_active_gen) || localEndpoints.find(e => e.is_active_gen);
-        const activeImprove = keys.find(k => k.is_active_improve) || localEndpoints.find(e => e.is_active_improve);
-        const activeVision = keys.find(k => k.is_active_vision) || localEndpoints.find(e => e.is_active_vision);
-
-        if (activeGen) setRoleGen(activeGen.provider);
-        if (activeImprove) setRoleImprove(activeImprove.provider);
-        if (activeVision) setRoleVision(activeVision.provider);
-    }, [keys, localEndpoints]);
-
-    const handleNext = () => {
-        setStep(prev => Math.min(prev + 1, 3) as 1 | 2 | 3);
-    };
-
-    const handleBack = () => {
-        setStep(prev => Math.max(prev - 1, 1) as 1 | 2 | 3);
-    };
-
-    const handleFinish = () => {
-        onComplete();
-    };
-
-    const handleSaveRoles = async () => {
-        setActionLoading('saving-roles');
-        try {
-            // Save Generation Role
-            if (roleGen) {
-                const provider = keys.find(k => k.provider === roleGen) || localEndpoints.find(e => e.provider === roleGen);
-                if (provider) {
-                    const model = getModelForRole(provider, AI_ROLES.GENERATION);
-                    await setActiveProvider(roleGen, model || '', true, AI_ROLES.GENERATION);
-                }
-            }
-
-            // Save Improvement Role
-            if (roleImprove) {
-                const provider = keys.find(k => k.provider === roleImprove) || localEndpoints.find(e => e.provider === roleImprove);
-                if (provider) {
-                    const model = getModelForRole(provider, AI_ROLES.IMPROVEMENT);
-                    await setActiveProvider(roleImprove, model || '', true, AI_ROLES.IMPROVEMENT);
-                }
-            }
-
-            // Save Vision Role
-            if (roleVision) {
-                // For vision, model might not be strictly required yet in backend logic if using default, but pass empty str if undefined
-                // But generally we should try to set a model if we have one
-                const provider = keys.find(k => k.provider === roleVision) || localEndpoints.find(e => e.provider === roleVision);
-                const model = provider ? getModelForRole(provider, AI_ROLES.VISION) : '';
-                await setActiveProvider(roleVision, model || '', true, AI_ROLES.VISION);
-            }
-
-            await loadKeys();
-            await loadLocalEndpoints();
-            toast.success('AI Roles updated successfully');
-            handleFinish();
-
-        } catch (e) {
-            toast.error('Failed to save role preferences');
-            console.error(e);
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-
-    // Filtering providers based on setup type
-    const getVisibleProviders = () => {
-        if (setupType === 'quick') return PROVIDER_LIST.filter(p => p.id === PROVIDERS.OPENAI); // Just OpenAI for quick start
-        if (setupType === 'local') return []; // Only local endpoints
-        return PROVIDER_LIST; // advanced shows all
-    };
-
-    const getModelDisplay = (providerId: string, role: string) => {
-        if (!providerId) return null;
-        const provider = keys.find(k => k.provider === providerId) || localEndpoints.find(e => e.provider === providerId);
-        if (!provider) return null;
-        return getModelForRole(provider, role) || '';
-    };
-
-    const showLocal = setupType === 'local' || setupType === 'advanced';
-    const showCloud = setupType !== 'local';
-
     return (
-        <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
 
-            {/* Progress Indicator */}
-            <div className="flex items-center justify-between mb-8 relative">
-                <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-slate-800 -z-10" />
-                {[1, 2, 3].map((s) => (
-                    <div
-                        key={s}
-                        onClick={() => setStep(s as 1 | 2 | 3)}
-                        className={`flex flex-col items-center gap-2 bg-slate-950 px-2 relative z-0 transition-colors duration-300 cursor-pointer hover:opacity-80`}
-                    >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-300
-                ${step >= s ? 'bg-teal-500 border-teal-500 text-slate-900' : 'bg-slate-800 border-slate-700 text-slate-500'}
-             `}>
-                            {step > s ? <Check size={16} /> : s}
-                        </div>
-                        <span className={`text-xs font-medium ${step >= s ? 'text-teal-400' : 'text-slate-500'}`}>
-                            {s === 1 ? 'Setup Type' : s === 2 ? 'Configure' : 'Roles'}
-                        </span>
-                    </div>
-                ))}
+            {/* Header */}
+            <div>
+                <h2 className="text-xl font-bold text-white">Configure Providers</h2>
+                <p className="text-slate-400 text-sm mt-1">Enter API keys or connection details for your AI providers.</p>
             </div>
 
-            {/* Step 1: Setup Type */}
-            {step === 1 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <button
-                        onClick={() => { setSetupType('quick'); handleNext(); }}
-                        className={`cursor-pointer group relative p-6 rounded-2xl border text-left transition-all hover:scale-[1.02] active:scale-[0.98]
-                ${setupType === 'quick' ? 'bg-teal-500/10 border-teal-500/50' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'}
-            `}
-                    >
-                        <div className="p-3 bg-teal-500/10 text-teal-400 rounded-xl w-fit mb-4">
-                            <Zap size={24} />
+            {/* Cloud Providers */}
+            <div className="space-y-4">
+                {PROVIDER_LIST.map(provider => {
+                    const keyInfo = keys.find(k => k.provider === provider.id);
+                    return (
+                        <div key={provider.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                            <ProviderConfigForm
+                                provider={provider}
+                                keyInfo={keyInfo}
+                                actionLoading={actionLoading}
+                                setActionLoading={setActionLoading}
+                                loadKeys={loadKeys}
+                                loadLocalEndpoints={loadLocalEndpoints}
+                                dynamicModels={dynamicModels[provider.id] || []}
+                                setDynamicModels={setDynamicModels}
+                                getToken={getToken}
+                                isGlobalActive={keyInfo?.is_active || false}
+                            />
                         </div>
-                        <h3 className="text-lg font-bold text-white mb-2">Quick Start</h3>
-                        <p className="text-sm text-slate-400">
-                            Get started instantly with OpenAI. Best for new users who want a reliable, high-quality experience.
-                        </p>
-                    </button>
+                    );
+                })}
+            </div>
 
-                    <button
-                        onClick={() => { setSetupType('advanced'); handleNext(); }}
-                        className={`cursor-pointer group relative p-6 rounded-2xl border text-left transition-all hover:scale-[1.02] active:scale-[0.98]
-                ${setupType === 'advanced' ? 'bg-violet-500/10 border-violet-500/50' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'}
-            `}
-                    >
-                        <div className="p-3 bg-violet-500/10 text-violet-400 rounded-xl w-fit mb-4">
-                            <LayoutDashboard size={24} />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-2">Advanced Setup</h3>
-                        <p className="text-sm text-slate-400">
-                            Mix and match multiple providers (Cloud & Local) for different tasks. Full control over your AI stack.
-                        </p>
-                    </button>
-
-                    <button
-                        onClick={() => { setSetupType('local'); handleNext(); }}
-                        className={`cursor-pointer group relative p-6 rounded-2xl border text-left transition-all hover:scale-[1.02] active:scale-[0.98]
-                ${setupType === 'local' ? 'bg-amber-500/10 border-amber-500/50' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500'}
-            `}
-                    >
-                        <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl w-fit mb-4">
-                            <Database size={24} />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-2">Local / Private</h3>
-                        <p className="text-sm text-slate-400">
-                            Run everything locally using Ollama or LM Studio. Maximum privacy, no API keys required.
-                        </p>
-                    </button>
+            {/* Local Providers */}
+            <div className="space-y-4">
+                <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                    <Cpu size={18} className="text-amber-400" /> Local Providers
+                </h3>
+                <div className="space-y-6">
+                    <LocalEndpointCard
+                        type={LOCAL_PROVIDERS.OLLAMA}
+                        endpoint={localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA)}
+                        actionLoading={actionLoading}
+                        onSave={async (url, mGen, mImp, mVis) => {
+                            setActionLoading('ollama');
+                            try {
+                                const { db } = await import('../../lib/api');
+                                const existing = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA);
+                                await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
+                                await db.from('user_local_endpoints').insert({
+                                    provider: LOCAL_PROVIDERS.OLLAMA, endpoint_url: url, model_name: mGen,
+                                    model_gen: mGen, model_improve: mImp, model_vision: mVis,
+                                    is_active: existing?.is_active ?? false,
+                                    is_active_gen: existing?.is_active_gen ?? false,
+                                    is_active_improve: existing?.is_active_improve ?? false,
+                                    is_active_vision: existing?.is_active_vision ?? false
+                                });
+                                await loadLocalEndpoints();
+                                toast.success('Ollama config saved');
+                            } catch { toast.error('Failed to save Ollama'); }
+                            finally { setActionLoading(null); }
+                        }}
+                        onDelete={async () => {
+                            setActionLoading('ollama-delete');
+                            try {
+                                const { db } = await import('../../lib/api');
+                                await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
+                                await loadLocalEndpoints();
+                                toast.success('Ollama removed');
+                            } catch { toast.error('Failed to remove'); }
+                            finally { setActionLoading(null); }
+                        }}
+                        onSetActive={async (role) => {
+                            setActionLoading(`ollama-${role}`);
+                            try {
+                                const endpoint = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA);
+                                const model = getModelForRole(endpoint, role);
+                                const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
+                                    : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
+                                        : endpoint?.is_active_vision;
+                                await setActiveProvider(LOCAL_PROVIDERS.OLLAMA, model || '', !isRoleActive, role as AIRole);
+                                await loadKeys(); await loadLocalEndpoints();
+                            } catch { toast.error('Failed toggle'); }
+                            finally { setActionLoading(null); }
+                        }}
+                    />
+                    <LocalEndpointCard
+                        type={LOCAL_PROVIDERS.LMSTUDIO}
+                        endpoint={localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO)}
+                        actionLoading={actionLoading}
+                        onSave={async (url, mGen, mImp, mVis) => {
+                            setActionLoading('lmstudio');
+                            try {
+                                const { db } = await import('../../lib/api');
+                                const existing = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO);
+                                await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
+                                await db.from('user_local_endpoints').insert({
+                                    provider: LOCAL_PROVIDERS.LMSTUDIO, endpoint_url: url, model_name: mGen,
+                                    model_gen: mGen, model_improve: mImp, model_vision: mVis,
+                                    is_active: existing?.is_active ?? false,
+                                    is_active_gen: existing?.is_active_gen ?? false,
+                                    is_active_improve: existing?.is_active_improve ?? false,
+                                    is_active_vision: existing?.is_active_vision ?? false
+                                });
+                                await loadLocalEndpoints();
+                                toast.success('LM Studio config saved');
+                            } catch { toast.error('Failed to save LM Studio'); }
+                            finally { setActionLoading(null); }
+                        }}
+                        onDelete={async () => {
+                            setActionLoading('lmstudio-delete');
+                            try {
+                                const { db } = await import('../../lib/api');
+                                await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
+                                await loadLocalEndpoints();
+                                toast.success('LM Studio removed');
+                            } catch { toast.error('Failed to remove'); }
+                            finally { setActionLoading(null); }
+                        }}
+                        onSetActive={async (role) => {
+                            setActionLoading(`lmstudio-${role}`);
+                            try {
+                                const endpoint = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO);
+                                const model = getModelForRole(endpoint, role);
+                                const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
+                                    : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
+                                        : endpoint?.is_active_vision;
+                                await setActiveProvider(LOCAL_PROVIDERS.LMSTUDIO, model || '', !isRoleActive, role as AIRole);
+                                await loadKeys(); await loadLocalEndpoints();
+                            } catch { toast.error('Failed toggle'); }
+                            finally { setActionLoading(null); }
+                        }}
+                    />
                 </div>
-            )}
+            </div>
 
-            {/* Step 2: Configure Providers */}
-            {step === 2 && (
-                <div className="space-y-8">
-                    <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-white">Configure your Providers</h2>
-                        <p className="text-slate-400 text-sm mt-2">Enter API keys or connection details for your chosen providers.</p>
-                    </div>
-
-                    {showCloud && (
-                        <div className="space-y-4">
-                            {getVisibleProviders().map(provider => {
-                                const keyInfo = keys.find(k => k.provider === provider.id);
-                                // In Quick mode, always show OpenAI form. In Advanced, show all forms (collapsed handling inside form handled by "Not Configured" state)
-                                // Actually ProviderConfigForm handles "Not Configured" state nicely.
-                                return (
-                                    <div key={provider.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                                        <ProviderConfigForm
-                                            provider={provider}
-                                            keyInfo={keyInfo}
-                                            actionLoading={actionLoading}
-                                            setActionLoading={setActionLoading}
-                                            loadKeys={loadKeys}
-                                            loadLocalEndpoints={loadLocalEndpoints}
-                                            dynamicModels={dynamicModels[provider.id] || []}
-                                            setDynamicModels={setDynamicModels}
-                                            getToken={getToken}
-                                            isGlobalActive={keyInfo?.is_active || false}
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {showLocal && (
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                <Cpu size={20} className="text-amber-400" /> Local Providers
-                            </h3>
-                            <div className="space-y-6">
-                                <LocalEndpointCard
-                                    type={LOCAL_PROVIDERS.OLLAMA}
-                                    endpoint={localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA)}
-                                    actionLoading={actionLoading}
-                                    onSave={async (url, mGen, mImp, mVis) => {
-                                        setActionLoading('ollama');
-                                        try {
-                                            const { db } = await import('../../lib/api');
-                                            const existing = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA);
-                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
-                                            await db.from('user_local_endpoints').insert({
-                                                provider: LOCAL_PROVIDERS.OLLAMA, endpoint_url: url, model_name: mGen,
-                                                model_gen: mGen, model_improve: mImp, model_vision: mVis,
-                                                is_active: existing?.is_active ?? false,
-                                                is_active_gen: existing?.is_active_gen ?? false,
-                                                is_active_improve: existing?.is_active_improve ?? false,
-                                                is_active_vision: existing?.is_active_vision ?? false
-                                            });
-                                            await loadLocalEndpoints();
-                                            toast.success('Ollama config saved');
-                                        } catch { toast.error('Failed to save Ollama'); }
-                                        finally { setActionLoading(null); }
-                                    }}
-                                    onDelete={async () => {
-                                        setActionLoading('ollama-delete');
-                                        try {
-                                            const { db } = await import('../../lib/api');
-                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.OLLAMA);
-                                            await loadLocalEndpoints();
-                                            toast.success('Ollama removed');
-                                        } catch { toast.error('Failed to remove'); }
-                                        finally { setActionLoading(null); }
-                                    }}
-                                    onSetActive={async (role) => {
-                                        setActionLoading(`ollama-${role}`);
-                                        try {
-                                            const endpoint = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.OLLAMA);
-                                            // Refactored to use helper
-                                            const model = getModelForRole(endpoint, role);
-                                            const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
-                                                : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
-                                                    : endpoint?.is_active_vision;
-
-                                            await setActiveProvider(LOCAL_PROVIDERS.OLLAMA, model || '', !isRoleActive, role as AIRole);
-                                            await loadKeys(); await loadLocalEndpoints();
-                                        } catch { toast.error('Failed toggle'); }
-                                        finally { setActionLoading(null); }
-                                    }}
-                                />
-                                <LocalEndpointCard
-                                    type={LOCAL_PROVIDERS.LMSTUDIO}
-                                    endpoint={localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO)}
-                                    actionLoading={actionLoading}
-                                    onSave={async (url, mGen, mImp, mVis) => {
-                                        setActionLoading('lmstudio');
-                                        try {
-                                            const { db } = await import('../../lib/api');
-                                            const existing = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO);
-                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
-                                            await db.from('user_local_endpoints').insert({
-                                                provider: LOCAL_PROVIDERS.LMSTUDIO, endpoint_url: url, model_name: mGen,
-                                                model_gen: mGen, model_improve: mImp, model_vision: mVis,
-                                                is_active: existing?.is_active ?? false,
-                                                is_active_gen: existing?.is_active_gen ?? false,
-                                                is_active_improve: existing?.is_active_improve ?? false,
-                                                is_active_vision: existing?.is_active_vision ?? false
-                                            });
-                                            await loadLocalEndpoints();
-                                            toast.success('LM Studio config saved');
-                                        } catch { toast.error('Failed to save LM Studio'); }
-                                        finally { setActionLoading(null); }
-                                    }}
-                                    onDelete={async () => {
-                                        setActionLoading('lmstudio-delete');
-                                        try {
-                                            const { db } = await import('../../lib/api');
-                                            await db.from('user_local_endpoints').delete().eq('provider', LOCAL_PROVIDERS.LMSTUDIO);
-                                            await loadLocalEndpoints();
-                                            toast.success('LM Studio removed');
-                                        } catch { toast.error('Failed to remove'); }
-                                        finally { setActionLoading(null); }
-                                    }}
-                                    onSetActive={async (role) => {
-                                        setActionLoading(`lmstudio-${role}`);
-                                        try {
-                                            const endpoint = localEndpoints.find(e => e.provider === LOCAL_PROVIDERS.LMSTUDIO);
-                                            const model = getModelForRole(endpoint, role);
-                                            const isRoleActive = role === AI_ROLES.GENERATION ? endpoint?.is_active_gen
-                                                : role === AI_ROLES.IMPROVEMENT ? endpoint?.is_active_improve
-                                                    : endpoint?.is_active_vision;
-                                            await setActiveProvider(LOCAL_PROVIDERS.LMSTUDIO, model || '', !isRoleActive, role as AIRole);
-                                            await loadKeys(); await loadLocalEndpoints();
-                                        } catch (_) { toast.error('Failed toggle'); }
-                                        finally { setActionLoading(null); }
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex justify-between mt-8 pt-6 border-t border-slate-800">
-                        <button onClick={handleBack} className="text-slate-400 hover:text-white flex items-center gap-2 px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors">
-                            <ArrowLeft size={16} /> Back
-                        </button>
-                        <button onClick={handleNext} className="bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold px-6 py-2 rounded-xl flex items-center gap-2 transition-colors">
-                            Next Step <ArrowRight size={16} />
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Step 3: Role Assignment */}
-            {step === 3 && (
-                <div className="space-y-8 max-w-2xl mx-auto">
-                    <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-white">Assign AI Roles</h2>
-                        <p className="text-slate-400 text-sm mt-2">Choose which provider handles each task.</p>
-                    </div>
-
-                    <div className="space-y-6">
-                        {/* Generation Role */}
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg"> <Zap size={20} /> </div>
-                                <div>
-                                    <h3 className="text-base font-semibold text-white">Generation AI</h3>
-                                    <p className="text-xs text-slate-500">Creates new prompts and expands concepts.</p>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs text-slate-400 mb-2 uppercase tracking-wider font-semibold">Primary Provided</label>
-                                <select
-                                    value={roleGen}
-                                    onChange={(e) => setRoleGen(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
-                                >
-                                    <option value="">Select a provider...</option>
-                                    {/* Combine keys and localEndpoints */}
-                                    {[...keys, ...localEndpoints].map(p => (
-                                        <option key={p.provider} value={p.provider}>
-                                            {'endpoint_url' in p
-                                                ? (p.provider === LOCAL_PROVIDERS.OLLAMA ? 'Ollama (Local)' : 'LM Studio (Local)')
-                                                : PROVIDER_LIST.find(prom => prom.id === p.provider)?.name || p.provider
-                                            }
-                                        </option>
-                                    ))}
-                                </select>
-                                {roleGen && getModelDisplay(roleGen, AI_ROLES.GENERATION) && (
-                                    <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
-                                        <span className="text-slate-500 font-medium">Selected Model</span>
-                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleGen, AI_ROLES.GENERATION) || ''}>
-                                            {getModelDisplay(roleGen, AI_ROLES.GENERATION)}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Improvement Role */}
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-teal-500/10 text-teal-500 rounded-lg"> <Sparkles size={20} /> </div>
-                                <div>
-                                    <h3 className="text-base font-semibold text-white">Improvement AI</h3>
-                                    <p className="text-xs text-slate-500">Refines prompts and enhances detail.</p>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs text-slate-400 mb-2 uppercase tracking-wider font-semibold">Primary Provided</label>
-                                <select
-                                    value={roleImprove}
-                                    onChange={(e) => setRoleImprove(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-teal-500"
-                                >
-                                    <option value="">Select a provider...</option>
-                                    {[...keys, ...localEndpoints].map(p => (
-                                        <option key={p.provider} value={p.provider}>
-                                            {'endpoint_url' in p
-                                                ? (p.provider === LOCAL_PROVIDERS.OLLAMA ? 'Ollama (Local)' : 'LM Studio (Local)')
-                                                : PROVIDER_LIST.find(prom => prom.id === p.provider)?.name || p.provider
-                                            }
-                                        </option>
-                                    ))}
-                                </select>
-                                {roleImprove && getModelDisplay(roleImprove, AI_ROLES.IMPROVEMENT) && (
-                                    <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
-                                        <span className="text-slate-500 font-medium">Selected Model</span>
-                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleImprove, AI_ROLES.IMPROVEMENT) || ''}>
-                                            {getModelDisplay(roleImprove, AI_ROLES.IMPROVEMENT)}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Vision Role */}
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-violet-500/10 text-violet-500 rounded-lg"> <Eye size={20} /> </div>
-                                <div>
-                                    <h3 className="text-base font-semibold text-white">Vision AI</h3>
-                                    <p className="text-xs text-slate-500">Analyzes images for style referencing (new).</p>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs text-slate-400 mb-2 uppercase tracking-wider font-semibold">Primary Provided</label>
-                                <select
-                                    value={roleVision}
-                                    onChange={(e) => setRoleVision(e.target.value)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500"
-                                >
-                                    <option value="">Select a provider...</option>
-                                    {[...keys, ...localEndpoints].map(p => (
-                                        <option key={p.provider} value={p.provider}>
-                                            {'endpoint_url' in p
-                                                ? (p.provider === LOCAL_PROVIDERS.OLLAMA ? 'Ollama (Local)' : 'LM Studio (Local)')
-                                                : PROVIDER_LIST.find(prom => prom.id === p.provider)?.name || p.provider
-                                            }
-                                        </option>
-                                    ))}
-                                </select>
-                                {roleVision && getModelDisplay(roleVision, AI_ROLES.VISION) && (
-                                    <div className="mt-2 px-3 py-2 bg-slate-950/30 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
-                                        <span className="text-slate-500 font-medium">Selected Model</span>
-                                        <span className="text-teal-400 font-mono truncate max-w-[180px]" title={getModelDisplay(roleVision, AI_ROLES.VISION) || ''}>
-                                            {getModelDisplay(roleVision, AI_ROLES.VISION)}
-                                        </span>
-                                    </div>
-                                )}
-                                <p className="text-[10px] text-slate-500 mt-2 italic">
-                                    Vision requires a provider that supports image inputs (e.g. GPT-4o, Claude 3, Gemini 1.5).
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-between mt-8 pt-6 border-t border-slate-800">
-                        <button onClick={handleBack} className="text-slate-400 hover:text-white flex items-center gap-2 px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors">
-                            <ArrowLeft size={16} /> Back
-                        </button>
-                        <button
-                            onClick={handleSaveRoles}
-                            disabled={actionLoading === 'saving-roles'}
-                            className="bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold px-8 py-3 rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-teal-500/20"
-                        >
-                            {actionLoading === 'saving-roles' ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-                            Complete Setup
-                        </button>
-                    </div>
-                </div>
-            )}
-
+            {/* Done button */}
+            <div className="flex justify-end pt-6 border-t border-slate-800">
+                <button
+                    onClick={onComplete}
+                    className="bg-teal-500 hover:bg-teal-400 text-slate-900 font-bold px-8 py-3 rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-teal-500/20"
+                >
+                    <Check size={18} />
+                    Done
+                </button>
+            </div>
         </div>
     );
 }

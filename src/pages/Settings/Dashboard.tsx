@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Sparkles, Eye, Settings, AlertTriangle, ChevronDown, RefreshCw, BadgeDollarSign } from 'lucide-react';
+import { Settings, AlertTriangle, ChevronDown, RefreshCw, BadgeDollarSign, Zap, Sparkles, Eye } from 'lucide-react';
 
 import type { ApiKeyInfo, LocalEndpoint } from '../../lib/api-keys-service';
 import type { ModelOption } from '../../lib/provider-models';
@@ -7,9 +7,6 @@ import { setActiveProvider } from '../../lib/api-keys-service';
 import { listModels } from '../../lib/ai-service';
 import { getDefaultModelForProvider } from '../../lib/provider-models';
 import { toast } from 'sonner';
-import { useTaskModels } from '../../hooks/useTaskModels';
-import AIModelSelector from '../../components/AIModelSelector';
-
 
 interface DashboardProps {
     activeGen: ApiKeyInfo | LocalEndpoint | undefined;
@@ -32,8 +29,7 @@ export function Dashboard({
 
     const allProviders = [...keys, ...localEndpoints];
     const availableProviderIds = Array.from(new Set(allProviders.map(p => p.provider)));
-
-    const taskModels = useTaskModels();
+    void availableProviderIds; // kept for potential future use
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -110,78 +106,6 @@ export function Dashboard({
                     )}
                 </p>
             </div>
-
-            {/* Task Model Preferences Section */}
-            {configuredCount > 0 && (
-                <div className="pt-12 space-y-8 border-t border-slate-800/50">
-                    <div className="text-center space-y-4">
-                        <h2 className="text-2xl font-bold text-white tracking-tight">Per-Task AI Model Selection</h2>
-                        <p className="text-slate-400 max-w-lg mx-auto text-sm">
-                            Fine-tune which AI model is used for specific tasks to optimize for creativity, speed, or cost.
-                            These selections override the default global provider automatically.
-                        </p>
-                    </div>
-
-                    <div className="space-y-8">
-                        {/* Prompt Generation Task */}
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg">
-                                    <Zap size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white">Prompt Generation</h3>
-                                    <p className="text-xs text-slate-400">Used for Random and Guided generation tools.</p>
-                                </div>
-                            </div>
-                            <AIModelSelector
-                                task="generate"
-                                value={taskModels.generate}
-                                onChange={(id) => taskModels.setModel('generate', id)}
-                                availableProviders={availableProviderIds}
-                            />
-                        </div>
-
-                        {/* Prompt Improvement Task */}
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-teal-500/10 text-teal-400 rounded-lg">
-                                    <Sparkles size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white">Prompt Improvement</h3>
-                                    <p className="text-xs text-slate-400">Used for the magic enhancer and diagnostic tools.</p>
-                                </div>
-                            </div>
-                            <AIModelSelector
-                                task="improve"
-                                value={taskModels.improve}
-                                onChange={(id) => taskModels.setModel('improve', id)}
-                                availableProviders={availableProviderIds}
-                            />
-                        </div>
-
-                        {/* Visual Inspection Task */}
-                        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-violet-500/10 text-violet-400 rounded-lg">
-                                    <Eye size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold text-white">Visual Inspection</h3>
-                                    <p className="text-xs text-slate-400">Used for image analysis and character avatar description.</p>
-                                </div>
-                            </div>
-                            <AIModelSelector
-                                task="vision"
-                                value={taskModels.vision}
-                                onChange={(id) => taskModels.setModel('vision', id)}
-                                availableProviders={availableProviderIds}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
 
         </div>
     );

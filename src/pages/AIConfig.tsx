@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Zap, Sparkles, Eye, BookOpen, Settings } from 'lucide-react';
 import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
 import type { ApiKeyInfo, LocalEndpoint } from '../lib/api-keys-service';
-import { Dashboard } from './Settings/Dashboard';
 import { ConfigurationWizard } from './Settings/ConfigurationWizard';
 import { toast } from 'sonner';
 import type { ModelOption } from '../lib/provider-models';
@@ -12,21 +11,18 @@ import AIModelSelector from '../components/AIModelSelector';
 import { useTaskModels } from '../hooks/useTaskModels';
 
 export default function AIConfig() {
-    const [view, setView] = useState<'dashboard' | 'wizard'>('dashboard');
     const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
     const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
     const [loading, setLoading] = useState(true);
-    const [taskModelsOpen, setTaskModelsOpen] = useState(false);
+    const [showProviders, setShowProviders] = useState(false);
 
     const { generate, improve, vision, research, setModel } = useTaskModels();
 
-    // Shared state for dynamic models cache to avoid refetching too often
     const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
         try {
             const saved = localStorage.getItem('cachedModels');
             return saved ? JSON.parse(saved) : {};
-        } catch (e) {
-            console.error('Failed to load cached models', e);
+        } catch {
             return {};
         }
     });
@@ -34,19 +30,12 @@ export default function AIConfig() {
     useEffect(() => {
         try {
             localStorage.setItem('cachedModels', JSON.stringify(dynamicModels));
-        } catch (e) {
-            console.error('Failed to save cached models', e);
-        }
+        } catch { /* ignore */ }
     }, [dynamicModels]);
-
-    const getToken = useCallback(async () => {
-        return 'mock-token'; // Authentication removed, using mock/passthrough
-    }, []);
 
     const loadKeys = useCallback(async () => {
         try {
-            const result = await listApiKeys();
-            setKeys(result);
+            setKeys(await listApiKeys());
         } catch (e) {
             toast.error(e instanceof Error ? e.message : 'Failed to load API keys');
         }
@@ -54,12 +43,11 @@ export default function AIConfig() {
 
     const loadLocalEndpoints = useCallback(async () => {
         try {
-            const { data, error: fetchError } = await db
+            const { data, error } = await db
                 .from('user_local_endpoints')
                 .select('*')
                 .order('updated_at', { ascending: false });
-
-            if (fetchError) throw fetchError;
+            if (error) throw error;
             setLocalEndpoints(data || []);
         } catch (e) {
             toast.error(e instanceof Error ? e.message : 'Failed to load local endpoints');
@@ -79,31 +67,9 @@ export default function AIConfig() {
         init();
     }, [refreshData]);
 
-    // Derive active providers
-    const activeGenCloud = keys.find((k) => k.is_active_gen);
-    const activeGenLocal = localEndpoints.find((e) => e.is_active_gen);
-    const activeImproveCloud = keys.find((k) => k.is_active_improve);
-    const activeImproveLocal = localEndpoints.find((e) => e.is_active_improve);
-    const activeVisionCloud = keys.find((k) => k.is_active_vision);
-    const activeVisionLocal = localEndpoints.find((e) => e.is_active_vision);
-
-    const activeGen = activeGenCloud || activeGenLocal;
-    const activeImprove = activeImproveCloud || activeImproveLocal;
-    const activeVision = activeVisionCloud || activeVisionLocal;
-
-    const configuredCount = keys.length + localEndpoints.length;
-
-    // Collect all configured provider IDs (for greying out unavailable models)
     const availableProviders = [
         ...keys.map(k => k.provider),
         ...localEndpoints.map(e => e.provider),
-    ];
-
-    const TASK_LABELS: { task: 'generate' | 'improve' | 'vision' | 'research'; label: string; desc: string; value: string }[] = [
-        { task: 'generate', label: 'Generate', desc: 'Random & description-based prompt generation', value: generate },
-        { task: 'improve', label: 'Improve', desc: 'Prompt enhancement and refinement', value: improve },
-        { task: 'vision', label: 'Vision / Analyse', desc: 'Image analysis and character description', value: vision },
-        { task: 'research', label: 'Research', desc: 'Model research, reasoning & analysis tasks', value: research },
     ];
 
     if (loading && keys.length === 0 && localEndpoints.length === 0) {
@@ -116,78 +82,111 @@ export default function AIConfig() {
 
     return (
         <ProviderHealthProvider>
-            <div className="max-w-5xl mx-auto px-4 py-8">
-                {view === 'dashboard' ? (
-                    <div className="space-y-12">
-                        <Dashboard
-                            activeGen={activeGen}
-                            activeImprove={activeImprove}
-                            activeVision={activeVision}
-                            onConfigure={() => setView('wizard')}
-                            configuredCount={configuredCount}
-                            keys={keys}
-                            localEndpoints={localEndpoints}
-                            dynamicModels={dynamicModels}
-                            setDynamicModels={setDynamicModels}
-                            onRefreshData={refreshData}
-                            getToken={getToken}
-                        />
+            <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
 
-                        {/* Task Model Preferences */}
-                        <div className="border border-slate-800 rounded-2xl overflow-hidden">
-                            <button
-                                onClick={() => setTaskModelsOpen(v => !v)}
-                                className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-900 to-slate-800/80 hover:from-slate-800/80 hover:to-slate-800/60 transition-all"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-amber-500/15 rounded-lg flex items-center justify-center">
-                                        <Brain size={16} className="text-amber-400" />
-                                    </div>
-                                    <div className="text-left">
-                                        <h3 className="text-sm font-semibold text-white">Task Model Preferences</h3>
-                                        <p className="text-[11px] text-slate-500">Choose which AI model handles each task type</p>
-                                    </div>
-                                </div>
-                                {taskModelsOpen
-                                    ? <ChevronUp size={16} className="text-slate-500" />
-                                    : <ChevronDown size={16} className="text-slate-500" />}
-                            </button>
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-bold text-white">AI Configuration</h1>
+                    <p className="text-slate-400 text-sm mt-1">Choose which AI model handles each task</p>
+                </div>
 
-                            {taskModelsOpen && (
-                                <div className="p-5 bg-slate-900/50 space-y-8">
-                                    {TASK_LABELS.map(({ task, label, desc, value }) => (
-                                        <div key={task}>
-                                            <div className="mb-3">
-                                                <h4 className="text-sm font-semibold text-slate-200">{label}</h4>
-                                                <p className="text-[11px] text-slate-500">{desc}</p>
-                                            </div>
-                                            <AIModelSelector
-                                                task={task}
-                                                value={value}
-                                                onChange={(id) => setModel(task, id)}
-                                                availableProviders={availableProviders}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                {/* 4 Task Model Cards */}
+                <div className="space-y-6">
+
+                    {/* Generation */}
+                    <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-amber-500/10 text-amber-500 rounded-lg"><Zap size={20} /></div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">Prompt Generation</h3>
+                                <p className="text-xs text-slate-400">Used for Random and Guided generation tools</p>
+                            </div>
                         </div>
+                        <AIModelSelector
+                            task="generate"
+                            value={generate}
+                            onChange={(id) => setModel('generate', id)}
+                            availableProviders={availableProviders}
+                        />
                     </div>
-                ) : (
+
+                    {/* Improvement */}
+                    <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-teal-500/10 text-teal-400 rounded-lg"><Sparkles size={20} /></div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">Prompt Improvement</h3>
+                                <p className="text-xs text-slate-400">Used for the magic enhancer and diagnostic tools</p>
+                            </div>
+                        </div>
+                        <AIModelSelector
+                            task="improve"
+                            value={improve}
+                            onChange={(id) => setModel('improve', id)}
+                            availableProviders={availableProviders}
+                        />
+                    </div>
+
+                    {/* Vision */}
+                    <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-violet-500/10 text-violet-400 rounded-lg"><Eye size={20} /></div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">Visual Inspection</h3>
+                                <p className="text-xs text-slate-400">Used for image analysis and character avatar description</p>
+                            </div>
+                        </div>
+                        <AIModelSelector
+                            task="vision"
+                            value={vision}
+                            onChange={(id) => setModel('vision', id)}
+                            availableProviders={availableProviders}
+                        />
+                    </div>
+
+                    {/* Research */}
+                    <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><BookOpen size={20} /></div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">Research & Reasoning</h3>
+                                <p className="text-xs text-slate-400">Used for style analysis, deep reasoning and recommendations</p>
+                            </div>
+                        </div>
+                        <AIModelSelector
+                            task="research"
+                            value={research}
+                            onChange={(id) => setModel('research', id)}
+                            availableProviders={availableProviders}
+                        />
+                    </div>
+
+                </div>
+
+                {/* Configure Providers Button */}
+                <div>
+                    <button
+                        onClick={() => setShowProviders(v => !v)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-sm font-medium rounded-xl transition-colors"
+                    >
+                        <Settings size={16} />
+                        {showProviders ? 'Hide Provider Configuration' : 'Configure Providers'}
+                    </button>
+                </div>
+
+                {/* Inline Provider Configuration */}
+                {showProviders && (
                     <ConfigurationWizard
                         keys={keys}
                         localEndpoints={localEndpoints}
-                        onComplete={() => {
-                            refreshData();
-                            setView('dashboard');
-                        }}
+                        onComplete={() => { refreshData(); setShowProviders(false); }}
                         loadKeys={loadKeys}
                         loadLocalEndpoints={loadLocalEndpoints}
-                        getToken={getToken}
                         dynamicModels={dynamicModels}
                         setDynamicModels={setDynamicModels}
                     />
                 )}
+
             </div>
         </ProviderHealthProvider>
     );
