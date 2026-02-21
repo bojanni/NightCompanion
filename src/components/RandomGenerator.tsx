@@ -39,6 +39,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   }, [initialPrompt]);
 
   const [filters, setFilters] = useState({ dreamy: false, characters: false, cinematic: false });
+  const [creativityLevel, setCreativityLevel] = useState<'focused' | 'balanced' | 'wild'>('balanced');
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedNeg, setCopiedNeg] = useState(false);
   const [saving, setSaving] = useState(false);
