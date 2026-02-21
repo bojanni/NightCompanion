@@ -4,7 +4,14 @@
         "cancel": "Cancel",
         "delete": "Delete",
         "edit": "Edit",
-        "add": "Add"
+        "add": "Add",
+        "search": "Search...",
+        "loading": "Loading...",
+        "viewAll": "View all",
+        "untitled": "Untitled",
+        "actions": "Actions",
+        "next": "Next",
+        "previous": "Previous"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -24,6 +31,116 @@
         "collapseSidebar": "Collapse Sidebar",
         "lightMode": "Light Mode",
         "darkMode": "Dark Mode"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "subtitle": "Overview of your creative workspace",
+        "stats": {
+            "prompts": "Prompts",
+            "templates": "Templates",
+            "characters": "Characters",
+            "gallery": "Gallery Items"
+        },
+        "recentPrompts": "Recent Prompts",
+        "recentGallery": "Recent Gallery",
+        "noPrompts": "No prompts yet. Create your first one!",
+        "noCharacters": "No characters yet."
+    },
+    "generator": {
+        "title": "Prompt Generator",
+        "subtitle": "Create the perfect prompt for your next creation",
+        "modes": {
+            "random": "Quick Start",
+            "randomDesc": "One click, done",
+            "guided": "Guided",
+            "guidedDesc": "Full control",
+            "manual": "Multi-Part",
+            "manualDesc": "Multi-part build",
+            "remix": "Quick Remix",
+            "remixDesc": "Modify last prompt"
+        },
+        "slider": {
+            "maxWords": "Max Words for Generated Prompts",
+            "words": "{{count}} words",
+            "short": "Short (20)",
+            "standard": "Standard (70)",
+            "long": "Long (100)"
+        },
+        "buttons": {
+            "autoFill": "Auto-Fill",
+            "clearAll": "Clear All",
+            "clearGenerate": "Clear generate",
+            "remix": "Remix"
+        },
+        "tooltips": {
+            "autoFill": "Automatically copies generated prompts to Improve tab",
+            "clearAll": "Clear all fields"
+        },
+        "modals": {
+            "notEmptyTitle": "Fields are not empty",
+            "notEmptyMsg": "You have active content in the generator or Improve tab. How would you like to proceed with the new generation?"
+        }
+    },
+    "prompts": {
+        "title": "Prompts",
+        "subtitle": "{{count}} prompts in your library",
+        "import": "Import From NightCafe",
+        "new": "New Prompt",
+        "search": "Search prompts...",
+        "filters": {
+            "title": "Filters",
+            "all": "All",
+            "templates": "Templates",
+            "favorites": "Favorites",
+            "allTags": "All Tags",
+            "noTags": "No tags"
+        },
+        "empty": {
+            "noMatching": "No matching prompts",
+            "noPrompts": "No prompts yet",
+            "adjustFilters": "Try adjusting your filters",
+            "createFirst": "Create your first prompt to get started"
+        },
+        "actions": {
+            "copy": "Copy prompt",
+            "link": "Link to image",
+            "linked": "Linked to image",
+            "optimize": "Optimize prompt",
+            "improve": "Improve with AI",
+            "history": "Version history",
+            "variations": "Generate variations",
+            "restrictLock": "Locked: linked to image",
+            "deleteConfirm": "Are you sure you want to delete this prompt?"
+        }
+    },
+    "characters": {
+        "title": "Characters",
+        "subtitle": "Manage AI characters and their consistent details across prompts.",
+        "new": "New Character",
+        "search": "Search characters...",
+        "empty": {
+            "title": "No characters yet",
+            "subtitle": "Create characters to maintain consistent appearances and traits across your image generations."
+        },
+        "labels": {
+            "name": "Name",
+            "description": "Description",
+            "traits": "Character Traits",
+            "traitsSubtitle": "(Clothing, Appearance, etc.)",
+            "noDescription": "No description provided.",
+            "noTraits": "No traits added yet."
+        },
+        "actions": {
+            "analyze": "Analyze",
+            "setMain": "Set Main",
+            "addTrait": "Add Trait",
+            "saving": "Saving..."
+        }
+    },
+    "gallery": {
+        "title": "Gallery",
+        "search": "Search creations...",
+        "empty": "No items in your gallery yet."
     },
     "aiTools": {
         "title": "AI Tools",

@@ -4,6 +4,7 @@ import {
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Link, Download,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { exportGalleryItems } from '../lib/export-utils';
 import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
@@ -52,6 +53,7 @@ const DynamicColorElement = ({
 const PAGE_SIZE = 24;
 
 export default function Gallery() {
+  const { t } = useTranslation();
   const {
     items, setItems,
     collections,
@@ -485,8 +487,8 @@ export default function Gallery() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Gallery</h1>
-          <p className="text-slate-400 mt-1">{totalCount} items in your collection</p>
+          <h1 className="text-2xl font-bold text-white">{t('gallery.title')}</h1>
+          <p className="text-slate-400 mt-1">{t('gallery.items_count', { count: totalCount, defaultValue: `${totalCount} items in your collection` })}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -494,7 +496,7 @@ export default function Gallery() {
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors border border-slate-700"
           >
             <FolderOpen size={14} />
-            New Collection
+            {t('gallery.new_collection')}
           </button>
           <button
             onClick={handleExport}
@@ -502,7 +504,7 @@ export default function Gallery() {
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors border border-slate-700 disabled:opacity-50"
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            Export
+            {t('common.export')}
           </button>
           <button
             onClick={() => setShowImportModal(true)}
@@ -510,14 +512,14 @@ export default function Gallery() {
             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 text-indigo-400 text-sm font-medium rounded-xl hover:bg-indigo-500/20 transition-colors border border-indigo-500/20 disabled:opacity-50"
           >
             {importingNightcafe ? <Loader2 size={14} className="animate-spin" /> : <Plus size={16} />}
-            Import From NightCafe
+            {t('prompts.import.title')}
           </button>
           <button
             onClick={() => openItemEditor(null)}
             className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
           >
             <Plus size={16} />
-            Add Item
+            {t('gallery.add_item')}
           </button>
         </div>
       </div>
@@ -529,7 +531,7 @@ export default function Gallery() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search gallery..."
+              placeholder={t('gallery.search')}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
             />
           </div>

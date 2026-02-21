@@ -4,6 +4,7 @@ import {
   MessageSquare, Image as ImageIcon, Save, Loader2,
   Check, ThumbsUp, ThumbsDown
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../lib/api';
 import type { Character, CharacterDetail, CharacterImage } from '../lib/types';
@@ -185,6 +186,7 @@ function CharacterCard({
 }
 
 export default function Characters() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
@@ -388,9 +390,9 @@ export default function Characters() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Characters</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t('characters.title')}</h1>
           <p className="text-sm text-slate-400 mt-1">
-            Manage AI characters and their consistent details across prompts.
+            {t('characters.subtitle')}
           </p>
         </div>
 
@@ -399,7 +401,7 @@ export default function Characters() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input
               type="text"
-              placeholder="Search characters..."
+              placeholder={t('characters.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 shadow-sm"
@@ -410,7 +412,7 @@ export default function Characters() {
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            New Character
+            {t('characters.new')}
           </button>
         </div>
       </div>
@@ -426,16 +428,16 @@ export default function Characters() {
           <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <MessageSquare className="w-8 h-8 text-slate-600" />
           </div>
-          <h3 className="text-lg font-semibold text-white">No characters yet</h3>
+          <h3 className="text-lg font-semibold text-white">{t('characters.empty.title')}</h3>
           <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2 mb-6">
-            Create characters to maintain consistent appearances and traits across your image generations.
+            {t('characters.empty.subtitle')}
           </p>
           <button
             onClick={() => openEditor(null)}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Create Character
+            {t('characters.new')}
           </button>
         </div>
       ) : (
@@ -472,17 +474,17 @@ export default function Characters() {
             disabled={currentPage === 0}
             className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-400 disabled:opacity-50 hover:bg-slate-800 hover:text-white transition-colors"
           >
-            Previous
+            {t('common.previous')}
           </button>
           <span className="text-sm text-slate-400">
-            Page {currentPage + 1} of {Math.ceil(totalCount / PAGE_SIZE)}
+            {t('generator.slider.words', { count: currentPage + 1 })} / {Math.ceil(totalCount / PAGE_SIZE)}
           </span>
           <button
             onClick={() => setCurrentPage(p => p + 1)}
             disabled={(currentPage + 1) * PAGE_SIZE >= totalCount}
             className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-400 disabled:opacity-50 hover:bg-slate-800 hover:text-white transition-colors"
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
       )}

@@ -4,7 +4,14 @@
         "cancel": "Annuleren",
         "delete": "Verwijderen",
         "edit": "Bewerken",
-        "add": "Toevoegen"
+        "add": "Toevoegen",
+        "search": "Zoeken...",
+        "loading": "Laden...",
+        "viewAll": "Bekijk alles",
+        "untitled": "Naamloos",
+        "actions": "Acties",
+        "next": "Volgende",
+        "previous": "Vorige"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -19,62 +26,172 @@
         "styleProfile": "Stijlprofiel",
         "statistics": "Statistieken",
         "timeline": "Tijdlijn",
-        "aiTools": "AI Hulpmiddelen",
+        "aiTools": "AI Tools",
         "expandSidebar": "Zijbalk uitklappen",
         "collapseSidebar": "Zijbalk inklappen",
         "lightMode": "Lichte Modus",
         "darkMode": "Donkere Modus"
     },
+    "dashboard": {
+        "title": "Dashboard",
+        "subtitle": "Overzicht van je creatieve werkruimte",
+        "stats": {
+            "prompts": "Prompts",
+            "templates": "Sjablonen",
+            "characters": "Personages",
+            "gallery": "Gallerij Items"
+        },
+        "recentPrompts": "Recente Prompts",
+        "recentGallery": "Recente Gallerij",
+        "noPrompts": "Nog geen prompts. Maak je eerste aan!",
+        "noCharacters": "Nog geen personages."
+    },
+    "generator": {
+        "title": "Prompt Generator",
+        "subtitle": "Maak de perfecte prompt voor je volgende creatie",
+        "modes": {
+            "random": "Snelstart",
+            "randomDesc": "Eén klik, klaar",
+            "guided": "Begeleid",
+            "guidedDesc": "Volledige controle",
+            "manual": "Meerdelig",
+            "manualDesc": "Meerdelige opbouw",
+            "remix": "Snelle Remix",
+            "remixDesc": "Pas laatste prompt aan"
+        },
+        "slider": {
+            "maxWords": "Max woorden voor gegenereerde prompts",
+            "words": "{{count}} woorden",
+            "short": "Kort (20)",
+            "standard": "Standaard (70)",
+            "long": "Lang (100)"
+        },
+        "buttons": {
+            "autoFill": "Auto-Invullen",
+            "clearAll": "Alles Wissen",
+            "clearGenerate": "Wis generatie",
+            "remix": "Remix"
+        },
+        "tooltips": {
+            "autoFill": "Kopieert gegenereerde prompts automatisch naar Verbeter tab",
+            "clearAll": "Wis alle velden"
+        },
+        "modals": {
+            "notEmptyTitle": "Velden zijn niet leeg",
+            "notEmptyMsg": "Je hebt actieve inhoud in de generator of Verbeter tab. Hoe wil je verder gaan met de nieuwe generatie?"
+        }
+    },
+    "prompts": {
+        "title": "Prompts",
+        "subtitle": "{{count}} prompts in je bibliotheek",
+        "import": "Importeren van NightCafe",
+        "new": "Nieuwe Prompt",
+        "search": "Zoek prompts...",
+        "filters": {
+            "title": "Filters",
+            "all": "Alle",
+            "templates": "Sjablonen",
+            "favorites": "Favorieten",
+            "allTags": "Alle Tags",
+            "noTags": "Geen tags"
+        },
+        "empty": {
+            "noMatching": "Geen overeenkomende prompts",
+            "noPrompts": "Nog geen prompts",
+            "adjustFilters": "Probeer je filters aan te passen",
+            "createFirst": "Maak je eerste prompt om aan de slag te gaan"
+        },
+        "actions": {
+            "copy": "Kopieer prompt",
+            "link": "Koppel aan afbeelding",
+            "linked": "Gekoppeld aan afbeelding",
+            "optimize": "Optimaliseer prompt",
+            "improve": "Verbeter met AI",
+            "history": "Versiegeschiedenis",
+            "variations": "Genereer variaties",
+            "restrictLock": "Vergrendeld: gekoppeld aan afbeelding",
+            "deleteConfirm": "Weet je zeker dat je deze prompt wilt verwijderen?"
+        }
+    },
+    "characters": {
+        "title": "Personages",
+        "subtitle": "Beheer AI-personages en hun consistente details over prompts heen.",
+        "new": "Nieuw Personage",
+        "search": "Zoek personages...",
+        "empty": {
+            "title": "Nog geen personages",
+            "subtitle": "Maak personages aan om consistente verschijningen en kenmerken te behouden in je afbeeldingen."
+        },
+        "labels": {
+            "name": "Naam",
+            "description": "Beschrijving",
+            "traits": "Personage Kenmerken",
+            "traitsSubtitle": "(Kleding, Uiterlijk, etc.)",
+            "noDescription": "Geen beschrijving opgegeven.",
+            "noTraits": "Nog geen kenmerken toegevoegd."
+        },
+        "actions": {
+            "analyze": "Analyseren",
+            "setMain": "Stel in als Hoofd",
+            "addTrait": "Kenmerk Toevoegen",
+            "saving": "Opslaan..."
+        }
+    },
+    "gallery": {
+        "title": "Gallerij",
+        "search": "Zoek creaties...",
+        "empty": "Nog geen items in je gallerij."
+    },
     "aiTools": {
-        "title": "AI Hulpmiddelen",
-        "subtitle": "Optionele AI-aangedreven functies",
+        "title": "AI Tools",
+        "subtitle": "Optionele AI-functies",
         "tabs": {
             "improve": "Verbeteren",
             "improveDesc": "Verbeter een prompt",
             "generate": "Beschrijven",
             "generateDesc": "Natuurlijke taal",
             "analyze": "Mijn Stijl",
-            "analyzeDesc": "Patronen analyseren",
+            "analyzeDesc": "Analyseer patronen",
             "diagnose": "Diagnose",
-            "diagnoseDesc": "Problemen oplossen"
+            "diagnoseDesc": "Los problemen op"
         },
         "improve": {
-            "placeholder": "Plak je prompt hier en AI zal deze verbeteren met betere technische termen, atmosfeer en stijl...",
+            "placeholder": "Plak je prompt hier en AI zal deze verbeteren met betere technische termen, sfeer en stijl...",
             "negativeLabel": "Negatieve Prompt",
             "optional": "(optioneel)",
-            "negativePlaceholder": "Dingen om te vermijden, bijv. wazig, misvormd, lage kwaliteit...",
-            "button": "Stijl Verbeteren",
+            "negativePlaceholder": "Dingen om te vermijden, bijv. wazig, misvormd, lage kwaliteit, extra ledematen...",
+            "button": "Verbeter Prompt",
             "buttonLoading": "Verbeteren...",
-            "copy": "Kopiëren",
+            "copy": "Kopieer",
             "copied": "Gekopieerd",
-            "saveToLibrary": "Opslaan in Bibliotheek",
+            "saveToLibrary": "Opslaan in bibliotheek",
             "clear": "Wissen",
-            "accept": "Wijzigingen Accepteren",
+            "accept": "Wijzigingen accepteren",
             "discard": "Negeren",
             "use": "Gebruiken"
         },
         "describe": {
-            "placeholder": "Beschrijf wat je wilt in gewone taal, bijv. \"Iets als mijn hert-personage maar in een winterse setting met noorderlicht\"",
+            "placeholder": "Beschrijf wat je wilt in gewone taal, bijv. \"Iets als mijn hert-personage maar in een winterse omgeving met noorderlicht\"",
             "stylePrefs": "Stijlvoorkeuren",
-            "set": "ingesteld",
-            "optionalGuide": "Optioneel: stuur de AI door voorkeuren in te stellen. Je top-beoordeelde prompts en opgeslagen personages worden automatisch als context opgenomen.",
+            "set": "instellen",
+            "optionalGuide": "Optioneel: stuur de AI door voorkeuren in te stellen. Je best beoordeelde prompts en opgeslagen personages worden automatisch als context meegenomen.",
             "wordCount": "Aantal woorden:",
             "globalSetting": "Globale instelling",
             "clearAll": "Wis alle voorkeuren",
-            "button": "Prompt Genereren",
+            "button": "Genereer Prompt",
             "buttonLoading": "Genereren...",
-            "useResult": "Gebruik Resultaat"
+            "useResult": "Resultaat gebruiken"
         },
         "analyze": {
-            "description": "AI zal je opgeslagen prompts analyseren om je unieke artistieke stijl en terugkerende thema's te identificeren, en nieuwe richtingen voorstellen.",
+            "description": "AI analyseert je opgeslagen prompts om je unieke artistieke stijl en terugkerende thema's te identificeren en suggereert nieuwe richtingen.",
             "button": "Analyseer Mijn Stijl",
             "buttonLoading": "Analyseren...",
-            "signature": "Jouw Stijlhandtekening",
+            "signature": "Je Stijl Handtekening",
             "profile": "Stijlprofiel",
             "themes": "Terugkerende Thema's",
             "techniques": "Top Technieken",
-            "suggestions": "Voorgestelde Nieuwe Richtingen",
-            "reanalyze": "Opnieuw analyseren"
+            "suggestions": "Gesuggereerde Nieuwe Richtingen",
+            "reanalyze": "Heranalyseren"
         },
         "diagnose": {
             "promptPlaceholder": "Plak de prompt die slechte resultaten gaf...",
@@ -87,20 +204,20 @@
         },
         "common": {
             "useThis": "Gebruik deze prompt",
-            "pasteGenerated": "Plak Gegeneerd"
+            "pasteGenerated": "Plak gegenereerd"
         }
     },
     "settings": {
         "title": "Instellingen",
         "language": {
             "title": "Taal",
-            "subtitle": "Kies je voorkeurstaal voor de interface",
+            "subtitle": "Kies je gewenste taal voor de interface",
             "dutch": "Nederlands",
             "english": "Engels",
             "saveSuccess": "Taalvoorkeur opgeslagen"
         },
         "dataManagement": "Gegevensbeheer",
-        "apiKeys": "API Sleutels",
+        "apiKeys": "API-sleutels",
         "localEndpoints": "Lokale Endpoints",
         "configuration": "Configuratie"
     }

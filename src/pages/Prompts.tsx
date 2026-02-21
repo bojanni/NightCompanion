@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Plus, Search, Heart, Wand2, Trash2, Edit3, Copy, Check,
   SlidersHorizontal, BookTemplate, Filter, ChevronLeft, ChevronRight, Clock, Sparkles, Zap, Link, Lock, X, Calendar, Loader2
 } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
-import type { Prompt, Tag } from '../lib/types';
+import type { Prompt } from '../lib/types';
 import Modal from '../components/Modal';
 import { PromptSkeleton } from '../components/PromptSkeleton';
 import PromptEditor from '../components/PromptEditor';
@@ -26,11 +27,11 @@ import ChoiceModal from '../components/ChoiceModal';
 const PAGE_SIZE = 20;
 
 export default function Prompts() {
+  const { t } = useTranslation();
   const {
     searchParams, setSearchParams,
     prompts, setPrompts,
     tags,
-    promptTagMap,
     loading,
     search, setSearch,
     filterTag, setFilterTag,
@@ -362,7 +363,7 @@ export default function Prompts() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search prompts..."
+              placeholder={t('prompts.search')}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
             />
           </div>
@@ -375,7 +376,7 @@ export default function Prompts() {
                 }`}
             >
               <Filter size={14} />
-              Filters
+              {t('prompts.filters.title', { defaultValue: 'Filters' })}
             </button>
             {(['all', 'templates', 'favorites'] as const).map((type) => (
               <button
@@ -406,7 +407,7 @@ export default function Prompts() {
               : 'text-slate-400 hover:text-white'
               }`}
           >
-            All Tags
+            {t('prompts.filters.allTags')}
           </button>
           {tags.map((tag) => (
             <TagBadge
@@ -425,12 +426,12 @@ export default function Prompts() {
             <Wand2 size={28} className="text-slate-600" />
           </div>
           <h3 className="text-lg font-medium text-white mb-1">
-            {search || filterTag || filterType !== 'all' ? 'No matching prompts' : 'No prompts yet'}
+            {search || filterTag || filterType !== 'all' ? t('prompts.empty.noMatching') : t('prompts.empty.noPrompts')}
           </h3>
           <p className="text-sm text-slate-400">
             {search || filterTag || filterType !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Create your first prompt to get started'}
+              ? t('prompts.empty.adjustFilters')
+              : t('prompts.empty.createFirst')}
           </p>
         </div>
       ) : (
@@ -553,7 +554,7 @@ export default function Prompts() {
                                 e.stopPropagation();
                                 setLightboxImage(img);
                               }}
-                              title={`View ${img.title || 'Untitled'}`}
+                              title={t('common.view', { defaultValue: `View ${img.title || 'Untitled'}` })}
                             >
                               <img
                                 src={img.image_url}
@@ -567,14 +568,14 @@ export default function Prompts() {
                                     handleUnlinkImage(prompt.id, img.id);
                                   }}
                                   className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
-                                  title="Unlink image"
+                                  title={t('common.unlink', { defaultValue: 'Unlink image' })}
                                 >
                                   <X size={12} />
                                 </button>
                                 <div className="absolute bottom-1 left-1 right-1">
                                   <p className="text-[10px] text-white truncate flex items-center gap-1">
                                     <Lock size={9} />
-                                    {img.title || 'Linked Image'}
+                                    {img.title || t('common.linkedImage', { defaultValue: 'Linked Image' })}
                                   </p>
                                 </div>
                                 {img.model && (
@@ -599,14 +600,14 @@ export default function Prompts() {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCopy(prompt.content, prompt.id); }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                          title="Copy prompt"
+                          title={t('prompts.actions.copy')}
                         >
                           {copiedId === prompt.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleLinkImage(prompt); }}
                           className={`p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 transition-all ${promptImages?.length ? 'text-amber-400 hover:text-amber-300 border-amber-500/30 bg-amber-500/10' : 'text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800'}`}
-                          title={promptImages?.length ? 'Linked to image' : 'Link to image'}
+                          title={promptImages?.length ? t('prompts.actions.linked') : t('prompts.actions.link')}
                         >
                           <Link size={14} />
                         </button>
@@ -618,7 +619,7 @@ export default function Prompts() {
                           }}
                           disabled={!!promptImages?.length}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-purple-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={promptImages?.length ? 'Locked: linked to image' : 'Optimize prompt'}
+                          title={promptImages?.length ? t('prompts.actions.locked') : t('prompts.actions.optimize')}
                         >
                           <Zap size={14} />
                         </button>
@@ -630,7 +631,7 @@ export default function Prompts() {
                           }}
                           disabled={!!promptImages?.length}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-orange-400 hover:border-slate-600 hover:bg-slate-800 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={promptImages?.length ? 'Locked: linked to image' : 'Improve with AI'}
+                          title={promptImages?.length ? t('prompts.actions.locked') : t('prompts.actions.improve')}
                         >
                           <Sparkles size={14} />
                         </button>
@@ -641,7 +642,7 @@ export default function Prompts() {
                             setShowHistory(true);
                           }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-blue-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
-                          title="Version history"
+                          title={t('prompts.actions.history')}
                         >
                           <Clock size={14} />
                         </button>
@@ -652,7 +653,7 @@ export default function Prompts() {
                             setShowVariations(true);
                           }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-amber-400 hover:border-slate-600 hover:bg-slate-800 transition-all"
-                          title="Generate variations"
+                          title={t('prompts.actions.variations')}
                         >
                           <Wand2 size={14} />
                         </button>
@@ -663,14 +664,14 @@ export default function Prompts() {
                             setShowEditor(true);
                           }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-white hover:border-slate-600 hover:bg-slate-800 transition-all"
-                          title={promptImages?.length ? 'Edit (Restricted)' : 'Edit'}
+                          title={promptImages?.length ? t('prompts.actions.editRestricted') : t('common.edit')}
                         >
                           {promptImages && promptImages.length > 0 ? <Lock size={14} className="text-amber-500/80" /> : <Edit3 size={14} />}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(prompt.id); }}
                           className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-red-400 hover:border-red-900/50 hover:bg-red-900/20 transition-all"
-                          title="Delete"
+                          title={t('common.delete')}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -681,7 +682,7 @@ export default function Prompts() {
               );
             })}
           </AnimatePresence>
-        </motion.div >
+        </motion.div>
       )
       }
 
@@ -694,7 +695,18 @@ export default function Prompts() {
               className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft size={16} />
-              Previous
+              {t('common.previous')}
+            </button>
+            <span className="text-sm text-slate-500 font-medium">
+              {t('generator.slider.words', { count: currentPage + 1 })} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {t('common.next')}
+              <ChevronRight size={16} />
             </button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i).map((page) => {
@@ -828,7 +840,7 @@ export default function Prompts() {
           <PromptDetailOverlay
             prompt={filtered[detailViewIndex]}
             tags={getTagsForPrompt(filtered[detailViewIndex].id)}
-            images={linkedImages[filtered[detailViewIndex].id] || []}
+            images={(linkedImages[filtered[detailViewIndex].id] || []) as any}
             onClose={() => setDetailViewIndex(null)}
             onNext={() => navigateDetail('next')}
             onPrev={() => navigateDetail('prev')}

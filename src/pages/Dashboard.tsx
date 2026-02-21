@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Users, Image, Star, TrendingUp, Clock, Heart } from 'lucide-react';
+import { Sparkles, Users, Image as ImageIcon, Star, TrendingUp, Clock, Heart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { db } from '../lib/api';
 import type { Prompt, Character, GalleryItem } from '../lib/types';
 import StarRating from '../components/StarRating';
@@ -13,6 +14,7 @@ interface Stats {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats>({ promptCount: 0, templateCount: 0, characterCount: 0, galleryCount: 0 });
   const [recentPrompts, setRecentPrompts] = useState<Prompt[]>([]);
   const [recentGallery, setRecentGallery] = useState<GalleryItem[]>([]);
@@ -56,17 +58,17 @@ export default function Dashboard() {
   }
 
   const statCards = [
-    { label: 'Prompts', value: stats.promptCount, icon: Sparkles, color: 'from-amber-500 to-orange-600', link: '/prompts' },
-    { label: 'Templates', value: stats.templateCount, icon: TrendingUp, color: 'from-teal-500 to-emerald-600', link: '/prompts' },
-    { label: 'Characters', value: stats.characterCount, icon: Users, color: 'from-blue-500 to-cyan-600', link: '/characters' },
-    { label: 'Gallery Items', value: stats.galleryCount, icon: Image, color: 'from-rose-500 to-pink-600', link: '/gallery' },
+    { label: t('dashboard.stats.prompts'), value: stats.promptCount, icon: Sparkles, color: 'from-amber-500 to-orange-600', link: '/prompts' },
+    { label: t('dashboard.stats.templates'), value: stats.templateCount, icon: TrendingUp, color: 'from-teal-500 to-emerald-600', link: '/prompts' },
+    { label: t('dashboard.stats.characters'), value: stats.characterCount, icon: Users, color: 'from-blue-500 to-cyan-600', link: '/characters' },
+    { label: t('dashboard.stats.gallery'), value: stats.galleryCount, icon: ImageIcon, color: 'from-rose-500 to-pink-600', link: '/gallery' },
   ];
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-slate-400 mt-1">Overview of your creative workspace</p>
+        <h1 className="text-2xl font-bold text-white">{t('dashboard.title')}</h1>
+        <p className="text-slate-400 mt-1">{t('dashboard.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -92,16 +94,16 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Clock size={18} className="text-amber-400" />
-              Recent Prompts
+              {t('dashboard.recentPrompts')}
             </h2>
             <Link to="/prompts" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
-              View all
+              {t('common.viewAll')}
             </Link>
           </div>
           {recentPrompts.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <Sparkles size={32} className="mx-auto mb-2 opacity-50" />
-              <p>No prompts yet. Create your first one!</p>
+              <p>{t('dashboard.noPrompts')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -117,7 +119,7 @@ export default function Dashboard() {
                       {prompt.is_favorite && <Heart size={12} className="text-rose-400 fill-rose-400 flex-shrink-0" />}
                       {prompt.is_template && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
-                          Template
+                          {t('prompts.filters.templates')}
                         </span>
                       )}
                     </div>
@@ -134,16 +136,16 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
               <Star size={18} className="text-amber-400" />
-              Characters
+              {t('nav.characters')}
             </h2>
             <Link to="/characters" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
-              View all
+              {t('common.viewAll')}
             </Link>
           </div>
           {topCharacters.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <Users size={32} className="mx-auto mb-2 opacity-50" />
-              <p>No characters yet.</p>
+              <p>{t('dashboard.noCharacters')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -175,11 +177,11 @@ export default function Dashboard() {
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-              <Image size={18} className="text-amber-400" />
-              Recent Gallery
+              <ImageIcon size={18} className="text-amber-400" />
+              {t('dashboard.recentGallery')}
             </h2>
             <Link to="/gallery" className="text-sm text-amber-400 hover:text-amber-300 transition-colors">
-              View all
+              {t('common.viewAll')}
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -197,7 +199,7 @@ export default function Dashboard() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Image size={24} className="text-slate-600" />
+                    <ImageIcon size={24} className="text-slate-600" />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />

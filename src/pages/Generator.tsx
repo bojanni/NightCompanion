@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Shuffle, Target, Zap, Clock, ArrowRight, Eraser, PenTool, Wand2 } from 'lucide-react';
 import ChoiceModal from '../components/ChoiceModal';
 import RandomGenerator from '../components/RandomGenerator';
@@ -16,6 +17,7 @@ type Mode = 'random' | 'guided' | 'remix' | 'manual';
 const STORAGE_KEY = 'nightcompanion_generator_state';
 
 export default function Generator() {
+  const { t } = useTranslation();
   // Use lazy state initializers to read from localStorage synchronously on mount.
   // This ensures child components receive the correct initial values immediately.
   const [mode, setMode] = useState<Mode>(() => {
@@ -125,7 +127,7 @@ export default function Generator() {
     if (aiToolsRef.current) {
       aiToolsRef.current.clearContent();
     }
-    toast.success('All fields cleared');
+    toast.success(t('generator.tooltips.clearAll'));
   }
 
   // Modal State for External Checks (Improve Tab)
@@ -148,10 +150,10 @@ export default function Generator() {
   }
 
   const modes = [
-    { id: 'random' as Mode, label: 'Quick Start', icon: Shuffle, desc: 'One click, done' },
-    { id: 'guided' as Mode, label: 'Guided', icon: Target, desc: 'Full control' },
-    { id: 'manual' as Mode, label: 'Multi-Part', icon: PenTool, desc: 'Multi-part build' },
-    { id: 'remix' as Mode, label: 'Quick Remix', icon: Zap, desc: 'Modify last prompt' },
+    { id: 'random' as Mode, label: t('generator.modes.random'), icon: Shuffle, desc: t('generator.modes.randomDesc') },
+    { id: 'guided' as Mode, label: t('generator.modes.guided'), icon: Target, desc: t('generator.modes.guidedDesc') },
+    { id: 'manual' as Mode, label: t('generator.modes.manual'), icon: PenTool, desc: t('generator.modes.manualDesc') },
+    { id: 'remix' as Mode, label: t('generator.modes.remix'), icon: Zap, desc: t('generator.modes.remixDesc') },
   ];
 
   const [autoFillImprove, setAutoFillImprove] = useState(() => {
@@ -192,8 +194,8 @@ export default function Generator() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Prompt Generator</h1>
-        <p className="text-slate-400 mt-1">Create the perfect prompt for your next creation</p>
+        <h1 className="text-2xl font-bold text-white">{t('generator.title')}</h1>
+        <p className="text-slate-400 mt-1">{t('generator.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
@@ -230,8 +232,8 @@ export default function Generator() {
           <div className="flex items-stretch gap-3">
             <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
-                <label htmlFor="max-words-slider" className="text-sm font-medium text-slate-300">Max Words for Generated Prompts</label>
-                <span className="text-sm font-semibold text-amber-400">{maxWords} words</span>
+                <label htmlFor="max-words-slider" className="text-sm font-medium text-slate-300">{t('generator.slider.maxWords')}</label>
+                <span className="text-sm font-semibold text-amber-400">{t('generator.slider.words', { count: maxWords })}</span>
               </div>
               <input
                 id="max-words-slider"
@@ -246,9 +248,9 @@ export default function Generator() {
                 title="Adjust max words"
               />
               <div className="flex justify-between mt-2">
-                <span className="text-xs text-slate-500">Short (20)</span>
-                <span className="text-xs text-slate-500">Standard (70)</span>
-                <span className="text-xs text-slate-500">Long (100)</span>
+                <span className="text-xs text-slate-500">{t('generator.slider.short')}</span>
+                <span className="text-xs text-slate-500">{t('generator.slider.standard')}</span>
+                <span className="text-xs text-slate-500">{t('generator.slider.long')}</span>
               </div>
             </div>
 
@@ -262,7 +264,7 @@ export default function Generator() {
                     }`}
                 >
                   <Wand2 size={14} className={autoFillImprove ? "text-teal-400" : ""} />
-                  <span>Auto-Fill {autoFillImprove ? 'ON' : 'OFF'}</span>
+                  <span>{t('generator.buttons.autoFill')} {autoFillImprove ? 'ON' : 'OFF'}</span>
                 </button>
                 <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
                   {autoFillImprove ? 'Automatically copies generated prompts to Improve tab' : 'Click to enable auto-copying prompts to Improve tab'}
@@ -275,7 +277,7 @@ export default function Generator() {
                   className="w-full h-full flex items-center justify-center gap-2 px-4 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
                 >
                   <Eraser size={14} />
-                  <span>Clear All</span>
+                  <span>{t('generator.buttons.clearAll')}</span>
                 </button>
                 <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
                   Clear all fields
@@ -342,7 +344,7 @@ export default function Generator() {
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Clock size={14} className="text-slate-400" />
-              <h3 className="text-sm font-medium text-slate-300">Recent Prompts</h3>
+              <h3 className="text-sm font-medium text-slate-300">{t('generator.remix.title', { defaultValue: 'Recent Prompts' })}</h3>
             </div>
             {lastPrompts.length === 0 ? (
               <p className="text-sm text-slate-500 text-center py-6">
@@ -361,7 +363,7 @@ export default function Generator() {
                       <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{prompt.content}</p>
                     </div>
                     <div className="flex items-center gap-1 text-slate-600 group-hover:text-amber-400 transition-colors flex-shrink-0 mt-1">
-                      <span className="text-[10px]">Remix</span>
+                      <span className="text-[10px]">{t('generator.buttons.remix')}</span>
                       <ArrowRight size={12} />
                     </div>
                   </button>
@@ -401,11 +403,11 @@ export default function Generator() {
           setShowExternalClearModal(false);
           setPendingExternalAction(null);
         }}
-        title="Fields are not empty"
-        message="You have active content in the generator or Improve tab. How would you like to proceed with the new generation?"
+        title={t('generator.modals.notEmptyTitle')}
+        message={t('generator.modals.notEmptyMsg')}
         choices={[
           {
-            label: "Clear generate",
+            label: t('generator.buttons.clearGenerate'),
             onClick: () => {
               // Clear ONLY the generation prompt input (Improve Input) and Local Prompt
               // Keep Negatives
@@ -415,7 +417,7 @@ export default function Generator() {
             variant: 'primary'
           },
           {
-            label: "Clear All",
+            label: t('generator.buttons.clearAll'),
             onClick: () => {
               // Clear EVERYTHING
               if (aiToolsRef.current) aiToolsRef.current.clearContent();
