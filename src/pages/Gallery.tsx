@@ -832,14 +832,39 @@ export default function Gallery() {
               </div>
 
               {formMediaType === 'video' && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-1">Thumbnail URL (optional)</label>
-                  <input
-                    value={formThumbnailUrl}
-                    onChange={(e) => setFormThumbnailUrl(e.target.value)}
-                    placeholder="Paste thumbnail URL..."
-                    className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-1">Thumbnail URL (optional)</label>
+                    <input
+                      value={formThumbnailUrl}
+                      onChange={(e) => setFormThumbnailUrl(e.target.value)}
+                      placeholder="Paste thumbnail URL..."
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-1">Duration (seconds)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formDurationSeconds || ''}
+                      onChange={(e) => setFormDurationSeconds(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                      placeholder="e.g. 15"
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-1">Storage Mode</label>
+                    <select
+                      value={formStorageMode}
+                      onChange={(e) => setFormStorageMode(e.target.value as "url" | "local" | "both")}
+                      className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
+                    >
+                      <option value="url">URL Only</option>
+                      <option value="local">Local Only</option>
+                      <option value="both">Both</option>
+                    </select>
+                  </div>
                 </div>
               )}
 
