@@ -1,13 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Cloud, Server, Info, CheckCircle2, Eye, BookOpen, Sparkles, Wand2 } from 'lucide-react';
-import { AI_PROVIDER_MODELS, getModelById, TaskType, AIProviderModel } from '../lib/ai-provider-models';
+import { Search, Cloud, Server, Info, CheckCircle2, Eye, BookOpen, Sparkles, Wand2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { AI_PROVIDER_MODELS, getModelById } from '../lib/ai-provider-models';
+import type { TaskType, AIProviderModel } from '../lib/ai-provider-models';
+import type { NormalizedModel } from '../lib/provider-models-service';
+import { COST_TIER_LABELS, formatTimeAgo } from '../lib/provider-models-service';
 
 interface AIModelSelectorProps {
     task: TaskType;
-    value: string; // selected model id "provider:model"
+    value: string;
     onChange: (id: string) => void;
-    availableProviders?: string[]; // configured provider IDs
+    availableProviders?: string[];
     onlyAvailable?: boolean;
+    /** Live models from useProviderModels hook — optional, falls back to static list */
+    liveModels?: Record<string, NormalizedModel[]>;
+    liveLoading?: boolean;
+    liveLastUpdated?: Date | null;
+    onRefresh?: () => void;
+    onRefreshProvider?: (provider: string) => Promise<void>;
 }
 
 // ── Task recommendation badges ──────────────────────────────────────────────
@@ -26,16 +35,23 @@ const BADGE_COLORS: Record<string, string> = {
     Local: 'bg-slate-600/30   text-slate-300   border-slate-600/30',
 };
 
-// Provider icon colour dots
+// Provider colour dots
 const PROVIDER_DOTS: Record<string, string> = {
     openai: 'bg-emerald-400',
     anthropic: 'bg-orange-400',
     google: 'bg-blue-400',
+    gemini: 'bg-blue-400',
+    openrouter: 'bg-violet-400',
+    together: 'bg-pink-400',
+    groq: 'bg-cyan-400',
+    mistral: 'bg-orange-300',
+    cohere: 'bg-teal-400',
+    deepinfra: 'bg-rose-400',
+    perplexity: 'bg-indigo-400',
     ollama: 'bg-purple-400',
     lmstudio: 'bg-pink-400',
 };
 
-// ── Small provider badge pill ───────────────────────────────────────────────
 function ProviderBadge({ provider, label }: { provider: string; label: string }) {
     const dot = PROVIDER_DOTS[provider] ?? 'bg-slate-400';
     return (
@@ -46,7 +62,6 @@ function ProviderBadge({ provider, label }: { provider: string; label: string })
     );
 }
 
-// ── Task pill ───────────────────────────────────────────────────────────────
 function TaskPill({ task }: { task: TaskType }) {
     const meta = TASK_META[task];
     const Icon = meta.icon;
@@ -58,12 +73,9 @@ function TaskPill({ task }: { task: TaskType }) {
     );
 }
 
-// ── Model row ───────────────────────────────────────────────────────────────
+// ── Static model row ─────────────────────────────────────────────────────────
 function ModelRow({
-    model,
-    isSelected,
-    isRecommended,
-    onClick,
+    model, isSelected, isRecommended, onClick,
 }: {
     model: AIProviderModel;
     isSelected: boolean;
@@ -93,43 +105,28 @@ function ModelRow({
                 )}
             </div>
 
-            {/* Separator */}
             <div className="self-stretch w-px bg-slate-700/50 flex-none mt-1" />
 
-            {/* Content */}
             <div className="flex-1 min-w-0">
-                {/* Name row */}
                 <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-200'}`}>
-                            {model.name}
-                        </span>
+                        <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{model.name}</span>
                         {isSelected && <CheckCircle2 size={13} className="text-teal-400 flex-none" />}
                         {model.badge && (
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${BADGE_COLORS[model.badge]}`}>
-                                {model.badge}
-                            </span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${BADGE_COLORS[model.badge]}`}>{model.badge}</span>
                         )}
                     </div>
                 </div>
 
-                {/* Provider badge */}
                 <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                     <ProviderBadge provider={model.provider} label={model.providerLabel ?? model.provider} />
-                    {/* Recommended-for pills */}
-                    {model.recommendedFor.map(t => (
-                        <TaskPill key={t} task={t} />
-                    ))}
+                    {model.recommendedFor.map(t => <TaskPill key={t} task={t} />)}
                 </div>
 
-                {/* Description */}
                 {model.description && (
-                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">
-                        {model.description}
-                    </p>
+                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">{model.description}</p>
                 )}
 
-                {/* More info */}
                 {model.infoUrl && (
                     <span
                         role="link"
@@ -138,8 +135,7 @@ function ModelRow({
                         onKeyDown={(e) => { if (e.key === 'Enter') window.open(model.infoUrl, '_blank', 'noopener,noreferrer'); }}
                         className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors mt-1 cursor-pointer"
                     >
-                        <Info size={10} />
-                        More info
+                        <Info size={10} /> More info
                     </span>
                 )}
             </div>
@@ -147,18 +143,126 @@ function ModelRow({
     );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
+// ── Live model row ───────────────────────────────────────────────────────────
+function LiveModelRow({
+    model, isSelected, task, staticMeta, onClick,
+}: {
+    model: NormalizedModel;
+    isSelected: boolean;
+    task: TaskType;
+    staticMeta: AIProviderModel | undefined;
+    onClick: () => void;
+}) {
+    const costTierInfo = COST_TIER_LABELS[model.costTier];
+
+    // Use static metadata for badge/description/recommendedFor if available, else derive from live data
+    const badge = staticMeta?.badge;
+    const description = staticMeta?.description ?? (model.capabilities.join(', '));
+    const recommendedFor = staticMeta?.recommendedFor ?? [];
+    const infoUrl = staticMeta?.infoUrl;
+
+    const isVisionTask = task === 'vision';
+    const hasVision = model.capabilities.includes('vision');
+    if (isVisionTask && !hasVision) return null; // Filter vision-incapable when task=vision
+
+    const isRecommended = recommendedFor.includes(task) ||
+        (task === 'vision' && hasVision) ||
+        (task === 'research' && model.capabilities.includes('web_search'));
+
+    const isFree = model.costTier === 'free';
+
+    return (
+        <button
+            onClick={onClick}
+            className={`w-full flex items-start gap-3 px-3 py-3 rounded-xl text-left transition-all border
+                ${isSelected
+                    ? 'bg-slate-800 border-teal-500/50 shadow-[0_0_12px_-3px_rgba(20,184,166,0.2)]'
+                    : 'bg-transparent border-transparent hover:bg-slate-800/60 hover:border-slate-700'
+                }
+                ${!isRecommended ? 'opacity-60 hover:opacity-90' : ''}
+                ${!model.isAvailable ? 'opacity-40' : ''}
+            `}
+        >
+            {/* Cost column */}
+            <div className="flex-none w-28 text-right self-start pt-0.5">
+                {isFree ? (
+                    <p className="text-[10px] text-emerald-400 font-mono font-bold">Free</p>
+                ) : model.pricing ? (
+                    <>
+                        <p className="text-[10px] text-slate-500 font-mono">
+                            In: <span className="text-slate-300">${(parseFloat(model.pricing.prompt) * 1_000_000).toFixed(2)}/1M</span>
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-mono">
+                            Out: <span className="text-slate-300">${(parseFloat(model.pricing.completion) * 1_000_000).toFixed(2)}/1M</span>
+                        </p>
+                    </>
+                ) : (
+                    <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded border ${costTierInfo?.color ?? 'text-slate-500'}`}>
+                        {costTierInfo?.label ?? '?'}
+                    </span>
+                )}
+            </div>
+
+            <div className="self-stretch w-px bg-slate-700/50 flex-none mt-1" />
+
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-200'}`}>{model.name}</span>
+                    {isSelected && <CheckCircle2 size={13} className="text-teal-400 flex-none" />}
+                    {!model.isAvailable && <AlertTriangle size={12} className="text-amber-400" title="No API key configured" />}
+                    {badge && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${BADGE_COLORS[badge]}`}>{badge}</span>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                    <ProviderBadge provider={model.provider} label={model.provider} />
+                    {recommendedFor.map(t => <TaskPill key={t} task={t} />)}
+                    {task === 'vision' && hasVision && !recommendedFor.includes('vision') && <TaskPill task="vision" />}
+                    {task === 'research' && model.capabilities.includes('web_search') && !recommendedFor.includes('research') && <TaskPill task="research" />}
+                </div>
+
+                {description && (
+                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2">{description}</p>
+                )}
+
+                {infoUrl && (
+                    <span
+                        role="link"
+                        tabIndex={0}
+                        onClick={(e) => { e.stopPropagation(); window.open(infoUrl, '_blank', 'noopener,noreferrer'); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') window.open(infoUrl, '_blank', 'noopener,noreferrer'); }}
+                        className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors mt-1 cursor-pointer"
+                    >
+                        <Info size={10} /> More info
+                    </span>
+                )}
+            </div>
+        </button>
+    );
+}
+
+// ── Main component ───────────────────────────────────────────────────────────
 export default function AIModelSelector({
     task,
     value,
     onChange,
     availableProviders = [],
     onlyAvailable = false,
+    liveModels,
+    liveLoading = false,
+    liveLastUpdated,
+    onRefresh,
+    onRefreshProvider,
 }: AIModelSelectorProps) {
     const [search, setSearch] = useState('');
 
-    // Build ordered, filtered list
+    const hasLive = liveModels && Object.keys(liveModels).length > 0;
+
+    // ── Static models (fallback) ──────────────────────────────────────────────
     const { cloudModels, localModels } = useMemo(() => {
+        if (hasLive) return { cloudModels: [], localModels: [] };
+
         let all = [...AI_PROVIDER_MODELS];
         if (onlyAvailable && availableProviders.length > 0) {
             all = all.filter(m => availableProviders.includes(m.provider));
@@ -172,8 +276,6 @@ export default function AIModelSelector({
                 m.recommendedFor.some(t => t.includes(q))
             );
         }
-
-        // Sort: recommended for current task first
         all.sort((a, b) => {
             const aRec = a.recommendedFor.includes(task);
             const bRec = b.recommendedFor.includes(task);
@@ -181,16 +283,40 @@ export default function AIModelSelector({
             if (!aRec && bRec) return 1;
             return 0;
         });
-
         return {
             cloudModels: all.filter(m => !['ollama', 'lmstudio'].includes(m.provider)),
             localModels: all.filter(m => ['ollama', 'lmstudio'].includes(m.provider)),
         };
-    }, [search, task, availableProviders, onlyAvailable]);
+    }, [search, task, availableProviders, onlyAvailable, hasLive]);
+
+    // ── Live models (grouped) ─────────────────────────────────────────────────
+    const liveGroups = useMemo(() => {
+        if (!hasLive || !liveModels) return {};
+        const q = search.toLowerCase().trim();
+
+        const groups: Record<string, NormalizedModel[]> = {};
+        for (const [provider, models] of Object.entries(liveModels)) {
+            let filtered = task === 'vision'
+                ? models.filter(m => m.capabilities.includes('vision'))
+                : models;
+
+            if (q) {
+                filtered = filtered.filter(m =>
+                    m.name.toLowerCase().includes(q) ||
+                    m.provider.toLowerCase().includes(q) ||
+                    m.capabilities.some(c => c.includes(q))
+                );
+            }
+
+            if (filtered.length > 0) groups[provider] = filtered;
+        }
+        return groups;
+    }, [liveModels, search, task, hasLive]);
 
     const currentModel = getModelById(value);
+    const totalLive = Object.values(liveGroups).reduce((s, ms) => s + ms.length, 0);
 
-    function renderSection(label: string, icon: React.ReactNode, models: AIProviderModel[]) {
+    function renderStaticSection(label: string, icon: React.ReactNode, models: AIProviderModel[]) {
         if (models.length === 0) return null;
         return (
             <div>
@@ -215,7 +341,8 @@ export default function AIModelSelector({
 
     return (
         <div className="flex flex-col gap-3">
-            {/* Selected model summary chip */}
+
+            {/* Selected model chip */}
             {currentModel && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-slate-800/60 border border-slate-700 rounded-xl">
                     <CheckCircle2 size={14} className="text-teal-400 flex-none" />
@@ -237,11 +364,11 @@ export default function AIModelSelector({
                 </div>
             )}
 
-            {/* Dropdown panel */}
+            {/* Panel */}
             <div className="bg-slate-900/80 border border-slate-700/60 rounded-2xl overflow-hidden">
-                {/* Search */}
-                <div className="p-2 border-b border-slate-800">
-                    <div className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2">
+                {/* Search + Refresh bar */}
+                <div className="p-2 border-b border-slate-800 flex items-center gap-2">
+                    <div className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2 flex-1">
                         <Search size={13} className="text-slate-500 flex-none" />
                         <input
                             type="text"
@@ -251,22 +378,77 @@ export default function AIModelSelector({
                             className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 outline-none"
                         />
                     </div>
+                    {onRefresh && (
+                        <button
+                            onClick={onRefresh}
+                            disabled={liveLoading}
+                            title="Refresh all providers"
+                            className="flex-none p-2 rounded-xl border border-slate-700/50 bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors"
+                        >
+                            <RefreshCw size={13} className={liveLoading ? 'animate-spin' : ''} />
+                        </button>
+                    )}
                 </div>
+
+                {/* Live status bar */}
+                {hasLive && liveLastUpdated && (
+                    <div className="px-3 py-1.5 bg-slate-900/50 border-b border-slate-800/60 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-teal-400 flex-none animate-pulse" />
+                        <span className="text-[10px] text-slate-500">
+                            Live data · Updated {formatTimeAgo(liveLastUpdated.toISOString())}
+                            {' · '}{totalLive} models
+                        </span>
+                    </div>
+                )}
 
                 {/* Model lists */}
                 <div className="p-3 space-y-5 max-h-[520px] overflow-y-auto custom-scrollbar">
-                    {renderSection(
-                        'Cloud Providers',
-                        <Cloud size={12} className="text-slate-500" />,
-                        cloudModels
-                    )}
-                    {renderSection(
-                        'Local Models',
-                        <Server size={12} className="text-slate-500" />,
-                        localModels
-                    )}
-                    {cloudModels.length === 0 && localModels.length === 0 && (
-                        <p className="text-center text-slate-500 text-xs py-4">No models match your search</p>
+                    {hasLive ? (
+                        // Live groups by provider
+                        Object.entries(liveGroups).length === 0 ? (
+                            <p className="text-center text-slate-500 text-xs py-4">No models match your search</p>
+                        ) : (
+                            Object.entries(liveGroups).map(([provider, models]) => (
+                                <div key={provider}>
+                                    <div className="flex items-center gap-2 px-2 mb-2">
+                                        <span className={`w-2 h-2 rounded-full flex-none ${PROVIDER_DOTS[provider] ?? 'bg-slate-400'}`} />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 flex-1">
+                                            {provider}
+                                        </span>
+                                        {onRefreshProvider && (
+                                            <button
+                                                onClick={() => onRefreshProvider(provider)}
+                                                className="text-slate-600 hover:text-slate-400 transition-colors"
+                                                title={`Refresh ${provider}`}
+                                            >
+                                                <RefreshCw size={10} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="space-y-1">
+                                        {models.map(m => (
+                                            <LiveModelRow
+                                                key={m.id}
+                                                model={m}
+                                                isSelected={value === m.id}
+                                                task={task}
+                                                staticMeta={getModelById(m.id)}
+                                                onClick={() => onChange(m.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
+                        )
+                    ) : (
+                        // Static fallback
+                        <>
+                            {renderStaticSection('Cloud Providers', <Cloud size={12} className="text-slate-500" />, cloudModels)}
+                            {renderStaticSection('Local Models', <Server size={12} className="text-slate-500" />, localModels)}
+                            {cloudModels.length === 0 && localModels.length === 0 && (
+                                <p className="text-center text-slate-500 text-xs py-4">No models match your search</p>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

@@ -43,6 +43,7 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/providers', require('./routes/providers'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
