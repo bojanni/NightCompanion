@@ -87,20 +87,20 @@
         "common": {
             "useThis": "Use This Prompt",
             "pasteGenerated": "Paste Generated"
-        },
-        "settings": {
-            "title": "Settings",
-            "language": {
-                "title": "Language",
-                "subtitle": "Choose your preferred language for the interface",
-                "dutch": "Dutch",
-                "english": "English",
-                "saveSuccess": "Language preference saved"
-            },
-            "dataManagement": "Data Management",
-            "apiKeys": "API Keys",
-            "localEndpoints": "Local Endpoints",
-            "configuration": "Configuration"
         }
+    },
+    "settings": {
+        "title": "Settings",
+        "language": {
+            "title": "Language",
+            "subtitle": "Choose your preferred language for the interface",
+            "dutch": "Dutch",
+            "english": "English",
+            "saveSuccess": "Language preference saved"
+        },
+        "dataManagement": "Data Management",
+        "apiKeys": "API Keys",
+        "localEndpoints": "Local Endpoints",
+        "configuration": "Configuration"
     }
 }

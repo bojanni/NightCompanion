@@ -87,20 +87,20 @@
         "common": {
             "useThis": "Gebruik deze prompt",
             "pasteGenerated": "Plak Gegeneerd"
-        },
-        "settings": {
-            "title": "Instellingen",
-            "language": {
-                "title": "Taal",
-                "subtitle": "Kies je voorkeurstaal voor de interface",
-                "dutch": "Nederlands",
-                "english": "Engels",
-                "saveSuccess": "Taalvoorkeur opgeslagen"
-            },
-            "dataManagement": "Gegevensbeheer",
-            "apiKeys": "API Sleutels",
-            "localEndpoints": "Lokale Endpoints",
-            "configuration": "Configuratie"
         }
+    },
+    "settings": {
+        "title": "Instellingen",
+        "language": {
+            "title": "Taal",
+            "subtitle": "Kies je voorkeurstaal voor de interface",
+            "dutch": "Nederlands",
+            "english": "Engels",
+            "saveSuccess": "Taalvoorkeur opgeslagen"
+        },
+        "dataManagement": "Gegevensbeheer",
+        "apiKeys": "API Sleutels",
+        "localEndpoints": "Lokale Endpoints",
+        "configuration": "Configuratie"
     }
 }
