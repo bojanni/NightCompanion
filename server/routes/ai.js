@@ -501,6 +501,10 @@ router.post('/', async (req, res) => {
             userPrompt = `Prompt: "${payload.prompt}"\nIssue: ${payload.issue}`;
         } else if (action === 'recommend-models') {
             userPrompt = `Recommend models for: "${payload.prompt}"`;
+            if (payload.candidates && payload.candidates.length > 0) {
+                userPrompt += `\n\nCRITICAL: You MUST ONLY rank, select, and explain from the following pre-selected candidate models. Do NOT invent, hallucinate, or suggest any model IDs not in this list.`;
+                userPrompt += `\nCandidate Models:\n${payload.candidates.map(c => `- Model ID: ${c.id}, Name: "${c.name}", Local Match Score: ${c.score}`).join('\n')}`;
+            }
         } else if (action === 'random') {
             const maxWords = payload.maxWords || 70;
 

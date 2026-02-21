@@ -1,10 +1,8 @@
-import ModelRecommender from '../components/ModelRecommender';
+import SmartModelRecommender from '../components/SmartModelRecommender';
 import ImageAnalyzer from '../components/ImageAnalyzer';
 import AITools from '../components/AITools';
 
-interface ToolsProps { }
-
-export default function Tools({ }: ToolsProps) {
+export default function Tools() {
     return (
         <div className="space-y-6">
             <div>
@@ -17,7 +15,7 @@ export default function Tools({ }: ToolsProps) {
                 onSaved={() => { }}
             />
 
-            <ModelRecommender />
+            <SmartModelRecommender defaultExpanded={false} />
 
             <ImageAnalyzer />
         </div>

@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Compass, BarChart3, BookOpen } from 'lucide-react';
-import ModelAdvisor from '../components/ModelAdvisor';
+import SmartModelRecommender from '../components/SmartModelRecommender';
 import ModelTracker from '../components/ModelTracker';
 import ModelGuide from '../components/ModelGuide';
 import Modal from '../components/Modal';
 import type { ModelInfo } from '../lib/models-data';
-
-interface ModelsProps { }
 
 const TABS = [
   { id: 'advisor', label: 'Advisor', icon: Compass, description: 'Get model suggestions for your prompt' },
@@ -16,7 +14,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-export default function Models({ }: ModelsProps) {
+export default function Models() {
   const [activeTab, setActiveTab] = useState<TabId>('advisor');
   const [selectedModel, setSelectedModel] = useState<ModelInfo | null>(null);
 
@@ -48,7 +46,7 @@ export default function Models({ }: ModelsProps) {
       </div>
 
       {activeTab === 'advisor' && (
-        <ModelAdvisor onSelectModel={setSelectedModel} />
+        <SmartModelRecommender onSelectModel={setSelectedModel} defaultExpanded={true} />
       )}
 
       {activeTab === 'tracker' && (

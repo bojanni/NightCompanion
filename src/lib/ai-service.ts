@@ -140,13 +140,14 @@ export interface RecommendModelsResult {
 
 export async function recommendModels(
   prompt: string,
-  options?: { budget?: string; style?: string },
+  options?: { budget?: string; style?: string; candidates?: { id: string; name: string; score: number }[] },
   token?: string
 ): Promise<RecommendModelsResult> {
   return callAI('recommend-models', {
     prompt,
     budget: options?.budget,
     style: options?.style,
+    candidates: options?.candidates,
   }, token ?? '');
 }
 

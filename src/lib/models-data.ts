@@ -1726,6 +1726,18 @@ export function analyzePrompt(prompt: string): { model: ModelInfo; score: number
     .sort((a, b) => b.score - a.score);
 }
 
+/**
+ * Simplified wrapper for analyzePrompt to provide structured candidate data for AI refinement.
+ */
+export function getTopCandidates(prompt: string, n: number = 5): { id: string; name: string; score: number }[] {
+  const results = analyzePrompt(prompt);
+  return results.slice(0, n).map(r => ({
+    id: r.model.id,
+    name: r.model.name,
+    score: r.score
+  }));
+}
+
 export function supportsNegativePrompt(modelId: string): boolean {
   if (!modelId) return true; // Default to true if unsure
   if (modelId === 'dalle3') return false;
