@@ -627,6 +627,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             label: "Clear generate",
             onClick: () => {
               if (pendingAction) pendingAction(true); // true = keep negative
+              setShowClearModal(false);
+              setPendingAction(null);
             },
             variant: 'primary'
           },
@@ -636,6 +638,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               setNegativePrompt('');
               onNegativePromptChanged?.('');
               if (pendingAction) pendingAction(false); // false = don't keep negative (already cleared)
+              setShowClearModal(false);
+              setPendingAction(null);
             },
             variant: 'danger'
           }

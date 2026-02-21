@@ -497,6 +497,8 @@ export default function Generator() {
               // Keep Negatives
               // We do NOT clear Improve Input here anymore to limit scope to "this generation"
               if (pendingExternalAction) pendingExternalAction(true); // keepNegative = true
+              setShowExternalClearModal(false);
+              setPendingExternalAction(null);
             },
             variant: 'primary'
           },
@@ -506,6 +508,8 @@ export default function Generator() {
               // Clear EVERYTHING
               if (aiToolsRef.current) aiToolsRef.current.clearContent();
               if (pendingExternalAction) pendingExternalAction(false); // keepNegative = false
+              setShowExternalClearModal(false);
+              setPendingExternalAction(null);
             },
             variant: 'danger'
           }
