@@ -251,29 +251,40 @@ export function generateRandomPrompt(filters: {
   dreamy: boolean;
   characters: boolean;
   cinematic: boolean;
-}): string {
+}, greylist: string[] = []): string {
   const parts: string[] = [];
 
-  parts.push(pickRandom(SUBJECTS)[0] || '');
-  parts.push(pickRandom(SETTINGS)[0] || '');
-  parts.push(pickRandom(TIMES_OF_DAY)[0] || '');
-  parts.push(pickRandom(ATMOSPHERES)[0] || '');
-  parts.push(pickRandom(LIGHTING)[0] || '');
+  const isAllowed = (item: string) => {
+    if (!item || greylist.length === 0) return true;
+    const lowerItem = item.toLowerCase();
+    return !greylist.some(grey => lowerItem.includes(grey.toLowerCase()));
+  };
+
+  const pick = (arr: string[]) => {
+    const valid = arr.filter(isAllowed);
+    return valid.length > 0 ? pickRandom(valid)[0] : pickRandom(arr)[0];
+  };
+
+  parts.push(pick(SUBJECTS) || '');
+  parts.push(pick(SETTINGS) || '');
+  parts.push(pick(TIMES_OF_DAY) || '');
+  parts.push(pick(ATMOSPHERES) || '');
+  parts.push(pick(LIGHTING) || '');
 
   if (filters.dreamy) {
-    parts.push(pickRandom(DREAMY_MODIFIERS)[0] || '');
+    parts.push(pick(DREAMY_MODIFIERS) || '');
   }
 
   if (filters.characters) {
-    parts.push('accompanied by ' + (pickRandom(CHARACTER_ADDITIONS)[0] || ''));
+    parts.push('accompanied by ' + (pick(CHARACTER_ADDITIONS) || ''));
   }
 
   if (filters.cinematic) {
-    parts.push(pickRandom(CINEMATIC_MODIFIERS)[0] || '');
+    parts.push(pick(CINEMATIC_MODIFIERS) || '');
   }
 
-  parts.push(pickRandom(STYLES)[0] || '');
-  parts.push(pickRandom(QUALITY_BOOSTERS)[0] || '');
+  parts.push(pick(STYLES) || '');
+  parts.push(pick(QUALITY_BOOSTERS) || '');
 
   const raw = parts.filter(p => p).join(', ');
   return raw.charAt(0).toUpperCase() + raw.slice(1);
@@ -289,7 +300,7 @@ export function buildGuidedPrompt(
   GUIDED_STEPS.forEach((step) => {
     // Check for custom input first
     if (customInputs && customInputs[step.id]) {
-      parts.push(customInputs[step.id]);
+      parts.push(customInputs[step.id] || '');
     } else {
       const selected = step.options.find((o) => o.id === selections[step.id]);
       if (selected) {

@@ -485,6 +485,9 @@ router.post('/', async (req, res) => {
             userPrompt += `System Rule: Limit response to ${maxWords} words maximum.\n`;
             if (payload.preferences) userPrompt += `Prefs: ${JSON.stringify(payload.preferences)}\n`;
             if (payload.context) userPrompt += `Context: ${payload.context}`;
+            if (payload.greylist && payload.greylist.length > 0) {
+                userPrompt += `\nAvoid using the following words or subjects if possible: ${payload.greylist.join(', ')}.`;
+            }
         } else if (action === 'diagnose') {
             userPrompt = `Prompt: "${payload.prompt}"\nIssue: ${payload.issue}`;
         } else if (action === 'recommend-models') {
@@ -494,6 +497,9 @@ router.post('/', async (req, res) => {
             userPrompt = `Generate a random, creative image prompt. Theme: ${payload.theme || 'random'}.`;
             userPrompt += `\nSystem Rule: Limit response to ${maxWords} words maximum.`;
             userPrompt += `\nFollow the 3-step process for style, positive, and negative prompts.`;
+            if (payload.greylist && payload.greylist.length > 0) {
+                userPrompt += `\nAvoid using the following words or subjects if possible: ${payload.greylist.join(', ')}.`;
+            }
         } else if (action === 'generate-variations') {
             const count = payload.count || 5;
             const strategy = payload.strategy || 'mixed';
