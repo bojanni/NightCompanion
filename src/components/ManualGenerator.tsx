@@ -19,11 +19,12 @@ interface ManualGeneratorProps {
     initialPrompts?: string[] | undefined;
     initialNegativePrompt?: string | undefined;
     resetKey?: number;
+    selectedNightCafePreset?: string;
 }
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', resetKey = 0 }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', resetKey = 0, selectedNightCafePreset }: ManualGeneratorProps) {
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -375,7 +376,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             await db.from('prompts').insert({
                 title: 'Manual: ' + (prompts[0] || 'Untitled').slice(0, 40),
                 content: fullPrompt,
-                notes: 'Created with Manual Generator',
+                notes: 'Created with Manual Generator' + (selectedNightCafePreset ? ` [NC Preset: ${selectedNightCafePreset}]` : ''),
                 rating: 0,
                 is_template: false,
                 is_favorite: false,

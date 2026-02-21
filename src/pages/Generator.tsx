@@ -10,6 +10,7 @@ import AITools, { AIToolsRef } from '../components/AITools';
 import MagicPromptInput from '../components/MagicPromptInput';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
+import { PRESET_OPTIONS } from '../lib/models-data';
 
 
 type Mode = 'random' | 'guided' | 'remix' | 'manual';
@@ -73,6 +74,20 @@ export default function Generator() {
     return defaultGreylist;
   });
   const [newGreylistWord, setNewGreylistWord] = useState('');
+
+  // NightCafe Preset State
+  const [selectedNightCafePreset, setSelectedNightCafePreset] = useState<string>(() => {
+    try {
+      const s = localStorage.getItem('nightcompanion_generator_nc_preset');
+      if (s) return s;
+    } catch { /* ignore */ }
+    return '';
+  });
+
+  // Persist NightCafe Preset
+  useEffect(() => {
+    localStorage.setItem('nightcompanion_generator_nc_preset', selectedNightCafePreset);
+  }, [selectedNightCafePreset]);
 
   // Persist Greylist
   useEffect(() => {
@@ -335,6 +350,25 @@ export default function Generator() {
               </div>
             </div>
 
+            {/* NightCafe Presets Dropdown */}
+            <div className="flex-1 min-w-[200px] bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-300">NightCafe Preset</label>
+              </div>
+              <select
+                value={selectedNightCafePreset}
+                onChange={(e) => setSelectedNightCafePreset(e.target.value)}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50"
+              >
+                <option value="">No Preset</option>
+                {PRESET_OPTIONS.map((preset) => (
+                  <option key={preset} value={preset}>
+                    {preset}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Global Actions */}
             <div className="flex flex-row xl:flex-col justify-between gap-3 min-w-[140px]">
               <div className="group relative flex-1">
@@ -388,6 +422,7 @@ export default function Generator() {
           greylist={greylist}
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
+          selectedNightCafePreset={selectedNightCafePreset}
           onCheckExternalFields={handleCheckExternalFields}
           magicInputSlot={
             <MagicPromptInput
@@ -409,6 +444,7 @@ export default function Generator() {
           {...(guidedInitial && { initialPrompt: guidedInitial })}
           onSaved={() => setSaveCount((c) => c + 1)}
           maxWords={maxWords}
+          selectedNightCafePreset={selectedNightCafePreset}
         />
       )}
 
@@ -420,6 +456,7 @@ export default function Generator() {
           maxWords={maxWords}
           initialPrompts={manualInitial.prompts.length > 0 ? manualInitial.prompts : undefined}
           initialNegativePrompt={manualInitial.negative || undefined}
+          selectedNightCafePreset={selectedNightCafePreset}
         />
       )}
 

@@ -25,9 +25,10 @@ interface RandomGeneratorProps {
   magicInputSlot?: React.ReactNode;
   greylist: string[];
   recentPrompts?: string[];
+  selectedNightCafePreset?: string;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot, greylist, recentPrompts }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot, greylist, recentPrompts, selectedNightCafePreset }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
 
@@ -206,7 +207,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         (generatedStyle ? ` [Use Style: ${generatedStyle}]` : '') +
         (filters.dreamy ? ' [dreamy]' : '') +
         (filters.characters ? ' [characters]' : '') +
-        (filters.cinematic ? ' [cinematic]' : ''),
+        (filters.cinematic ? ' [cinematic]' : '') +
+        (selectedNightCafePreset ? ` [NC Preset: ${selectedNightCafePreset}]` : ''),
       rating: 0,
       is_template: false,
       is_favorite: false,

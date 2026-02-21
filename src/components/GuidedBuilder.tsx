@@ -12,9 +12,10 @@ interface GuidedBuilderProps {
   initialPrompt?: string;
   onSaved: () => void;
   maxWords: number;
+  selectedNightCafePreset?: string;
 }
 
-export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: GuidedBuilderProps) {
+export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, selectedNightCafePreset }: GuidedBuilderProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [additions, setAdditions] = useState<string[]>([]);
@@ -161,7 +162,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords }: Guid
     await db.from('prompts').insert({
       title: 'Guided: ' + (generatedPrompt.split(',')[0] || '').slice(0, 40),
       content: generatedPrompt,
-      notes: 'Built with Guided mode',
+      notes: 'Built with Guided mode' + (selectedNightCafePreset ? ` [NC Preset: ${selectedNightCafePreset}]` : ''),
       rating: 0,
       is_template: false,
       is_favorite: false,
