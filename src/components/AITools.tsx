@@ -109,6 +109,8 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
 
   const [suggestedModel, setSuggestedModel] = useState<ModelInfo | null>(null);
   const [activeModel, setActiveModel] = useState<string>('');
+  const [modelTips, setModelTips] = useState<string[]>([]);
+  const [useModelTips, setUseModelTips] = useState(false);
 
   async function fetchActiveModel() {
     try {
@@ -173,6 +175,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
   useEffect(() => {
     if (!improveInput.trim()) {
       setSuggestedModel(null);
+      setModelTips([]);
       return;
     }
     const timeout = setTimeout(() => {
@@ -281,11 +284,13 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         setImproveResult(result.optimizedPrompt);
         setNegativeResult(result.negativePrompt || ''); // Should be empty typically
       } else if (negativeInput.trim()) {
-        const result = await improvePromptWithNegative(improveInput, negativeInput, token, apiPreferences, taskImproveModel);
+        const tips = useModelTips ? modelTips : undefined;
+        const result = await improvePromptWithNegative(improveInput, negativeInput, token, apiPreferences, taskImproveModel, tips);
         setImproveResult(result.improved);
         setNegativeResult(result.negativePrompt);
       } else {
-        const result = await improvePrompt(improveInput, token, apiPreferences, taskImproveModel);
+        const tips = useModelTips ? modelTips : undefined;
+        const result = await improvePrompt(improveInput, token, apiPreferences, taskImproveModel, tips);
         setImproveResult(result);
       }
     } catch (e) {
@@ -473,6 +478,10 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               generatedNegativePrompt={generatedNegativePrompt}
               suggestedModel={suggestedModel}
               activeModel={activeModel}
+              modelTips={modelTips}
+              useModelTips={useModelTips}
+              onSetUseModelTips={setUseModelTips}
+              onSetModelTips={setModelTips}
             />
           )}
 
@@ -530,7 +539,7 @@ export default AITools;
 
 
 function ImproveTab({
-  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt, suggestedModel, activeModel,
+  input, setInput, negativeInput, setNegativeInput, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt, generatedNegativePrompt, suggestedModel, activeModel, modelTips, useModelTips, onSetUseModelTips, onSetModelTips,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -550,6 +559,10 @@ function ImproveTab({
   generatedNegativePrompt?: string | undefined;
   suggestedModel: ModelInfo | null;
   activeModel?: string;
+  modelTips: string[];
+  useModelTips: boolean;
+  onSetUseModelTips: (v: boolean) => void;
+  onSetModelTips: (tips: string[]) => void;
 }) {
   const { t } = useTranslation();
   const [showDiff, setShowDiff] = useState(true);
@@ -581,38 +594,86 @@ function ImproveTab({
             placeholder={t('aiTools.improve.placeholder')}
             className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
           />
-          <div>
-            {supportsNegativePrompt(suggestedModel?.id || '') ? (
-              <>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[11px] font-medium text-slate-400 block">{t('aiTools.improve.negativeLabel')} <span className="text-slate-600">{t('aiTools.improve.optional')}</span></label>
-                  <span className={`text-[10px] font-mono ${negativeInput.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
-                    {negativeInput.length}/600
-                  </span>
-                </div>
-                <textarea
-                  value={negativeInput}
-                  onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
-                  maxLength={600}
-                  placeholder={t('aiTools.improve.negativePlaceholder')}
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
-                />
-              </>
-            ) : (
-              <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-3 flex items-center gap-3">
-                <div className="p-2 bg-teal-500/10 rounded-lg">
-                  <Sparkles size={14} className="text-teal-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-300">Optimized for {suggestedModel?.name}</p>
-                  <p className="text-[10px] text-slate-500">Negative prompts are automatically disabled for this model type.</p>
-                  {suggestedModel?.recommendedPreset && (
-                    <p className="text-[11px] text-teal-400 mt-1 font-medium">Recommended Preset: {suggestedModel.recommendedPreset}</p>
-                  )}
-                </div>
+
+          {/* Model Tips fetch + toggle */}
+          {input.trim() && (
+            <div className="flex items-center gap-2">
+              {modelTips.length === 0 ? (
+                <button
+                  onClick={async () => {
+                    try {
+                      const { getTopCandidates } = await import('../lib/models-data');
+                      const { recommendModels } = await import('../lib/ai-service');
+                      const candidates = getTopCandidates(input, 5);
+                      const res = await recommendModels(input, { candidates });
+                      const top = res.recommendations[0];
+                      if (top?.tips?.length) {
+                        onSetModelTips(top.tips);
+                        onSetUseModelTips(true);
+                      }
+                    } catch { /* ignore */ }
+                  }}
+                  className="flex items-center gap-1.5 text-[10px] text-teal-400 hover:text-teal-300 border border-teal-900/50 hover:border-teal-700/60 bg-teal-950/30 px-2 py-1 rounded-md transition-colors"
+                >
+                  <Sparkles size={10} />
+                  Fetch model tips
+                </button>
+              ) : (
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={useModelTips}
+                    onChange={(e) => onSetUseModelTips(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-teal-500 rounded"
+                  />
+                  <span className="text-[11px] text-teal-300 font-medium">Use model tips ({modelTips.length})</span>
+                  <button onClick={() => { onSetModelTips([]); onSetUseModelTips(false); }} className="text-[10px] text-slate-500 hover:text-slate-300">✕</button>
+                </label>
+              )}
+            </div>
+          )}
+
+          {/* Show tips preview when toggled on */}
+          {useModelTips && modelTips.length > 0 && (
+            <ul className="bg-slate-900/60 border border-teal-900/40 rounded-xl px-3 py-2 space-y-1">
+              {modelTips.map((tip, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-300">
+                  <span className="text-teal-500 shrink-0 mt-0.5">💡</span>{tip}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {supportsNegativePrompt(suggestedModel?.id || '') ? (
+            <>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-[11px] font-medium text-slate-400 block">{t('aiTools.improve.negativeLabel')} <span className="text-slate-600">{t('aiTools.improve.optional')}</span></label>
+                <span className={`text-[10px] font-mono ${negativeInput.length > 550 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+                  {negativeInput.length}/600
+                </span>
               </div>
-            )}
-          </div>
+              <textarea
+                value={negativeInput}
+                onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
+                maxLength={600}
+                placeholder={t('aiTools.improve.negativePlaceholder')}
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
+              />
+            </>
+          ) : (
+            <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-3 flex items-center gap-3">
+              <div className="p-2 bg-teal-500/10 rounded-lg">
+                <Sparkles size={14} className="text-teal-400" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-300">Optimized for {suggestedModel?.name}</p>
+                <p className="text-[10px] text-slate-500">Negative prompts are automatically disabled for this model type.</p>
+                {suggestedModel?.recommendedPreset && (
+                  <p className="text-[11px] text-teal-400 mt-1 font-medium">Recommended Preset: {suggestedModel.recommendedPreset}</p>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -679,7 +740,8 @@ function ImproveTab({
             )}
           </div>
         </div>
-      )}
+      )
+      }
 
       <div className="flex flex-wrap items-center gap-2">
         {!result ? (

@@ -551,8 +551,14 @@ router.post('/', async (req, res) => {
         // Construct user prompt based on action
         if (action === 'improve') {
             userPrompt = `Improve this prompt: ${payload.prompt}`;
+            if (payload.modelTips && payload.modelTips.length > 0) {
+                userPrompt += `\n\nIMPORTANT: The user's target AI model has the following specific tips. Tailor your improvement to follow these guidelines:\n${payload.modelTips.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
+            }
         } else if (action === 'improve-with-negative') {
             userPrompt = `Positive prompt: "${payload.prompt}"\nNegative prompt: "${payload.negativePrompt}"\n\nImprove both prompts.`;
+            if (payload.modelTips && payload.modelTips.length > 0) {
+                userPrompt += `\n\nIMPORTANT: The user's target AI model has the following specific tips. Tailor your improvement to follow these guidelines:\n${payload.modelTips.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
+            }
         } else if (action === 'improve-detailed') {
             userPrompt = `Detailed analysis for: "${payload.prompt}"`;
             maxTokens = 2000;

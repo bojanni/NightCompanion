@@ -31,10 +31,11 @@ export function taskModelToPreferences(taskModel?: string): ApiPreferences | und
   return { provider: taskModel.slice(0, sepIdx), model: taskModel.slice(sepIdx + 1) };
 }
 
-export async function improvePrompt(prompt: string, token: string, apiPreferences?: ApiPreferences, taskModel?: string): Promise<string> {
+export async function improvePrompt(prompt: string, token: string, apiPreferences?: ApiPreferences, taskModel?: string, modelTips?: string[]): Promise<string> {
   const payload: Record<string, any> = { prompt };
   const prefs = taskModelToPreferences(taskModel) ?? apiPreferences;
   if (prefs) payload.apiPreferences = prefs;
+  if (modelTips && modelTips.length > 0) payload.modelTips = modelTips;
   return callAI('improve', payload, token);
 }
 
@@ -43,11 +44,13 @@ export async function improvePromptWithNegative(
   negativePrompt: string,
   token: string,
   apiPreferences?: ApiPreferences,
-  taskModel?: string
+  taskModel?: string,
+  modelTips?: string[]
 ): Promise<{ improved: string; negativePrompt: string }> {
   const payload: Record<string, any> = { prompt, negativePrompt };
   const prefs = taskModelToPreferences(taskModel) ?? apiPreferences;
   if (prefs) payload.apiPreferences = prefs;
+  if (modelTips && modelTips.length > 0) payload.modelTips = modelTips;
   return callAI('improve-with-negative', payload, token);
 }
 
