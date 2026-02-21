@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/api';
 import { DEFAULT_USER_ID } from '../lib/constants';
 import { toast } from 'sonner';
+import SidebarCostWidget from './SidebarCostWidget';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
@@ -135,6 +136,9 @@ export default function Layout() {
             ))}
           </div>
         </div>
+
+        {/* Cost / Usage Widget */}
+        <SidebarCostWidget collapsed={collapsed} />
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-x-hidden">
           {navItems.map(({ to, icon: Icon, labelKey }) => (

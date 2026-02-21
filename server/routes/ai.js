@@ -90,6 +90,52 @@ const SYSTEM_PROMPTS = {
     STOP after 100 words.`
 };
 
+// ─── LLM pricing (USD per 1M tokens) ────────────────────────────────────────
+const PROVIDER_PRICING = {
+    openai: {
+        'gpt-4o': { input: 5.00, output: 15.00 },
+        'gpt-4o-mini': { input: 0.15, output: 0.60 },
+        'gpt-4-turbo': { input: 10.00, output: 30.00 },
+        'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
+    },
+    anthropic: {
+        'claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
+        'claude-3-haiku-20240307': { input: 0.25, output: 1.25 },
+        'claude-3-opus-20240229': { input: 15.00, output: 75.00 },
+    },
+    gemini: {
+        'gemini-1.5-pro': { input: 1.25, output: 5.00 },
+        'gemini-1.5-flash': { input: 0.075, output: 0.30 },
+        'gemini-2.0-pro-exp-02-05': { input: 0.00, output: 0.00 }, // free tier
+    },
+};
+
+function estimateCostUsd(provider, model, promptTokens, completionTokens) {
+    const providerPricing = PROVIDER_PRICING[provider] || {};
+    // Try exact match first, then prefix match
+    let pricing = providerPricing[model];
+    if (!pricing) {
+        const key = Object.keys(providerPricing).find(k => model && model.startsWith(k));
+        pricing = key ? providerPricing[key] : null;
+    }
+    if (!pricing) return 0;
+    return (promptTokens * pricing.input + completionTokens * pricing.output) / 1_000_000;
+}
+
+async function logUsage(pool, { sessionId, action, provider, model, promptTokens, completionTokens, cost }) {
+    try {
+        await pool.query(
+            `INSERT INTO api_usage_log
+                (session_id, action, provider, model, prompt_tokens, completion_tokens, estimated_cost_usd)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+            [sessionId || null, action, provider, model,
+            promptTokens || 0, completionTokens || 0, cost || 0]
+        );
+    } catch (e) {
+        logger.warn('Failed to log usage:', e.message);
+    }
+}
+
 async function getActiveProvider(role = 'generation') {
     const column = role === 'generation' ? 'is_active_gen' : 'is_active_improve';
 
@@ -142,7 +188,7 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500, temperature = 
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'gpt-4o', // Default to vision capable model
+            model: 'gpt-4o',
             messages: messages,
             max_tokens: maxTokens,
             temperature: temperature
@@ -150,11 +196,13 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500, temperature = 
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'OpenAI error');
-    return data.choices[0].message.content;
+    return {
+        content: data.choices[0].message.content,
+        usage: data.usage || {}
+    };
 }
 
 async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature = 1.0) {
-    // Anthropic separates system prompt
     const messages = buildMessages(null, user);
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -165,7 +213,7 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022', // Updated to latest efficient model
+            model: 'claude-3-5-sonnet-20241022',
             max_tokens: maxTokens,
             temperature: temperature,
             system: system,
@@ -174,7 +222,13 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Anthropic error');
-    return data.content[0].text;
+    return {
+        content: data.content[0].text,
+        usage: {
+            prompt_tokens: data.usage?.input_tokens || 0,
+            completion_tokens: data.usage?.output_tokens || 0,
+        }
+    };
 }
 
 async function callGemini(apiKey, system, user, maxTokens = 1500, temperature = 1.0) {
@@ -197,7 +251,13 @@ async function callGemini(apiKey, system, user, maxTokens = 1500, temperature = 
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Gemini error');
-    return data.candidates[0].content.parts[0].text;
+    return {
+        content: data.candidates[0].content.parts[0].text,
+        usage: {
+            prompt_tokens: data.usageMetadata?.promptTokenCount || 0,
+            completion_tokens: data.usageMetadata?.candidatesTokenCount || 0,
+        }
+    };
 }
 
 async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500, temperature = 1.0) {
@@ -263,7 +323,10 @@ async function callOpenRouter(apiKey, system, user, model, maxTokens = 1500, tem
     // Log the raw content for debugging
     logger.debug('[OpenRouter] Raw content received: ' + (content ? content.substring(0, 200) + '...' : 'null/undefined'));
 
-    return content;
+    return {
+        content,
+        usage: data.usage || {}
+    };
 }
 
 async function callTogether(apiKey, system, user, model, maxTokens = 1500, temperature = 1.0) {
@@ -287,7 +350,10 @@ async function callTogether(apiKey, system, user, model, maxTokens = 1500, tempe
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Together AI error');
-    return data.choices[0].message.content;
+    return {
+        content: data.choices[0].message.content,
+        usage: data.usage || {}
+    };
 }
 
 async function callDeepInfra(apiKey, system, user, model, maxTokens = 1500, temperature = 1.0) {
@@ -309,7 +375,10 @@ async function callDeepInfra(apiKey, system, user, model, maxTokens = 1500, temp
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'DeepInfra API error');
-    return data.choices[0].message.content;
+    return {
+        content: data.choices[0].message.content,
+        usage: data.usage || {}
+    };
 }
 
 async function listModels(providerConfig) {
@@ -455,7 +524,7 @@ async function callAI(providerConfig, system, user, maxTokens = 1500, temperatur
             throw new Error('Invalid response format from Local AI Provider: Missing choices/message');
         }
 
-        return data.choices[0].message.content;
+        return { content: data.choices[0].message.content, usage: data.usage || {} };
     }
 
     const { provider, apiKey } = providerConfig;
@@ -756,7 +825,25 @@ router.post('/', async (req, res) => {
         provider.modelName = activeModel;
         provider.model_name = activeModel;
 
-        const result = await callAI(provider, systemPrompt, userPrompt, maxTokens, temperature);
+        const { content: result, usage } = await callAI(provider, systemPrompt, userPrompt, maxTokens, temperature);
+
+        // Log token usage to DB (fire and forget)
+        const promptTokens = usage.prompt_tokens || usage.input_tokens || 0;
+        const completionTokens = usage.completion_tokens || usage.output_tokens || 0;
+        const cost = estimateCostUsd(
+            provider.provider || provider.type,
+            provider.modelName || provider.model_name || '',
+            promptTokens, completionTokens
+        );
+        logUsage(pool, {
+            sessionId: req.headers['x-session-id'] || null,
+            action,
+            provider: provider.provider || provider.type || 'unknown',
+            model: provider.modelName || provider.model_name || '',
+            promptTokens,
+            completionTokens,
+            cost,
+        });
 
         // Parse JSON if needed (for actions that return JSON)
         let parsedResult = result;

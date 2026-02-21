@@ -341,6 +341,24 @@ async function initSchema() {
             );
         `);
 
+        // API Usage Log
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS api_usage_log (
+                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                session_id TEXT,
+                action TEXT,
+                provider TEXT,
+                model TEXT,
+                prompt_tokens INTEGER DEFAULT 0,
+                completion_tokens INTEGER DEFAULT 0,
+                estimated_cost_usd NUMERIC(14,8) DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        `);
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_usage_log_created ON api_usage_log(created_at);
+        `);
+
 
         // --- Default Data ---
 

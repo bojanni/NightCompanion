@@ -2,6 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────
+   LIGHT MODE — override hardcoded Tailwind slate classes
+   The app uses slate-800/900/950 for backgrounds and slate-300/400
+   for text. We remap them to warm-white equivalents under html.light.
+   ───────────────────────────────────────────────────────────── */
+html.light {
+  /* Core page backgrounds */
+  --light-bg-base: #f1f5f9;
+  /* slate-100 */
+  --light-bg-surface: #ffffff;
+  --light-bg-raised: #f8fafc;
+  /* slate-50  */
+  --light-bg-inset: #e2e8f0;
+  /* slate-200 */
+  --light-border: #cbd5e1;
+  /* slate-300 */
+  --light-text-base: #0f172a;
+  /* slate-900 */
+  --light-text-muted: #475569;
+  /* slate-600 */
+  --light-text-dim: #64748b;
+  /* slate-500 */
+}
+
+/* Full-page background */
+html.light body,
+html.light .bg-slate-950,
+html.light .min-h-screen.bg-slate-950 {
+  background-color: var(--light-bg-base) !important;
+  color: var(--light-text-base) !important;
+}
+
+/* Sidebar */
+html.light aside.bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: var(--light-border) !important;
+}
+
+/* Main content wrappers & cards */
+html.light .bg-slate-900,
+html.light .bg-slate-900\/40,
+html.light .bg-slate-900\/60 {
+  background-color: var(--light-bg-surface) !important;
+}
+
+html.light .bg-slate-800,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/30 {
+  background-color: var(--light-bg-inset) !important;
+}
+
+html.light .bg-slate-800\/10,
+html.light .bg-slate-800\/20 {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-950,
+html.light .bg-slate-950\/50 {
+  background-color: var(--light-bg-raised) !important;
+}
+
+/* Inputs, dropdowns, modals */
+html.light .bg-slate-700,
+html.light .bg-slate-700\/50,
+html.light .bg-slate-700\/30,
+html.light .bg-slate-700\/20 {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-700\/50.border {
+  border-color: var(--light-border) !important;
+}
+
+/* Modal backdrop & overlay backgrounds */
+html.light .bg-black\/80,
+html.light .bg-black\/60,
+html.light .bg-black\/40 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+}
+
+/* Borders */
+html.light .border-slate-800,
+html.light .border-slate-800\/50,
+html.light .border-slate-700,
+html.light .border-slate-600 {
+  border-color: var(--light-border) !important;
+}
+
+/* Text colours */
+html.light .text-white {
+  color: var(--light-text-base) !important;
+}
+
+html.light .text-slate-400,
+html.light .text-slate-300 {
+  color: var(--light-text-muted) !important;
+}
+
+html.light .text-slate-500,
+html.light .text-slate-600 {
+  color: var(--light-text-dim) !important;
+}
+
+/* Hover overrides for sidebar nav links */
+html.light aside .hover\:bg-slate-800:hover,
+html.light aside .hover\:text-white:hover {
+  background-color: var(--light-bg-inset) !important;
+  color: var(--light-text-base) !important;
+}
+
+/* Preserve amber accent colour — no overrides needed, looks fine on light bg */
+
+
+/* Scrollbar light mode */
+html.light .dropdown-scroll::-webkit-scrollbar-track {
+  background: rgba(203, 213, 225, 0.5);
+}
+
+html.light .dropdown-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.8);
+}
+
 @layer base {
   :root {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
