@@ -596,7 +596,7 @@ function ImproveTab({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={t('aiTools.improve.placeholder')}
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-32 focus:outline-none focus:border-teal-500/40"
           />
 
           {/* Model Tips fetch + toggle */}
@@ -670,7 +670,7 @@ function ImproveTab({
                 onChange={(e) => setNegativeInput(e.target.value.slice(0, 600))}
                 maxLength={600}
                 placeholder={t('aiTools.improve.negativePlaceholder')}
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-16 focus:outline-none focus:border-teal-500/40"
+                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 resize-none h-24 focus:outline-none focus:border-teal-500/40"
               />
             </>
           ) : (
