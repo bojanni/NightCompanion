@@ -31,22 +31,16 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
             // const { data: { session } } = await db.auth.getSession();
             const token = '';
 
-            // Get some context for better generation
-            const [charsRes, topPromptsRes] = await Promise.all([
-                db
-                    .from('characters')
-                    .select('name, description')
-                    .limit(3),
-                db
-                    .from('prompts')
-                    .select('content')
-                    .gte('rating', 4)
-                    .order('rating', { ascending: false })
-                    .limit(3),
-            ]);
+            // Get successful prompts for better generation context
+            const topPromptsRes = await db
+                .from('prompts')
+                .select('content')
+                .gte('rating', 4)
+                .order('rating', { ascending: false })
+                .limit(3);
 
-            const context = charsRes.data?.map((c: { name: string; description: string }) => `${c.name}: ${c.description}`).join('; ');
             const successfulPrompts = topPromptsRes.data?.map((p: { content: string }) => p.content) ?? [];
+            const context = successfulPrompts.length > 0 ? `Style Examples: ${successfulPrompts.join(' | ')}` : undefined;
 
             const result = await generateFromDescription(
                 input,
