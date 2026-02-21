@@ -5,9 +5,12 @@ import {
   Wrench, Clock, ChevronLeft, ChevronRight,
   LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
   Compass, FlaskConical, Fingerprint, Settings, Flame,
-  Moon, Sun, BarChart2
+  Moon, Sun, BarChart2, Loader2
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { db } from '../lib/api';
+import { DEFAULT_USER_ID } from '../lib/constants';
+import { toast } from 'sonner';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
@@ -21,14 +24,14 @@ const navItems = [
   { to: '/statistics', icon: BarChart2, labelKey: 'nav.statistics' },
   { to: '/timeline', icon: Clock, labelKey: 'nav.timeline' },
 
-  { to: '/tools', icon: Wrench, labelKey: 'nav.aiTools' },
-  { to: '/settings', icon: Settings, labelKey: 'nav.settings' },
+  { to: '/ai-config', icon: Settings, labelKey: 'nav.settings' },
+  { to: '/settings', icon: Wrench, labelKey: 'nav.generalSettings' },
 ];
 
 // Full-width: these pages use all available horizontal space
 const FULL_WIDTH_PAGES = ['/', '/prompts', '/gallery', '/timeline'];
 export default function Layout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
 
@@ -38,11 +41,34 @@ export default function Layout() {
     try { return localStorage.getItem('sidebar_collapsed') === 'true'; }
     catch { return false; }
   });
+  const [savingLang, setSavingLang] = useState(false);
 
   const toggleSidebar = () => {
     const next = !collapsed;
     setCollapsed(next);
     localStorage.setItem('sidebar_collapsed', String(next));
+  };
+
+  const changeLanguage = async (lng: string) => {
+    setSavingLang(true);
+    try {
+      await i18n.changeLanguage(lng);
+      // Persist to DB using central DEFAULT_USER_ID
+      const { error } = await db
+        .from('user_profiles')
+        .update({ language: lng })
+        .eq('id', DEFAULT_USER_ID);
+
+      if (error) {
+        console.error('Failed to save language to DB:', error);
+      } else {
+        toast.success(t('settings.language.saveSuccess'));
+      }
+    } catch (e) {
+      console.error('Failed to change language:', e);
+    } finally {
+      setSavingLang(false);
+    }
   };
 
   return (
@@ -72,11 +98,11 @@ export default function Layout() {
           </button>
         </div>
 
-        {/* Theme Toggle */}
-        <div className={`px-3 py-2 ${collapsed ? 'flex justify-center' : ''}`}>
+        {/* Theme & Language Toggles */}
+        <div className={`px-3 py-2 space-y-1 ${collapsed ? 'flex flex-col items-center' : ''}`}>
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800 w-full ${collapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-slate-800 w-full ${collapsed ? 'justify-center w-10 h-10 p-0' : ''}`}
             title={theme === 'dark' ? t('nav.lightMode') : t('nav.darkMode')}
           >
             {theme === 'dark' ? <Sun size={18} className="shrink-0" /> : <Moon size={18} className="shrink-0" />}
@@ -86,6 +112,28 @@ export default function Layout() {
               </span>
             )}
           </button>
+
+          {/* Inline Language Switcher */}
+          <div className={`flex items-center gap-1 p-1 bg-slate-950/50 rounded-xl border border-slate-800/50 ${collapsed ? 'flex-col' : ''}`}>
+            {[
+              { id: 'nl', label: 'NL', title: 'Nederlands' },
+              { id: 'en', label: 'EN', title: 'English' }
+            ].map(lang => (
+              <button
+                key={lang.id}
+                onClick={() => changeLanguage(lang.id)}
+                disabled={savingLang}
+                title={lang.title}
+                className={`flex-1 flex items-center justify-center py-1.5 rounded-lg text-[10px] font-bold transition-all
+                  ${i18n.language === lang.id
+                    ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                  } ${collapsed ? 'w-8 h-8' : ''}`}
+              >
+                {savingLang && i18n.language !== lang.id ? <Loader2 size={10} className="animate-spin" /> : lang.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-x-hidden">

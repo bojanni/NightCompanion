@@ -9,6 +9,7 @@ import Gallery from './pages/Gallery';
 import Models from './pages/Models';
 import Generator from './pages/Generator';
 import Settings from './pages/Settings';
+import AIConfig from './pages/AIConfig';
 import StyleProfile from './pages/StyleProfile';
 import BatchTesting from './pages/BatchTesting';
 import CostDemo from './pages/CostDemo';
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/cost-calculator" element={<CostDemo />} />
           <Route path="/versioning-guide" element={<VersioningGuide />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/ai-config" element={<AIConfig />} />
           <Route path="/tools" element={<Tools />} />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/timeline" element={<Timeline />} />
