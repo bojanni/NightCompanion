@@ -753,15 +753,21 @@ export default function Gallery() {
                   onBlur={() => handleFieldBlur('title')}
                   disabled={autoGenerateTitle && generatingTitle}
                   placeholder={generatingTitle ? "Generating title..." : "Image title"}
+                  maxLength={140}
                   className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${formTouched.title && formErrors.title ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
                 />
                 {generatingTitle && (
                   <Loader2 size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-500 animate-spin" />
                 )}
               </div>
-              {formTouched.title && formErrors.title && (
-                <p className="text-xs text-red-400 mt-1">{formErrors.title}</p>
-              )}
+              <div className="flex items-center justify-between mt-1">
+                {formTouched.title && formErrors.title ? (
+                  <p className="text-xs text-red-400">{formErrors.title}</p>
+                ) : <span />}
+                <span className={`text-[10px] tabular-nums ${formTitle.length >= 130 ? formTitle.length >= 140 ? 'text-red-400' : 'text-amber-400' : 'text-slate-500'}`}>
+                  {formTitle.length} / 140
+                </span>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Collection</label>

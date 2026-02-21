@@ -472,11 +472,17 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => handleValidationBlur('title')}
           placeholder="A descriptive name for this prompt"
+          maxLength={140}
           className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm ${formTouched.title && formErrors.title ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
         />
-        {formTouched.title && formErrors.title && (
-          <p className="text-xs text-red-400 mt-1">{formErrors.title}</p>
-        )}
+        <div className="flex items-center justify-between mt-1">
+          {formTouched.title && formErrors.title ? (
+            <p className="text-xs text-red-400">{formErrors.title}</p>
+          ) : <span />}
+          <span className={`text-[10px] tabular-nums ${title.length >= 130 ? title.length >= 140 ? 'text-red-400' : 'text-amber-400' : 'text-slate-500'}`}>
+            {title.length} / 140
+          </span>
+        </div>
       </div>
 
       <div>
