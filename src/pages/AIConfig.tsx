@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
 import type { ApiKeyInfo, LocalEndpoint } from '../lib/api-keys-service';
@@ -8,12 +8,17 @@ import { ConfigurationWizard } from './Settings/ConfigurationWizard';
 import { toast } from 'sonner';
 import type { ModelOption } from '../lib/provider-models';
 import { ProviderHealthProvider } from '../lib/provider-health';
+import AIModelSelector from '../components/AIModelSelector';
+import { useTaskModels } from '../hooks/useTaskModels';
 
 export default function AIConfig() {
     const [view, setView] = useState<'dashboard' | 'wizard'>('dashboard');
     const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
     const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([]);
     const [loading, setLoading] = useState(true);
+    const [taskModelsOpen, setTaskModelsOpen] = useState(false);
+
+    const { generate, improve, vision, setModel } = useTaskModels();
 
     // Shared state for dynamic models cache to avoid refetching too often
     const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
@@ -88,6 +93,18 @@ export default function AIConfig() {
 
     const configuredCount = keys.length + localEndpoints.length;
 
+    // Collect all configured provider IDs (for greying out unavailable models)
+    const availableProviders = [
+        ...keys.map(k => k.provider),
+        ...localEndpoints.map(e => e.provider),
+    ];
+
+    const TASK_LABELS: { task: 'generate' | 'improve' | 'vision'; label: string; desc: string; value: string }[] = [
+        { task: 'generate', label: 'Generate', desc: 'Random & description-based prompt generation', value: generate },
+        { task: 'improve', label: 'Improve', desc: 'Prompt enhancement and refinement', value: improve },
+        { task: 'vision', label: 'Vision / Analyse', desc: 'Image analysis and character description', value: vision },
+    ];
+
     if (loading && keys.length === 0 && localEndpoints.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
@@ -114,6 +131,46 @@ export default function AIConfig() {
                             onRefreshData={refreshData}
                             getToken={getToken}
                         />
+
+                        {/* Task Model Preferences */}
+                        <div className="border border-slate-800 rounded-2xl overflow-hidden">
+                            <button
+                                onClick={() => setTaskModelsOpen(v => !v)}
+                                className="w-full flex items-center justify-between px-5 py-4 bg-gradient-to-r from-slate-900 to-slate-800/80 hover:from-slate-800/80 hover:to-slate-800/60 transition-all"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-amber-500/15 rounded-lg flex items-center justify-center">
+                                        <Brain size={16} className="text-amber-400" />
+                                    </div>
+                                    <div className="text-left">
+                                        <h3 className="text-sm font-semibold text-white">Task Model Preferences</h3>
+                                        <p className="text-[11px] text-slate-500">Choose which AI model handles each task type</p>
+                                    </div>
+                                </div>
+                                {taskModelsOpen
+                                    ? <ChevronUp size={16} className="text-slate-500" />
+                                    : <ChevronDown size={16} className="text-slate-500" />}
+                            </button>
+
+                            {taskModelsOpen && (
+                                <div className="p-5 bg-slate-900/50 space-y-8">
+                                    {TASK_LABELS.map(({ task, label, desc, value }) => (
+                                        <div key={task}>
+                                            <div className="mb-3">
+                                                <h4 className="text-sm font-semibold text-slate-200">{label}</h4>
+                                                <p className="text-[11px] text-slate-500">{desc}</p>
+                                            </div>
+                                            <AIModelSelector
+                                                task={task}
+                                                value={value}
+                                                onChange={(id) => setModel(task, id)}
+                                                availableProviders={availableProviders}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <ConfigurationWizard

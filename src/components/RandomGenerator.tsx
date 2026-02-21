@@ -9,6 +9,7 @@ import { generateRandomPromptAI, listModels, ModelListItem } from '../lib/ai-ser
 import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
 import { estimateLLMCost } from '../lib/pricing';
+import { useTaskModels } from '../hooks/useTaskModels';
 
 
 
@@ -31,6 +32,7 @@ interface RandomGeneratorProps {
 export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot, greylist, recentPrompts, selectedNightCafePreset }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
+  const { generate: taskGenerateModel } = useTaskModels();
 
   // Sync state when initialPrompt changes (e.g. from Magic Prompt Input)
   useEffect(() => {
@@ -238,7 +240,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       setRegenerating(true);
       try {
         const token = '';
-        const result = await generateRandomPromptAI(token, undefined, maxWords, greylist, creativityLevel, recentPrompts);
+        const result = await generateRandomPromptAI(token, undefined, maxWords, greylist, creativityLevel, recentPrompts, taskGenerateModel);
 
         // result is { prompt: string, negativePrompt?: string, style?: string }
         if (result && typeof result === 'object' && 'prompt' in result) {

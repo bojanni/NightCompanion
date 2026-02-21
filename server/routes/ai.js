@@ -670,15 +670,26 @@ router.post('/', async (req, res) => {
         // Determine which provider/model to use
         let provider;
 
+        // Helper: parse "provider:model" taskModel string into { provider, model } preference
+        function parseTaskModel(taskModel) {
+            if (!taskModel || typeof taskModel !== 'string') return null;
+            const sepIdx = taskModel.indexOf(':');
+            if (sepIdx === -1) return null;
+            return { provider: taskModel.slice(0, sepIdx), model: taskModel.slice(sepIdx + 1) };
+        }
+
+        // Resolve effective preferences: taskModel takes priority over apiPreferences
+        const effectivePrefs = parseTaskModel(payload.taskModel) ?? (payload.apiPreferences?.provider ? payload.apiPreferences : null);
+
         // If the client requested specific preferences (e.g. for Prompt Improver), try to use them
-        if (payload.apiPreferences && payload.apiPreferences.provider) {
+        if (effectivePrefs && effectivePrefs.provider) {
             // Fetch credentials for the requested provider
-            provider = await getProviderCredentials(payload.apiPreferences.provider);
+            provider = await getProviderCredentials(effectivePrefs.provider);
 
             // If a specific model was also requested, override the default one from DB
-            if (provider && payload.apiPreferences.model) {
-                provider.modelName = payload.apiPreferences.model; // For cloud
-                provider.model_name = payload.apiPreferences.model; // For local
+            if (provider && effectivePrefs.model) {
+                provider.modelName = effectivePrefs.model; // For cloud
+                provider.model_name = effectivePrefs.model; // For local
             }
         }
 

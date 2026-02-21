@@ -15,6 +15,7 @@ import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider } from '../lib/provider-models';
 import { saveStyleProfile } from '../lib/style-analysis';
+import { useTaskModels } from '../hooks/useTaskModels';
 
 interface AIToolsProps {
   onPromptGenerated?: (prompt: string) => void;
@@ -71,6 +72,7 @@ function loadAIToolsState<T>(key: string, fallback: T): T {
 
 const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved, allowedTabs, defaultTab = 'improve', showHeader = true, initialExpanded = false }, ref) => {
   const { t } = useTranslation();
+  const { improve: taskImproveModel, generate: taskGenerateModel } = useTaskModels();
   const [tab, setTab] = useState<Tab>(() => {
     // If allowedTabs is set, ensure we start on an allowed tab
     if (allowedTabs && allowedTabs.length > 0 && !allowedTabs.includes(defaultTab)) {
@@ -279,11 +281,11 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         setImproveResult(result.optimizedPrompt);
         setNegativeResult(result.negativePrompt || ''); // Should be empty typically
       } else if (negativeInput.trim()) {
-        const result = await improvePromptWithNegative(improveInput, negativeInput, token, apiPreferences);
+        const result = await improvePromptWithNegative(improveInput, negativeInput, token, apiPreferences, taskImproveModel);
         setImproveResult(result.improved);
         setNegativeResult(result.negativePrompt);
       } else {
-        const result = await improvePrompt(improveInput, token, apiPreferences);
+        const result = await improvePrompt(improveInput, token, apiPreferences, taskImproveModel);
         setImproveResult(result);
       }
     } catch (e) {
@@ -326,6 +328,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
             maxWords,
           },
           successfulPrompts: successfulPrompts.length > 0 ? successfulPrompts : undefined,
+          taskModel: taskGenerateModel,
         },
         token,
       );

@@ -10,8 +10,8 @@ import { handleAIError } from '../lib/error-handler';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
 import { listModels, ModelListItem } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
-
 import { estimateLLMCost } from '../lib/pricing';
+import { useTaskModels } from '../hooks/useTaskModels';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -25,6 +25,7 @@ interface ManualGeneratorProps {
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
 export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', resetKey = 0, selectedNightCafePreset }: ManualGeneratorProps) {
+    const { generate: taskGenerateModel, improve: taskImproveModel } = useTaskModels();
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
         const saved = localStorage.getItem(MANUAL_STORAGE_KEY);
@@ -195,7 +196,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         setGenerating(true);
         try {
             const token = '';
-            const result = await generateRandomPromptAI(token, undefined, maxWords);
+            const result = await generateRandomPromptAI(token, undefined, maxWords, undefined, undefined, undefined, taskGenerateModel);
             if (result && typeof result === 'object' && 'prompt' in result) {
                 const newPrompts = [...prompts];
                 newPrompts[index] = result.prompt || '';
@@ -247,7 +248,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             // If we treat the current combined prompts as the input prompt.
             const combinedPositive = prompts.filter(p => p.trim()).join(' ');
 
-            const result = await improvePromptWithNegative(token, combinedPositive, negativePrompt);
+            const result = await improvePromptWithNegative(combinedPositive, negativePrompt, token, undefined, taskImproveModel);
 
             if (result.improved) {
                 setPrompts([result.improved]);

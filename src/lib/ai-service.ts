@@ -24,9 +24,17 @@ async function callAI(action: string, payload: Record<string, unknown>, token: s
   return data.result;
 }
 
-export async function improvePrompt(prompt: string, token: string, apiPreferences?: ApiPreferences): Promise<string> {
+export function taskModelToPreferences(taskModel?: string): ApiPreferences | undefined {
+  if (!taskModel) return undefined;
+  const sepIdx = taskModel.indexOf(':');
+  if (sepIdx === -1) return undefined;
+  return { provider: taskModel.slice(0, sepIdx), model: taskModel.slice(sepIdx + 1) };
+}
+
+export async function improvePrompt(prompt: string, token: string, apiPreferences?: ApiPreferences, taskModel?: string): Promise<string> {
   const payload: Record<string, any> = { prompt };
-  if (apiPreferences) payload.apiPreferences = apiPreferences;
+  const prefs = taskModelToPreferences(taskModel) ?? apiPreferences;
+  if (prefs) payload.apiPreferences = prefs;
   return callAI('improve', payload, token);
 }
 
@@ -34,10 +42,12 @@ export async function improvePromptWithNegative(
   prompt: string,
   negativePrompt: string,
   token: string,
-  apiPreferences?: ApiPreferences
+  apiPreferences?: ApiPreferences,
+  taskModel?: string
 ): Promise<{ improved: string; negativePrompt: string }> {
   const payload: Record<string, any> = { prompt, negativePrompt };
-  if (apiPreferences) payload.apiPreferences = apiPreferences;
+  const prefs = taskModelToPreferences(taskModel) ?? apiPreferences;
+  if (prefs) payload.apiPreferences = prefs;
   return callAI('improve-with-negative', payload, token);
 }
 
@@ -95,20 +105,27 @@ export async function generateFromDescription(
     preferences?: GeneratePreferences | undefined;
     successfulPrompts?: string[] | undefined;
     greylist?: string[] | undefined;
+    taskModel?: string | undefined;
   },
   token: string
 ): Promise<string> {
-  return callAI('generate', {
+  const payload: Record<string, any> = {
     description,
     context: options.context,
     preferences: options.preferences,
     successfulPrompts: options.successfulPrompts,
     greylist: options.greylist,
-  }, token);
+  };
+  const prefs = taskModelToPreferences(options.taskModel);
+  if (prefs) payload.apiPreferences = prefs;
+  return callAI('generate', payload, token);
 }
 
-export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number, greylist?: string[], creativity?: 'focused' | 'balanced' | 'wild', recentPrompts?: string[]): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
-  return callAI('random', { theme, maxWords, greylist, creativity, recentPrompts }, token);
+export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number, greylist?: string[], creativity?: 'focused' | 'balanced' | 'wild', recentPrompts?: string[], taskModel?: string): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
+  const payload: Record<string, any> = { theme, maxWords, greylist, creativity, recentPrompts };
+  const prefs = taskModelToPreferences(taskModel);
+  if (prefs) payload.apiPreferences = prefs;
+  return callAI('random', payload, token);
 }
 
 export async function generateNegativePrompt(token: string): Promise<string> {
