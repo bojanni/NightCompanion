@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink, Clock, Plus, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Hash, Database, AlignLeft, ExternalLink, Clock, Plus, Loader2, GitBranch } from 'lucide-react';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 import DropZone from './DropZone';
@@ -236,6 +236,28 @@ export default function PromptDetailOverlay({
                                 )}
                             </div>
                         </div>
+
+                        {/* Generation Journey */}
+                        {prompt.generation_journey && prompt.generation_journey.length > 0 && (
+                            <div>
+                                <div className="flex items-center gap-2 mb-3 text-amber-500 font-semibold uppercase tracking-wider text-xs">
+                                    <GitBranch size={14} />
+                                    <span>Generation Journey</span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1">
+                                    {prompt.generation_journey.map((s, i) => (
+                                        <span key={i} className="flex items-center gap-1">
+                                            <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] text-slate-200 whitespace-nowrap">
+                                                {s.label}
+                                            </span>
+                                            {i < prompt.generation_journey!.length - 1 && (
+                                                <span className="text-amber-500/60 text-xs font-bold">→</span>
+                                            )}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Prompt Content */}
                         <div>

@@ -202,15 +202,21 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       ? `${prompt}\n\n### Negative Prompt:\n${negativePrompt}`
       : prompt;
 
+    // Build the generation journey chain
+    const journeySteps = [
+      { step: regenerating ? 'Magic Random (AI)' : 'Random', label: '🎲 Random' },
+    ];
+    if (generatedStyle) journeySteps.push({ step: 'Style', label: `🎨 ${generatedStyle}` });
+    if (selectedNightCafePreset) journeySteps.push({ step: 'NightCafe Preset', label: `⚙️ Preset: ${selectedNightCafePreset}` });
+    if (filters.dreamy) journeySteps.push({ step: 'Filter', label: '💫 Dreamy' });
+    if (filters.characters) journeySteps.push({ step: 'Filter', label: '👤 Characters' });
+    if (filters.cinematic) journeySteps.push({ step: 'Filter', label: '🎬 Cinematic' });
+
     await db.from('prompts').insert({
-      title: 'Random: ' + (prompt.split(',')[0] || 'Untitled').slice(0, 40),
+      title: (prompt.split(',')[0] || 'Untitled').trim().slice(0, 80),
       content: fullContent,
-      notes: 'Generated with Random mode' +
-        (generatedStyle ? ` [Use Style: ${generatedStyle}]` : '') +
-        (filters.dreamy ? ' [dreamy]' : '') +
-        (filters.characters ? ' [characters]' : '') +
-        (filters.cinematic ? ' [cinematic]' : '') +
-        (selectedNightCafePreset ? ` [NC Preset: ${selectedNightCafePreset}]` : ''),
+      notes: generatedStyle ? `Style: ${generatedStyle}` : undefined,
+      generation_journey: journeySteps,
       rating: 0,
       is_template: false,
       is_favorite: false,

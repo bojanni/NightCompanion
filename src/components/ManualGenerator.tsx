@@ -374,10 +374,15 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         if (!fullPrompt.trim()) return;
         setSaving(true);
         try {
+            const journeySteps = [
+                { step: 'Manual', label: '✏️ Manual' },
+            ];
+            if (selectedNightCafePreset) journeySteps.push({ step: 'NightCafe Preset', label: `⚙️ Preset: ${selectedNightCafePreset}` });
+
             await db.from('prompts').insert({
-                title: 'Manual: ' + (prompts[0] || 'Untitled').slice(0, 40),
+                title: (prompts[0] || 'Untitled').trim().slice(0, 80),
                 content: fullPrompt,
-                notes: 'Created with Manual Generator' + (selectedNightCafePreset ? ` [NC Preset: ${selectedNightCafePreset}]` : ''),
+                generation_journey: journeySteps,
                 rating: 0,
                 is_template: false,
                 is_favorite: false,

@@ -17,6 +17,7 @@ export interface Prompt {
   aspect_ratio?: string;
   use_custom_aspect_ratio?: boolean;
   start_image?: string | null;
+  generation_journey?: Array<{ step: string; label: string }>;
 }
 
 export interface Tag {
