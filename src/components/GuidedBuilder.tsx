@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { GUIDED_STEPS, OPTIONAL_ADDITIONS, buildGuidedPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt } from '../lib/models-data';
-import { generateFromDescription } from '../lib/ai-service';
+import { generateFromDescription, recommendModels } from '../lib/ai-service';
 import { db } from '../lib/api';
 
 interface GuidedBuilderProps {
@@ -25,6 +25,8 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [customInputs, setCustomInputs] = useState<Record<string, string>>({});
+  const [aiAdvice, setAiAdvice] = useState<{ name: string; reasoning: string; tips: string[]; preset?: string } | null>(null);
+  const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
 
   // Load from localStorage
   useEffect(() => {
@@ -173,6 +175,24 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
 
   const topSuggestion = generatedPrompt ? analyzePrompt(generatedPrompt)[0] : null;
 
+  async function handleGetAIAdvice() {
+    if (!generatedPrompt.trim()) return;
+    setLoadingAiAdvice(true);
+    try {
+      const { getTopCandidates } = await import('../lib/models-data');
+      const candidates = getTopCandidates(generatedPrompt, 5);
+      const result = await recommendModels(generatedPrompt, { candidates });
+      const top = result.recommendations[0];
+      if (top) {
+        setAiAdvice({ name: top.modelName, reasoning: top.reasoning, tips: top.tips || [], ...(top.recommendedPreset ? { preset: top.recommendedPreset } : {}) });
+      }
+    } catch (e) {
+      console.error('AI advice failed', e);
+    } finally {
+      setLoadingAiAdvice(false);
+    }
+  }
+
   if (showResult && generatedPrompt) {
     return (
       <div className="space-y-4">
@@ -243,18 +263,61 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
         </div>
 
         {topSuggestion && (
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Compass size={13} className="text-amber-400" />
-              <span className="text-xs font-medium text-amber-400">Suggested Model</span>
-            </div>
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{topSuggestion.reasons[0]}</p>
+              <div className="flex items-center gap-2">
+                <Compass size={13} className="text-amber-400" />
+                <span className="text-xs font-medium text-amber-400">Suggested Model</span>
+                {aiAdvice && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-amber-300">AI Verified</span>
+                )}
               </div>
-              <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
+              {!aiAdvice && (
+                <button
+                  onClick={handleGetAIAdvice}
+                  disabled={loadingAiAdvice}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-lg hover:bg-teal-500/20 transition-colors disabled:opacity-50"
+                >
+                  {loadingAiAdvice ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                  {loadingAiAdvice ? 'Analyzing...' : 'Get AI Advice'}
+                </button>
+              )}
             </div>
+
+            {aiAdvice ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-white">{aiAdvice.name}</p>
+                  <button onClick={() => setAiAdvice(null)} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors">↩ Local</button>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-700/50">
+                  <span className="text-amber-400/80 mr-1">✦</span>{aiAdvice.reasoning}
+                </p>
+                {aiAdvice.tips.length > 0 && (
+                  <ul className="space-y-1">
+                    {aiAdvice.tips.map((tip, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-400">
+                        <span className="text-amber-500 mt-0.5 shrink-0">💡</span>{tip}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {aiAdvice.preset && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-teal-400 bg-teal-950/30 border border-teal-900/50 w-fit px-2 py-1 rounded-md">
+                    <div className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                    Suggested Preset: <span className="font-semibold">{aiAdvice.preset}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-white">{topSuggestion.model.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{topSuggestion.reasons[0]}</p>
+                </div>
+                <span className="text-xs text-slate-500">{topSuggestion.model.provider}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
