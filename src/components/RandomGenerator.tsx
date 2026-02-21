@@ -235,7 +235,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     if (filters.cinematic) journeySteps.push({ step: 'Filter', label: '🎬 Cinematic' });
 
     await db.from('prompts').insert({
-      title: (prompt.split(',')[0] || 'Untitled').trim().slice(0, 80),
+      title: (prompt.split(',')[0] || 'Untitled').trim().slice(0, 160),
       content: fullContent,
       notes: generatedStyle ? `Style: ${generatedStyle}` : undefined,
       generation_journey: journeySteps,

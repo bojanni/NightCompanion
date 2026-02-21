@@ -167,7 +167,7 @@ export default function PromptDetailOverlay({
                                     </div>
                                     <div>
                                         <p className="font-medium text-slate-200">
-                                            {isUploading ? 'Uploading...' : 'Add Start Image'}
+                                            {isUploading ? 'Uploading...' : 'Add Image'}
                                         </p>
                                         <p className="text-xs text-slate-500 mt-1">Drag & drop or click</p>
                                     </div>
@@ -244,16 +244,22 @@ export default function PromptDetailOverlay({
                                     <GitBranch size={14} />
                                     <span>Generation Journey</span>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-1">
+                                <div className="flex flex-col gap-2">
                                     {prompt.generation_journey.map((s, i) => (
-                                        <span key={i} className="flex items-center gap-1">
-                                            <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[11px] text-slate-200 whitespace-nowrap">
-                                                {s.label}
-                                            </span>
-                                            {i < prompt.generation_journey!.length - 1 && (
-                                                <span className="text-amber-500/60 text-xs font-bold">→</span>
-                                            )}
-                                        </span>
+                                        <div key={i} className="flex items-start gap-2">
+                                            <div className="shrink-0 mt-1">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50 mt-1"></div>
+                                                {i < prompt.generation_journey!.length - 1 && (
+                                                    <div className="w-0.5 h-full bg-amber-500/20 mx-auto mt-1 mb-1 min-h-[16px]"></div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <span className="text-[10px] uppercase font-bold text-amber-500/80 block mb-0.5">{s.step}</span>
+                                                <div className="px-3 py-2 bg-slate-800/60 border border-slate-700/50 rounded-xl text-xs text-slate-300 break-words">
+                                                    {s.label}
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -263,7 +269,7 @@ export default function PromptDetailOverlay({
                         <div>
                             <div className="flex items-center gap-2 mb-4 text-purple-500 font-semibold uppercase tracking-wider text-xs">
                                 <AlignLeft size={14} />
-                                <span>Original Prompt</span>
+                                <span>Final Prompt</span>
                             </div>
                             <div className="bg-black/20 border border-slate-800 rounded-2xl p-5 relative group">
                                 <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-mono">

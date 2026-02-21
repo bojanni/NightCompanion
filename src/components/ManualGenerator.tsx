@@ -380,7 +380,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
             if (selectedNightCafePreset) journeySteps.push({ step: 'NightCafe Preset', label: `⚙️ Preset: ${selectedNightCafePreset}` });
 
             await db.from('prompts').insert({
-                title: (prompts[0] || 'Untitled').trim().slice(0, 80),
+                title: (prompts[0] || 'Untitled').trim().slice(0, 160),
                 content: fullPrompt,
                 generation_journey: journeySteps,
                 rating: 0,

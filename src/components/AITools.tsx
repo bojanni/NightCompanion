@@ -386,13 +386,20 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
     }
   }
 
-  async function handleSavePrompt(text: string, title: string) {
+  async function handleSavePrompt(text: string, title: string, options?: { originalPrompt?: string, suggestedModelId?: string | undefined }) {
     setSaving(title);
     try {
+      const journeySteps = options?.originalPrompt ? [
+        { step: 'Original Prompt', label: options.originalPrompt },
+        { step: 'Improved by AI', label: text }
+      ] : [{ step: 'Generated with AI', label: text }];
+
       const { error } = await db.from('prompts').insert({
         title: title,
         content: text,
         notes: 'Generated with AI Tools',
+        generation_journey: journeySteps,
+        suggested_model: options?.suggestedModelId,
         rating: 0,
         is_template: false,
         is_favorite: false,
@@ -473,7 +480,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
                 if (onPromptGenerated) onPromptGenerated(improveResult);
                 if (negativeResult && onNegativePromptGenerated) onNegativePromptGenerated(negativeResult);
               }}
-              onSave={(text) => handleSavePrompt(text, 'AI Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 40))}
+              onSave={(text) => handleSavePrompt(text, 'AI Improved: ' + (text.split(',')[0] || 'Untitled').slice(0, 40), { originalPrompt: improveInput, suggestedModelId: suggestedModel?.id })}
               onClear={() => { setImproveResult(''); setNegativeResult(''); }}
               generatedPrompt={generatedPrompt}
               generatedNegativePrompt={generatedNegativePrompt}
@@ -500,7 +507,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
               onSubmit={handleGenerate}
               onCopy={handleCopy}
               onUse={() => { if (onPromptGenerated) onPromptGenerated(generateResult); }}
-              onSave={(text) => handleSavePrompt(text, 'AI Generated: ' + generateInput.slice(0, 40))}
+              onSave={(text) => handleSavePrompt(text, 'AI Generated: ' + generateInput.slice(0, 40), { originalPrompt: generateInput })}
               generatedPrompt={generatedPrompt}
             />
           )}
