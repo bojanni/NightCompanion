@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ALL_MODELS } from '../lib/provider-models';
 import { useGalleryState } from '../hooks/useGalleryState';
 import MediaRenderer from '../components/MediaRenderer';
+import GalleryLightbox from '../components/GalleryLightbox';
 
 interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
@@ -1319,6 +1320,13 @@ export default function Gallery() {
           </div>
         </div>
       </Modal>
+      <GalleryLightbox
+        images={filtered}
+        initialIndex={lightboxImage ? filtered.findIndex(i => i.id === lightboxImage.id) : 0}
+        isOpen={!!lightboxImage}
+        onClose={closeLightbox}
+        onUpdateRating={handleUpdateRating}
+      />
     </div>
   );
 }
