@@ -6,12 +6,14 @@ export interface TaskModels {
     generate: string;
     improve: string;
     vision: string;
+    research: string;
 }
 
 const DEFAULT_MODELS: TaskModels = {
     generate: 'google:gemini-1.5-flash',
     improve: 'anthropic:claude-3-5-sonnet-20241022',
     vision: 'openai:gpt-4o',
+    research: 'openai:gpt-4o',
 };
 
 export function useTaskModels() {
@@ -58,6 +60,7 @@ export function useTaskModels() {
         generate: taskModels.generate,
         improve: taskModels.improve,
         vision: taskModels.vision,
+        research: taskModels.research,
         setModel,
     };
 }

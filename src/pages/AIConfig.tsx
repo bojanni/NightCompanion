@@ -18,7 +18,7 @@ export default function AIConfig() {
     const [loading, setLoading] = useState(true);
     const [taskModelsOpen, setTaskModelsOpen] = useState(false);
 
-    const { generate, improve, vision, setModel } = useTaskModels();
+    const { generate, improve, vision, research, setModel } = useTaskModels();
 
     // Shared state for dynamic models cache to avoid refetching too often
     const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
@@ -99,10 +99,11 @@ export default function AIConfig() {
         ...localEndpoints.map(e => e.provider),
     ];
 
-    const TASK_LABELS: { task: 'generate' | 'improve' | 'vision'; label: string; desc: string; value: string }[] = [
+    const TASK_LABELS: { task: 'generate' | 'improve' | 'vision' | 'research'; label: string; desc: string; value: string }[] = [
         { task: 'generate', label: 'Generate', desc: 'Random & description-based prompt generation', value: generate },
         { task: 'improve', label: 'Improve', desc: 'Prompt enhancement and refinement', value: improve },
         { task: 'vision', label: 'Vision / Analyse', desc: 'Image analysis and character description', value: vision },
+        { task: 'research', label: 'Research', desc: 'Model research, reasoning & analysis tasks', value: research },
     ];
 
     if (loading && keys.length === 0 && localEndpoints.length === 0) {
