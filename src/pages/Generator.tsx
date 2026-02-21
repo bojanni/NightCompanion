@@ -399,6 +399,7 @@ export default function Generator() {
               greylist={greylist}
             />
           }
+          recentPrompts={lastPrompts.slice(0, 3).map(p => p.content)}
         />
       )}
 

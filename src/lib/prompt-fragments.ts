@@ -243,7 +243,11 @@ export const OPTIONAL_ADDITIONS = [
 ];
 
 function pickRandom<T>(arr: T[], count: number = 1): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   return shuffled.slice(0, count);
 }
 
@@ -260,16 +264,21 @@ export function generateRandomPrompt(filters: {
     return !greylist.some(grey => lowerItem.includes(grey.toLowerCase()));
   };
 
-  const pick = (arr: string[]) => {
+  const pick = (arr: string[], count: number = 1) => {
     const valid = arr.filter(isAllowed);
-    return valid.length > 0 ? pickRandom(valid)[0] : pickRandom(arr)[0];
+    return valid.length > 0 ? pickRandom(valid, count).join(', ') : pickRandom(arr, count).join(', ');
   };
 
   parts.push(pick(SUBJECTS) || '');
   parts.push(pick(SETTINGS) || '');
   parts.push(pick(TIMES_OF_DAY) || '');
-  parts.push(pick(ATMOSPHERES) || '');
-  parts.push(pick(LIGHTING) || '');
+
+  // Occasionally pick 2 for atmosphere and lighting
+  const atmosphereCount = Math.random() > 0.7 ? 2 : 1;
+  parts.push(pick(ATMOSPHERES, atmosphereCount) || '');
+
+  const lightingCount = Math.random() > 0.7 ? 2 : 1;
+  parts.push(pick(LIGHTING, lightingCount) || '');
 
   if (filters.dreamy) {
     parts.push(pick(DREAMY_MODIFIERS) || '');

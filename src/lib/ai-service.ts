@@ -107,8 +107,8 @@ export async function generateFromDescription(
   }, token);
 }
 
-export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number, greylist?: string[]): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
-  return callAI('random', { theme, maxWords, greylist }, token);
+export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number, greylist?: string[], creativity?: 'focused' | 'balanced' | 'wild', recentPrompts?: string[]): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
+  return callAI('random', { theme, maxWords, greylist, creativity, recentPrompts }, token);
 }
 
 export async function generateNegativePrompt(token: string): Promise<string> {

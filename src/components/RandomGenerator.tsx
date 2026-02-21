@@ -24,9 +24,10 @@ interface RandomGeneratorProps {
   onCheckExternalFields?: (proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) => void;
   magicInputSlot?: React.ReactNode;
   greylist: string[];
+  recentPrompts?: string[];
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot, greylist }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot, greylist, recentPrompts }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
 
@@ -234,7 +235,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       setRegenerating(true);
       try {
         const token = '';
-        const result = await generateRandomPromptAI(token, undefined, maxWords, greylist);
+        const result = await generateRandomPromptAI(token, undefined, maxWords, greylist, creativityLevel, recentPrompts);
 
         // result is { prompt: string, negativePrompt?: string, style?: string }
         if (result && typeof result === 'object' && 'prompt' in result) {
@@ -321,6 +322,32 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                   {filters[key] ? '* ' : ''}{label}
                 </button>
               ))}
+            </div>
+
+            <div className="flex flex-col mb-6 items-center w-full px-4">
+              <div className="flex w-full max-w-sm items-center justify-between mb-2">
+                <span className="text-xs font-medium text-slate-400">Chaos Slider</span>
+                <span className={`text-xs font-bold capitalize ${creativityLevel === 'focused' ? 'text-emerald-400' : creativityLevel === 'wild' ? 'text-rose-400' : 'text-amber-400'}`}>
+                  {creativityLevel}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="1"
+                value={creativityLevel === 'focused' ? 0 : creativityLevel === 'wild' ? 2 : 1}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setCreativityLevel(val === 0 ? 'focused' : val === 2 ? 'wild' : 'balanced');
+                }}
+                className={`w-full max-w-sm h-2 rounded-lg appearance-none cursor-pointer transition-colors ${creativityLevel === 'focused' ? 'bg-emerald-500/20 accent-emerald-500' : creativityLevel === 'wild' ? 'bg-rose-500/20 accent-rose-500' : 'bg-amber-500/20 accent-amber-500'}`}
+              />
+              <div className="flex w-full max-w-sm justify-between mt-2 text-[10px] text-slate-500 font-medium px-1">
+                <span>Focused</span>
+                <span>Balanced</span>
+                <span>Wild</span>
+              </div>
             </div>
 
             <div className="flex flex-col items-center gap-4 mt-auto">
