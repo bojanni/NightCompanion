@@ -37,10 +37,19 @@ export default function DropZone({
     }, []);
 
     const validateAndPassFile = useCallback((file: File) => {
-        // Check type
+        // Validate against each comma-separated accept pattern individually
         if (accept) {
-            const typeRegex = new RegExp(accept.replace('*', '.*'));
-            if (!file.type.match(typeRegex)) {
+            const patterns = accept.split(',').map(p => p.trim());
+            const isAccepted = patterns.some(pattern => {
+                if (pattern === '*' || pattern === '*/*') return true;
+                // e.g. "image/*" → match any image/... type
+                if (pattern.endsWith('/*')) {
+                    return file.type.startsWith(pattern.slice(0, -1));
+                }
+                // exact match (e.g. "image/png")
+                return file.type === pattern;
+            });
+            if (!isAccepted) {
                 toast.error(`Invalid file type. Accepted: ${accept}`);
                 return;
             }
