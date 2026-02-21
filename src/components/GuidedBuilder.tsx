@@ -4,7 +4,7 @@ import {
   Loader2, RotateCcw, Compass, Sparkles, Keyboard,
 } from 'lucide-react';
 import { GUIDED_STEPS, OPTIONAL_ADDITIONS, buildGuidedPrompt } from '../lib/prompt-fragments';
-import { analyzePrompt } from '../lib/models-data';
+import { analyzePrompt, getTopCandidates } from '../lib/models-data';
 import { generateFromDescription, recommendModels } from '../lib/ai-service';
 import { db } from '../lib/api';
 
@@ -179,7 +179,6 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
     if (!generatedPrompt.trim()) return;
     setLoadingAiAdvice(true);
     try {
-      const { getTopCandidates } = await import('../lib/models-data');
       const candidates = getTopCandidates(generatedPrompt, 5);
       const result = await recommendModels(generatedPrompt, { candidates });
       const top = result.recommendations[0];

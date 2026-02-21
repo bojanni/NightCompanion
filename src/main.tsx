@@ -17,11 +17,12 @@ createRoot(document.getElementById('root')!).render(
         <SessionStatsProvider>
           <App />
           <Toaster
-            position="bottom-right"
+            position="top-right"
             theme="system"
             richColors
             closeButton
             duration={4000}
+            offset={100}
           />
           <ReactQueryDevtools initialIsOpen={false} />
         </SessionStatsProvider>

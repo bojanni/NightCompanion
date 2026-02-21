@@ -3,7 +3,7 @@ import { handleAIError } from '../lib/error-handler';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser, Coins } from 'lucide-react';
 import ChoiceModal from './ChoiceModal';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
-import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
+import { analyzePrompt, supportsNegativePrompt, getTopCandidates } from '../lib/models-data';
 import { db } from '../lib/api';
 import { generateRandomPromptAI, listModels, ModelListItem, recommendModels } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
@@ -241,7 +241,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     if (!prompt.trim()) return;
     setLoadingAiAdvice(true);
     try {
-      const { getTopCandidates } = await import('../lib/models-data');
       const candidates = getTopCandidates(prompt, 5);
       const result = await recommendModels(prompt, { candidates });
       const top = result.recommendations[0];
