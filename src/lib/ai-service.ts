@@ -94,6 +94,7 @@ export async function generateFromDescription(
     context?: string | undefined;
     preferences?: GeneratePreferences | undefined;
     successfulPrompts?: string[] | undefined;
+    greylist?: string[] | undefined;
   },
   token: string
 ): Promise<string> {
@@ -102,11 +103,12 @@ export async function generateFromDescription(
     context: options.context,
     preferences: options.preferences,
     successfulPrompts: options.successfulPrompts,
+    greylist: options.greylist,
   }, token);
 }
 
-export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
-  return callAI('random', { theme, maxWords }, token);
+export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number, greylist?: string[]): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
+  return callAI('random', { theme, maxWords, greylist }, token);
 }
 
 export async function generateNegativePrompt(token: string): Promise<string> {

@@ -23,9 +23,10 @@ interface RandomGeneratorProps {
   initialNegativePrompt?: string;
   onCheckExternalFields?: (proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) => void;
   magicInputSlot?: React.ReactNode;
+  greylist: string[];
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, magicInputSlot, greylist }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
 
@@ -150,7 +151,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
   function executeGenerate(keepNegative: boolean) {
     const run = () => {
-      const newPrompt = generateRandomPrompt(filters);
+      const newPrompt = generateRandomPrompt(filters, greylist);
       setPrompt(newPrompt);
       if (!keepNegative) {
         setNegativePrompt('');
@@ -233,7 +234,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       setRegenerating(true);
       try {
         const token = '';
-        const result = await generateRandomPromptAI(token, undefined, maxWords);
+        const result = await generateRandomPromptAI(token, undefined, maxWords, greylist);
 
         // result is { prompt: string, negativePrompt?: string, style?: string }
         if (result && typeof result === 'object' && 'prompt' in result) {
@@ -273,7 +274,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       } catch (err) {
         handleAIError(err);
         console.error('Failed to generate random prompt:', err);
-        const fallback = generateRandomPrompt(filters);
+        const fallback = generateRandomPrompt(filters, greylist);
         setPrompt(fallback);
         if (!keepNegative) {
           setNegativePrompt('');

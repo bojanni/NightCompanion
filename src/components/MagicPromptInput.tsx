@@ -11,9 +11,10 @@ interface MagicPromptInputProps {
     onPromptGenerated: (prompt: string) => void;
     maxWords: number;
     className?: string;
+    greylist?: string[];
 }
 
-export default function MagicPromptInput({ onPromptGenerated, maxWords, className }: MagicPromptInputProps) {
+export default function MagicPromptInput({ onPromptGenerated, maxWords, className, greylist }: MagicPromptInputProps) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
@@ -55,6 +56,7 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
                         maxWords,
                     },
                     successfulPrompts: successfulPrompts.length > 0 ? successfulPrompts : undefined,
+                    greylist,
                 },
                 token
             );

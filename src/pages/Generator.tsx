@@ -60,6 +60,37 @@ export default function Generator() {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).manualInitial || { prompts: [], negative: '' }; } catch { /* ignore */ } return { prompts: [], negative: '' };
   });
 
+  // Greylist State
+  const defaultGreylist = ['bioluminescent', 'neon-lit', 'cyberpunk', 'cyber', 'jellyfish', 'neon'];
+  const [greylist, setGreylist] = useState<string[]>(() => {
+    try {
+      const s = localStorage.getItem('nightcompanion_generator_greylist');
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch { /* ignore */ }
+    return defaultGreylist;
+  });
+  const [newGreylistWord, setNewGreylistWord] = useState('');
+
+  // Persist Greylist
+  useEffect(() => {
+    localStorage.setItem('nightcompanion_generator_greylist', JSON.stringify(greylist));
+  }, [greylist]);
+
+  function handleAddGreylistWord() {
+    const word = newGreylistWord.trim().toLowerCase();
+    if (word && !greylist.includes(word)) {
+      setGreylist([...greylist, word]);
+    }
+    setNewGreylistWord('');
+  }
+
+  function handleRemoveGreylistWord(wordToRemove: string) {
+    setGreylist(greylist.filter(w => w !== wordToRemove));
+  }
+
 
 
   // Load recent prompts on mount
@@ -227,10 +258,11 @@ export default function Generator() {
 
       <div className="flex flex-col gap-4">
 
-        {/* Global Max Words Slider (Hide in Manual Mode?) */}
+        {/* Global Max Words Slider, Greylist, and Controls (Hide in Manual Mode?) */}
         {mode !== 'manual' && (
-          <div className="flex items-stretch gap-3">
-            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div className="flex flex-col xl:flex-row items-stretch gap-3">
+            {/* Max Words Slider */}
+            <div className="flex-1 min-w-[300px] bg-slate-900 border border-slate-800 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <label htmlFor="max-words-slider" className="text-sm font-medium text-slate-300">{t('generator.slider.maxWords')}</label>
                 <span className="text-sm font-semibold text-amber-400">{t('generator.slider.words', { count: maxWords })}</span>
@@ -254,11 +286,61 @@ export default function Generator() {
               </div>
             </div>
 
-            <div className="flex flex-col justify-between gap-2 min-w-[124px]">
-              <div className="group relative h-[calc(50%-4px)]">
+            {/* Greylist */}
+            <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-slate-300">Greylist Words</label>
+                <span className="text-[10px] text-slate-500 hidden sm:inline">Words to avoid during random generation</span>
+              </div>
+
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={newGreylistWord}
+                  onChange={(e) => setNewGreylistWord(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddGreylistWord();
+                    }
+                  }}
+                  placeholder="Add a word..."
+                  className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50"
+                />
+                <button
+                  onClick={handleAddGreylistWord}
+                  disabled={!newGreylistWord.trim()}
+                  className="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-medium rounded-lg hover:bg-slate-700 hover:text-white transition-colors border border-slate-700 disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 overflow-y-auto max-h-[80px] custom-scrollbar">
+                {greylist.map((word) => (
+                  <span
+                    key={word}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-800/80 border border-slate-700/50 text-[10px] text-slate-300 rounded-md"
+                  >
+                    {word}
+                    <button
+                      onClick={() => handleRemoveGreylistWord(word)}
+                      className="text-slate-500 hover:text-red-400 transition-colors"
+                      title={`Remove ${word}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Global Actions */}
+            <div className="flex flex-row xl:flex-col justify-between gap-3 min-w-[140px]">
+              <div className="group relative flex-1">
                 <button
                   onClick={() => setAutoFillImprove(!autoFillImprove)}
-                  className={`w-full h-full flex items-center justify-center gap-2 px-4 border text-sm rounded-2xl transition-colors shadow-sm ${autoFillImprove
+                  className={`w-full h-full flex items-center justify-center gap-2 px-4 py-3 xl:py-0 border text-sm rounded-2xl transition-colors shadow-sm ${autoFillImprove
                     ? 'bg-teal-500/10 border-teal-500/30 text-teal-400 hover:bg-teal-500/20'
                     : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-700'
                     }`}
@@ -266,27 +348,26 @@ export default function Generator() {
                   <Wand2 size={14} className={autoFillImprove ? "text-teal-400" : ""} />
                   <span>{t('generator.buttons.autoFill')} {autoFillImprove ? 'ON' : 'OFF'}</span>
                 </button>
-                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0 hidden xl:block">
                   {autoFillImprove ? 'Automatically copies generated prompts to Improve tab' : 'Click to enable auto-copying prompts to Improve tab'}
                 </div>
               </div>
 
-              <div className="group relative h-[calc(50%-4px)]">
+              <div className="group relative flex-1">
                 <button
                   onClick={handleClearAll}
-                  className="w-full h-full flex items-center justify-center gap-2 px-4 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
+                  className="w-full h-full flex items-center justify-center gap-2 px-4 py-3 xl:py-0 bg-slate-900 border border-slate-800 text-slate-400 text-sm rounded-2xl hover:bg-slate-800 hover:text-white hover:border-slate-700 transition-colors shadow-sm"
                 >
                   <Eraser size={14} />
                   <span>{t('generator.buttons.clearAll')}</span>
                 </button>
-                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0">
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded border border-slate-700 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-200 delay-150 pointer-events-none z-20 shadow-xl translate-x-1 group-hover:translate-x-0 hidden xl:block">
                   Clear all fields
                 </div>
               </div>
             </div>
           </div>
         )}
-
 
       </div>
 
@@ -304,6 +385,7 @@ export default function Generator() {
             setRandomNegativePrompt(neg);
           }}
           maxWords={maxWords}
+          greylist={greylist}
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
           onCheckExternalFields={handleCheckExternalFields}
@@ -314,6 +396,7 @@ export default function Generator() {
                 setRandomPrompt(prompt);
               }}
               maxWords={maxWords}
+              greylist={greylist}
             />
           }
         />
