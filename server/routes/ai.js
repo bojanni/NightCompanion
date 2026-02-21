@@ -178,7 +178,7 @@ function buildMessages(system, user) {
 }
 
 // Minimal implementation of AI calls using fetch
-async function callOpenAI(apiKey, system, user, maxTokens = 1500, temperature = 1.0) {
+async function callOpenAI(apiKey, system, user, maxTokens = 1500, temperature = 1.0, model = 'gpt-4o') {
     const messages = buildMessages(system, user);
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -188,7 +188,7 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500, temperature = 
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'gpt-4o',
+            model,
             messages: messages,
             max_tokens: maxTokens,
             temperature: temperature
@@ -202,7 +202,7 @@ async function callOpenAI(apiKey, system, user, maxTokens = 1500, temperature = 
     };
 }
 
-async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature = 1.0) {
+async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature = 1.0, model = 'claude-sonnet-4-6') {
     const messages = buildMessages(null, user);
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -213,7 +213,7 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20241022',
+            model,
             max_tokens: maxTokens,
             temperature: temperature,
             system: system,
@@ -231,7 +231,7 @@ async function callAnthropic(apiKey, system, user, maxTokens = 1500, temperature
     };
 }
 
-async function callGemini(apiKey, system, user, maxTokens = 1500, temperature = 1.0) {
+async function callGemini(apiKey, system, user, maxTokens = 1500, temperature = 1.0, model = 'gemini-2.0-pro-exp-02-05') {
     // Gemini API structure for vision is slightly different, requiring 'inlineData' or 'fileData'
     // For simplicity, we'll assume text-only for now unless we implement full file upload handling
     // or convert base64 to parts.
@@ -240,7 +240,7 @@ async function callGemini(apiKey, system, user, maxTokens = 1500, temperature = 
     // Fallback for now: only text
     const textUser = typeof user === 'string' ? user : user.find(p => p.type === 'text')?.text || '';
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -528,13 +528,14 @@ async function callAI(providerConfig, system, user, maxTokens = 1500, temperatur
     }
 
     const { provider, apiKey } = providerConfig;
+    const model = providerConfig.modelName || providerConfig.model_name || undefined;
     switch (provider) {
-        case 'openai': return callOpenAI(apiKey, system, user, maxTokens, temperature);
-        case 'anthropic': return callAnthropic(apiKey, system, user, maxTokens, temperature);
-        case 'gemini': return callGemini(apiKey, system, user, maxTokens, temperature);
-        case 'openrouter': return callOpenRouter(apiKey, system, user, providerConfig.modelName, maxTokens, temperature);
-        case 'together': return callTogether(apiKey, system, user, providerConfig.modelName, maxTokens, temperature);
-        case 'deepinfra': return callDeepInfra(apiKey, system, user, providerConfig.modelName, maxTokens, temperature);
+        case 'openai': return callOpenAI(apiKey, system, user, maxTokens, temperature, model);
+        case 'anthropic': return callAnthropic(apiKey, system, user, maxTokens, temperature, model);
+        case 'gemini': return callGemini(apiKey, system, user, maxTokens, temperature, model);
+        case 'openrouter': return callOpenRouter(apiKey, system, user, model, maxTokens, temperature);
+        case 'together': return callTogether(apiKey, system, user, model, maxTokens, temperature);
+        case 'deepinfra': return callDeepInfra(apiKey, system, user, model, maxTokens, temperature);
         default: throw new Error(`Unknown provider: ${provider}`);
     }
 }

@@ -12,7 +12,6 @@ import Settings from './pages/Settings';
 import AIConfig from './pages/AIConfig';
 import StyleProfile from './pages/StyleProfile';
 import BatchTesting from './pages/BatchTesting';
-import CostDemo from './pages/CostDemo';
 import VersioningGuide from './pages/VersioningGuide';
 import Tools from './pages/Tools';
 import Timeline from './pages/Timeline';
@@ -35,7 +34,6 @@ export default function App() {
           <Route path="/models" element={<Models />} />
           <Route path="/batch-testing" element={<BatchTesting />} />
           <Route path="/style" element={<StyleProfile />} />
-          <Route path="/cost-calculator" element={<CostDemo />} />
           <Route path="/versioning-guide" element={<VersioningGuide />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/ai-config" element={<AIConfig />} />

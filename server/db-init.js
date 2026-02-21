@@ -373,6 +373,13 @@ async function initSchema() {
         // Add updated_at columns to existing tables
         await addUpdatedAtColumns(pool);
 
+        // --- Cleanup: remove deprecated credits system ---
+        await pool.query(`ALTER TABLE user_profiles DROP COLUMN IF EXISTS credit_balance`);
+        await pool.query(`ALTER TABLE user_profiles DROP COLUMN IF EXISTS total_credits_earned`);
+        await pool.query(`ALTER TABLE user_profiles DROP COLUMN IF EXISTS total_credits_spent`);
+        await pool.query(`DROP TABLE IF EXISTS credit_transactions`);
+
+
     } catch (err) {
         throw err; // Re-throw the error so the caller can catch it
     } finally {

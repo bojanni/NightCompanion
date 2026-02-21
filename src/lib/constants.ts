@@ -22,4 +22,4 @@ export const LOCAL_PROVIDERS = {
     LMSTUDIO: PROVIDERS.LMSTUDIO
 } as const;
 
-export const DEFAULT_USER_ID = '88ea3bcb-d9a8-44b5-ac26-c90885a74686';
+

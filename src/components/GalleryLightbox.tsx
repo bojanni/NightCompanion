@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Copy, Star } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import type { GalleryItem } from '../lib/types';
@@ -92,9 +93,10 @@ export default function GalleryLightbox({
     const imageUrl = current.image_url || current.thumbnail_url || '';
     const hasMultiple = images.length > 1;
 
-    return (
+    return createPortal(
         <div
             className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
         >
@@ -109,7 +111,7 @@ export default function GalleryLightbox({
                         onError={() => setImgError(true)}
                         style={{
                             position: 'absolute',
-                            top: -60,
+                            top: -80,
                             right: -60,
                             bottom: -60,
                             left: -60,
@@ -277,6 +279,7 @@ export default function GalleryLightbox({
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

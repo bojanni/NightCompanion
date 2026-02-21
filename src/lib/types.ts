@@ -115,21 +115,10 @@ export interface ModelUsage {
 
 export interface UserProfile {
   id: string;
-  credit_balance: number;
-  total_credits_earned: number;
-  total_credits_spent: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface CreditTransaction {
-  id: string;
-  amount: number;
-  transaction_type: 'earned' | 'spent' | 'purchase' | 'bonus';
-  description: string;
-  metadata: Record<string, unknown>;
-  created_at: string;
-}
 
 export type DetailCategory = 'clothing' | 'lighting' | 'pose' | 'style' | 'expression' | 'environment' | 'general';
 

@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/api';
-import { DEFAULT_USER_ID } from '../lib/constants';
 import { toast } from 'sonner';
 import SidebarCostWidget from './SidebarCostWidget';
 
@@ -54,11 +53,10 @@ export default function Layout() {
     setSavingLang(true);
     try {
       await i18n.changeLanguage(lng);
-      // Persist to DB using central DEFAULT_USER_ID
+      // Persist to DB (single-user app — no user_id filter needed)
       const { error } = await db
         .from('user_profiles')
-        .update({ language: lng })
-        .eq('id', DEFAULT_USER_ID);
+        .update({ language: lng });
 
       if (error) {
         console.error('Failed to save language to DB:', error);

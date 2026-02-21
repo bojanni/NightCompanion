@@ -59,21 +59,6 @@ export function getResolutionMultiplier(resolution: string): number {
   return resolutionCost?.multiplier ?? 1.0;
 }
 
-export function canAffordGeneration(
-  creditBalance: number,
-  cost: number
-): boolean {
-  return creditBalance >= cost;
-}
-
-export function calculateMaxGenerations(
-  creditBalance: number,
-  costPerImage: number
-): number {
-  if (costPerImage <= 0) return 0;
-  return Math.floor(creditBalance / costPerImage);
-}
-
 export function estimateLLMCost(
   modelPromptPrice: string | undefined,
   modelCompletionPrice: string | undefined,
