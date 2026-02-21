@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
-import { Check, ChevronDown, Search, Server, Cloud, Cpu, Info } from 'lucide-react';
+import { Check, ChevronDown, Search, Server, Cloud, Info, CheckCircle2, Sparkles, Wand2, Eye, BookOpen } from 'lucide-react';
+import { getModelById } from '../lib/ai-provider-models';
+import type { TaskType } from '../lib/ai-provider-models';
 
+// ── Types ────────────────────────────────────────────────────────────────────
 interface ModelOption {
     id: string;
     name: string;
@@ -12,6 +15,7 @@ interface ModelOption {
         image?: string;
         request?: string;
     };
+    capabilities?: string[];
 }
 
 interface ProviderInfo {
@@ -29,6 +33,267 @@ interface ModelSelectorProps {
     placeholder?: string;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function formatPrice(priceStr: string | undefined): string {
+    if (!priceStr) return '';
+    const price = parseFloat(priceStr);
+    if (isNaN(price)) return '';
+    const perMillion = price * 1_000_000;
+    if (perMillion < 0.01) return '<$0.01/1M';
+    return `$${perMillion.toFixed(2)}/1M`;
+}
+
+// Provider dot colours
+const PROVIDER_DOTS: Record<string, string> = {
+    openai: 'bg-emerald-400',
+    anthropic: 'bg-orange-400',
+    google: 'bg-blue-400',
+    gemini: 'bg-blue-400',
+    openrouter: 'bg-violet-400',
+    together: 'bg-pink-400',
+    deepinfra: 'bg-rose-400',
+    ollama: 'bg-purple-400',
+    lmstudio: 'bg-pink-400',
+};
+
+function providerDot(providerId: string) {
+    return PROVIDER_DOTS[providerId] ?? 'bg-slate-400';
+}
+
+// Badge colours matching AIModelSelector
+const BADGE_COLORS: Record<string, string> = {
+    Best: 'bg-amber-500/20   text-amber-400   border-amber-500/30',
+    Fast: 'bg-blue-500/20    text-blue-400    border-blue-500/30',
+    Budget: 'bg-green-500/20   text-green-400   border-green-500/30',
+    Local: 'bg-slate-600/30   text-slate-300   border-slate-600/30',
+};
+
+// Task pill meta
+const TASK_META: Record<TaskType, { label: string; icon: typeof Sparkles; color: string }> = {
+    generate: { label: 'Generation', icon: Sparkles, color: 'text-amber-400  bg-amber-500/10  border-amber-500/20' },
+    improve: { label: 'Improvement', icon: Wand2, color: 'text-teal-400   bg-teal-500/10   border-teal-500/20' },
+    vision: { label: 'Vision', icon: Eye, color: 'text-sky-400    bg-sky-500/10    border-sky-500/20' },
+    research: { label: 'Research', icon: BookOpen, color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+};
+
+function TaskPill({ task }: { task: TaskType }) {
+    const meta = TASK_META[task];
+    const Icon = meta.icon;
+    return (
+        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${meta.color}`}>
+            <Icon size={9} />
+            {meta.label}
+        </span>
+    );
+}
+
+// ── Model Item ─────────────────────────────────────────────────────────────
+const ModelItem = forwardRef<HTMLDivElement, {
+    model: ModelOption;
+    providerName: string | undefined;
+    isSelected: boolean;
+    isActive: boolean;
+    onSelect: () => void;
+}>(({ model, providerName, isSelected, isActive, onSelect }, ref) => {
+    // Cross-reference static metadata (badge, description, recommendedFor, infoUrl)
+    // Try both "provider:id" and bare "id" to support OpenRouter dynamic models
+    const knownMeta = getModelById(model.id);
+
+    const description = knownMeta?.description ?? model.description;
+    const badge = knownMeta?.badge;
+    const recommendedFor = knownMeta?.recommendedFor ?? [];
+    const infoUrl = knownMeta?.infoUrl;
+
+    const costIn = formatPrice(model.pricing?.prompt);
+    const costOut = formatPrice(model.pricing?.completion);
+    const isFree = model.id.includes(':free') || model.id.includes('free');
+    const dot = providerDot(model.provider);
+
+    return (
+        <div
+            ref={ref}
+            role="option"
+            aria-selected={isSelected}
+            onClick={onSelect}
+            className={`group rounded-xl transition-all border cursor-pointer w-full text-left flex items-start gap-0 focus:outline-none overflow-hidden
+                ${isActive ? 'ring-1 ring-teal-500/50' : ''}
+                ${isSelected
+                    ? 'bg-slate-800 border-teal-500/40 shadow-[0_0_10px_-3px_rgba(20,184,166,0.15)]'
+                    : 'hover:bg-slate-800/60 border-transparent hover:border-slate-700'
+                }
+            `}
+        >
+            {/* ── Cost column ── */}
+            <div className="flex-none w-28 px-3 py-3 text-right border-r border-slate-700/40 self-stretch flex flex-col justify-center">
+                {isFree ? (
+                    <p className="text-[10px] font-bold text-emerald-400 font-mono">Free</p>
+                ) : costIn ? (
+                    <>
+                        <p className="text-[10px] text-slate-500 font-mono leading-relaxed">
+                            In: <span className="text-slate-300">{costIn.replace('/1M', '')}</span>
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-mono leading-relaxed">
+                            Out: <span className="text-slate-300">{costOut?.replace('/1M', '') || '–'}</span>
+                        </p>
+                    </>
+                ) : (
+                    <p className="text-[10px] text-slate-600 font-mono">–</p>
+                )}
+            </div>
+
+            {/* ── Content ── */}
+            <div className="flex-1 min-w-0 px-3 py-2.5">
+                {/* Name + badge + checkmark */}
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-200'}`}>
+                        {model.name}
+                    </span>
+                    {isSelected && <CheckCircle2 size={13} className="text-teal-400 flex-none" />}
+                    {badge && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${BADGE_COLORS[badge]}`}>
+                            {badge}
+                        </span>
+                    )}
+                    {isFree && !badge && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-green-500/20 text-green-400 border-green-500/30">
+                            Free
+                        </span>
+                    )}
+                </div>
+
+                {/* Provider badge + task pills */}
+                <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700/50 text-slate-300 border border-slate-600/40">
+                        <span className={`w-1.5 h-1.5 rounded-full flex-none ${dot}`} />
+                        {providerName || model.provider}
+                    </span>
+                    {recommendedFor.map(t => (
+                        <TaskPill key={t} task={t} />
+                    ))}
+                </div>
+
+                {/* Description */}
+                {description && (
+                    <p className="text-[11px] text-slate-400 leading-snug line-clamp-2 mb-1">
+                        {description}
+                    </p>
+                )}
+
+                {/* More info */}
+                {infoUrl && (
+                    <span
+                        role="link"
+                        tabIndex={0}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(infoUrl, '_blank', 'noopener,noreferrer');
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') window.open(infoUrl, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors cursor-pointer"
+                    >
+                        <Info size={10} />
+                        More info
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+});
+ModelItem.displayName = 'ModelItem';
+
+// ── Trigger button (closed state) ─────────────────────────────────────────
+function TriggerButton({
+    model,
+    provider,
+    isOpen,
+    placeholder,
+    onClick,
+}: {
+    model: ModelOption | undefined;
+    provider: ProviderInfo | undefined;
+    isOpen: boolean;
+    placeholder: string;
+    onClick: () => void;
+}) {
+    const knownMeta = model ? getModelById(model.id) : undefined;
+    const badge = knownMeta?.badge;
+    const costIn = model?.pricing ? formatPrice(model.pricing.prompt) : undefined;
+    const costOut = model?.pricing ? formatPrice(model.pricing.completion) : undefined;
+    const dot = model ? providerDot(model.provider) : 'bg-slate-500';
+    const isFree = model?.id.includes(':free') || model?.id.includes('free');
+
+    if (!model) {
+        return (
+            <button
+                type="button"
+                onClick={onClick}
+                className="w-full flex items-center justify-between bg-slate-800/50 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2.5 text-left transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+            >
+                <span className="text-xs text-slate-500">{placeholder}</span>
+                <ChevronDown size={14} className={`text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`w-full flex items-center gap-0 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/50 overflow-hidden text-left
+                ${isOpen
+                    ? 'bg-slate-800 border-teal-500/40'
+                    : 'bg-slate-800/50 border-slate-700 hover:border-slate-600 hover:bg-slate-800/70'
+                }
+            `}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
+        >
+            {/* Cost mini-column */}
+            <div className="flex-none px-3 py-2 border-r border-slate-700/40 text-right self-stretch flex flex-col justify-center w-24">
+                {isFree ? (
+                    <p className="text-[10px] font-bold text-emerald-400 font-mono">Free</p>
+                ) : costIn ? (
+                    <>
+                        <p className="text-[10px] text-slate-500 font-mono leading-tight">
+                            In: <span className="text-slate-300">{costIn.replace('/1M', '')}</span>
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-mono leading-tight">
+                            Out: <span className="text-slate-300">{costOut?.replace('/1M', '') || '–'}</span>
+                        </p>
+                    </>
+                ) : (
+                    <span className="text-[10px] text-slate-600 italic">no price</span>
+                )}
+            </div>
+
+            {/* Model info */}
+            <div className="flex-1 px-2.5 py-2 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-semibold text-white truncate">{model.name}</span>
+                    {badge && (
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex-none ${BADGE_COLORS[badge]}`}>
+                            {badge}
+                        </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-none ${dot}`} />
+                    <span className="text-[10px] text-slate-400 truncate">
+                        {provider ? provider.name : model.provider}
+                    </span>
+                </div>
+            </div>
+
+            <ChevronDown size={13} className={`text-slate-500 transition-transform flex-none mr-2 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+    );
+}
+
+// ── Main Component ──────────────────────────────────────────────────────────
 export default function ModelSelector({
     value,
     onChange,
@@ -47,320 +312,155 @@ export default function ModelSelector({
 
     // Close on click outside
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        function handler(e: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setIsOpen(false);
                 setActiveIndex(-1);
             }
         }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const selectedModel = models.find((m) => m.id === value);
-    const selectedProvider = providers.find((p) => p.id === selectedModel?.provider);
+    const selectedModel = models.find(m => m.id === value);
+    const selectedProvider = providers.find(p => p.id === selectedModel?.provider);
 
-    // Filter logic
-    const filteredModels = models.filter((m) => {
-        const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (m.description && m.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-        return matchesSearch;
+    // Filter
+    const filteredModels = models.filter(m => {
+        const q = searchQuery.toLowerCase();
+        return (
+            m.name.toLowerCase().includes(q) ||
+            m.provider.toLowerCase().includes(q) ||
+            (m.description ?? '').toLowerCase().includes(q)
+        );
     });
 
-    // Group by Local vs Remote for display sectioning
     const localModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'local');
-    const remoteModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'cloud');
+    const cloudModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'cloud');
+    const allDisplay = [...localModels, ...cloudModels];
 
-    // Flattened list for keyboard navigation index
-    const allDisplayModels = [...localModels, ...remoteModels];
-
-    // Update refs array size
+    // Sync refs array size
     useEffect(() => {
-        itemRefs.current = itemRefs.current.slice(0, allDisplayModels.length);
-    }, [allDisplayModels.length]);
+        itemRefs.current = itemRefs.current.slice(0, allDisplay.length);
+    }, [allDisplay.length]);
 
-    // Keyboard Navigation
+    // Scroll active into view
+    useEffect(() => {
+        if (isOpen && activeIndex >= 0) {
+            itemRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' });
+        }
+    }, [activeIndex, isOpen]);
+
+    // Keyboard nav
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (!isOpen) {
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
                 e.preventDefault();
                 setIsOpen(true);
-                setActiveIndex(0); // Select first item on open
+                setActiveIndex(0);
             }
             return;
         }
-
-        const totalItems = allDisplayModels.length;
-
+        const total = allDisplay.length;
         switch (e.key) {
-            case 'ArrowDown':
-                e.preventDefault();
-                setActiveIndex(prev => (prev + 1) % totalItems);
-                break;
-            case 'ArrowUp':
-                e.preventDefault();
-                setActiveIndex(prev => (prev - 1 + totalItems) % totalItems);
-                break;
+            case 'ArrowDown': e.preventDefault(); setActiveIndex(p => (p + 1) % total); break;
+            case 'ArrowUp': e.preventDefault(); setActiveIndex(p => (p - 1 + total) % total); break;
             case 'Enter':
                 e.preventDefault();
-                if (activeIndex >= 0 && activeIndex < totalItems) {
-                    const selected = allDisplayModels[activeIndex];
-                    if (selected) {
-                        onChange(selected.id, selected.provider);
-                        setIsOpen(false);
-                        setActiveIndex(-1);
-                    }
+                if (activeIndex >= 0 && activeIndex < total) {
+                    const sel = allDisplay[activeIndex];
+                    if (sel) { onChange(sel.id, sel.provider); setIsOpen(false); setActiveIndex(-1); }
                 }
                 break;
-            case 'Escape':
-                e.preventDefault();
-                setIsOpen(false);
-                setActiveIndex(-1);
-                break;
-            case 'Tab':
-                setIsOpen(false);
-                break;
+            case 'Escape': e.preventDefault(); setIsOpen(false); setActiveIndex(-1); break;
+            case 'Tab': setIsOpen(false); break;
         }
     };
 
-    // Scroll active item into view
-    useEffect(() => {
-        if (isOpen && activeIndex >= 0 && itemRefs.current[activeIndex]) {
-            itemRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' });
-        }
-    }, [activeIndex, isOpen]);
-
+    function renderSection(label: string, icon: React.ReactNode, sectionModels: ModelOption[], offset: number) {
+        if (sectionModels.length === 0) return null;
+        return (
+            <div>
+                <div className="flex items-center gap-2 px-2 mb-2">
+                    {icon}
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
+                </div>
+                <div className="space-y-1">
+                    {sectionModels.map((model, idx) => (
+                        <ModelItem
+                            key={model.id}
+                            model={model}
+                            providerName={providers.find(p => p.id === model.provider)?.name}
+                            isSelected={value === model.id}
+                            isActive={activeIndex === offset + idx}
+                            ref={el => (itemRefs.current[offset + idx] = el)}
+                            onSelect={() => { onChange(model.id, model.provider); setIsOpen(false); setActiveIndex(-1); }}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef} onKeyDown={handleKeyDown}>
-            {/* Trigger Button */}
-            <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between bg-slate-800/50 border border-slate-700 hover:border-slate-600 rounded-xl px-3 py-2 text-left transition-all group focus:outline-none focus:ring-2 focus:ring-teal-500/50"
-                aria-haspopup="listbox"
-                aria-expanded={isOpen ? "true" : "false"}
-            >
-                <div className="flex items-center gap-2 overflow-hidden">
-                    <div className={`p-1.5 rounded-lg ${selectedProvider?.type === 'local' ? 'bg-violet-500/10 text-violet-400' : 'bg-teal-500/10 text-teal-400'}`}>
-                        {selectedProvider?.type === 'local' ? <Server size={14} /> : <Cloud size={14} />}
-                    </div>
-                    <div className="flex flex-col truncate">
-                        <span className="text-xs font-medium text-slate-200 truncate">
-                            {selectedModel?.name || placeholder}
-                        </span>
-                        {selectedModel?.provider && (
-                            <span className="text-[10px] text-slate-500 truncate">
-                                {providers.find(p => p.id === selectedModel.provider)?.name}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <ChevronDown size={14} className={`text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Trigger */}
+            <TriggerButton
+                model={selectedModel}
+                provider={selectedProvider}
+                isOpen={isOpen}
+                placeholder={placeholder}
+                onClick={() => { setIsOpen(v => !v); if (!isOpen) setActiveIndex(0); }}
+            />
 
-            {/* Dropdown Menu */}
+            {/* Dropdown */}
             {isOpen && (
-                <div
-                    className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col max-h-[400px] w-full min-w-[300px] max-w-[90vw]"
-                    style={{ width: 'max-content', maxWidth: 'min(90vw, 400px)' }} // Responsive max width
-                >
-                    {/* Header: Search & Filter */}
-                    <div className="p-3 border-b border-slate-800 space-y-3 bg-slate-900/95 backdrop-blur sticky top-0 z-10 w-full">
-                        {/* Search */}
-                        <div className="relative">
-                            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col"
+                    style={{ minWidth: 340, maxWidth: 'min(92vw, 480px)', maxHeight: 440 }}>
+
+                    {/* Search */}
+                    <div className="p-2 border-b border-slate-800/80 bg-slate-900/95 backdrop-blur sticky top-0">
+                        <div className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3 py-2">
+                            <Search size={12} className="text-slate-500 flex-none" />
                             <input
                                 type="text"
                                 placeholder="Search models..."
                                 value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setActiveIndex(0); }}
-                                className="w-full bg-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 border border-slate-700 focus:outline-none focus:border-slate-600"
+                                onChange={e => { setSearchQuery(e.target.value); setActiveIndex(0); }}
+                                className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 outline-none"
                                 autoFocus
-                                onKeyDown={(e) => {
-                                    // Allow navigation keys to bubble up to container
-                                    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
-                                        // do nothing, let bubble
-                                    } else {
-                                        e.stopPropagation(); // Stop other keys from triggering container handlers if any
+                                onKeyDown={e => {
+                                    if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
+                                        e.stopPropagation();
                                     }
                                 }}
                             />
                         </div>
-
-
                     </div>
 
-                    {/* List Content */}
-                    <div
-                        className="overflow-y-auto flex-1 p-2 space-y-4 dropdown-scroll relative"
-                        ref={listRef}
-                        role="listbox"
-                        style={{
-                            // Mask bottom to show scroll hint if needed, though scrollbar is now visible
-                            // CSS mask to fade out bottom slightly
-                            maskImage: 'linear-gradient(to bottom, black calc(100% - 20px), transparent 100%)',
-                            WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 20px), transparent 100%)'
-                        }}
-                    >
-
-                        {/* Local Models (Pinned) */}
-                        {localModels.length > 0 && (
-                            <div className="space-y-1">
-                                <div className="px-2 py-1 flex items-center gap-2 text-[10px] font-semibold text-violet-300 uppercase tracking-wider bg-violet-500/5 rounded-lg mb-2">
-                                    <Server size={10} />
-                                    Local (Privately Hosted)
-                                </div>
-                                {localModels.map((model, idx) => (
-                                    <ModelItem
-                                        key={model.id}
-                                        model={model}
-                                        providerName={providers.find(p => p.id === model.provider)?.name}
-                                        isSelected={value === model.id}
-                                        isActive={activeIndex === idx}
-                                        ref={(el) => (itemRefs.current[idx] = el)}
-                                        onSelect={() => { onChange(model.id, model.provider); setIsOpen(false); }}
-                                    />
-                                ))}
-                            </div>
+                    {/* Model lists */}
+                    <div className="overflow-y-auto flex-1 p-2 space-y-4" ref={listRef} role="listbox">
+                        {renderSection(
+                            'Local Models',
+                            <Server size={11} className="text-slate-500" />,
+                            localModels,
+                            0
                         )}
-
-                        {/* Remote Models */}
-                        {remoteModels.length > 0 && (
-                            <div className="space-y-1">
-                                <div className="px-2 py-1 flex items-center gap-2 text-[10px] font-semibold text-teal-300 uppercase tracking-wider bg-teal-500/5 rounded-lg mb-2">
-                                    <Cloud size={10} />
-                                    Cloud Providers
-                                </div>
-                                {remoteModels.map((model, idx) => {
-                                    const globalIdx = localModels.length + idx;
-                                    return (
-                                        <ModelItem
-                                            key={model.id}
-                                            model={model}
-                                            providerName={providers.find(p => p.id === model.provider)?.name}
-                                            isSelected={value === model.id}
-                                            isActive={activeIndex === globalIdx}
-                                            ref={(el) => (itemRefs.current[globalIdx] = el)}
-                                            onSelect={() => { onChange(model.id, model.provider); setIsOpen(false); }}
-                                        />
-                                    );
-                                })}
-                            </div>
+                        {renderSection(
+                            'Cloud Providers',
+                            <Cloud size={11} className="text-slate-500" />,
+                            cloudModels,
+                            localModels.length
                         )}
-
-                        {filteredModels.length === 0 && (
-                            <div className="px-4 py-8 text-center text-xs text-slate-500">
-                                No models found
-                            </div>
+                        {allDisplay.length === 0 && (
+                            <p className="text-center text-xs text-slate-500 py-6">No models match your search</p>
                         )}
-
-                        <div className="px-3 py-2 text-[10px] text-slate-600 text-center border-t border-slate-800/50">
-                            Showing {allDisplayModels.length} models
-                        </div>
+                        <p className="text-center text-[10px] text-slate-700 pt-1">
+                            {allDisplay.length} model{allDisplay.length !== 1 ? 's' : ''}
+                        </p>
                     </div>
                 </div>
             )}
         </div>
     );
 }
-
-function formatPrice(priceStr: string | undefined): string {
-    if (!priceStr) return '';
-    const price = parseFloat(priceStr);
-    if (isNaN(price)) return '';
-    // Convert to per 1M tokens
-    const perMillion = price * 1000000;
-
-    if (perMillion < 0.01) return '<$0.01';
-    return `$${perMillion.toFixed(2)}`;
-}
-
-// ForwardRef for scrolling
-const ModelItem = forwardRef<HTMLDivElement, {
-    model: ModelOption,
-    providerName: string | undefined,
-    isSelected: boolean,
-    isActive: boolean,
-    onSelect: () => void
-}>(({ model, providerName, isSelected, isActive, onSelect }, ref) => {
-    const [expanded, setExpanded] = useState(false);
-
-    return (
-        <div
-            ref={ref}
-            role="option"
-            aria-selected={isSelected}
-            onClick={onSelect}
-            className={`group rounded-lg transition-all border cursor-pointer w-full text-left px-3 py-2.5 flex items-start gap-3 focus:outline-none ${isActive ? 'ring-1 ring-teal-500/50 bg-slate-800' : ''
-                } ${isSelected
-                    ? 'bg-teal-500/10 border-teal-500/30'
-                    : 'hover:bg-slate-800 border-transparent hover:border-slate-700'
-                }`}
-        >
-            {/* Icon */}
-            <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-teal-500/20 text-teal-300' : 'bg-slate-800 text-slate-400 group-hover:bg-slate-700 group-hover:text-slate-300'
-                }`}>
-                <Cpu size={16} />
-                {model.id.includes('free') && (
-                    <span className="text-emerald-400">Free</span>
-                )}
-            </div>
-
-
-            {/* Pricing Info */}
-            {
-                model.pricing && (
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5 bg-slate-800/50 px-1.5 py-0.5 rounded w-fit">
-                        <span className="text-slate-400">In: {formatPrice(model.pricing.prompt)}/1M</span>
-                        <span className="text-slate-600">|</span>
-                        <span className="text-slate-400">Out: {formatPrice(model.pricing.completion)}/1M</span>
-                    </div>
-                )
-            }
-
-            {/* Description - Summary */}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <span className={`text-sm font-medium truncate ${isSelected ? 'text-teal-200' : 'text-slate-200'}`}>
-                        {model.name}
-                    </span>
-                    {isSelected && <Check size={14} className="text-teal-400 flex-shrink-0" />}
-                </div>
-
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 mb-1.5">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
-                        {providerName || model.provider}
-                    </span>
-                    {model.id.includes('free') && (
-                        <span className="text-emerald-400">Free</span>
-                    )}
-                </div>
-
-                {/* Description - Summary */}
-                {model.description && (
-                    <div className="relative group/desc">
-                        <p
-                            className={`text-[11px] leading-relaxed text-slate-400 ${expanded ? '' : 'line-clamp-2'}`}
-                            title={!expanded ? model.description : undefined}
-                        >
-                            {model.description}
-                        </p>
-                        {model.description.length > 80 && (
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                                className="mt-1 flex items-center gap-1 text-[10px] text-slate-500 hover:text-teal-400 transition-colors focus:underline focus:outline-none"
-                                tabIndex={-1} // Prevent tabbing to this for now to keep nav simple
-                            >
-                                {expanded ? 'Show less' : 'More info'}
-                                <Info size={10} />
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div >
-    );
-});
