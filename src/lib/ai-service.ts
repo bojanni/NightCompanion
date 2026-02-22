@@ -45,7 +45,7 @@ export function taskModelToPreferences(taskModel?: string): ApiPreferences | und
 }
 
 export async function improvePrompt(prompt: string, token: string, apiPreferences?: ApiPreferences, taskModel?: string, modelTips?: string[]): Promise<string> {
-  const payload: Record<string, any> = { prompt };
+  const payload: Record<string, unknown> = { prompt };
   const prefs = taskModelToPreferences(taskModel) ?? apiPreferences;
   if (prefs) payload.apiPreferences = prefs;
   if (modelTips && modelTips.length > 0) payload.modelTips = modelTips;
@@ -60,7 +60,7 @@ export async function improvePromptWithNegative(
   taskModel?: string,
   modelTips?: string[]
 ): Promise<{ improved: string; negativePrompt: string }> {
-  const payload: Record<string, any> = { prompt, negativePrompt };
+  const payload: Record<string, unknown> = { prompt, negativePrompt };
   const prefs = taskModelToPreferences(taskModel) ?? apiPreferences;
   if (prefs) payload.apiPreferences = prefs;
   if (modelTips && modelTips.length > 0) payload.modelTips = modelTips;
@@ -88,7 +88,7 @@ export async function improvePromptDetailed(
   token: string,
   apiPreferences?: ApiPreferences
 ): Promise<DetailedImprovement> {
-  const payload: Record<string, any> = { prompt };
+  const payload: Record<string, unknown> = { prompt };
   if (apiPreferences) {
     payload.apiPreferences = apiPreferences;
   }
@@ -125,7 +125,7 @@ export async function generateFromDescription(
   },
   token: string
 ): Promise<string> {
-  const payload: Record<string, any> = {
+  const payload: Record<string, unknown> = {
     description,
     context: options.context,
     preferences: options.preferences,
@@ -138,7 +138,7 @@ export async function generateFromDescription(
 }
 
 export async function generateRandomPromptAI(token: string, theme?: string, maxWords?: number, greylist?: string[], creativity?: 'focused' | 'balanced' | 'wild', recentPrompts?: string[], taskModel?: string): Promise<{ prompt: string; negativePrompt?: string; style?: string }> {
-  const payload: Record<string, any> = { theme, maxWords, greylist, creativity, recentPrompts };
+  const payload: Record<string, unknown> = { theme, maxWords, greylist, creativity, recentPrompts };
   const prefs = taskModelToPreferences(taskModel);
   if (prefs) payload.apiPreferences = prefs;
   return callAI('random', payload, token);
@@ -327,7 +327,7 @@ export async function optimizePromptForModel(
   negativePrompt?: string,
   apiPreferences?: ApiPreferences
 ): Promise<{ optimizedPrompt: string; negativePrompt?: string }> {
-  const payload: Record<string, any> = { prompt, targetModel, negativePrompt };
+  const payload: Record<string, unknown> = { prompt, targetModel, negativePrompt };
   if (apiPreferences) payload.apiPreferences = apiPreferences;
   return callAI('optimize-for-model', payload, token);
 }
@@ -350,7 +350,7 @@ export async function listModels(
   apiKey?: string,
   endpointUrl?: string
 ): Promise<ModelListItem[]> {
-  const payload: Record<string, any> = {};
+  const payload: Record<string, unknown> = {};
   if (provider) payload.provider = provider;
   if (apiKey) payload.apiKey = apiKey;
   if (endpointUrl) payload.endpointUrl = endpointUrl;
