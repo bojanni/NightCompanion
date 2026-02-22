@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, forwardRef } from 'react';
-import { Check, ChevronDown, Search, Server, Cloud, Info, CheckCircle2, Sparkles, Wand2, Eye, BookOpen } from 'lucide-react';
+import { ChevronDown, Search, Info, CheckCircle2, Sparkles, Wand2, Eye, BookOpen } from 'lucide-react';
 import { getModelById } from '../lib/ai-provider-models';
 import type { TaskType } from '../lib/ai-provider-models';
 
@@ -335,9 +335,8 @@ export default function ModelSelector({
         );
     });
 
-    const localModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'local');
-    const cloudModels = filteredModels.filter(m => providers.find(p => p.id === m.provider)?.type === 'cloud');
-    const allDisplay = [...localModels, ...cloudModels];
+    // Order alphabetically
+    const allDisplay = [...filteredModels].sort((a, b) => a.name.localeCompare(b.name));
 
     // Sync refs array size
     useEffect(() => {
@@ -377,31 +376,6 @@ export default function ModelSelector({
         }
     };
 
-    function renderSection(label: string, icon: React.ReactNode, sectionModels: ModelOption[], offset: number) {
-        if (sectionModels.length === 0) return null;
-        return (
-            <div>
-                <div className="flex items-center gap-2 px-2 mb-2">
-                    {icon}
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
-                </div>
-                <div className="space-y-1">
-                    {sectionModels.map((model, idx) => (
-                        <ModelItem
-                            key={model.id}
-                            model={model}
-                            providerName={providers.find(p => p.id === model.provider)?.name}
-                            isSelected={value === model.id}
-                            isActive={activeIndex === offset + idx}
-                            ref={el => (itemRefs.current[offset + idx] = el)}
-                            onSelect={() => { onChange(model.id, model.provider); setIsOpen(false); setActiveIndex(-1); }}
-                        />
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className={`relative ${className}`} ref={dropdownRef} onKeyDown={handleKeyDown}>
             {/* Trigger */}
@@ -440,18 +414,19 @@ export default function ModelSelector({
 
                     {/* Model lists */}
                     <div className="overflow-y-auto flex-1 p-2 space-y-4" ref={listRef} role="listbox">
-                        {renderSection(
-                            'Local Models',
-                            <Server size={11} className="text-slate-500" />,
-                            localModels,
-                            0
-                        )}
-                        {renderSection(
-                            'Cloud Providers',
-                            <Cloud size={11} className="text-slate-500" />,
-                            cloudModels,
-                            localModels.length
-                        )}
+                        <div className="space-y-1">
+                            {allDisplay.map((model, idx) => (
+                                <ModelItem
+                                    key={model.id}
+                                    model={model}
+                                    providerName={providers.find(p => p.id === model.provider)?.name}
+                                    isSelected={value === model.id}
+                                    isActive={activeIndex === idx}
+                                    ref={el => (itemRefs.current[idx] = el)}
+                                    onSelect={() => { onChange(model.id, model.provider); setIsOpen(false); setActiveIndex(-1); }}
+                                />
+                            ))}
+                        </div>
                         {allDisplay.length === 0 && (
                             <p className="text-center text-xs text-slate-500 py-6">No models match your search</p>
                         )}

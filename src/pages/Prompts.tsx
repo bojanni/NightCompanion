@@ -24,6 +24,97 @@ import ChoiceModal from '../components/ChoiceModal';
 
 const PAGE_SIZE = 20;
 
+type GalleryItemData = { id: string; image_url: string; title: string; rating: number; model?: string };
+
+function ImageCarousel({ images, promptId, onUnlink, onImageClick, t }: { images: GalleryItemData[], promptId: string, onUnlink: (imgId: string) => void, onImageClick: (img: GalleryItemData) => void, t: TFunction }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const currentImg = images[currentIndex];
+
+  if (!currentImg) return null;
+
+  return (
+    <>
+      <div
+        className="absolute inset-0 z-0 bg-slate-800 rounded-xl overflow-hidden cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onImageClick(currentImg);
+        }}
+        title={t('common.view', { defaultValue: `View ${currentImg.title || 'Untitled'}` })}
+      >
+        <img
+          src={currentImg.image_url}
+          alt={currentImg.title}
+          className="w-full h-full object-cover transition-transform hover:scale-[1.02] absolute inset-0"
+        />
+
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onUnlink(currentImg.id);
+            }}
+            className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/carousel:opacity-100 z-10"
+            title={t('common.unlink', { defaultValue: 'Unlink image' })}
+          >
+            <X size={12} />
+          </button>
+          <div className="absolute bottom-1 left-1 right-1">
+            <p className="text-[10px] text-white truncate flex items-center gap-1">
+              <Lock size={9} />
+              {currentImg.title || t('common.linkedImage', { defaultValue: 'Linked Image' })}
+            </p>
+          </div>
+          {currentImg.model && (
+            <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
+              {currentImg.model}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Navigation Buttons */}
+      <div className="absolute inset-0 flex items-center justify-between px-2 opacity-0 group-hover/carousel:opacity-100 transition-opacity z-10 pointer-events-none">
+        <button
+          onClick={handlePrevious}
+          className="p-1.5 rounded-full bg-black/50 text-white hover:bg-black/80 backdrop-blur-sm transition-all pointer-events-auto"
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <button
+          onClick={handleNext}
+          className="p-1.5 rounded-full bg-black/50 text-white hover:bg-black/80 backdrop-blur-sm transition-all pointer-events-auto"
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+
+      {/* Slide Indicators */}
+      <div className="absolute top-1.5 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+        {images.map((_, idx) => (
+          <div
+            key={idx}
+            className={`h-1 rounded-full transition-all ${idx === currentIndex ? 'w-3 bg-amber-400' : 'w-1 bg-white/40'
+              }`}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function Prompts() {
   const { t } = useTranslation();
   const {
@@ -545,48 +636,52 @@ export default function Prompts() {
 
                   <div className="px-5 pb-5">
                     {promptImages && promptImages.length > 0 && (
-                      <div className={`grid gap-2 mb-3 ${promptImages.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                        {promptImages.map((img) => (
-                          <div key={img.id} className="relative group/img">
-                            <div
-                              className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]"
+                      <div className="relative mb-3 group/carousel">
+                        {/* Carousel Container */}
+                        <div className="relative w-full aspect-square bg-slate-800 rounded-xl overflow-hidden cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Find current index state, or default to 0
+                            // Just open the first item for now if clicked on the image directly
+                            setLightboxImage(promptImages[0]);
+                          }}
+                        >
+                          <img
+                            src={promptImages[0]?.image_url}
+                            alt={promptImages[0]?.title}
+                            className="w-full h-full object-cover transition-transform hover:scale-[1.02]"
+                          />
+
+                          {/* Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setLightboxImage(img);
+                                handleUnlinkImage(prompt.id, promptImages[0]!.id);
                               }}
-                              title={t('common.view', { defaultValue: `View ${img.title || 'Untitled'}` })}
+                              className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/carousel:opacity-100 z-10"
+                              title={t('common.unlink', { defaultValue: 'Unlink image' })}
                             >
-                              <img
-                                src={img.image_url}
-                                alt={img.title}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleUnlinkImage(prompt.id, img.id);
-                                  }}
-                                  className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 rounded-lg text-white transition-colors opacity-0 group-hover/img:opacity-100 z-10"
-                                  title={t('common.unlink', { defaultValue: 'Unlink image' })}
-                                >
-                                  <X size={12} />
-                                </button>
-                                <div className="absolute bottom-1 left-1 right-1">
-                                  <p className="text-[10px] text-white truncate flex items-center gap-1">
-                                    <Lock size={9} />
-                                    {img.title || t('common.linkedImage', { defaultValue: 'Linked Image' })}
-                                  </p>
-                                </div>
-                                {img.model && (
-                                  <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
-                                    {img.model}
-                                  </div>
-                                )}
-                              </div>
+                              <X size={12} />
+                            </button>
+                            <div className="absolute bottom-1 left-1 right-1">
+                              <p className="text-[10px] text-white truncate flex items-center gap-1">
+                                <Lock size={9} />
+                                {promptImages[0]?.title || t('common.linkedImage', { defaultValue: 'Linked Image' })}
+                              </p>
                             </div>
+                            {promptImages[0]?.model && (
+                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black/60 rounded text-[9px] text-slate-300 backdrop-blur-sm border border-white/10">
+                                {promptImages[0]?.model}
+                              </div>
+                            )}
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Render custom component for Carousel logic to keep it clean */}
+                        {promptImages.length > 1 && (
+                          <ImageCarousel images={promptImages} promptId={prompt.id} onUnlink={(imgId) => handleUnlinkImage(prompt.id, imgId)} onImageClick={(img) => setLightboxImage(img)} t={t} />
+                        )}
                       </div>
                     )}
 

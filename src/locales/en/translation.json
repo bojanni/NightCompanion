@@ -70,15 +70,16 @@
             "autoFill": "Auto-Fill",
             "clearAll": "Clear All",
             "clearGenerate": "Clear generate",
-            "remix": "Remix"
+            "remix": "Remix",
+            "proceed": "Proceed"
         },
         "tooltips": {
             "autoFill": "Automatically copies generated prompts to Improve tab",
             "clearAll": "Clear all fields"
         },
         "modals": {
-            "notEmptyTitle": "Fields are not empty",
-            "notEmptyMsg": "You have active content in the generator or Improve tab. How would you like to proceed with the new generation?"
+            "notEmptyTitle": "Warning",
+            "notEmptyMsg": "All fields will be cleared. How would you like to proceed?"
         }
     },
     "prompts": {

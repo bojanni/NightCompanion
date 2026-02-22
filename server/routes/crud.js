@@ -184,6 +184,8 @@ const createCrudRouter = (tableName, searchableColumns = []) => {
                 VALUES ${rowPlaceholders.join(', ')}
             `;
 
+            console.log("INSERTING INTO", tableName, values);
+
             if (onConflict) {
                 // Generate ON CONFLICT (col) DO UPDATE SET ...
                 const conflictCols = onConflict.split(',').map(s => s.trim());

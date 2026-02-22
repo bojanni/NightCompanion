@@ -579,19 +579,7 @@ export default function Generator() {
         message={t('generator.modals.notEmptyMsg')}
         choices={[
           {
-            label: t('generator.buttons.clearGenerate'),
-            onClick: () => {
-              // Clear ONLY the generation prompt input (Improve Input) and Local Prompt
-              // Keep Negatives
-              // We do NOT clear Improve Input here anymore to limit scope to "this generation"
-              if (pendingExternalAction) pendingExternalAction(true); // keepNegative = true
-              setShowExternalClearModal(false);
-              setPendingExternalAction(null);
-            },
-            variant: 'primary'
-          },
-          {
-            label: t('generator.buttons.clearAll'),
+            label: t('generator.buttons.proceed'),
             onClick: () => {
               // Clear EVERYTHING
               if (aiToolsRef.current) aiToolsRef.current.clearContent();
