@@ -48,7 +48,8 @@ export default function Settings() {
                           onClick={toggleApiLogging}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${apiLogging ? 'bg-teal-500' : 'bg-slate-700'}`}
                           role="switch"
-                          aria-checked={apiLogging}
+                          aria-checked={apiLogging ? 'true' : 'false'}
+                          title="Toggle API Logging"
                         >
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${apiLogging ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
