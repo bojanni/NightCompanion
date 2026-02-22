@@ -214,6 +214,12 @@ async function initSchema() {
             ON gallery_items ((metadata->>'nightcafe_creation_id'));
         `);
 
+        // Composite index for fast ImportHub filtering and sorting
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_gallery_items_source_created_at 
+            ON gallery_items ((metadata->>'source'), created_at DESC);
+        `);
+
         // Collections
         await pool.query(`
             CREATE TABLE IF NOT EXISTS collections (

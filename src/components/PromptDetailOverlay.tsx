@@ -77,6 +77,7 @@ export default function PromptDetailOverlay({
                     prompt_id: prompt.id,
                     rating: 0,
                     model: prompt.model || undefined,
+                    metadata: data.blurhash ? { blurhash: data.blurhash } : {},
                     created_at: new Date().toISOString()
                 };
 

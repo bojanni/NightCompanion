@@ -20,13 +20,17 @@ import Statistics from './pages/Statistics';
 
 import ImportHub from './pages/ImportHub';
 
+import { ExtensionProvider } from './context/ExtensionContext';
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={
           <ErrorBoundary>
-            <Layout />
+            <ExtensionProvider>
+              <Layout />
+            </ExtensionProvider>
           </ErrorBoundary>
         }>
           <Route path="/" element={<Dashboard />} />

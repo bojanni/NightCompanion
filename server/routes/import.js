@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../db');
 const { v4: uuidv4 } = require('uuid');
+const { processBlurhashAsync } = require('../lib/blurhash');
 
 // ── Health check (extensie test verbinding) ──────────────────────────────────
 router.get('/health', (req, res) => {
@@ -67,6 +68,17 @@ router.post('/', async (req, res) => {
 
         if (dupCheck.rows.length > 0) {
             await client.query('ROLLBACK');
+
+            // Stuur event naar frontend voor de samenvatting batch
+            req.app.get('sseClients')?.forEach(sseClient => {
+                sseClient.write(`data: ${JSON.stringify({
+                    type: 'import_duplicate',
+                    id: dupCheck.rows[0].id,
+                    title: dupCheck.rows[0].title,
+                    creationId
+                })}\n\n`);
+            });
+
             return res.status(200).json({
                 duplicate: true,
                 id: dupCheck.rows[0].id,
@@ -134,9 +146,14 @@ router.post('/', async (req, res) => {
 
         await client.query('COMMIT');
 
+        // Async BlurHash generation for imported images
+        if (data.imageUrl && data.creationType !== 'video') {
+            processBlurhashAsync(galleryId, data.imageUrl);
+        }
+
         // Stuur event naar frontend (SSE - zie stap 2)
-        req.app.get('sseClients')?.forEach(client => {
-            client.write(`data: ${JSON.stringify({
+        req.app.get('sseClients')?.forEach(sseClient => {
+            sseClient.write(`data: ${JSON.stringify({
                 type: 'import',
                 id: galleryId,
                 title: data.title,

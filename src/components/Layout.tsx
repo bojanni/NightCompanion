@@ -5,9 +5,10 @@ import {
   Wrench, Clock, ChevronLeft, ChevronRight,
   LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
   Compass, FlaskConical, Fingerprint, Settings, Flame,
-  Moon, Sun, BarChart2, Loader2, Info, Download
+  Moon, Sun, BarChart2, Loader2, Info, Download, Wifi, WifiOff
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useExtension } from '../context/ExtensionContext';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 import SidebarCostWidget from './SidebarCostWidget';
@@ -43,6 +44,7 @@ export default function Layout() {
   const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
 
   const { theme, setTheme } = useTheme();
+  const { connectionStatus, lastSyncTime } = useExtension();
 
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('sidebar_collapsed') === 'true'; }
@@ -60,7 +62,6 @@ export default function Layout() {
     setSavingLang(true);
     try {
       await i18n.changeLanguage(lng);
-      // Persist to DB (single-user app — no user_id filter needed)
       const { error } = await db
         .from('user_profiles')
         .update({ language: lng });
@@ -140,6 +141,28 @@ export default function Layout() {
               </button>
             ))}
           </div>
+
+          {/* Extension Sync Indicator */}
+          <div className={`flex items-center gap-2 p-1.5 mt-1 bg-slate-950/40 rounded-xl border border-slate-800/50 ${collapsed ? 'justify-center' : 'px-3'}`} title={connectionStatus === 'connected' ? 'Connected to NC Extension' : 'Waiting for connection...'}>
+            {connectionStatus === 'connected' ? (
+              <Wifi size={14} className="text-emerald-400 shrink-0" />
+            ) : connectionStatus === 'checking' ? (
+              <Loader2 size={14} className="text-amber-400 shrink-0 animate-spin" />
+            ) : (
+              <WifiOff size={14} className="text-red-400 shrink-0" />
+            )}
+            {!collapsed && (
+              <div className="flex flex-col min-w-0">
+                <span className={`text-[10px] font-bold tracking-wide uppercase ${connectionStatus === 'connected' ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  {connectionStatus === 'connected' ? 'Sync Active' : 'Offline'}
+                </span>
+                <span className="text-[9px] text-slate-500 truncate">
+                  {lastSyncTime ? `Last: ${lastSyncTime.toLocaleTimeString()}` : 'No events yet'}
+                </span>
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Cost / Usage Widget */}

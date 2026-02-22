@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
     Wifi, WifiOff, Download,
     ExternalLink, RefreshCw, Loader2,
     Zap, TrendingUp, Calendar
 } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
+import { useExtension } from '../context/ExtensionContext';
 
 interface ImportStats {
     total_imported: string;
@@ -23,16 +24,11 @@ interface RecentImport {
     source_url: string;
 }
 
-type ConnectionStatus = 'connected' | 'disconnected' | 'checking';
-
 export default function ImportHub() {
-    const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('checking');
+    const { connectionStatus, lastEvent, liveCount } = useExtension();
     const [stats, setStats] = useState<ImportStats | null>(null);
     const [recentImports, setRecentImports] = useState<RecentImport[]>([]);
     const [loading, setLoading] = useState(true);
-    const [lastEvent, setLastEvent] = useState<string | null>(null);
-    const [liveCount, setLiveCount] = useState(0);
-    const eventSourceRef = useRef<EventSource | null>(null);
 
     const BASE_URL = 'http://localhost:3000';
 
@@ -44,38 +40,21 @@ export default function ImportHub() {
             ]);
             if (statsRes.ok) setStats(await statsRes.json());
             if (recentRes.ok) setRecentImports(await recentRes.json());
-            setConnectionStatus('connected');
         } catch {
-            setConnectionStatus('disconnected');
+            console.error('Failed to fetch stats');
         } finally {
             setLoading(false);
         }
     }, [BASE_URL]);
 
-    const connectSSE = useCallback(() => {
-        if (eventSourceRef.current) eventSourceRef.current.close();
-        const es = new EventSource(`${BASE_URL}/api/events`);
-        es.onmessage = (e) => {
-            try {
-                const data = JSON.parse(e.data);
-                if (data.type === 'import') {
-                    setLastEvent(`"${data.title}" geïmporteerd`);
-                    setLiveCount(c => c + 1);
-                    fetchStats();
-                }
-            } catch (err) {
-                console.error("Failed to parse SSE message", err);
-            }
-        };
-        es.onerror = () => setConnectionStatus('disconnected');
-        eventSourceRef.current = es;
-    }, [BASE_URL, fetchStats]);
+    // Force refresh whenever live count ticks up via ExtensionProvider
+    useEffect(() => {
+        if (liveCount > 0) fetchStats();
+    }, [liveCount, fetchStats]);
 
     useEffect(() => {
         fetchStats();
-        connectSSE();
-        return () => eventSourceRef.current?.close();
-    }, [fetchStats, connectSSE]);
+    }, [fetchStats]);
 
     const statusConfig = {
         connected: { icon: Wifi, color: 'text-emerald-400', bg: 'bg-emerald-400/10 border-emerald-400/20', label: 'Verbonden' },

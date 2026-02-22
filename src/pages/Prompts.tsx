@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, Loader2, BookTemplate, Heart, Search, Filter, SlidersHorizontal, Plus, Link, Trash2, Edit3, Lock, Zap, Calendar, Clock, Wand2, Copy, Check, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PromptDetailOverlay from '../components/PromptDetailOverlay';
 import { usePromptsState } from '../hooks/usePromptsState';
 import ChoiceModal from '../components/ChoiceModal';
+import { useHotkeys } from '../hooks/useHotkeys';
 
 const PAGE_SIZE = 20;
 
@@ -157,6 +158,18 @@ export default function Prompts() {
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrl, setImportUrl] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useHotkeys('/', (e) => {
+    e.preventDefault();
+    searchInputRef.current?.focus();
+  });
+
+  useHotkeys('ctrl+n', (e) => {
+    e.preventDefault();
+    setEditingPrompt(null);
+    setShowEditor(true);
+  });
 
   useEffect(() => {
     // Debounce search to avoid too many requests
@@ -450,6 +463,7 @@ export default function Prompts() {
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
+              ref={searchInputRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('prompts.search')}

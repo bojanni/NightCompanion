@@ -23,6 +23,8 @@ import { ALL_MODELS } from '../lib/provider-models';
 import { useGalleryState } from '../hooks/useGalleryState';
 import MediaRenderer from '../components/MediaRenderer';
 import GalleryLightbox from '../components/GalleryLightbox';
+import { useHotkeys } from '../hooks/useHotkeys';
+import { useNavigate } from 'react-router-dom';
 
 interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
@@ -112,6 +114,17 @@ export default function Gallery() {
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrl, setImportUrl] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useHotkeys('/', (e) => {
+    e.preventDefault();
+    searchInputRef.current?.focus();
+  });
+
+  useHotkeys('ctrl+n', (e) => {
+    e.preventDefault();
+    openItemEditor(null);
+  });
 
   const allModels = ALL_MODELS;
   const allProviders = [
@@ -530,6 +543,7 @@ export default function Gallery() {
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
+              ref={searchInputRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('gallery.search')}

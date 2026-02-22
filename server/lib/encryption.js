@@ -1,14 +1,23 @@
 const crypto = require('crypto');
+const { machineIdSync } = require('node-machine-id');
 
-// Use environment variable for encryption key, or generate a random one
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
-
-if (!process.env.ENCRYPTION_KEY) {
-    console.warn('⚠️  WARNING: ENCRYPTION_KEY not set in .env, using random key (keys will not persist across restarts)');
+// Get machine specific ID to use as a salt so DB isn't portable just by copying the .env
+let machineId = '';
+try {
+    machineId = machineIdSync();
+} catch (err) {
+    console.warn('⚠️ WARNING: Could not get machine ID for encryption salt, falling back to default.', err.message);
+    machineId = 'fallback-machine-id-string';
 }
 
-// Convert hex string to buffer
-const keyBuffer = Buffer.from(ENCRYPTION_KEY.slice(0, 64), 'hex');
+const RAW_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+
+if (!process.env.ENCRYPTION_KEY) {
+    console.warn('⚠️ WARNING: ENCRYPTION_KEY not set in .env, using random key (keys will not persist across restarts)');
+}
+
+// Derive a secure 32-byte key using PBKDF2 passing the raw key plus the machine-id salt.
+const keyBuffer = crypto.pbkdf2Sync(RAW_ENCRYPTION_KEY, machineId, 100000, 32, 'sha256');
 
 /**
  * Encrypt text using AES-256-GCM

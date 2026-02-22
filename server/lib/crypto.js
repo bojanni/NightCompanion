@@ -1,14 +1,25 @@
 const crypto = require('crypto');
+const { machineIdSync } = require('node-machine-id');
 
-// Ensure ENCRYPTION_KEY is set or use a fallback (WARN: fallback is not persistent across restarts if it involves random generation, 
-// but here we use a fixed string for dev convenience if missing, though typically it should be in .env)
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'nightcafe-companion-secret-key';
+// Get machine specific ID to use as a salt so DB isn't portable just by copying the .env
+let machineId = '';
+try {
+    machineId = machineIdSync();
+} catch (err) {
+    console.warn('⚠️ WARNING: Could not get machine ID for encryption salt, falling back to default.', err.message);
+    machineId = 'fallback-machine-id-string';
+}
+
+// Ensure ENCRYPTION_KEY is set or use a fallback. 
+const RAW_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'nightcafe-companion-secret-key';
 const ALGORITHM = 'aes-256-cbc';
 
+/**
+ * Derive a secure 32-byte key using PBKDF2 hashing the ENCRYPTION_KEY with the machine ID salt.
+ * This guarantees the database values cannot be read on a different host even if .env is stolen.
+ */
 function getCipherKey() {
-    // Create a 32-byte key from the string, padding or slicing as needed
-    // Ideally ENCRYPTION_KEY is a 32-char string or hex
-    return Buffer.from(ENCRYPTION_KEY.padEnd(32, '0')).slice(0, 32);
+    return crypto.pbkdf2Sync(RAW_ENCRYPTION_KEY, machineId, 100000, 32, 'sha256');
 }
 
 function encrypt(text) {

@@ -86,6 +86,9 @@ export interface GalleryItem {
   created_at: string;
   updated_at?: string;
   model?: string;
+  aspect_ratio?: string | null;
+  start_image?: string | null;
+  metadata?: Record<string, unknown>;
   media_type: MediaType;
   video_url?: string;
   video_local_path?: string;

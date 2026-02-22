@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { encodeImageToBlurhash } = require('../lib/blurhash');
 
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -36,19 +37,21 @@ const upload = multer({
 });
 
 // Original endpoint for images
-router.post('/', upload.single('image'), (req, res) => {
+router.post('/', upload.single('image'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No image file provided' });
     }
 
     const fileUrl = `http://localhost:3000/uploads/images/${req.file.filename}`;
+    const blurhash = await encodeImageToBlurhash(req.file.path);
 
     res.json({
         success: true,
         url: fileUrl,
         filename: req.file.filename,
         media_type: 'image',
-        size: req.file.size
+        size: req.file.size,
+        blurhash
     });
 });
 
