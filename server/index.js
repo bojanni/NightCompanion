@@ -19,7 +19,29 @@ const createCrudRouter = require('./routes/crud');
 const apiKeysRouter = require('./routes/api-keys');
 const localEndpointsRouter = require('./routes/local-endpoints');
 
-// Mount generic CRUD routes
+// Custom Prompts Endpoint for Similarity Search
+app.get('/api/prompts/similar', async (req, res) => {
+  try {
+    const { content } = req.query;
+    if (!content) {
+      return res.status(400).json({ error: 'content query parameter is required' });
+    }
+    // PostgreSQL pg_trgm similarity() function returns a value from 0 to 1
+    // The % operator uses the pg_trgm.similarity_threshold which we can set, or we can just filter by similarity()
+    const result = await pool.query(`
+            SELECT id, title, content, similarity(content, $1) as sim 
+            FROM prompts 
+            WHERE similarity(content, $1) > 0.85
+            ORDER BY sim DESC 
+            LIMIT 5
+        `, [content]);
+    res.json(result.rows);
+  } catch (err) {
+    logger.error('Error fetching similar prompts:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.use('/api/prompts', createCrudRouter('prompts', ['title', 'content', 'notes']));
 app.use('/api/tags', createCrudRouter('tags', ['name']));
 app.use('/api/characters', createCrudRouter('characters', ['name', 'description']));

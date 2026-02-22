@@ -1,12 +1,12 @@
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useEffect } from 'react';
 
 interface ChoiceModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
-    message: string;
+    message: React.ReactNode;
     choices: {
         label: string;
         onClick: () => void;
@@ -35,6 +35,7 @@ export default function ChoiceModal({ isOpen, onClose, title, message, choices }
                     <h3 className="text-lg font-semibold text-white">{title}</h3>
                     <button
                         onClick={onClose}
+                        title="Close Modal"
                         className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                     >
                         <X size={20} />
@@ -55,12 +56,12 @@ export default function ChoiceModal({ isOpen, onClose, title, message, choices }
                                     onClose();
                                 }}
                                 className={`w-full py-3 px-4 rounded-xl text-sm font-medium transition-all border ${choice.variant === 'primary'
-                                        ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-lg shadow-amber-500/20'
-                                        : choice.variant === 'danger'
-                                            ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-                                            : choice.variant === 'secondary'
-                                                ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                                                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                                    ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-lg shadow-amber-500/20'
+                                    : choice.variant === 'danger'
+                                        ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                        : choice.variant === 'secondary'
+                                            ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
                                     }`}
                             >
                                 {choice.label}

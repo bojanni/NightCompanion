@@ -211,9 +211,13 @@ export default function Generator() {
 
   const [editingPromptData, setEditingPromptData] = useState<Partial<Prompt> | null>(null);
 
+  const [similarPromptData, setSimilarPromptData] = useState<{ existing: Prompt, new: Partial<Prompt> } | null>(null);
+
   async function handleRequestSavePrompt(data: Partial<Prompt>) {
+    setSimilarPromptData(null);
     if (data.content) {
       try {
+        // 1. Check exact match
         const { data: existingPrompts } = await db
           .from('prompts')
           .select('*')
@@ -225,8 +229,19 @@ export default function Generator() {
           setEditingPromptData(existingPrompts[0]);
           return;
         }
+
+        // 2. Check similarity match
+        const res = await fetch(`http://localhost:3000/api/prompts/similar?content=${encodeURIComponent(data.content)}`);
+        if (res.ok) {
+          const similar = await res.json();
+          // Only flag if similarity > 0.85 and it's not the exact same prompt (which is handled above)
+          if (similar && similar.length > 0 && similar[0].sim > 0.85) {
+            setSimilarPromptData({ existing: similar[0], new: data });
+            return;
+          }
+        }
       } catch (e) {
-        console.error('Failed to check for duplicates', e);
+        console.error('Failed to check for duplicates/similarity', e);
       }
     }
     setEditingPromptData(data);
@@ -588,6 +603,43 @@ export default function Generator() {
               setPendingExternalAction(null);
             },
             variant: 'danger'
+          }
+        ]}
+      />
+      <ChoiceModal
+        isOpen={!!similarPromptData}
+        onClose={() => setSimilarPromptData(null)}
+        title="Similar Prompt Detected"
+        message={
+          <div className="space-y-3">
+            <p>A very similar prompt already exists in your library. What would you like to do?</p>
+            <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 max-h-32 overflow-y-auto">
+              <p className="text-sm font-medium text-slate-300">Existing:</p>
+              <p className="text-xs text-slate-400 mt-1">{similarPromptData?.existing.content}</p>
+            </div>
+            <div className="bg-slate-800 p-3 rounded-lg border border-slate-700 max-h-32 overflow-y-auto">
+              <p className="text-sm font-medium text-amber-300">New:</p>
+              <p className="text-xs text-amber-400 mt-1">{similarPromptData?.new.content}</p>
+            </div>
+          </div>
+        }
+        choices={[
+          {
+            label: "Edit Existing",
+            onClick: () => {
+              const existing = similarPromptData?.existing;
+              setSimilarPromptData(null);
+              if (existing) setEditingPromptData(existing);
+            }
+          },
+          {
+            label: "Save as New",
+            onClick: () => {
+              const newData = similarPromptData?.new;
+              setSimilarPromptData(null);
+              if (newData) setEditingPromptData(newData);
+            },
+            variant: "danger"
           }
         ]}
       />

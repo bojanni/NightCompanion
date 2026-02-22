@@ -48,6 +48,7 @@ async function initSchema() {
         // Enable extensions
         await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
         await pool.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto"');
+        await pool.query('CREATE EXTENSION IF NOT EXISTS "pg_trgm"');
 
         // --- Core Tables ---
 
@@ -100,6 +101,11 @@ async function initSchema() {
         await addColumn(pool, 'prompts', 'suggested_model', 'TEXT');
         await addColumn(pool, 'prompts', 'generation_journey', "JSONB DEFAULT '[]'");
 
+        // Add pg_trgm index for similarity search
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_prompts_content_trgm 
+            ON prompts USING GIST (content gist_trgm_ops);
+        `);
 
         // Tags
         await pool.query(`
