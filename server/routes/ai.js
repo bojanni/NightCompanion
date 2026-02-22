@@ -832,7 +832,18 @@ router.post('/', async (req, res) => {
         provider.modelName = activeModel;
         provider.model_name = activeModel;
 
+        const isLoggingEnabled = req.headers['x-log-api-requests'] === 'true';
+        if (isLoggingEnabled) {
+            logger.info(`[API Request -> ${action}] Provider: ${provider.provider || provider.type} | Model: ${activeModel}`);
+            logger.info(`[API Request Payload]: ${JSON.stringify({ systemPrompt, userPrompt, maxTokens, temperature }, null, 2)}`);
+        }
+
         const { content: result, usage } = await callAI(provider, systemPrompt, userPrompt, maxTokens, temperature);
+
+        if (isLoggingEnabled) {
+            logger.info(`[API Response <- ${action}] Usage: ${JSON.stringify(usage)}`);
+            logger.info(`[API Response Content]: ${result}`);
+        }
 
         // Log token usage to DB (fire and forget)
         const promptTokens = usage.prompt_tokens || usage.input_tokens || 0;

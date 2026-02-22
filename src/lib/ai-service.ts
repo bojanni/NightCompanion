@@ -1,22 +1,35 @@
 const API_URL = 'http://localhost:3000/api/ai';
 
 async function callAI(action: string, payload: Record<string, unknown>, token: string) {
+  const loggingEnabled = localStorage.getItem('nc_api_logging_enabled') === 'true';
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+
+  if (loggingEnabled) {
+    headers['X-Log-Api-Requests'] = 'true';
+    console.log(`[AI Request -> ${action}]`, payload);
+  }
+
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      // Token is technically not needed for local backend if we mock user, 
-      // but keeping it for consistency if we add real auth later
-      'Authorization': `Bearer ${token}`,
-    },
+    headers,
     body: JSON.stringify({ action, payload }),
   });
 
   const data = await res.json();
 
+  if (loggingEnabled) {
+    if (res.ok) {
+      console.log(`[AI Response <- ${action}]`, data);
+    } else {
+      console.error(`[AI Error <- ${action}]`, data);
+    }
+  }
+
   if (!res.ok) {
     const errorMessage = data.error || 'AI request failed';
-    // Only append details if they don't just repeat the error message
     const errorDetails = data.details && !data.details.includes(errorMessage) ? ` (${data.details})` : '';
     throw new Error(`${errorMessage}${errorDetails}`);
   }
