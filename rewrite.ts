@@ -9,15 +9,20 @@ const allowedModels = MODELS.filter(m =>
 
 const fileContent = fs.readFileSync('./src/lib/models-data.ts', 'utf8');
 const startIndex = fileContent.indexOf('export const MODELS: ModelInfo[] = [');
-const endIndex = fileContent.indexOf('];\n\nexport function analyzePrompt');
 
-if (startIndex === -1 || endIndex === -1) {
+// Find the end of the array by matching '];' followed by whitespace and 'export function'
+const endRegex = /];\s*export function analyzePrompt/;
+const match = fileContent.match(endRegex);
+
+if (startIndex === -1 || !match) {
     console.error('Could not find array bounds in models-data.ts');
     process.exit(1);
 }
 
+const endIndex = match.index!;
+
 const before = fileContent.substring(0, startIndex);
-const after = fileContent.substring(endIndex + 2); // skip "];"
+const after = fileContent.substring(endIndex + 2); // skip "];", keeping the rest of the match
 
 const replacement = 'export const MODELS: ModelInfo[] = ' + JSON.stringify(allowedModels, null, 2) + ';';
 
