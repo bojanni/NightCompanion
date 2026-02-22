@@ -413,6 +413,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
       const { error } = await db.from('prompts').insert({
         title: title,
         content: text,
+        notes: 'Generated with AI Tools',
         generation_journey: journeySteps,
         rating: 0,
         is_template: false,

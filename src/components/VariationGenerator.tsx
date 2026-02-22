@@ -4,6 +4,7 @@ import { db } from '../lib/api';
 import { generatePromptVariations } from '../lib/ai-service';
 import { toast } from 'sonner';
 import { handleAIError } from '../lib/error-handler';
+import { analyzePrompt } from '../lib/models-data';
 
 interface VariationGeneratorProps {
   basePrompt: string;
@@ -131,6 +132,9 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
       return;
     }
 
+    const suggestion = analyzePrompt(text)[0];
+    const suggestedModelIdToSave = suggestion ? suggestion.model.id : undefined;
+
     const strategyLabel = VARIATION_STRATEGIES.find((s) => s.id === strategy)?.label ?? strategy;
     await db.from('prompts').insert({
       title: `Variation: ${strategyLabel} #${idx + 1}`,
@@ -139,6 +143,7 @@ export default function VariationGenerator({ basePrompt, onSaved }: VariationGen
       rating: 0,
       is_template: false,
       is_favorite: false,
+      suggested_model: suggestedModelIdToSave
     });
     setSavingIdx(null);
     onSaved();
