@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const logger = require('./lib/logger');
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const { pool } = require('./db');
 const path = require('path');
@@ -35,10 +36,27 @@ app.use('/api/batch_test_prompts', createCrudRouter('batch_test_prompts'));
 app.use('/api/batch_test_results', createCrudRouter('batch_test_results'));
 app.use('/api/model_usage', createCrudRouter('model_usage'));
 
+// Rate limiting setup for sensitive routes
+const apiKeysLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: { error: 'Too many requests for API keys, please try again later.' }
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // Limit each IP to 50 requests per `window` for AI functionality
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many AI requests, please try again later.' }
+});
+
 // API Keys & Local Endpoints
-app.use('/api/user_api_keys', apiKeysRouter);
+app.use('/api/user_api_keys', apiKeysLimiter, apiKeysRouter);
 app.use('/api/user_local_endpoints', localEndpointsRouter);
-app.use('/api/ai', require('./routes/ai'));
+app.use('/api/ai', aiLimiter, require('./routes/ai'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/upload', require('./routes/upload'));
