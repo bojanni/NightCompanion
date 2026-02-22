@@ -197,6 +197,10 @@ async function initSchema() {
         await addColumn(pool, 'gallery_items', 'storage_mode', "TEXT DEFAULT 'url' CHECK (storage_mode IN ('url', 'local', 'both'))");
         await addColumn(pool, 'gallery_items', 'updated_at', 'TIMESTAMP WITH TIME ZONE DEFAULT NOW()');
 
+        // Add index on created_at for performant sorting
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_gallery_items_created_at ON gallery_items(created_at DESC);
+        `);
 
         // Collections
         await pool.query(`

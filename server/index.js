@@ -24,7 +24,7 @@ app.use('/api/prompts', createCrudRouter('prompts', ['title', 'content', 'notes'
 app.use('/api/tags', createCrudRouter('tags', ['name']));
 app.use('/api/characters', createCrudRouter('characters', ['name', 'description']));
 app.use('/api/character_details', createCrudRouter('character_details'));
-app.use('/api/gallery_items', createCrudRouter('gallery_items', ['title', 'prompt_used', 'notes']));
+app.use('/api/gallery_items', createCrudRouter('gallery_items', ['title', 'prompt_used', 'notes', 'model_used', 'model', 'aspect_ratio', 'start_image', 'metadata', 'media_type', 'rating', 'local_path', 'width', 'height', 'character_id', 'collection_id', 'video_url', 'video_local_path', 'thumbnail_url', 'duration_seconds', 'storage_mode']));
 app.use('/api/collections', createCrudRouter('collections'));
 app.use('/api/prompt_tags', createCrudRouter('prompt_tags'));
 app.use('/api/prompt_versions', createCrudRouter('prompt_versions'));

@@ -226,14 +226,26 @@ class QueryBuilder {
 
             if (!response.ok) {
                 let errorMsg = `HTTP ${response.status}`;
+                let errorCode = `HTTP_${response.status}`;
+                let errorDetails = '';
+                let errorHint = '';
+
                 try {
                     const errorText = await response.text();
                     const errorJson = JSON.parse(errorText);
                     errorMsg = errorJson.error || errorJson.message || errorMsg;
-                } catch (e) {
+                    errorCode = errorJson.code || errorCode;
+                    errorDetails = errorJson.details || '';
+                    errorHint = errorJson.hint || '';
+                } catch {
                     // ignore json parse error
                 }
-                const error = { message: errorMsg, status: response.status };
+                const error = {
+                    message: errorMsg,
+                    code: errorCode,
+                    details: errorDetails,
+                    hint: errorHint
+                };
                 return resolve({ data: null, error });
             }
 
@@ -256,9 +268,9 @@ class QueryBuilder {
                 error: null,
                 count: Array.isArray(data) ? data.length : 1
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Query execution error:', error);
-            resolve({ data: null, error });
+            resolve({ data: null, error: { message: error.message || 'Unknown error', code: 'UNKNOWN_ERROR', details: '', hint: '' } });
         }
     }
 
