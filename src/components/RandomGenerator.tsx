@@ -269,7 +269,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       return;
     }
 
-    console.log("RANDOM GENERATOR INSERTING!");
     await db.from('prompts').insert({
       title: (prompt.split(',')[0] || 'Untitled').trim().slice(0, 160),
       content: fullContent,
