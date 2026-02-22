@@ -8,6 +8,7 @@ import { analyzePrompt, getTopCandidates } from '../lib/models-data';
 import { generateFromDescription, recommendModels } from '../lib/ai-service';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
+import type { Prompt } from '../lib/types';
 
 interface GuidedBuilderProps {
   initialPrompt?: string;
@@ -15,9 +16,10 @@ interface GuidedBuilderProps {
   maxWords: number;
   selectedNightCafePreset?: string;
   onAiAdviceTips?: (tips: string[]) => void;
+  onRequestSavePrompt?: (data: Partial<Prompt>) => void;
 }
 
-export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, selectedNightCafePreset, onAiAdviceTips }: GuidedBuilderProps) {
+export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, selectedNightCafePreset, onAiAdviceTips, onRequestSavePrompt }: GuidedBuilderProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [additions, setAdditions] = useState<string[]>([]);
@@ -177,6 +179,16 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
 
     if (existingPrompts && existingPrompts.length > 0) {
       toast.error('This prompt is already in your library.');
+      setSaving(false);
+      return;
+    }
+
+    if (onRequestSavePrompt) {
+      onRequestSavePrompt({
+        title: (generatedPrompt.split(',')[0] || 'Untitled').trim().slice(0, 160),
+        content: generatedPrompt,
+        notes: 'Built with Guided mode' + (selectedNightCafePreset ? ` [NC Preset: ${selectedNightCafePreset}]` : ''),
+      });
       setSaving(false);
       return;
     }

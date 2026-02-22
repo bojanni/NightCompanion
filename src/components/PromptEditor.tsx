@@ -8,7 +8,7 @@ import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
 import { handleAIError } from '../lib/error-handler';
-import { MODELS } from '../lib/models-data';
+import { MODELS, analyzePrompt } from '../lib/models-data';
 import ModelSelector from './ModelSelector';
 import StarRating from './StarRating';
 import TagBadge from './TagBadge';
@@ -17,12 +17,13 @@ import CollectionManager from './CollectionManager';
 
 interface PromptEditorProps {
   prompt: Prompt | null;
+  initialData?: Partial<Prompt>;
   isLinked?: boolean;
   onSave: () => void;
   onCancel: () => void;
 }
 
-export default function PromptEditor({ prompt, isLinked = false, onSave, onCancel }: PromptEditorProps) {
+export default function PromptEditor({ prompt, initialData, isLinked = false, onSave, onCancel }: PromptEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [notes, setNotes] = useState('');
@@ -125,6 +126,20 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
       // New prompt default values
       const lastModel = localStorage.getItem('lastUsedModel');
       if (lastModel) setModel(lastModel);
+
+      if (initialData) {
+        if (initialData.title) {
+          setTitle(initialData.title);
+          setAutoGenerateTitle(false);
+        }
+        if (initialData.content) setContent(initialData.content);
+        if (initialData.notes) setNotes(initialData.notes);
+        if (initialData.model) setModel(initialData.model);
+        if (initialData.rating) setRating(initialData.rating);
+        if (initialData.is_template !== undefined) setIsTemplate(initialData.is_template);
+        if (initialData.is_favorite !== undefined) setIsFavorite(initialData.is_favorite);
+        if (initialData.revised_prompt) setRevisedPrompt(initialData.revised_prompt);
+      }
     }
 
     loadTags();
@@ -337,6 +352,9 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         tags: []
       });
 
+      const topSuggestion = analyzePrompt(validated.content)[0];
+      const suggestedModelIdToSave = topSuggestion ? topSuggestion.model.id : undefined;
+
       const payload = {
         title: validated.title,
         content: validated.content,
@@ -350,6 +368,7 @@ export default function PromptEditor({ prompt, isLinked = false, onSave, onCance
         aspect_ratio: aspectRatio,
         use_custom_aspect_ratio: useCustomAspectRatio,
         start_image: startImage,
+        suggested_model: suggestedModelIdToSave,
         updated_at: new Date().toISOString(),
       };
 

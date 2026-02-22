@@ -16,6 +16,7 @@ import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider } from '../lib/provider-models';
 import { saveStyleProfile } from '../lib/style-analysis';
 import { useTaskModels } from '../hooks/useTaskModels';
+import type { Prompt } from '../lib/types';
 
 interface AIToolsProps {
   onPromptGenerated?: (prompt: string) => void;
@@ -29,6 +30,7 @@ interface AIToolsProps {
   showHeader?: boolean;
   initialExpanded?: boolean;
   availableModelTips?: string[] | undefined;
+  onRequestSavePrompt?: (data: Partial<Prompt>) => void;
 }
 
 interface ModelInfo {
@@ -71,7 +73,7 @@ function loadAIToolsState<T>(key: string, fallback: T): T {
   return fallback;
 }
 
-const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved, allowedTabs, defaultTab = 'improve', showHeader = true, initialExpanded = false, availableModelTips }, ref) => {
+const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onPromptGenerated, onNegativePromptGenerated, generatedPrompt, generatedNegativePrompt, maxWords, onSaved, allowedTabs, defaultTab = 'improve', showHeader = true, initialExpanded = false, availableModelTips }, ref) => {
   const { t } = useTranslation();
   const { improve: taskImproveModel, generate: taskGenerateModel } = useTaskModels();
   const [tab, setTab] = useState<Tab>(() => {
@@ -393,6 +395,17 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onPromptGenerated, onNeg
         { step: 'Original Prompt', label: options.originalPrompt },
         { step: 'Improved by AI', label: text }
       ] : [{ step: 'Generated with AI', label: text }];
+
+      if (onRequestSavePrompt) {
+        onRequestSavePrompt({
+          title,
+          content: text,
+          notes: 'Generated with AI Tools',
+          generation_journey: journeySteps,
+        });
+        setSaving('');
+        return;
+      }
 
       // Check for duplicates
       const { data: existingPrompts } = await db

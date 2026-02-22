@@ -11,6 +11,7 @@ import { listApiKeys } from '../lib/api-keys-service';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
 import { estimateLLMCost } from '../lib/pricing';
 import { useTaskModels } from '../hooks/useTaskModels';
+import type { Prompt } from '../lib/types';
 
 interface FilterState {
   dreamy: boolean;
@@ -33,9 +34,10 @@ interface RandomGeneratorProps {
   magicInputSlot?: React.ReactNode;
   greylist: string[];
   recentPrompts?: string[];
+  onRequestSavePrompt?: (data: Partial<Prompt>) => void;
 }
 
-export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, onAiAdviceTips, magicInputSlot, greylist, recentPrompts }: RandomGeneratorProps) {
+export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onRequestSavePrompt, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, onAiAdviceTips, magicInputSlot, greylist, recentPrompts }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const { generate: taskGenerateModel } = useTaskModels();
@@ -239,6 +241,18 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     if (filters.dreamy) journeySteps.push({ step: 'Filter', label: '💫 Dreamy' });
     if (filters.characters) journeySteps.push({ step: 'Filter', label: '👤 Characters' });
     if (filters.cinematic) journeySteps.push({ step: 'Filter', label: '🎬 Cinematic' });
+
+    if (onRequestSavePrompt) {
+      onRequestSavePrompt({
+        title: (prompt.split(',')[0] || 'Untitled').trim().slice(0, 160),
+        content: fullContent,
+        ...(generatedStyle ? { notes: `Style: ${generatedStyle}` } : {}),
+        generation_journey: journeySteps,
+        model: activeModel,
+      });
+      setSaving(false);
+      return;
+    }
 
     const suggestedModelIdToSave = topSuggestion ? topSuggestion.model.id : undefined;
 

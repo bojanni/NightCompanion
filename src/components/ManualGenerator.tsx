@@ -12,6 +12,7 @@ import { listModels, ModelListItem } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
 import { estimateLLMCost } from '../lib/pricing';
 import { useTaskModels } from '../hooks/useTaskModels';
+import type { Prompt } from '../lib/types';
 
 interface ManualGeneratorProps {
     onSaved: () => void;
@@ -20,11 +21,12 @@ interface ManualGeneratorProps {
     initialNegativePrompt?: string | undefined;
     resetKey?: number;
     selectedNightCafePreset?: string;
+    onRequestSavePrompt?: (data: Partial<Prompt>) => void;
 }
 
 const MANUAL_STORAGE_KEY = 'nightcompanion_manual_generator';
 
-export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', resetKey = 0, selectedNightCafePreset }: ManualGeneratorProps) {
+export default function ManualGenerator({ onSaved, maxWords, initialPrompts, initialNegativePrompt = '', resetKey = 0, selectedNightCafePreset, onRequestSavePrompt }: ManualGeneratorProps) {
     const { generate: taskGenerateModel, improve: taskImproveModel } = useTaskModels();
     const [prompts, setPrompts] = useState<string[]>(() => {
         if (initialPrompts && initialPrompts.length > 0) return initialPrompts;
@@ -378,6 +380,16 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                 { step: 'Manual', label: '✏️ Manual' },
             ];
             if (selectedNightCafePreset) journeySteps.push({ step: 'NightCafe Preset', label: `⚙️ Preset: ${selectedNightCafePreset}` });
+
+            if (onRequestSavePrompt) {
+                onRequestSavePrompt({
+                    title: (prompts[0] || 'Untitled').trim().slice(0, 160),
+                    content: fullPrompt,
+                    generation_journey: journeySteps,
+                });
+                setSaving(false);
+                return;
+            }
 
             // Check for duplicates
             const { data: existingPrompts } = await db

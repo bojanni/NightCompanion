@@ -8,6 +8,7 @@ import GuidedBuilder from '../components/GuidedBuilder';
 import ManualGenerator from '../components/ManualGenerator';
 import AITools, { AIToolsRef } from '../components/AITools';
 import MagicPromptInput from '../components/MagicPromptInput';
+import PromptEditor from '../components/PromptEditor';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 import { PRESET_OPTIONS } from '../lib/models-data';
@@ -206,6 +207,29 @@ export default function Generator() {
   const [autoFillImprove, setAutoFillImprove] = useState(() => {
     try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s).autoFillImprove ?? false; } catch { /* ignore */ } return false;
   });
+
+  const [editingPromptData, setEditingPromptData] = useState<Partial<Prompt> | null>(null);
+
+  async function handleRequestSavePrompt(data: Partial<Prompt>) {
+    if (data.content) {
+      try {
+        const { data: existingPrompts } = await db
+          .from('prompts')
+          .select('*')
+          .eq('content', data.content)
+          .limit(1);
+
+        if (existingPrompts && existingPrompts.length > 0) {
+          toast.info('This prompt already exists in your library. Editing existing prompt.');
+          setEditingPromptData(existingPrompts[0]);
+          return;
+        }
+      } catch (e) {
+        console.error('Failed to check for duplicates', e);
+      }
+    }
+    setEditingPromptData(data);
+  }
 
   // Save autoFillImprove state
   useEffect(() => {
@@ -412,6 +436,7 @@ export default function Generator() {
           onSwitchToGuided={handleSwitchToGuided}
           onSwitchToManual={handleSwitchToManual}
           onSaved={() => setSaveCount((c) => c + 1)}
+          onRequestSavePrompt={handleRequestSavePrompt}
           onPromptGenerated={(prompt) => {
             setGuidedInitial(prompt);
             setRandomPrompt(prompt);
@@ -423,7 +448,6 @@ export default function Generator() {
           greylist={greylist}
           initialPrompt={randomPrompt}
           initialNegativePrompt={randomNegativePrompt}
-          selectedNightCafePreset={selectedNightCafePreset}
           onCheckExternalFields={handleCheckExternalFields}
           onAiAdviceTips={setAiAdviceTips}
           magicInputSlot={
@@ -445,6 +469,7 @@ export default function Generator() {
           key={guidedInitial}
           {...(guidedInitial && { initialPrompt: guidedInitial })}
           onSaved={() => setSaveCount((c) => c + 1)}
+          onRequestSavePrompt={handleRequestSavePrompt}
           maxWords={maxWords}
           selectedNightCafePreset={selectedNightCafePreset}
           onAiAdviceTips={setAiAdviceTips}
@@ -456,6 +481,7 @@ export default function Generator() {
           key={resetKey} // Force remount to read fresh storage/props
           resetKey={resetKey} // Explicit signal
           onSaved={() => setSaveCount((c) => c + 1)}
+          onRequestSavePrompt={handleRequestSavePrompt}
           maxWords={maxWords}
           initialPrompts={manualInitial.prompts.length > 0 ? manualInitial.prompts : undefined}
           initialNegativePrompt={manualInitial.negative || undefined}
@@ -516,12 +542,24 @@ export default function Generator() {
         generatedNegativePrompt={randomNegativePrompt}
         maxWords={maxWords}
         onSaved={() => setSaveCount((c) => c + 1)}
+        onRequestSavePrompt={handleRequestSavePrompt}
         allowedTabs={['improve']}
         defaultTab="improve"
         showHeader={false}
         initialExpanded={true}
         availableModelTips={aiAdviceTips}
       />
+      {editingPromptData && (
+        <PromptEditor
+          prompt={editingPromptData.id ? (editingPromptData as Prompt) : null}
+          {...(!editingPromptData.id && { initialData: editingPromptData })}
+          onSave={() => {
+            setSaveCount((c) => c + 1);
+            setEditingPromptData(null);
+          }}
+          onCancel={() => setEditingPromptData(null)}
+        />
+      )}
       <ChoiceModal
         isOpen={showExternalClearModal}
         onClose={() => {
