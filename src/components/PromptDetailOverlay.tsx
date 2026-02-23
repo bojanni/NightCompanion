@@ -172,11 +172,11 @@ export default function PromptDetailOverlay({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-[95%] md:w-[80%] max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10 isolate"
+                className="relative bg-slate-900 border border-slate-700/50 rounded-[24px] shadow-[0_0_100px_rgba(0,0,0,0.5)] w-[95%] md:w-[80%] max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10 isolate"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Left Side: Image */}
-                <div className="relative w-full md:w-[70%] bg-black/40 overflow-hidden rounded-t-3xl md:rounded-none md:rounded-l-3xl flex flex-col items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
+                <div className="relative w-full md:w-[70%] bg-black/40 overflow-hidden flex flex-col items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
 
                     {/* Dynamic Zoomed Background Effect Inside Prompt Card */}
                     {mainImage && (
