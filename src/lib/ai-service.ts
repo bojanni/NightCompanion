@@ -34,6 +34,28 @@ async function callAI(action: string, payload: Record<string, unknown>, token: s
     throw new Error(`${errorMessage}${errorDetails}`);
   }
 
+  const rateLimitRemaining = res.headers.get('ratelimit-remaining');
+  const rateLimitReset = res.headers.get('ratelimit-reset');
+
+  // Attach rate limit info to the result object if it's an object,
+  // otherwise we just return the result (some endpoints might return raw strings, though most return objects).
+  if (data.result && typeof data.result === 'object') {
+    data.result._rateLimit = {
+      remaining: rateLimitRemaining ? parseInt(rateLimitRemaining, 10) : null,
+      reset: rateLimitReset ? parseInt(rateLimitReset, 10) : null
+    };
+  }
+
+  // Dispatch global event for the RateLimit widget
+  if (rateLimitRemaining || rateLimitReset) {
+    window.dispatchEvent(new CustomEvent('nc-rate-limit-update', {
+      detail: {
+        remaining: rateLimitRemaining ? parseInt(rateLimitRemaining, 10) : null,
+        reset: rateLimitReset ? parseInt(rateLimitReset, 10) : null
+      }
+    }));
+  }
+
   return data.result;
 }
 

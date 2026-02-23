@@ -378,6 +378,15 @@ async function initSchema() {
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
         `);
+        await addColumn(pool, 'api_usage_log', 'action', 'TEXT');
+        await addColumn(pool, 'api_usage_log', 'provider', 'TEXT');
+        await addColumn(pool, 'api_usage_log', 'model', 'TEXT');
+        await addColumn(pool, 'api_usage_log', 'prompt_tokens', 'INTEGER DEFAULT 0');
+        await addColumn(pool, 'api_usage_log', 'completion_tokens', 'INTEGER DEFAULT 0');
+        await addColumn(pool, 'api_usage_log', 'estimated_cost_usd', 'NUMERIC(14,8) DEFAULT 0');
+        await pool.query(`
+            CREATE INDEX IF NOT EXISTS idx_usage_log_provider_created ON api_usage_log(provider, created_at);
+        `);
         await pool.query(`
             CREATE INDEX IF NOT EXISTS idx_usage_log_created ON api_usage_log(created_at);
         `);
