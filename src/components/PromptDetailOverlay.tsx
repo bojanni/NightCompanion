@@ -127,7 +127,19 @@ export default function PromptDetailOverlay({
     }
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 md:p-8">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 md:p-8 overflow-hidden">
+            {/* Dynamic Apple-like Screen Background */}
+            {mainImage && (
+                <div
+                    className="absolute inset-0 w-full h-full scale-110 blur-[100px] opacity-30 select-none pointer-events-none transition-all duration-1000 saturate-200"
+                    style={{
+                        backgroundImage: `url(${mainImage.image_url})`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                />
+            )}
+
             {/* Navigation Buttons - Outside Card */}
             <button
                 onClick={(e) => { e.stopPropagation(); onPrev(); }}
@@ -157,22 +169,11 @@ export default function PromptDetailOverlay({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-[95%] md:w-[80%] max-h-full overflow-hidden flex flex-col md:flex-row"
+                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-[95%] md:w-[80%] max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Left Side: Image */}
                 <div className="w-full md:w-[70%] bg-black relative overflow-hidden flex items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
-                    {/* Dynamic Zoomed Background Effect */}
-                    {mainImage && (
-                        <div
-                            className="absolute inset-0 w-full h-full scale-125 md:scale-150 blur-3xl opacity-40 z-0 select-none pointer-events-none transition-all duration-1000 saturate-150"
-                            style={{
-                                backgroundImage: `url(${mainImage.image_url})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                            }}
-                        />
-                    )}
 
                     <div className="relative z-10 w-full h-full flex items-center justify-center">
                         {mainImage ? (

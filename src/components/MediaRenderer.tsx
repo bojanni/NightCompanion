@@ -46,7 +46,7 @@ export default function MediaRenderer({ item, className, autoPlay = false, contr
             <img
                 src={item.image_url}
                 alt={item.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0 bg-slate-800'}`}
+                className={`absolute inset-0 w-full h-full transition-opacity duration-300 z-10 ${className?.includes('object-contain') ? 'object-contain' : 'object-cover'} ${imageLoaded ? 'opacity-100' : 'opacity-0 bg-slate-800'}`}
                 onLoad={() => setImageLoaded(true)}
             />
         </div>
