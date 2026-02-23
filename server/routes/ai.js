@@ -158,10 +158,15 @@ async function getActiveProvider(role = 'generation') {
     );
 
     if (cloud.rows.length > 0) {
+        const apiKey = decrypt(cloud.rows[0].encrypted_key);
+        if (!apiKey) {
+            throw new Error(`Failed to decrypt API key for ${cloud.rows[0].provider}. Your encryption key may have changed. Please re-enter your API key in Settings.`);
+        }
+
         return {
             type: 'cloud',
             provider: cloud.rows[0].provider,
-            apiKey: decrypt(cloud.rows[0].encrypted_key),
+            apiKey: apiKey,
             modelName: cloud.rows[0].model_name,
             modelGen: cloud.rows[0].model_gen,
             modelImprove: cloud.rows[0].model_improve

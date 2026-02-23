@@ -29,7 +29,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [customInputs, setCustomInputs] = useState<Record<string, string>>({});
-  const [aiAdvice, setAiAdvice] = useState<{ name: string; reasoning: string; tips: string[]; preset?: string } | null>(null);
+  const [aiAdvice, setAiAdvice] = useState<{ id: string; name: string; reasoning: string; tips: string[]; preset?: string } | null>(null);
   const [loadingAiAdvice, setLoadingAiAdvice] = useState(false);
 
   // Load from localStorage
@@ -194,7 +194,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
     }
 
     const suggestion = analyzePrompt(generatedPrompt)[0];
-    const suggestedModelIdToSave = suggestion ? suggestion.model.id : undefined;
+    const suggestedModelIdToSave = aiAdvice ? aiAdvice.id : (suggestion ? suggestion.model.id : undefined);
 
     await db.from('prompts').insert({
       title: (generatedPrompt.split(',')[0] || 'Untitled').trim().slice(0, 160),
@@ -219,7 +219,7 @@ export default function GuidedBuilder({ initialPrompt, onSaved, maxWords, select
       const result = await recommendModels(generatedPrompt, { candidates });
       const top = result.recommendations[0];
       if (top) {
-        setAiAdvice({ name: top.modelName, reasoning: top.reasoning, tips: top.tips || [], ...(top.recommendedPreset ? { preset: top.recommendedPreset } : {}) });
+        setAiAdvice({ id: top.modelId, name: top.modelName, reasoning: top.reasoning, tips: top.tips || [], ...(top.recommendedPreset ? { preset: top.recommendedPreset } : {}) });
         if (onAiAdviceTips && top.tips) {
           onAiAdviceTips(top.tips);
         }

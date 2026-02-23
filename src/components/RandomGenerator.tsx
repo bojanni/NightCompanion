@@ -64,7 +64,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [pendingAction, setPendingAction] = useState<((keepNegative: boolean) => void) | null>(null);
 
   // AI model advice state
-  const [aiAdvice, setAiAdvice] = useState<{ name: string; reasoning: string; tips: string[]; preset?: string } | null>(() => {
+  const [aiAdvice, setAiAdvice] = useState<{ id: string; name: string; reasoning: string; tips: string[]; preset?: string } | null>(() => {
     try {
       const saved = localStorage.getItem('nightcompanion_random_ai_advice');
       if (saved) return JSON.parse(saved);
@@ -110,7 +110,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
             const models = JSON.parse(cached)[activeKey.provider] as ModelOption[];
             const modelData = models?.find(m => m.id === model);
             if (modelData?.pricing) {
-              setActiveModelPricing(modelData.pricing);
+              const newPricing = modelData.pricing;
+              setActiveModelPricing(prev => prev?.prompt === newPricing.prompt && prev?.completion === newPricing.completion ? prev : newPricing);
               return;
             }
           }
@@ -133,13 +134,17 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
               // Update state
               const found = routerModels.find((m) => m.id === model);
               if (found?.pricing) {
-                setActiveModelPricing(found.pricing);
+                const newPricing = found.pricing;
+                setActiveModelPricing(prev => prev?.prompt === newPricing.prompt && prev?.completion === newPricing.completion ? prev : newPricing);
               }
             } catch (e) { console.error("Failed to update cache", e); }
           }).catch((err: unknown) => console.error("Failed to fetch openrouter models", err));
+          return;
         }
 
-        setActiveModelPricing(undefined);
+        if (activeModelPricing) {
+          setActiveModelPricing(undefined);
+        }
         return;
       }
 
@@ -299,6 +304,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       const top = result.recommendations[0];
       if (top) {
         setAiAdvice({
+          id: top.modelId,
           name: top.modelName,
           reasoning: top.reasoning,
           tips: top.tips || [],

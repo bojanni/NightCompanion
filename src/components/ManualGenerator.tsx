@@ -120,7 +120,8 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
                         const models = JSON.parse(cached)[activeKey.provider] as ModelOption[];
                         const modelData = models?.find(m => m.id === model);
                         if (modelData?.pricing) {
-                            setActiveModelPricing(modelData.pricing);
+                            const newPricing = modelData.pricing;
+                            setActiveModelPricing(prev => prev?.prompt === newPricing.prompt && prev?.completion === newPricing.completion ? prev : newPricing);
                             return;
                         }
                     }
@@ -140,14 +141,18 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
 
                                 const found = routerModels.find((m) => m.id === model);
                                 if (found?.pricing) {
-                                    setActiveModelPricing(found.pricing);
+                                    const newPricing = found.pricing;
+                                    setActiveModelPricing(prev => prev?.prompt === newPricing.prompt && prev?.completion === newPricing.completion ? prev : newPricing);
                                 }
                             } catch (e) { console.error("Failed to update cache", e); }
                         }).catch((err: unknown) => console.error("Failed to fetch openrouter models", err));
                     });
+                    return;
                 }
 
-                setActiveModelPricing(undefined);
+                if (activeModelPricing) {
+                    setActiveModelPricing(undefined);
+                }
                 return;
             }
 

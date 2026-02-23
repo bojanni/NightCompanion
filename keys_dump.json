@@ -1,0 +1,10 @@
+[
+  {
+    "provider": "openrouter",
+    "encrypted_key": "d0c2397da4b7de09f81f4e3544b7fa25:3ba9b395556f08a6983ae793fcd110ea7e4e3522667ba134bb39033e249b1a448e11dc8ca73614bbabe7a84c7ddc0231c0095adbdcbaae4bb0c2248c0f63305b00a7ec51d747ad944426cb4e85a8fb93"
+  },
+  {
+    "provider": "deepinfra",
+    "encrypted_key": "2c8d62fb76614d20e4edf067532f2206:0f819602797936ed34bca1c5f83deeae17af2400f92495841c3098a598c72d836cd954f251bff524ac09a510d09bb5f4"
+  }
+]
