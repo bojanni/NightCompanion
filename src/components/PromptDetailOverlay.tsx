@@ -161,63 +161,77 @@ export default function PromptDetailOverlay({
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Left Side: Image */}
-                <div className="w-full md:w-[70%] bg-slate-800/50 relative overflow-hidden flex items-center justify-center p-4">
-                    {mainImage ? (
-                        <MediaRenderer
-                            item={mainImage}
-                            controls
-                            className="max-w-full max-h-[70vh] md:max-h-[85vh] object-contain rounded-xl shadow-2xl"
-                        />
-                    ) : (
-                        <div className="flex flex-col items-center gap-4 text-slate-500 py-10 w-full max-w-sm px-6">
-                            <Database size={64} strokeWidth={1} />
-                            <p className="mb-4">No image linked to this prompt</p>
-
-                            <DropZone
-                                onFileSelect={(file) => {
-                                    handleImageUpload(file);
-                                }}
-                                className="w-full"
-                            >
-                                <div className="flex flex-col items-center gap-3 py-6">
-                                    <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
-                                        {isUploading ? <Loader2 size={24} className="animate-spin text-amber-500" /> : <Plus size={24} />}
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-slate-200">
-                                            {isUploading ? 'Uploading...' : 'Add Image'}
-                                        </p>
-                                        <p className="text-xs text-slate-500 mt-1">Drag & drop or click</p>
-                                    </div>
-                                </div>
-                            </DropZone>
-                        </div>
-                    )}
-
-                    {modelId && (
-                        <div className="absolute top-8 left-8 px-4 py-2 bg-black/60 backdrop-blur-md rounded-xl text-sm font-medium text-amber-400 border border-white/10 shadow-lg capitalize">
-                            {modelName}
-                        </div>
-                    )}
-
-                    {/* Star Rating Overlay */}
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <StarRating
-                            rating={prompt.rating}
-                            onChange={(r) => onRate?.(r)}
-                            size={20}
-                        />
-                        <div className="w-px h-4 bg-white/10" />
-                        <button
-                            className="text-white/50 hover:text-amber-400 transition-colors"
-                            title="View online"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (mainImage?.image_url) window.open(mainImage.image_url, '_blank');
+                <div className="w-full md:w-[70%] bg-black relative overflow-hidden flex items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
+                    {/* Dynamic Zoomed Background Effect */}
+                    {mainImage && (
+                        <div
+                            className="absolute inset-0 w-full h-full scale-125 md:scale-150 blur-3xl opacity-40 z-0 select-none pointer-events-none transition-all duration-1000 saturate-150"
+                            style={{
+                                backgroundImage: `url(${mainImage.image_url})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
                             }}
-                        >
-                            <ExternalLink size={18} />
-                        </button>
+                        />
+                    )}
+
+                    <div className="relative z-10 w-full h-full flex items-center justify-center">
+                        {mainImage ? (
+                            <MediaRenderer
+                                item={mainImage}
+                                controls
+                                className="max-w-full max-h-[70vh] md:max-h-[85vh] object-contain rounded-xl shadow-2xl"
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center gap-4 text-slate-500 py-10 w-full max-w-sm px-6">
+                                <Database size={64} strokeWidth={1} />
+                                <p className="mb-4">No image linked to this prompt</p>
+
+                                <DropZone
+                                    onFileSelect={(file) => {
+                                        handleImageUpload(file);
+                                    }}
+                                    className="w-full"
+                                >
+                                    <div className="flex flex-col items-center gap-3 py-6">
+                                        <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                                            {isUploading ? <Loader2 size={24} className="animate-spin text-amber-500" /> : <Plus size={24} />}
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-slate-200">
+                                                {isUploading ? 'Uploading...' : 'Add Image'}
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-1">Drag & drop or click</p>
+                                        </div>
+                                    </div>
+                                </DropZone>
+                            </div>
+                        )}
+
+                        {modelId && (
+                            <div className="absolute top-8 left-8 px-4 py-2 bg-black/60 backdrop-blur-md rounded-xl text-sm font-medium text-amber-400 border border-white/10 shadow-lg capitalize">
+                                {modelName}
+                            </div>
+                        )}
+
+                        {/* Star Rating Overlay */}
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 bg-black/60 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                            <StarRating
+                                rating={prompt.rating}
+                                onChange={(r) => onRate?.(r)}
+                                size={20}
+                            />
+                            <div className="w-px h-4 bg-white/10" />
+                            <button
+                                className="text-white/50 hover:text-amber-400 transition-colors"
+                                title="View online"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (mainImage?.image_url) window.open(mainImage.image_url, '_blank');
+                                }}
+                            >
+                                <ExternalLink size={18} />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
