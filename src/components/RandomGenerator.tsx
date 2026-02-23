@@ -259,7 +259,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       return;
     }
 
-    const suggestedModelIdToSave = topSuggestion ? topSuggestion.model.id : undefined;
+    const suggestedModelIdToSave = aiAdvice ? aiAdvice.id : (topSuggestion ? topSuggestion.model.id : undefined);
 
     // Check for duplicates
     const { data: existingPrompts } = await db
