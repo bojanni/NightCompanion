@@ -172,20 +172,23 @@ export default function PromptDetailOverlay({
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-[95%] md:w-[80%] max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10"
+                className="relative bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl w-[95%] md:w-[80%] max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10 isolate"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Left Side: Image */}
-                <div className="relative w-full md:w-[70%] bg-black/40 overflow-hidden flex flex-col items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
+                <div className="relative w-full md:w-[70%] bg-black/40 overflow-hidden rounded-t-3xl md:rounded-none md:rounded-l-3xl flex flex-col items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
 
                     {/* Dynamic Zoomed Background Effect Inside Prompt Card */}
                     {mainImage && (
                         <div
-                            className="absolute inset-0 w-full h-full scale-125 blur-3xl opacity-40 z-0 select-none pointer-events-none transition-all duration-1000 saturate-150"
+                            className="absolute z-0 select-none pointer-events-none transition-all duration-1000 saturate-150"
                             style={{
+                                top: '-20%', bottom: '-20%', left: '-20%', right: '-20%',
                                 backgroundImage: `url(${mainImage.image_url})`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
+                                filter: 'blur(4rem)', // 64px equivalent to blur-3xl
+                                opacity: 0.4
                             }}
                         />
                     )}
