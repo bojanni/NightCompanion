@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import { useExtension } from '../context/ExtensionContext';
+import { API_BASE_URL } from '../lib/constants';
 
 interface ImportStats {
     total_imported: string;
@@ -30,7 +31,7 @@ export default function ImportHub() {
     const [recentImports, setRecentImports] = useState<RecentImport[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const BASE_URL = 'http://localhost:3000';
+    const BASE_URL = API_BASE_URL;
 
     const fetchStats = useCallback(async () => {
         try {

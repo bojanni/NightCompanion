@@ -3,6 +3,7 @@ import { Download, Upload, AlertTriangle, Loader2, Database, FileJson, Trash2, X
 import { z } from 'zod';
 import { db } from '../lib/api';
 import { handleError, showSuccess } from '../lib/error-handler';
+import { API_BASE_URL } from '../lib/constants';
 
 const TableRowSchema = z.record(z.string(), z.unknown());
 
@@ -157,7 +158,7 @@ export function DataManagement() {
 
     setIsResetting(true);
     try {
-      const response = await fetch('http://localhost:3000/api/admin/reset-db', {
+      const response = await fetch(`${API_BASE_URL}/api/admin/reset-db`, {
         method: 'POST',
       });
       const data = await response.json();

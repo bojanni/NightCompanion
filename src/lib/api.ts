@@ -269,9 +269,10 @@ class QueryBuilder {
                 error: null,
                 count: Array.isArray(data) ? data.length : 1
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Query execution error:', error);
-            resolve({ data: null, error: { message: error.message || 'Unknown error', code: 'UNKNOWN_ERROR', details: '', hint: '' } });
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            resolve({ data: null, error: { message: errorMessage, code: 'UNKNOWN_ERROR', details: '', hint: '' } });
         }
     }
 

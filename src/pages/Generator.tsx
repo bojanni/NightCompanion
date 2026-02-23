@@ -13,6 +13,7 @@ import Modal from '../components/Modal';
 import { db } from '../lib/api';
 import type { Prompt } from '../lib/types';
 import { PRESET_OPTIONS } from '../lib/models-data';
+import { API_BASE_URL } from '../lib/constants';
 
 
 type Mode = 'random' | 'guided' | 'remix' | 'manual';
@@ -231,7 +232,7 @@ export default function Generator() {
         }
 
         // 2. Check similarity match
-        const res = await fetch(`http://localhost:3000/api/prompts/similar?content=${encodeURIComponent(data.content)}`);
+        const res = await fetch(`${API_BASE_URL}/api/prompts/similar?content=${encodeURIComponent(data.content)}`);
         if (res.ok) {
           const similar = await res.json();
           // Only flag if similarity > 0.85 and it's not the exact same prompt (which is handled above)

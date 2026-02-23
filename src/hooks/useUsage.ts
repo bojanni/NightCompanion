@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UsageDashboardData, UsageHistoryPoint } from '../types/usage';
+import { API_BASE_URL } from '../lib/constants';
 
-const API_BASE = 'http://localhost:3000/api/usage';
+const API_BASE = `${API_BASE_URL}/api/usage`;
 const USAGE_DASHBOARD_KEY = ['usage', 'dashboard'];
 const USAGE_HISTORY_KEY = ['usage', 'history'];
 

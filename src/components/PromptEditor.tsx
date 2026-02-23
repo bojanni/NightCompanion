@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import type { Prompt, Tag as TagType, GalleryItem } from '../lib/types';
 import { TAG_CATEGORIES, TAG_COLORS } from '../lib/types';
 import { db } from '../lib/api';
+import { API_BASE_URL } from '../lib/constants';
 import { trackKeywordsFromPrompt } from '../lib/style-analysis';
 import { PromptSchema } from '../lib/validation-schemas';
 import { generateTitle, suggestTags } from '../lib/ai-service';
@@ -144,8 +145,8 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
     }
 
     loadTags();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prompt]);
-
   const suggestedModelObj = useMemo(() => {
     return content.trim() ? analyzePrompt(content)[0]?.model : null;
   }, [content]);
@@ -414,7 +415,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
             formData.append('image', file);
 
             try {
-              const uploadRes = await fetch('http://localhost:3000/api/upload', { method: 'POST', body: formData });
+              const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, { method: 'POST', body: formData });
               if (uploadRes.ok) {
                 const { url } = await uploadRes.json();
 
@@ -603,6 +604,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-600 group">
                   <img src={startImage} alt="Start" className="w-full h-full object-cover" />
                   <button
+                    title="Remove start image"
                     onClick={() => setStartImage(null)}
                     className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
                   >
@@ -620,6 +622,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
                   </button>
                   <input
                     id="start-image-upload"
+                    title="Upload start image"
                     type="file"
                     accept="image/*"
                     className="hidden"
@@ -631,7 +634,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
                       formData.append('image', file);
 
                       try {
-                        const res = await fetch('http://localhost:3000/api/upload', {
+                        const res = await fetch(`${API_BASE_URL}/api/upload`, {
                           method: 'POST',
                           body: formData
                         });
@@ -927,6 +930,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
                 <span className="text-xs font-medium text-white drop-shadow-md">Queued</span>
               </div>
               <button
+                title="Remove image"
                 onClick={() => {
                   setFilePreviews(prev => prev.filter((_, i) => i !== idx));
                   setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
@@ -952,6 +956,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
         </div>
 
         <input
+          title="Upload image"
           type="file"
           ref={fileInputRef}
           onChange={handleImageSelect}
@@ -984,7 +989,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
             <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-white">Manage Collection</h3>
-                <button onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }} className="text-slate-400 hover:text-white">
+                <button title="Close" onClick={() => { setShowCollectionManager(false); setManagingCollectionFor(null); }} className="text-slate-400 hover:text-white">
                   <X size={20} />
                 </button>
               </div>

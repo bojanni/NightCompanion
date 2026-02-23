@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../lib/api';
 import type { Character, CharacterDetail, CharacterImage } from '../lib/types';
+import { API_BASE_URL } from '../lib/constants';
 import {
   useCharacters,
   useCreateCharacter,
@@ -201,7 +202,7 @@ export default function Characters() {
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState<string>('');
   const [formImages, setFormImages] = useState<CharacterImage[]>([]);
-  const [formDetails, setFormDetails] = useState<any[]>([]);
+  const [formDetails, setFormDetails] = useState<CharacterDetail[]>([]);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -272,9 +273,9 @@ export default function Characters() {
         await updateMutation.mutateAsync({ id: editingChar.id, ...payload });
         toast.success('Character updated');
       } else {
-        const result = await createMutation.mutateAsync(payload) as any;
+        const result = await createMutation.mutateAsync(payload) as { id: string }[];
         if (result && Array.isArray(result) && result.length > 0) {
-          characterId = result[0].id;
+          characterId = result[0]?.id;
         }
         toast.success('Character created');
       }
@@ -350,7 +351,7 @@ export default function Characters() {
         const formData = new FormData();
         formData.append('image', file);
 
-        const res = await fetch('http://localhost:3000/api/upload', {
+        const res = await fetch(`${API_BASE_URL}/api/upload`, {
           method: 'POST',
           body: formData,
         });
@@ -666,7 +667,7 @@ export default function Characters() {
                               detail: detailText.trim(),
                               category: detailCategory,
                               works_well: detailWorks
-                            }]);
+                            } as CharacterDetail]);
                             setDetailText('');
                           }
                         }}
@@ -751,6 +752,7 @@ export default function Characters() {
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
           >
             <button
+              title="Close lightbox"
               onClick={() => setLightboxImage(null)}
               className="absolute top-4 right-4 p-2 bg-white/10 rounded-full hover:bg-white/20 text-white transition-colors"
             >

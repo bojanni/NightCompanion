@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:3000/api';
+import { API_BASE_URL } from './constants';
+
+const API_BASE = `${API_BASE_URL}/api`;
 
 export interface ModelStat {
     model_name: string;

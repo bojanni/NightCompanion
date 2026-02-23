@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '../lib/constants';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'checking';
 
@@ -35,7 +36,7 @@ export const ExtensionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         duplicates: 0
     });
 
-    const BASE_URL = 'http://localhost:3000';
+    const BASE_URL = API_BASE_URL;
 
     const flushBatch = useCallback(() => {
         const { newItems, duplicates } = batchStats.current;

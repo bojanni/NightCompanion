@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../lib/constants';
 
 export interface UsageTotals {
     calls: number;
@@ -38,7 +39,7 @@ export function useUsageStats(from: string, to: string) {
             const params = new URLSearchParams();
             if (from) params.set('from', from);
             if (to) params.set('to', to);
-            const res = await fetch(`http://localhost:3000/api/usage?${params}`);
+            const res = await fetch(`${API_BASE_URL}/api/usage?${params}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
             setData(json);

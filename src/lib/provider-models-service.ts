@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:3000/api/providers';
+import { API_BASE_URL } from './constants';
+
+const API_BASE = `${API_BASE_URL}/api/providers`;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface NormalizedModel {
@@ -81,13 +83,14 @@ export function getRecommendedForTask(
             // MUST have vision capability
             return candidates.filter(m => m.capabilities.includes('vision'));
 
-        case 'research':
+        case 'research': {
             // Prefer web_search capable (Perplexity first), then reasoning
             const withSearch = candidates.filter(m => m.capabilities.includes('web_search'));
             const withReasoning = candidates.filter(m =>
                 !m.capabilities.includes('web_search') && m.capabilities.includes('reasoning')
             );
             return [...withSearch, ...withReasoning];
+        }
     }
 }
 
@@ -103,9 +106,10 @@ function sortByCostTier(models: NormalizedModel[]) {
 const INSTRUCTION_KEYWORDS = ['claude', 'gpt-4o', 'mistral-large', 'command-a', 'gemini-1.5-pro', 'gemini-2'];
 
 function instructionScore(id: string): number {
+    if (!id) return 0;
     const lower = id.toLowerCase();
-    for (let i = 0; i < INSTRUCTION_KEYWORDS.length; i++) {
-        if (lower.includes(INSTRUCTION_KEYWORDS[i])) return INSTRUCTION_KEYWORDS.length - i;
+    for (const [index, keyword] of INSTRUCTION_KEYWORDS.entries()) {
+        if (lower.includes(keyword)) return INSTRUCTION_KEYWORDS.length - index;
     }
     return 0;
 }

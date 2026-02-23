@@ -1,5 +1,5 @@
-import { AIRole } from './constants';
-const API_URL = 'http://localhost:3000/api/user_api_keys';
+import { AIRole, API_BASE_URL } from './constants';
+const API_URL = `${API_BASE_URL}/api/user_api_keys`;
 
 async function callKeyService(method: string, endpoint: string = '', body?: Record<string, unknown>) {
   const res = await fetch(`${API_URL}${endpoint}`, {

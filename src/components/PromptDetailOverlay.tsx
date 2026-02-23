@@ -10,7 +10,7 @@ import { MODELS } from '../lib/models-data';
 import { formatDate } from '../lib/date-utils';
 import TagBadge from './TagBadge';
 import StarRating from './StarRating';
-
+import { API_BASE_URL } from '../lib/constants';
 interface PromptDetailOverlayProps {
     prompt: Prompt;
     tags: Tag[];
@@ -59,7 +59,7 @@ export default function PromptDetailOverlay({
         formData.append(isVideo ? 'video' : 'image', file);
 
         try {
-            const apiEndpoint = isVideo ? 'http://localhost:3000/api/upload/video' : 'http://localhost:3000/api/upload';
+            const apiEndpoint = isVideo ? `${API_BASE_URL}/api/upload/video` : `${API_BASE_URL}/api/upload`;
             const uploadRes = await fetch(apiEndpoint, {
                 method: 'POST',
                 body: formData

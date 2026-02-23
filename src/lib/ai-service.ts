@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:3000/api/ai';
+import { API_BASE_URL } from './constants';
+
+const API_URL = `${API_BASE_URL}/api/ai`;
 
 async function callAI(action: string, payload: Record<string, unknown>, token: string) {
   const loggingEnabled = localStorage.getItem('nc_api_logging_enabled') === 'true';
