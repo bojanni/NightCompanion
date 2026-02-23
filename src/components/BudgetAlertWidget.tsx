@@ -9,8 +9,8 @@ export function BudgetAlertWidget() {
     useEffect(() => {
         if (!data || !data.budget) return;
 
-        const currentPercent = data.budget.percent_used;
-        const limit = data.budget.monthly_limit_usd;
+        const currentPercent = Number(data.budget.percent_used || 0);
+        const limit = Number(data.budget.monthly_limit_usd || 0);
 
         if (prevPercent.current !== null) {
             // Trigger 100% alert
@@ -22,7 +22,7 @@ export function BudgetAlertWidget() {
             }
             // Trigger 80% alert
             else if (currentPercent >= 80 && prevPercent.current < 80) {
-                toast.warning(`Waarschuwing: Je hebt 80% van je maandelijkse AI budget verbruikt ($${data.budget.current_spend_usd.toFixed(2)} / $${limit.toFixed(2)}).`, {
+                toast.warning(`Waarschuwing: Je hebt 80% van je maandelijkse AI budget verbruikt ($${Number(data.budget.current_spend_usd || 0).toFixed(2)} / $${limit.toFixed(2)}).`, {
                     duration: 8000,
                 });
             }

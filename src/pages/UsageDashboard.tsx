@@ -65,20 +65,20 @@ export default function UsageDashboard() {
                 <StatCard
                     icon={CreditCard}
                     label="Today's Cost"
-                    value={`$${totals.today_cost_usd.toFixed(2)}`}
+                    value={`$${Number(totals.today_cost_usd || 0).toFixed(2)}`}
                     color="teal"
                 />
                 <StatCard
                     icon={TrendingUp}
                     label="Month to Date"
-                    value={`$${totals.this_month_cost_usd.toFixed(2)} / $${budget.monthly_limit_usd.toFixed(2)}`}
-                    subValue={`${budget.percent_used.toFixed(1)}% used`}
+                    value={`$${Number(totals.this_month_cost_usd || 0).toFixed(2)} / $${Number(budget.monthly_limit_usd || 0).toFixed(2)}`}
+                    subValue={`${Number(budget.percent_used || 0).toFixed(1)}% used`}
                     color={budgetIsCritical ? 'red' : budgetIsWarning ? 'amber' : 'teal'}
                 />
                 <StatCard
                     icon={Zap}
                     label="Total Monthly Requests"
-                    value={totals.this_month_requests.toLocaleString()}
+                    value={Number(totals.this_month_requests || 0).toLocaleString()}
                     color="blue"
                 />
                 <StatCard
@@ -100,7 +100,7 @@ export default function UsageDashboard() {
                         {budgetIsCritical && <AlertTriangle size={16} className="text-red-400" />}
                     </div>
                     <p className="text-sm font-bold text-slate-300">
-                        ${budget.current_spend_usd.toFixed(2)} of ${budget.monthly_limit_usd.toFixed(2)}
+                        ${Number(budget.current_spend_usd || 0).toFixed(2)} of ${Number(budget.monthly_limit_usd || 0).toFixed(2)}
                     </p>
                 </div>
 
@@ -118,14 +118,14 @@ export default function UsageDashboard() {
                                 left: `${Math.min(100, budget.percent_used)}%`,
                                 width: `${Math.min(100, Math.max(0, (budget.projected_month_end_usd / budget.monthly_limit_usd * 100) - budget.percent_used))}%`
                             }}
-                            title={`Projected overspend of $${(budget.projected_month_end_usd - budget.monthly_limit_usd).toFixed(2)}`}
+                            title={`Projected overspend of $${(Number(budget.projected_month_end_usd || 0) - Number(budget.monthly_limit_usd || 0)).toFixed(2)}`}
                         />
                     )}
                 </div>
                 <p className="text-xs text-slate-500 mt-3 text-right">
                     {budget.projected_month_end_usd > budget.monthly_limit_usd
-                        ? `Warning: Projected to end month at $${budget.projected_month_end_usd.toFixed(2)} based on current velocity.`
-                        : `Projected to end month at $${budget.projected_month_end_usd.toFixed(2)}.`}
+                        ? `Warning: Projected to end month at $${Number(budget.projected_month_end_usd || 0).toFixed(2)} based on current velocity.`
+                        : `Projected to end month at $${Number(budget.projected_month_end_usd || 0).toFixed(2)}.`}
                 </p>
             </div>
 
