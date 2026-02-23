@@ -137,6 +137,10 @@ app.get('/api/events', (req, res) => {
 app.use('/api/import', require('./routes/import'));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Fallback compatibility for older image URLs that used /api/images or /api/videos
+app.use('/api/images', express.static(path.join(__dirname, '../uploads/images')));
+app.use('/api/videos', express.static(path.join(__dirname, '../uploads/videos')));
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });

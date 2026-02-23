@@ -178,6 +178,18 @@ export default function PromptDetailOverlay({
                 {/* Left Side: Image */}
                 <div className="relative w-full md:w-[70%] bg-black/40 overflow-hidden flex flex-col items-center justify-center p-4 min-h-[40vh] md:min-h-auto">
 
+                    {/* Dynamic Zoomed Background Effect Inside Prompt Card */}
+                    {mainImage && (
+                        <div
+                            className="absolute inset-0 w-full h-full scale-125 blur-3xl opacity-40 z-0 select-none pointer-events-none transition-all duration-1000 saturate-150"
+                            style={{
+                                backgroundImage: `url(${mainImage.image_url})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                            }}
+                        />
+                    )}
+
                     <div className="absolute inset-0 z-10 p-4 lg:p-12 flex items-center justify-center">
                         {mainImage ? (
                             <MediaRenderer
