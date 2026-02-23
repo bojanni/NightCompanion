@@ -11,6 +11,8 @@ import { formatDate } from '../lib/date-utils';
 import TagBadge from './TagBadge';
 import StarRating from './StarRating';
 import { API_BASE_URL } from '../lib/constants';
+import useSSERefresh from '../hooks/useSSERefresh';
+
 interface PromptDetailOverlayProps {
     prompt: Prompt;
     tags: Tag[];
@@ -34,6 +36,14 @@ export default function PromptDetailOverlay({
 }: PromptDetailOverlayProps) {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [justUpdated, setJustUpdated] = useState(false);
+
+    useSSERefresh((item) => {
+        if (item.id === prompt.id) {
+            setJustUpdated(true);
+            setTimeout(() => setJustUpdated(false), 3000);
+        }
+    });
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -257,7 +267,14 @@ export default function PromptDetailOverlay({
                 {/* Right Side: Data */}
                 <div className="w-full md:w-[30%] flex flex-col border-l border-slate-800 bg-slate-900/50">
                     <div className="p-8 border-b border-slate-800">
-                        <h2 className="text-2xl font-bold text-white mb-2">{prompt.title || 'Untitled Prompt'}</h2>
+                        <div className="flex items-center gap-3 mb-2">
+                            <h2 className="text-2xl font-bold text-white">{prompt.title || 'Untitled Prompt'}</h2>
+                            {justUpdated && (
+                                <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-medium rounded-lg border border-emerald-500/30 animate-pulse whitespace-nowrap">
+                                    Bijgewerkt
+                                </span>
+                            )}
+                        </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-slate-400 text-sm">
                             <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center gap-2">

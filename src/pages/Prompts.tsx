@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Loader2, BookTemplate, Heart, Search, Filter, SlidersHorizontal, Plus, Link, Trash2, Edit3, Lock, Zap, Calendar, Clock, Wand2, Copy, Check, ChevronLeft, ChevronRight, X, ExternalLink } from 'lucide-react';
+import { Sparkles, Loader2, BookTemplate, Heart, Search, Filter, SlidersHorizontal, Plus, Link, Trash2, Edit3, Lock, Zap, Calendar, Clock, Wand2, Copy, Check, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import { db } from '../lib/api';
-import type { Prompt } from '../lib/types';
+import type { Prompt, GalleryItem } from '../lib/types';
 import { MODELS, type ModelInfo } from '../lib/models-data';
 import Modal from '../components/Modal';
 import { PromptSkeleton } from '../components/PromptSkeleton';
@@ -16,18 +16,22 @@ import StarRating from '../components/StarRating';
 import TagBadge from '../components/TagBadge';
 import ImageSelector from '../components/ImageSelector';
 import { handleError, showSuccess } from '../lib/error-handler';
+import { toast } from 'sonner';
 import GridDensitySelector from '../components/GridDensitySelector';
 import { motion, AnimatePresence } from 'framer-motion';
 import PromptDetailOverlay from '../components/PromptDetailOverlay';
 import { usePromptsState } from '../hooks/usePromptsState';
 import ChoiceModal from '../components/ChoiceModal';
 import { useHotkeys } from '../hooks/useHotkeys';
+import useSSERefresh from '../hooks/useSSERefresh';
+import { useExtension } from '../context/ExtensionContext';
 
 const PAGE_SIZE = 20;
 
 type GalleryItemData = { id: string; image_url: string; title: string; rating: number; model?: string };
 
-function ImageCarousel({ images, promptId, onUnlink, onImageClick, t }: { images: GalleryItemData[], promptId: string, onUnlink: (imgId: string) => void, onImageClick: (img: GalleryItemData) => void, t: TFunction }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ImageCarousel({ images, onUnlink, onImageClick, t }: { images: GalleryItemData[], onUnlink: (imgId: string) => void, onImageClick: (img: GalleryItemData) => void, t: any }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handlePrevious = (e: React.MouseEvent) => {
@@ -155,6 +159,20 @@ export default function Prompts() {
     handleImportNightcafeUrl,
     getTagsForPrompt,
   } = usePromptsState();
+
+  const { connectionStatus } = useExtension();
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useSSERefresh((item) => {
+    toast.success(`Nieuw prompt geïmporteerd: "${item.title}"`);
+
+    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+    fetchTimeoutRef.current = setTimeout(() => {
+      setCurrentPage(0);
+      loadData();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 500);
+  });
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrl, setImportUrl] = useState('');
@@ -433,7 +451,15 @@ export default function Prompts() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Prompts</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-white">Prompts</h1>
+            {connectionStatus === 'connected' && (
+              <span className="flex items-center gap-1 text-xs text-emerald-400 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live
+              </span>
+            )}
+          </div>
           <p className="text-slate-400 mt-1">{totalCount} prompts in your library</p>
         </div>
         <div className="flex gap-2">
@@ -657,7 +683,7 @@ export default function Prompts() {
                             e.stopPropagation();
                             // Find current index state, or default to 0
                             // Just open the first item for now if clicked on the image directly
-                            setLightboxImage(promptImages[0]);
+                            if (promptImages[0]) setLightboxImage(promptImages[0]);
                           }}
                         >
                           <img
@@ -694,7 +720,7 @@ export default function Prompts() {
 
                         {/* Render custom component for Carousel logic to keep it clean */}
                         {promptImages.length > 1 && (
-                          <ImageCarousel images={promptImages} promptId={prompt.id} onUnlink={(imgId) => handleUnlinkImage(prompt.id, imgId)} onImageClick={(img) => setLightboxImage(img)} t={t} />
+                          <ImageCarousel images={promptImages} onUnlink={(imgId) => handleUnlinkImage(prompt.id, imgId)} onImageClick={(img) => setLightboxImage(img)} t={t} />
                         )}
                       </div>
                     )}
@@ -949,7 +975,7 @@ export default function Prompts() {
           <PromptDetailOverlay
             prompt={filtered[detailViewIndex]}
             tags={getTagsForPrompt(filtered[detailViewIndex].id)}
-            images={(linkedImages[filtered[detailViewIndex].id] || []) as any}
+            images={(linkedImages[filtered[detailViewIndex].id] || []) as unknown as GalleryItem[]}
             onClose={() => setDetailViewIndex(null)}
             onNext={() => navigateDetail('next')}
             onPrev={() => navigateDetail('prev')}

@@ -4,11 +4,17 @@ import { API_BASE_URL } from '../lib/constants';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'checking';
 
+interface ImportItem {
+    id: string;
+    title: string;
+}
+
 interface ExtensionContextType {
     connectionStatus: ConnectionStatus;
     lastEvent: string | null;
     liveCount: number;
     lastSyncTime: Date | null;
+    registerImportListener: (callback: (item: ImportItem) => void) => () => void;
 }
 
 const ExtensionContext = createContext<ExtensionContextType | undefined>(undefined);
@@ -29,6 +35,14 @@ export const ExtensionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const eventSourceRef = useRef<EventSource | null>(null);
     const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const listenersRef = useRef<Set<(item: ImportItem) => void>>(new Set());
+
+    const registerImportListener = useCallback((callback: (item: ImportItem) => void) => {
+        listenersRef.current.add(callback);
+        return () => {
+            listenersRef.current.delete(callback);
+        };
+    }, []);
 
     // Batch import tracking
     const batchStats = useRef({
@@ -58,13 +72,20 @@ export const ExtensionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         batchTimerRef.current = null;
     }, []);
 
-    const handleImportEvent = useCallback((type: 'import' | 'import_duplicate', title?: string) => {
+    const handleImportEvent = useCallback((type: 'import' | 'import_duplicate', payload?: { id?: string; title?: string }) => {
         setLastSyncTime(new Date());
+
+        const id = payload?.id;
+        const title = payload?.title;
 
         if (type === 'import') {
             batchStats.current.newItems += 1;
             setLiveCount(c => c + 1);
             if (title) setLastEvent(`"${title}" geïmporteerd`);
+
+            if (id && title) {
+                listenersRef.current.forEach(cb => cb({ id, title }));
+            }
         } else if (type === 'import_duplicate') {
             batchStats.current.duplicates += 1;
             if (title) setLastEvent(`"${title}" al aanwezig (overgeslagen)`);
@@ -87,7 +108,7 @@ export const ExtensionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             try {
                 const data = JSON.parse(e.data);
                 if (data.type === 'import' || data.type === 'import_duplicate') {
-                    handleImportEvent(data.type, data.title);
+                    handleImportEvent(data.type, data);
                 }
             } catch (err) {
                 console.error("Failed to parse SSE message", err);
@@ -116,7 +137,7 @@ export const ExtensionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, [connectSSE]);
 
     return (
-        <ExtensionContext.Provider value={{ connectionStatus, lastEvent, liveCount, lastSyncTime }}>
+        <ExtensionContext.Provider value={{ connectionStatus, lastEvent, liveCount, lastSyncTime, registerImportListener }}>
             {children}
         </ExtensionContext.Provider>
     );

@@ -24,7 +24,8 @@ import { useGalleryState } from '../hooks/useGalleryState';
 import MediaRenderer from '../components/MediaRenderer';
 import GalleryLightbox from '../components/GalleryLightbox';
 import { useHotkeys } from '../hooks/useHotkeys';
-import { useNavigate } from 'react-router-dom';
+import useSSERefresh from '../hooks/useSSERefresh';
+import { useExtension } from '../context/ExtensionContext';
 
 interface DynamicColorElementProps {
   tag?: keyof JSX.IntrinsicElements;
@@ -111,6 +112,20 @@ export default function Gallery() {
     handleDeleteCollection,
     searchParams, setSearchParams
   } = useGalleryState();
+
+  const { connectionStatus } = useExtension();
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useSSERefresh((item) => {
+    toast.success(`"${item.title}" toegevoegd aan gallery`);
+
+    if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+    fetchTimeoutRef.current = setTimeout(() => {
+      setCurrentPage(0);
+      loadData();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 500);
+  });
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrl, setImportUrl] = useState('');
@@ -501,7 +516,15 @@ export default function Gallery() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">{t('gallery.title')}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-white">{t('gallery.title')}</h1>
+            {connectionStatus === 'connected' && (
+              <span className="flex items-center gap-1 text-xs text-emerald-400 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live
+              </span>
+            )}
+          </div>
           <p className="text-slate-400 mt-1">{t('gallery.items_count', { count: totalCount, defaultValue: `${totalCount} items in your collection` })}</p>
         </div>
         <div className="flex gap-2">
@@ -897,7 +920,7 @@ export default function Gallery() {
                       image_url: formImageUrl,
                       video_url: formVideoUrl,
                       thumbnail_url: formThumbnailUrl,
-                    } as any}
+                    } as unknown as GalleryItem}
                     className="w-full h-full object-cover"
                   />
                 </div>
