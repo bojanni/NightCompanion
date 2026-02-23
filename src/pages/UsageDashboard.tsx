@@ -190,7 +190,7 @@ function ProviderCard({ data }: { data: ProviderUsage }) {
                     <div className={`w-3 h-3 rounded-full shadow-lg ${isCapped ? 'bg-red-500 shadow-red-500/50' : p.current_window.percent_used > 80 ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'}`} />
                     <h4 className="text-lg font-bold text-white uppercase tracking-wider">{p.provider}</h4>
                 </div>
-                <span className="text-xs font-bold text-slate-500 font-mono tracking-widest">{p.this_month.cost_usd.toFixed(2)}$ / mo</span>
+                <span className="text-xs font-bold text-slate-500 font-mono tracking-widest">{Number(p.this_month.cost_usd || 0).toFixed(2)}$ / mo</span>
             </div>
 
             <div className="flex-1 flex flex-col md:flex-row gap-8 items-center justify-between py-2">
@@ -233,11 +233,11 @@ function ProviderCard({ data }: { data: ProviderUsage }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Input Tokens</p>
-                            <p className="text-sm font-medium text-slate-300">{p.this_month.prompt_tokens.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-slate-300">{Number(p.this_month.prompt_tokens || 0).toLocaleString()}</p>
                         </div>
                         <div>
                             <p className="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Output Tokens</p>
-                            <p className="text-sm font-medium text-slate-300">{p.this_month.completion_tokens.toLocaleString()}</p>
+                            <p className="text-sm font-medium text-slate-300">{Number(p.this_month.completion_tokens || 0).toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
