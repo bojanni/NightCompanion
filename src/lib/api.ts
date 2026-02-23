@@ -1,6 +1,7 @@
-// LOCAL ADAPTER REPLACING API CLIENT
-const API_URL = 'http://localhost:3000/api';
+import { API_BASE_URL } from './constants';
 
+// LOCAL ADAPTER REPLACING API CLIENT
+const API_URL = `${API_BASE_URL}/api`;
 class LocalApiClient {
 
 

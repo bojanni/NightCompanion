@@ -22,4 +22,7 @@ export const LOCAL_PROVIDERS = {
     LMSTUDIO: PROVIDERS.LMSTUDIO
 } as const;
 
+// Application API Base URL
+// Can be overridden via environment variables if deployed
+export const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:3000';
 
