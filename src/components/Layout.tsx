@@ -12,6 +12,8 @@ import { useExtension } from '../context/ExtensionContext';
 import { db } from '../lib/api';
 import { toast } from 'sonner';
 import SidebarCostWidget from './SidebarCostWidget';
+import { RateLimitWidget } from './RateLimitWidget';
+import { BudgetAlertWidget } from './BudgetAlertWidget';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
@@ -27,6 +29,7 @@ const navItems = [
 
 const infoItems = [
   { to: '/nc-models', icon: Info, labelKey: 'nav.ncModels', fallbackLabel: 'NC Models Guide' },
+  { to: '/usage', icon: BarChart2, labelKey: 'AI Usage', fallbackLabel: 'AI Usage' },
   { to: '/statistics', icon: BarChart2, labelKey: 'nav.statistics' },
   { to: '/timeline', icon: Clock, labelKey: 'nav.timeline' },
 ];
@@ -166,8 +169,9 @@ export default function Layout() {
         </div>
 
         {/* Cost / Usage Widget */}
+        <RateLimitWidget collapsed={collapsed} />
         <SidebarCostWidget collapsed={collapsed} />
-
+        <BudgetAlertWidget />
         <nav className="flex-1 px-3 py-4 space-y-4 overflow-x-hidden">
           <div className="space-y-1">
             {navItems.map(({ to, icon: Icon, labelKey }) => (
