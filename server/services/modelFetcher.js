@@ -163,21 +163,36 @@ async function fetchCohere(apiKey) {
 }
 
 async function fetchDeepInfra(apiKey) {
-    const res = await fetch('https://api.deepinfra.com/v1/openai/models', {
+    const res = await fetch('https://api.deepinfra.com/v1/models', {
         headers: { Authorization: `Bearer ${apiKey}` },
         signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) throw new Error(`DeepInfra /models → ${res.status}`);
     const { data } = await res.json();
-    return (data || []).map(m => normalize({
-        originalId: m.id,
-        provider: 'deepinfra',
-        name: m.id.split('/').pop() || m.id,
-        capabilities: detectCapabilities(m.id),
-        contextWindow: null,
-        costTier: 'low',
-        pricing: null,
-    }));
+    return (data || []).map(m => {
+        const meta = m.metadata || {};
+        const p = meta.pricing || {};
+        const tags = meta.tags || [];
+        const isVision = tags.includes('vision');
+        const isReasoning = tags.includes('reasoning_effort') || tags.includes('reasoning') || detectCapabilities(m.id).includes('reasoning');
+
+        // DeepInfra pricing is USD per 1M tokens. Normalized format expects USD per token.
+        const costIn = p.input_tokens ? p.input_tokens / 1_000_000 : null;
+        const costOut = p.output_tokens ? p.output_tokens / 1_000_000 : null;
+
+        return normalize({
+            originalId: m.id,
+            provider: 'deepinfra',
+            name: m.id.split('/').pop() || m.id,
+            capabilities: detectCapabilities(m.id, { vision: isVision, reasoning: isReasoning }),
+            contextWindow: meta.context_length || null,
+            costTier: costOut !== null ? deriveCostTier(costOut) : 'low',
+            pricing: costIn !== null ? {
+                prompt: String(costIn),
+                completion: String(costOut),
+            } : null,
+        });
+    });
 }
 
 // Perplexity has no /models endpoint — hardcoded stable list
