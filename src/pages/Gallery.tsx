@@ -1459,6 +1459,7 @@ export default function Gallery() {
         onClose={closeLightbox}
         onUpdateRating={handleUpdateRating}
         autoPlay={slideshowMode}
+        displaySettings={displaySettings}
       />
     </div>
   );

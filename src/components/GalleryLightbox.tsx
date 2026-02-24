@@ -14,6 +14,12 @@ interface GalleryLightboxProps {
     onUpdateRating?: (item: GalleryItem, rating: number) => void;
     minimal?: boolean;
     autoPlay?: boolean;
+    displaySettings?: {
+        title: boolean;
+        rating: boolean;
+        prompt: boolean;
+        model: boolean;
+    };
 }
 
 export default function GalleryLightbox({
@@ -24,12 +30,18 @@ export default function GalleryLightbox({
     onUpdateRating,
     minimal = false,
     autoPlay = false,
+    displaySettings,
 }: GalleryLightboxProps) {
     const { t } = useTranslation();
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [isPlaying, setIsPlaying] = useState(autoPlay);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [zenMode, setZenMode] = useState(() => localStorage.getItem('slideshowZenMode') === 'true');
     const [promptExpanded, setPromptExpanded] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('slideshowZenMode', String(zenMode));
+    }, [zenMode]);
     const [imgError, setImgError] = useState(false);
     const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
     const touchStartX = useRef<number | null>(null);
@@ -175,6 +187,16 @@ export default function GalleryLightbox({
                 {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
 
+            {/* ── Zen Mode button ─────────────────────────────────────────── */}
+            <button
+                onClick={() => setZenMode(!zenMode)}
+                className="absolute top-4 right-28 z-20 p-2.5 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/60 text-white transition-colors"
+                aria-label={zenMode ? t('gallery.show_metadata') : t('gallery.zen_mode')}
+                title={zenMode ? t('gallery.show_metadata') : t('gallery.zen_mode')}
+            >
+                {zenMode ? <Maximize size={20} /> : <Minimize size={20} />}
+            </button>
+
             {/* ── Prev / Next ───────────────────────────────────────────────── */}
             {hasMultiple && (
                 <>
@@ -229,22 +251,26 @@ export default function GalleryLightbox({
                 </div>
 
                 {/* Prompt card */}
-                {!minimal && (
-                    <div className="w-full max-w-2xl bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 space-y-3">
+                {(!zenMode && !minimal) && (
+                    <div className="w-full max-w-2xl bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 space-y-3 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]">
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-white font-semibold text-sm truncate mb-0.5">
-                                    {current.title || t('common.untitled')}
-                                </h3>
+                                {(!displaySettings || displaySettings.title) && (
+                                    <h3 className="text-white font-semibold text-sm truncate mb-0.5">
+                                        {current.title || t('common.untitled')}
+                                    </h3>
+                                )}
                                 <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                                    {current.model && <span className="truncate max-w-[160px]">{current.model}</span>}
+                                    {(!displaySettings || displaySettings.model) && current.model && (
+                                        <span className="truncate max-w-[160px] uppercase font-bold text-slate-500 tracking-tighter">{current.model}</span>
+                                    )}
                                     <span>{formatDate(current.created_at)}</span>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2 flex-none">
                                 {/* Star rating */}
-                                {onUpdateRating && (
+                                {(!displaySettings || displaySettings.rating) && onUpdateRating && (
                                     <div className="flex items-center gap-0.5">
                                         {[1, 2, 3, 4, 5].map(star => (
                                             <button
@@ -276,7 +302,7 @@ export default function GalleryLightbox({
                         </div>
 
                         {/* Prompt text */}
-                        {current.prompt_used && (
+                        {(!displaySettings || displaySettings.prompt) && current.prompt_used && (
                             <div>
                                 <p className={`text-[12px] text-slate-300 leading-relaxed ${promptExpanded ? '' : 'line-clamp-4'}`}>
                                     {current.prompt_used}

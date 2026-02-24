@@ -159,7 +159,9 @@
         "show_title": "Titel tonen",
         "show_rating": "Beoordeling tonen",
         "show_prompt": "Prompt tonen",
-        "show_model": "Model tonen"
+        "show_model": "Model tonen",
+        "zen_mode": "Zenmodus",
+        "show_metadata": "Metadata tonen"
     },
     "aiTools": {
         "title": "AI Tools",
