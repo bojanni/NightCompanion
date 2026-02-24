@@ -84,6 +84,25 @@ export function SessionStatsProvider({ children }: { children: React.ReactNode }
         resetSession: () => dispatch({ type: 'RESET' }),
     }), [stats]);
 
+    React.useEffect(() => {
+        const handler = (e: Event) => {
+            const usage = (e as CustomEvent).detail;
+            if (usage) {
+                value.addUsage({
+                    action: usage.action || 'unknown',
+                    provider: usage.provider || 'unknown',
+                    model: usage.model || 'unknown',
+                    promptTokens: usage.prompt_tokens || 0,
+                    completionTokens: usage.completion_tokens || 0,
+                    estimatedCostUsd: usage.estimated_cost_usd || 0,
+                });
+            }
+        };
+
+        window.addEventListener('nc-usage-update', handler);
+        return () => window.removeEventListener('nc-usage-update', handler);
+    }, [value]);
+
     return (
         <SessionStatsContext.Provider value={value}>
             {children}

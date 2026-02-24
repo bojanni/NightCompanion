@@ -58,6 +58,13 @@ async function callAI(action: string, payload: Record<string, unknown>, token: s
     }));
   }
 
+  // Dispatch global usage event for session stats
+  if (data.usage) {
+    window.dispatchEvent(new CustomEvent('nc-usage-update', {
+      detail: data.usage
+    }));
+  }
+
   return data.result;
 }
 
