@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, Copy, Star } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Copy, Star, Play, Pause } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import type { GalleryItem } from '../lib/types';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ interface GalleryLightboxProps {
     onClose: () => void;
     onUpdateRating?: (item: GalleryItem, rating: number) => void;
     minimal?: boolean;
+    autoPlay?: boolean;
 }
 
 export default function GalleryLightbox({
@@ -21,8 +23,11 @@ export default function GalleryLightbox({
     onClose,
     onUpdateRating,
     minimal = false,
+    autoPlay = false,
 }: GalleryLightboxProps) {
+    const { t } = useTranslation();
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
+    const [isPlaying, setIsPlaying] = useState(autoPlay);
     const [promptExpanded, setPromptExpanded] = useState(false);
     const [imgError, setImgError] = useState(false);
     const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -35,7 +40,8 @@ export default function GalleryLightbox({
         setCurrentIndex(initialIndex);
         setPromptExpanded(false);
         setImgError(false);
-    }, [initialIndex, isOpen]);
+        setIsPlaying(autoPlay);
+    }, [initialIndex, isOpen, autoPlay]);
 
     // Reset imgError when image changes
     useEffect(() => {
@@ -58,6 +64,17 @@ export default function GalleryLightbox({
         });
         setPromptExpanded(false);
     }, [images.length]);
+
+    // Slideshow logic
+    useEffect(() => {
+        if (!isOpen || !isPlaying || images.length <= 1) return;
+
+        const interval = setInterval(() => {
+            navigate('next');
+        }, 5000); // 5 seconds per slide
+
+        return () => clearInterval(interval);
+    }, [isOpen, isPlaying, images.length, navigate]);
 
     // Keyboard navigation
     useEffect(() => {
@@ -142,6 +159,16 @@ export default function GalleryLightbox({
                     >
                         <ChevronRight size={24} />
                     </button>
+
+                    {/* Slideshow Control */}
+                    <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className="absolute bottom-24 right-4 z-20 flex items-center gap-2 px-4 py-2 rounded-xl bg-black/30 backdrop-blur-md border border-white/10 text-white hover:bg-black/50 transition-all hover:scale-105"
+                        title={isPlaying ? t('common.pause') : t('common.play')}
+                    >
+                        {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                        <span className="text-sm font-medium">{isPlaying ? t('common.pause') : t('common.play')}</span>
+                    </button>
                 </>
             )}
 
@@ -155,13 +182,13 @@ export default function GalleryLightbox({
                             <div className="w-24 h-24 bg-slate-800 rounded-2xl flex items-center justify-center">
                                 <X size={32} />
                             </div>
-                            <p className="text-sm">Image unavailable</p>
+                            <p className="text-sm">{t('gallery.image_unavailable', { defaultValue: 'Image unavailable' })}</p>
                         </div>
                     ) : (
                         <img
                             key={`main-${currentIndex}`}
                             src={imageUrl}
-                            alt={current.title || 'Gallery image'}
+                            alt={current.title || t('common.untitled')}
                             onError={() => setImgError(true)}
                             className="max-h-[70vh] max-w-full rounded-2xl object-contain shadow-2xl animate-in fade-in zoom-in-95 duration-300"
                         />
@@ -174,7 +201,7 @@ export default function GalleryLightbox({
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                                 <h3 className="text-white font-semibold text-sm truncate mb-0.5">
-                                    {current.title || 'Untitled'}
+                                    {current.title || t('common.untitled')}
                                 </h3>
                                 <div className="flex items-center gap-3 text-[11px] text-slate-400">
                                     {current.model && <span className="truncate max-w-[160px]">{current.model}</span>}
@@ -207,7 +234,7 @@ export default function GalleryLightbox({
                                     <button
                                         onClick={handleCopyPrompt}
                                         className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
-                                        title="Copy prompt"
+                                        title={t('common.copy_prompt', { defaultValue: 'Copy prompt' })}
                                     >
                                         <Copy size={13} />
                                     </button>
@@ -226,7 +253,7 @@ export default function GalleryLightbox({
                                         onClick={() => setPromptExpanded(v => !v)}
                                         className="text-[11px] text-teal-400 hover:text-teal-300 mt-1 transition-colors"
                                     >
-                                        {promptExpanded ? 'Show less' : 'Show more'}
+                                        {promptExpanded ? t('common.show_less', { defaultValue: 'Show less' }) : t('common.show_more', { defaultValue: 'Show more' })}
                                     </button>
                                 )}
                             </div>

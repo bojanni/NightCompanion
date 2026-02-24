@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Plus, Search, Trash2, Edit3, Image, FolderOpen,
+  Plus, Search, Trash2, Edit3, Image as ImageIcon, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
-  ChevronLeft, ChevronRight, Link, Download,
+  ChevronLeft, ChevronRight, Link, Download, Play,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { exportGalleryItems } from '../lib/export-utils';
@@ -129,6 +129,7 @@ export default function Gallery() {
 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrl, setImportUrl] = useState('');
+  const [slideshowMode, setSlideshowMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useHotkeys('/', (e) => {
@@ -392,6 +393,7 @@ export default function Gallery() {
 
   function closeLightbox() {
     setLightboxImage(null);
+    setSlideshowMode(false);
   }
 
   function navigateLightbox(direction: 'prev' | 'next') {
@@ -494,6 +496,12 @@ export default function Gallery() {
     }
   }
 
+  function handleStartSlideshow() {
+    if (filtered.length === 0) return;
+    setSlideshowMode(true);
+    setLightboxImage(filtered[0] || null);
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -542,6 +550,14 @@ export default function Gallery() {
           >
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             {t('common.export')}
+          </button>
+          <button
+            onClick={handleStartSlideshow}
+            disabled={totalCount === 0}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors border border-slate-700 disabled:opacity-50"
+          >
+            <Play size={14} />
+            {t('gallery.slideshow')}
           </button>
           <button
             onClick={() => setShowImportModal(true)}
@@ -625,7 +641,7 @@ export default function Gallery() {
       {filtered.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
           <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Image size={28} className="text-slate-600" />
+            <ImageIcon size={28} className="text-slate-600" />
           </div>
           <h3 className="text-lg font-medium text-white mb-1">
             {search || filterCollection || filterRating > 0 ? 'No matching items' : 'Gallery is empty'}
@@ -864,7 +880,7 @@ export default function Gallery() {
                   className={`flex-1 px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm ${(formTouched.imageUrl || formTouched.videoUrl) && (formErrors.imageUrl || formErrors.videoUrl) ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
                 />
                 <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer transition-colors text-sm font-medium">
-                  {formMediaType === 'video' ? <Loader2 size={16} /> : <Image size={16} />}
+                  {formMediaType === 'video' ? <Loader2 size={16} /> : <ImageIcon size={16} />}
                   Upload
                   <input
                     type="file"
@@ -1369,6 +1385,7 @@ export default function Gallery() {
         isOpen={!!lightboxImage}
         onClose={closeLightbox}
         onUpdateRating={handleUpdateRating}
+        autoPlay={slideshowMode}
       />
     </div>
   );

@@ -11,7 +11,13 @@
         "untitled": "Naamloos",
         "actions": "Acties",
         "next": "Volgende",
-        "previous": "Vorige"
+        "previous": "Vorige",
+        "export": "Exporteren",
+        "play": "Afspelen",
+        "pause": "Pauzeren",
+        "copy_prompt": "Prompt Kopiëren",
+        "show_less": "Minder Weergeven",
+        "show_more": "Meer Weergeven"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -84,7 +90,9 @@
     "prompts": {
         "title": "Prompts",
         "subtitle": "{{count}} prompts in je bibliotheek",
-        "import": "Importeren van NightCafe",
+        "import": {
+            "title": "Importeren van NightCafe"
+        },
         "new": "Nieuwe Prompt",
         "search": "Zoek prompts...",
         "filters": {
@@ -140,7 +148,11 @@
     "gallery": {
         "title": "Gallerij",
         "search": "Zoek creaties...",
-        "empty": "Nog geen items in je gallerij."
+        "empty": "Nog geen items in je gallerij.",
+        "new_collection": "Nieuwe Collectie",
+        "add_item": "Afbeelding Toevoegen",
+        "items_count": "{{count}} items in je collectie",
+        "slideshow": "Diashow"
     },
     "aiTools": {
         "title": "AI Tools",

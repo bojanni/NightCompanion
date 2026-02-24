@@ -11,7 +11,13 @@
         "untitled": "Untitled",
         "actions": "Actions",
         "next": "Next",
-        "previous": "Previous"
+        "previous": "Previous",
+        "export": "Export",
+        "play": "Play",
+        "pause": "Pause",
+        "copy_prompt": "Copy Prompt",
+        "show_less": "Show Less",
+        "show_more": "Show More"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -85,7 +91,9 @@
     "prompts": {
         "title": "Prompts",
         "subtitle": "{{count}} prompts in your library",
-        "import": "Import From NightCafe",
+        "import": {
+            "title": "Import From NightCafe"
+        },
         "new": "New Prompt",
         "search": "Search prompts...",
         "filters": {
@@ -141,7 +149,11 @@
     "gallery": {
         "title": "Gallery",
         "search": "Search creations...",
-        "empty": "No items in your gallery yet."
+        "empty": "No items in your gallery yet.",
+        "new_collection": "New Collection",
+        "add_item": "Add Image",
+        "items_count": "{{count}} items in your collection",
+        "slideshow": "Slideshow"
     },
     "aiTools": {
         "title": "AI Tools",
