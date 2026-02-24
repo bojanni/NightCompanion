@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus, Search, Trash2, Edit3, Image as ImageIcon, FolderOpen,
   Save, Loader2, X, Star, MessageSquare, ExternalLink,
-  ChevronLeft, ChevronRight, Link, Download, Play,
+  ChevronLeft, ChevronRight, Link, Download, Play, Settings2, Eye, EyeOff,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { exportGalleryItems } from '../lib/export-utils';
@@ -130,7 +130,21 @@ export default function Gallery() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [slideshowMode, setSlideshowMode] = useState(false);
+  const [showDisplayOptions, setShowDisplayOptions] = useState(false);
+  const [displaySettings, setDisplaySettings] = useState(() => {
+    const saved = localStorage.getItem('galleryDisplaySettings');
+    return saved ? JSON.parse(saved) : {
+      title: true,
+      rating: true,
+      prompt: true,
+      model: true
+    };
+  });
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('galleryDisplaySettings', JSON.stringify(displaySettings));
+  }, [displaySettings]);
 
   useHotkeys('/', (e) => {
     e.preventDefault();
@@ -559,6 +573,52 @@ export default function Gallery() {
             <Play size={14} />
             {t('gallery.slideshow')}
           </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowDisplayOptions(!showDisplayOptions)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors border border-slate-700"
+              title={t('gallery.display_options')}
+            >
+              <Settings2 size={14} />
+              <span className="hidden sm:inline">{t('gallery.display_options')}</span>
+            </button>
+
+            <AnimatePresence>
+              {showDisplayOptions && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
+                >
+                  <div className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800 mb-1">
+                    {t('gallery.display_options')}
+                  </div>
+                  {[
+                    { key: 'title', label: t('gallery.show_title') },
+                    { key: 'rating', label: t('gallery.show_rating') },
+                    { key: 'prompt', label: t('gallery.show_prompt') },
+                    { key: 'model', label: t('gallery.show_model') }
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => setDisplaySettings((prev: Record<string, boolean>) => ({ ...prev, [option.key]: !prev[option.key] }))}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 rounded-xl transition-colors"
+                    >
+                      <span>{option.label}</span>
+                      {displaySettings[option.key] ? (
+                        <Eye size={14} className="text-teal-400" />
+                      ) : (
+                        <EyeOff size={14} className="text-slate-600" />
+                      )}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <button
             onClick={() => setShowImportModal(true)}
             disabled={importingNightcafe}
@@ -703,20 +763,33 @@ export default function Gallery() {
                   </div>
                 </div>
                 <div className="p-3">
-                  <h3 className="text-xs font-medium text-white truncate">{item.title || 'Untitled'}</h3>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
-                    {item.collection_id && (
-                      <span className="text-[10px] text-slate-500 truncate ml-2">
-                        {getCollectionName(item.collection_id)}
-                      </span>
-                    )}
-                  </div>
-                  {item.prompt_id && linkedPrompts[item.prompt_id] && (
+                  {displaySettings.title && (
+                    <h3 className="text-xs font-medium text-white truncate">{item.title || t('common.untitled')}</h3>
+                  )}
+
+                  {(displaySettings.rating || displaySettings.model) && (
+                    <div className="flex items-center justify-between mt-1.5 overflow-hidden">
+                      {displaySettings.rating && (
+                        <StarRating rating={item.rating} onChange={(r) => handleUpdateRating(item, r)} size={11} />
+                      )}
+                      {displaySettings.model && item.model && (
+                        <span className="text-[9px] text-slate-500 truncate max-w-[120px] ml-auto uppercase tracking-tighter">
+                          {item.model}
+                        </span>
+                      )}
+                      {!displaySettings.model && item.collection_id && (
+                        <span className="text-[10px] text-slate-500 truncate ml-2">
+                          {getCollectionName(item.collection_id)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {displaySettings.prompt && item.prompt_id && linkedPrompts[item.prompt_id] && (
                     <div className="mt-2 pt-2 border-t border-slate-800">
                       <p className="text-[9px] text-slate-500 uppercase tracking-wide mb-0.5 flex items-center gap-1">
                         <Link size={8} />
-                        Linked Prompt
+                        {t('common.linked_prompt', { defaultValue: 'Linked Prompt' })}
                       </p>
                       <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed">
                         {linkedPrompts[item.prompt_id]?.content}

@@ -160,7 +160,9 @@
         "show_title": "Show Title",
         "show_rating": "Show Rating",
         "show_prompt": "Show Prompt",
-        "show_model": "Show Model"
+        "show_model": "Show Model",
+        "zen_mode": "Zen Mode",
+        "show_metadata": "Show Metadata"
     },
     "aiTools": {
         "title": "AI Tools",

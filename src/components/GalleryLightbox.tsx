@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, Copy, Star, Play, Pause } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Copy, Star, Play, Pause, Maximize, Minimize } from 'lucide-react';
 import { formatDate } from '../lib/date-utils';
 import type { GalleryItem } from '../lib/types';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ export default function GalleryLightbox({
     const { t } = useTranslation();
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [isPlaying, setIsPlaying] = useState(autoPlay);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [promptExpanded, setPromptExpanded] = useState(false);
     const [imgError, setImgError] = useState(false);
     const thumbnailRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -99,6 +100,28 @@ export default function GalleryLightbox({
         touchStartX.current = null;
     }
 
+    const toggleFullscreen = useCallback(() => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                toast.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
     function handleCopyPrompt() {
         if (!current?.prompt_used) return;
         navigator.clipboard.writeText(current.prompt_used);
@@ -140,6 +163,16 @@ export default function GalleryLightbox({
                 aria-label="Close"
             >
                 <X size={20} />
+            </button>
+
+            {/* ── Fullscreen button ────────────────────────────────────────── */}
+            <button
+                onClick={toggleFullscreen}
+                className="absolute top-4 right-16 z-20 p-2.5 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/60 text-white transition-colors"
+                aria-label={isFullscreen ? t('common.exit_fullscreen') : t('common.fullscreen')}
+                title={isFullscreen ? t('common.exit_fullscreen') : t('common.fullscreen')}
+            >
+                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
 
             {/* ── Prev / Next ───────────────────────────────────────────────── */}
