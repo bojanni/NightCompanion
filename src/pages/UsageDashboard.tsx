@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
     BarChart2, Activity, Settings, AlertTriangle,
-    TrendingUp, CreditCard, Clock, Zap, Target
+    TrendingUp, CreditCard, Clock, Zap, Target, LucideIcon
 } from 'lucide-react';
 import { useUsageDashboard, useUpdateBudget } from '../hooks/useUsage';
 import { toast } from 'sonner';
@@ -107,17 +107,17 @@ export default function UsageDashboard() {
                 {/* Progress Bar Track */}
                 <div className="h-4 w-full bg-slate-800 rounded-full overflow-hidden shadow-inner relative">
                     <div
-                        className={`h-full absolute left-0 top-0 rounded-full transition-all duration-1000 ${budgetIsCritical ? 'bg-red-500' : budgetIsWarning ? 'bg-amber-500' : 'bg-teal-500'
+                        className={`h-full absolute left-0 top-0 rounded-full transition-all duration-1000 ${budgetIsCritical ? 'bg-red-500 w-[var(--percent)]' : budgetIsWarning ? 'bg-amber-500 w-[var(--percent)]' : 'bg-teal-500 w-[var(--percent)]'
                             }`}
-                        style={{ width: `${Math.min(100, budget.percent_used)}%` }}
+                        style={{ '--percent': `${Math.min(100, budget.percent_used)}%` } as React.CSSProperties}
                     />
                     {budget.projected_month_end_usd > budget.monthly_limit_usd && (
                         <div
-                            className="h-full absolute top-0 bg-red-500/30 border-l border-red-500/50 striped-bg"
+                            className="h-full absolute top-0 bg-red-500/30 border-l border-red-500/50 striped-bg left-[var(--start)] w-[var(--width)]"
                             style={{
-                                left: `${Math.min(100, budget.percent_used)}%`,
-                                width: `${Math.min(100, Math.max(0, (budget.projected_month_end_usd / budget.monthly_limit_usd * 100) - budget.percent_used))}%`
-                            }}
+                                '--start': `${Math.min(100, budget.percent_used)}%`,
+                                '--width': `${Math.min(100, Math.max(0, (budget.projected_month_end_usd / budget.monthly_limit_usd * 100) - budget.percent_used))}%`
+                            } as React.CSSProperties}
                             title={`Projected overspend of $${(Number(budget.projected_month_end_usd || 0) - Number(budget.monthly_limit_usd || 0)).toFixed(2)}`}
                         />
                     )}
@@ -153,7 +153,7 @@ export default function UsageDashboard() {
 
 // --- Subcomponents ---
 
-function StatCard({ icon: Icon, label, value, subValue, color }: { icon: any, label: string, value: string, subValue?: string, color: 'teal' | 'blue' | 'amber' | 'red' | 'violet' }) {
+function StatCard({ icon: Icon, label, value, subValue, color }: { icon: LucideIcon, label: string, value: string, subValue?: string, color: 'teal' | 'blue' | 'amber' | 'red' | 'violet' }) {
     const bgColors = {
         teal: 'bg-teal-500/10 text-teal-400',
         blue: 'bg-blue-500/10 text-blue-400',
@@ -274,19 +274,18 @@ function BudgetConfigModal({ initial, onClose }: { initial: BudgetSettings, onCl
                 </div>
 
                 <div className="p-6 space-y-6">
-                    <label className="block">
-                        <span className="block text-sm font-bold text-slate-300 mb-2">Monthly Budget ($ USD)</span>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
-                            <input
-                                type="number" step="1.00" min="0"
-                                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all outline-none"
-                                value={budget}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBudget(e.target.value)}
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500 mt-2">Setting a budget enables visual tracking and early warnings to avoid bill shock.</p>
-                    </label>
+                    <label htmlFor="monthly-budget" className="block text-sm font-bold text-slate-300 mb-2">Monthly Budget ($ USD)</label>
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+                        <input
+                            id="monthly-budget"
+                            type="number" step="1.00" min="0"
+                            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all outline-none"
+                            value={budget}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBudget(e.target.value)}
+                        />
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">Setting a budget enables visual tracking and early warnings to avoid bill shock.</p>
                 </div>
 
                 <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex gap-3 justify-end">
@@ -300,6 +299,6 @@ function BudgetConfigModal({ initial, onClose }: { initial: BudgetSettings, onCl
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

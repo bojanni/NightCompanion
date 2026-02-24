@@ -399,6 +399,7 @@ export default function ModelSelector({
                             <input
                                 type="text"
                                 placeholder="Search models..."
+                                aria-label="Search models"
                                 value={searchQuery}
                                 onChange={e => { setSearchQuery(e.target.value); setActiveIndex(0); }}
                                 className="flex-1 bg-transparent text-xs text-white placeholder-slate-500 outline-none"

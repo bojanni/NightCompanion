@@ -34,6 +34,17 @@ export const PRESET_OPTIONS = [
   'Steampunk', 'Cyberpunk', 'Synthwave', 'Heavenly'
 ] as const;
 
+export const STYLE_FILTERS = [
+  'photorealistic',
+  'artistic',
+  'anime',
+  'abstract',
+  'illustration',
+  'cinematic',
+  'fantasy',
+  'painterly',
+] as const;
+
 export const CATEGORY_OPTIONS = [
   'landscape',
   'character',
@@ -2982,10 +2993,10 @@ export function analyzePrompt(prompt: string): { model: ModelInfo; score: number
     }
 
     if (lower.includes('art') || lower.includes('painting') || lower.includes('artistic')) {
-       if (model.artRating && model.artRating >= 4) {
-           score += 20;
-           reasons.push('High artistic quality');
-       }
+      if (model.artRating && model.artRating >= 4) {
+        score += 20;
+        reasons.push('High artistic quality');
+      }
     }
 
     if (lower.includes('text') || lower.includes('sign') || lower.includes('typography')) {
@@ -2997,11 +3008,11 @@ export function analyzePrompt(prompt: string): { model: ModelInfo; score: number
 
     // Use general quality rating
     score += (model.qualityRating || 0) * 2;
-    
+
     // Boost newer/pro models slightly if prompt is complex
     if (words.length > 20 && (model.id.includes('pro') || model.id.includes('flux-2'))) {
-        score += 10;
-        reasons.push('Handles complex prompts well');
+      score += 10;
+      reasons.push('Handles complex prompts well');
     }
 
     return { model, score, reasons: reasons.length > 0 ? reasons : ['General-purpose model'] };
