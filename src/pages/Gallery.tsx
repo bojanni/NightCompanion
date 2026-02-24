@@ -690,7 +690,7 @@ export default function Gallery() {
         <div className="flex items-center justify-center py-32">
           <Loader2 size={32} className="text-teal-400 animate-spin" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : !loading && filtered.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
           <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <ImageIcon size={28} className="text-slate-600" />
