@@ -31,7 +31,7 @@ export default function MediaRenderer({ item, className, autoPlay = false, contr
     }
 
     return (
-        <div className={`relative overflow-hidden flex items-center justify-center ${className || ''}`}>
+        <div className={`relative overflow-hidden flex items-center justify-center bg-slate-800 ${className || ''}`}>
             {blurhash && !imageLoaded && !imageError && (
                 <Blurhash
                     hash={blurhash}
@@ -55,7 +55,7 @@ export default function MediaRenderer({ item, className, autoPlay = false, contr
             <img
                 src={item.image_url}
                 alt={item.title}
-                className={`transition-opacity duration-300 z-10 rounded-[inherit] ${className?.includes('object-contain') ? 'w-auto h-auto max-w-full max-h-full object-contain' : 'absolute inset-0 w-full h-full object-cover'} ${imageLoaded ? 'opacity-100' : 'opacity-0 bg-slate-800'}`}
+                className={`transition-opacity duration-300 z-10 rounded-[inherit] ${className?.includes('object-contain') ? 'w-auto h-auto max-w-full max-h-full object-contain' : 'absolute inset-0 w-full h-full object-cover'} ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                 onLoad={() => setImageLoaded(true)}
                 onError={() => {
                     setImageError(true);
