@@ -516,38 +516,26 @@ export default function Gallery() {
     setLightboxImage(filtered[0] || null);
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Gallery</h1>
-            <p className="text-slate-400 mt-1">Loading...</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <GallerySkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between min-h-[64px]">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white">{t('gallery.title')}</h1>
-            {connectionStatus === 'connected' && (
+            {!loading && connectionStatus === 'connected' && (
               <span className="flex items-center gap-1 text-xs text-emerald-400 mt-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 Live
               </span>
             )}
           </div>
-          <p className="text-slate-400 mt-1">{t('gallery.items_count', { count: totalCount, defaultValue: `${totalCount} items in your collection` })}</p>
+          <p className="text-slate-400 mt-1 min-h-[20px]">
+            {loading ? (
+              <span className="opacity-50">{t('common.loading')}</span>
+            ) : (
+              t('gallery.items_count', { count: totalCount, defaultValue: `${totalCount} items in your collection` })
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -698,7 +686,13 @@ export default function Gallery() {
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <GallerySkeleton key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
           <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <ImageIcon size={28} className="text-slate-600" />
