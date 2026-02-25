@@ -87,6 +87,7 @@ export default function ManualGenerator({ onSaved, maxWords, initialPrompts, ini
         if (resetKey > 0) {
             setPrompts(['']);
             setNegativePrompt('');
+            setAiAdvice(null);
         }
     }, [resetKey]);
 

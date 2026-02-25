@@ -174,6 +174,8 @@ export default function Generator() {
     localStorage.removeItem('nightcompanion_manual_generator');
     localStorage.removeItem('nightcompanion_guided_state');
     localStorage.removeItem('nightcompanion_aitools_state');
+    localStorage.removeItem('nightcompanion_random_ai_advice');
+    localStorage.removeItem('nightcompanion_manual_ai_advice');
     if (aiToolsRef.current) {
       aiToolsRef.current.clearContent();
     }

@@ -336,6 +336,8 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   async function executeMagicRandom(keepNegative: boolean) {
     const run = async () => {
       setRegenerating(true);
+      setAiAdvice(null);
+      localStorage.removeItem('nightcompanion_random_ai_advice');
       try {
         const token = '';
         const result = await generateRandomPromptAI(token, undefined, maxWords, greylist, creativityLevel, recentPrompts, taskGenerateModel);
