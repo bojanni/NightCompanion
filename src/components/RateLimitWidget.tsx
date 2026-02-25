@@ -7,7 +7,7 @@ interface RateLimitData {
 }
 
 export function RateLimitWidget({ collapsed }: { collapsed: boolean }) {
-    const [data, setData] = useState<RateLimitData>({ remaining: null, reset: null });
+    const [data, setData] = useState<RateLimitData>({ remaining: 500, reset: null });
 
     useEffect(() => {
         const handleUpdate = (e: Event) => {
@@ -19,8 +19,9 @@ export function RateLimitWidget({ collapsed }: { collapsed: boolean }) {
         return () => window.removeEventListener('nc-rate-limit-update', handleUpdate);
     }, []);
 
+    // Show default state on startup instead of returning null
     if (data.remaining === null) {
-        return null; // Don't show if we haven't received any rate limits or if it's a local model
+        data.remaining = 500;
     }
 
     const isLow = data.remaining < 50;

@@ -158,6 +158,14 @@ router.get('/dashboard', async (req, res) => {
         const daysPassed = now.getDate();
         const projected_month_end_usd = daysPassed > 0 ? (current_spend_usd / daysPassed) * daysInMonth : 0;
 
+        // Debug: Log the data being returned
+        console.log('Usage Dashboard Response:', {
+            rangeTotals: rangeTotalsRes.rows[0],
+            todayTotals: todayTotalsRes.rows[0],
+            providersCount: providers.length,
+            providers
+        });
+
         res.json({
             providers,
             totals: {

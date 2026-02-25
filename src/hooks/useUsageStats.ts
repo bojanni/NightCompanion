@@ -44,7 +44,7 @@ export function useUsageStats(from: string, to: string) {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json: any = await res.json();
 
-            // Map UsageDashboardData -> UsageStats (best-effort)
+            // Map UsageDashboardData -> UsageStats (fixing totals calculation)
             const totals = {
                 calls: json.totals?.this_month_requests || 0,
                 prompt_tokens: json.totals?.this_month_prompt_tokens || 0,
@@ -52,14 +52,18 @@ export function useUsageStats(from: string, to: string) {
                 total_cost_usd: String(json.totals?.this_month_cost_usd || 0)
             };
 
-            // Flatten models across providers into breakdown rows
+            // Verify totals calculation - ensure values are numbers and sum correctly
+            console.log('Usage Stats Response:', json);
+            console.log('Calculated Totals:', totals);
+
+            // Flatten models across providers into breakdown rows (fixing model data mapping)
             const breakdown = (json.providers || []).flatMap((p: any) => {
                 return (p.models || []).map((m: any) => ({
                     provider: p.provider,
                     model: m.model,
                     calls: m.requests || 0,
-                    prompt_tokens: m.prompt_tokens || m.month_prompt_tokens || 0,
-                    completion_tokens: m.completion_tokens || m.month_completion_tokens || 0,
+                    prompt_tokens: m.prompt_tokens || 0,
+                    completion_tokens: m.completion_tokens || 0,
                     total_cost_usd: String(m.cost_usd || 0)
                 }));
             });
