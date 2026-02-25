@@ -20,16 +20,19 @@ interface PromptEditorProps {
   prompt: Prompt | null;
   initialData?: Partial<Prompt>;
   isLinked?: boolean;
+  mode?: 'save' | 'edit'; // 'save' = from Generator (simplified), 'edit' = from Prompt Library (full)
   onSave: () => void;
   onCancel: () => void;
 }
 
-export default function PromptEditor({ prompt, initialData, isLinked = false, onSave, onCancel }: PromptEditorProps) {
+export default function PromptEditor({ prompt, initialData, isLinked = false, mode = 'edit', onSave, onCancel }: PromptEditorProps) {
+  const isSaveMode = mode === 'save';
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState(0);
   const [model, setModel] = useState('');
+  const [suggestedModel, setSuggestedModel] = useState<string | undefined>(undefined);
   const [isTemplate, setIsTemplate] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -137,6 +140,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
         if (initialData.content) setContent(initialData.content);
         if (initialData.notes) setNotes(initialData.notes);
         if (initialData.model) setModel(initialData.model);
+        if (initialData.suggested_model) setSuggestedModel(initialData.suggested_model);
         if (initialData.rating) setRating(initialData.rating);
         if (initialData.is_template !== undefined) setIsTemplate(initialData.is_template);
         if (initialData.is_favorite !== undefined) setIsFavorite(initialData.is_favorite);
@@ -331,7 +335,8 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
     if (!content.trim()) {
       errors.content = 'Prompt content is required';
     }
-    if (!model) {
+    // Only require model in edit mode (not in save mode from Generator)
+    if (!isSaveMode && !model) {
       errors.model = 'Please select a model';
     }
     return errors;
@@ -359,22 +364,28 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
         tags: []
       });
 
-      const topSuggestion = analyzePrompt(validated.content)[0];
-      const suggestedModelIdToSave = topSuggestion ? topSuggestion.model.id : undefined;
+      // Get suggested model - either from initialData (AI tools) or from prompt analysis
+      let suggestedModelIdToSave: string | undefined;
+      if (suggestedModel) {
+        suggestedModelIdToSave = suggestedModel;
+      } else {
+        const topSuggestion = analyzePrompt(validated.content)[0];
+        suggestedModelIdToSave = topSuggestion ? topSuggestion.model.id : undefined;
+      }
 
       const payload = {
         title: validated.title,
         content: validated.content,
-        notes,
-        rating: rating ?? 0,
+        notes: isSaveMode ? null : notes,
+        rating: isSaveMode ? 0 : (rating ?? 0),
         model: model || null,
-        is_template: validated.is_template,
-        is_favorite: isFavorite,
-        revised_prompt: revisedPrompt.trim() || null,
-        seed: seed || null,
-        aspect_ratio: aspectRatio,
-        use_custom_aspect_ratio: useCustomAspectRatio,
-        start_image: startImage,
+        is_template: isSaveMode ? false : validated.is_template,
+        is_favorite: isSaveMode ? false : isFavorite,
+        revised_prompt: isSaveMode ? null : (revisedPrompt.trim() || null),
+        seed: isSaveMode ? null : (seed || null),
+        aspect_ratio: isSaveMode ? null : aspectRatio,
+        use_custom_aspect_ratio: isSaveMode ? false : useCustomAspectRatio,
+        start_image: isSaveMode ? null : startImage,
         suggested_model: suggestedModelIdToSave,
         updated_at: new Date().toISOString(),
       };
@@ -448,6 +459,12 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
       }
 
       setSaving(false);
+      
+      // Show toast for save mode (from Generator)
+      if (isSaveMode) {
+        toast.success('Prompt saved! Edit details in Prompt Library.');
+      }
+      
       onSave();
     } catch (error) {
       console.error('Save error:', error);
@@ -512,36 +529,50 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
         </div>
       </div>
 
-      <div>
-        <div className="flex justify-between items-center mb-1.5">
-          <label className="block text-sm font-medium text-slate-300">
-            Model <span className="text-red-400">*</span>
-          </label>
-          {suggestedModelObj && (
-            <button
-              onClick={() => setModel(suggestedModelObj.id)}
-              className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors"
-              title="Click to apply suggested model"
-            >
-              <Wand2 size={12} /> Suggested: {suggestedModelObj.name}
-            </button>
+      {/* Model - Show dropdown in edit mode, read-only label in save mode */}
+      {!isSaveMode ? (
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-sm font-medium text-slate-300">
+              Model <span className="text-red-400">*</span>
+            </label>
+            {suggestedModelObj && (
+              <button
+                onClick={() => setModel(suggestedModelObj.id)}
+                className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                title="Click to apply suggested model"
+              >
+                <Wand2 size={12} /> Suggested: {suggestedModelObj.name}
+              </button>
+            )}
+          </div>
+          <ModelSelector
+            value={model}
+            onChange={(id) => { setModel(id); setFormTouched(prev => ({ ...prev, model: true })); setFormErrors(prev => { const next = { ...prev }; delete next.model; return next; }); }}
+            models={availableModels}
+            providers={availableProviders}
+          />
+          {formTouched.model && formErrors.model && (
+            <p className="text-xs text-red-400 mt-1">{formErrors.model}</p>
           )}
         </div>
-        <ModelSelector
-          value={model}
-          onChange={(id) => { setModel(id); setFormTouched(prev => ({ ...prev, model: true })); setFormErrors(prev => { const next = { ...prev }; delete next.model; return next; }); }}
-          models={availableModels}
-          providers={availableProviders}
-        />
-        {formTouched.model && formErrors.model && (
-          <p className="text-xs text-red-400 mt-1">{formErrors.model}</p>
-        )}
-      </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            Suggested Model
+          </label>
+          <div className="px-4 py-2.5 bg-slate-700/30 border border-slate-600 rounded-xl text-amber-400 text-sm flex items-center gap-2">
+            <Wand2 size={14} />
+            {suggestedModel ? suggestedModel : (suggestedModelObj ? suggestedModelObj.name : 'No suggestion available')}
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">You can select a model later in Prompt Library</p>
+        </div>
+      )}
 
       <div>
         <div className="flex justify-between items-center mb-1.5">
           <label className="block text-sm font-medium text-slate-300">
-            Prompt <span className="text-red-400">*</span>
+            Prompt {!isSaveMode && <span className="text-red-400">*</span>}
           </label>
           {isLinked && (
             <span className="text-xs text-amber-500 flex items-center gap-1">
@@ -550,30 +581,38 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
             </span>
           )}
         </div>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Your full prompt text..."
-          rows={5}
-          onBlur={() => { handlePromptBlur(); handleValidationBlur('content'); }}
-          disabled={isLinked}
-          className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm resize-none ${isLinked ? 'opacity-50 cursor-not-allowed' : ''} ${formTouched.content && formErrors.content ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
-        />
+        {isSaveMode ? (
+          <div className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-slate-300 text-sm resize-none whitespace-pre-wrap">
+            {content || 'No prompt content'}
+          </div>
+        ) : (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Your full prompt text..."
+            rows={5}
+            onBlur={() => { handlePromptBlur(); handleValidationBlur('content'); }}
+            disabled={isLinked}
+            className={`w-full px-4 py-2.5 bg-slate-700/50 border rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 text-sm resize-none ${isLinked ? 'opacity-50 cursor-not-allowed' : ''} ${formTouched.content && formErrors.content ? 'border-red-500 focus:ring-red-500/40' : 'border-slate-600 focus:ring-amber-500/40'}`}
+          />
+        )}
         {formTouched.content && formErrors.content && (
           <p className="text-xs text-red-400 mt-1">{formErrors.content}</p>
         )}
       </div>
 
-      <div className="pt-2 border-t border-slate-700/50">
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4"
-        >
-          {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          Advanced Prompt Settings
-        </button>
+      {/* Advanced Settings - Only show in edit mode */}
+      {!isSaveMode && (
+        <div className="pt-2 border-t border-slate-700/50">
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4"
+          >
+            {showAdvanced ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            Advanced Prompt Settings
+          </button>
 
-        {showAdvanced && (
+          {showAdvanced && (
           <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1.5">Seed</label>
@@ -653,177 +692,188 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
             </div>
           </div>
         )}
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">Notes</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="What worked well? What to try next time?"
-          rows={2}
-          className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none"
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Rating</label>
-          <StarRating rating={rating} onChange={setRating} size={20} />
         </div>
-        <label className="flex items-center gap-2 cursor-pointer mt-5">
-          <input
-            type="checkbox"
-            checked={isTemplate}
-            onChange={(e) => setIsTemplate(e.target.checked)}
-            className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-amber-500 focus:ring-amber-500/40"
-          />
-          <span className="text-sm text-slate-300">Template</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer mt-5">
-          <input
-            type="checkbox"
-            checked={isFavorite}
-            onChange={(e) => setIsFavorite(e.target.checked)}
-            className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-amber-500 focus:ring-amber-500/40"
-          />
-          <span className="text-sm text-slate-300">Favorite</span>
-        </label>
-      </div>
+      )}
 
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-slate-300">Tags</label>
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <button
-              onClick={generateTags}
-              disabled={isGeneratingTags || !content.trim()}
-              className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-            >
-              <Wand2 size={12} />
-              (Re)Generate Tags
-            </button>
-            {isGeneratingTags && <Loader2 size={12} className="animate-spin text-amber-500 ml-1" />}
+      {/* Notes - Only show in edit mode */}
+      {!isSaveMode && (
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1.5">Notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="What worked well? What to try next time?"
+            rows={2}
+            className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm resize-none"
+          />
+        </div>
+      )}
+
+      {/* Rating, Template, Favorite - Only show in edit mode */}
+      {!isSaveMode && (
+        <div className="flex flex-wrap items-center gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Rating</label>
+            <StarRating rating={rating} onChange={setRating} size={20} />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer mt-5">
+            <input
+              type="checkbox"
+              checked={isTemplate}
+              onChange={(e) => setIsTemplate(e.target.checked)}
+              className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-amber-500 focus:ring-amber-500/40"
+            />
+            <span className="text-sm text-slate-300">Template</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer mt-5">
+            <input
+              type="checkbox"
+              checked={isFavorite}
+              onChange={(e) => setIsFavorite(e.target.checked)}
+              className="w-4 h-4 bg-slate-700 border-slate-600 rounded text-amber-500 focus:ring-amber-500/40"
+            />
+            <span className="text-sm text-slate-300">Favorite</span>
           </label>
         </div>
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {allTags.filter(t => selectedTagIds.includes(t.id)).map((tag) => (
-            <TagBadge
-              key={tag.id}
-              tag={tag}
-              onClick={() => toggleTag(tag.id)}
-              selected={true}
-            />
-          ))}
-          <button
-            onClick={() => setShowNewTag(true)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
-          >
-            <Plus size={12} /> Add Tag
-          </button>
-        </div>
+      )}
 
-        {showNewTag && (
-          <div className="p-3 bg-slate-700/30 rounded-xl space-y-3">
-            <div className="flex flex-col gap-3">
-              <div className="flex-1">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Search or Create Tag</label>
-                <input
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  placeholder="Type tag name..."
-                  className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40"
-                  autoFocus
-                />
+      {/* Tags - Only show in edit mode */}
+      {!isSaveMode && (
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-slate-300">Tags</label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <button
+                onClick={generateTags}
+                disabled={isGeneratingTags || !content.trim()}
+                className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                <Wand2 size={12} />
+                (Re)Generate Tags
+              </button>
+              {isGeneratingTags && <Loader2 size={12} className="animate-spin text-amber-500 ml-1" />}
+            </label>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {allTags.filter(t => selectedTagIds.includes(t.id)).map((tag) => (
+              <TagBadge
+                key={tag.id}
+                tag={tag}
+                onClick={() => toggleTag(tag.id)}
+                selected={true}
+              />
+            ))}
+            <button
+              onClick={() => setShowNewTag(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 transition-colors"
+            >
+              <Plus size={12} /> Add Tag
+            </button>
+          </div>
 
-                {/* Autocomplete Suggestions Container */}
-                {newTagName.trim() && (
-                  <div className="mt-2 p-2 bg-slate-800/80 border border-slate-700/50 rounded-lg max-h-40 overflow-y-auto">
-                    {allTags.filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id)).length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {allTags
-                          .filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id))
-                          .slice(0, 15)
-                          .map(tag => (
-                            <button
-                              key={tag.id}
-                              onClick={() => { toggleTag(tag.id); setNewTagName(''); }}
-                              className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-slate-500 rounded-md text-xs text-white transition-all flex items-center gap-1.5"
-                            >
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color || '#64748b' }} />
-                              {tag.name}
-                            </button>
-                          ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 italic px-1 py-0.5">No existing tags match "{newTagName}". You can create it below.</p>
-                    )}
+          {showNewTag && (
+            <div className="p-3 bg-slate-700/30 rounded-xl space-y-3">
+              <div className="flex flex-col gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Search or Create Tag</label>
+                  <input
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    placeholder="Type tag name..."
+                    className="w-full px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                    autoFocus
+                  />
+
+                  {/* Autocomplete Suggestions Container */}
+                  {newTagName.trim() && (
+                    <div className="mt-2 p-2 bg-slate-800/80 border border-slate-700/50 rounded-lg max-h-40 overflow-y-auto">
+                      {allTags.filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id)).length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {allTags
+                            .filter(t => t.name.toLowerCase().includes(newTagName.toLowerCase()) && !selectedTagIds.includes(t.id))
+                            .slice(0, 15)
+                            .map(tag => (
+                              <button
+                                key={tag.id}
+                                onClick={() => { toggleTag(tag.id); setNewTagName(''); }}
+                                className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 hover:border-slate-500 rounded-md text-xs text-white transition-all flex items-center gap-1.5"
+                              >
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color || '#64748b' }} />
+                                {tag.name}
+                              </button>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 italic px-1 py-0.5">No existing tags match "{newTagName}". You can create it below.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/50 mt-1">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">New Tag Color</label>
+                    <div className="flex gap-1">
+                      {TAG_COLORS.map((c) => {
+                        const colorMap: Record<string, string> = {
+                          '#d97706': 'bg-amber-600',
+                          '#dc2626': 'bg-red-600',
+                          '#059669': 'bg-emerald-600',
+                          '#2563eb': 'bg-blue-600',
+                          '#7c3aed': 'bg-violet-600',
+                          '#db2777': 'bg-pink-600',
+                          '#0891b2': 'bg-cyan-600',
+                          '#65a30d': 'bg-lime-600'
+                        };
+                        return (
+                          <button
+                            key={c}
+                            onClick={() => setNewTagColor(c)}
+                            className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''} ${colorMap[c] || 'bg-slate-600'}`}
+                            aria-label={`Select color ${c}`}
+                            title={`Select color ${c}`}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-700/50 mt-1">
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">New Tag Color</label>
-                  <div className="flex gap-1">
-                    {TAG_COLORS.map((c) => {
-                      const colorMap: Record<string, string> = {
-                        '#d97706': 'bg-amber-600',
-                        '#dc2626': 'bg-red-600',
-                        '#059669': 'bg-emerald-600',
-                        '#2563eb': 'bg-blue-600',
-                        '#7c3aed': 'bg-violet-600',
-                        '#db2777': 'bg-pink-600',
-                        '#0891b2': 'bg-cyan-600',
-                        '#65a30d': 'bg-lime-600'
-                      };
-                      return (
-                        <button
-                          key={c}
-                          onClick={() => setNewTagColor(c)}
-                          className={`w-5 h-5 rounded-full transition-all ${newTagColor === c ? 'ring-2 ring-white scale-110' : ''} ${colorMap[c] || 'bg-slate-600'}`}
-                          aria-label={`Select color ${c}`}
-                          title={`Select color ${c}`}
-                        />
-                      );
-                    })}
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Category</label>
+                    <select
+                      value={newTagCategory}
+                      onChange={(e) => setNewTagCategory(e.target.value)}
+                      className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none"
+                      aria-label="Select tag category"
+                    >
+                      {TAG_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs text-slate-400 mb-1">Category</label>
-                  <select
-                    value={newTagCategory}
-                    onChange={(e) => setNewTagCategory(e.target.value)}
-                    className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-xs focus:outline-none"
-                    aria-label="Select tag category"
+
+                <div className="flex items-center justify-between pt-2 mt-2">
+                  <button onClick={() => setShowNewTag(false)} className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateTag}
+                    disabled={!newTagName.trim() || allTags.some(t => t.name.toLowerCase() === newTagName.trim().toLowerCase() && selectedTagIds.includes(t.id))}
+                    className="px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {TAG_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                    Create New Tag
+                  </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 mt-2">
-                <button onClick={() => setShowNewTag(false)} className="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors">
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateTag}
-                  disabled={!newTagName.trim() || allTags.some(t => t.name.toLowerCase() === newTagName.trim().toLowerCase() && selectedTagIds.includes(t.id))}
-                  className="px-3 py-1.5 bg-amber-500 text-white text-xs rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Create New Tag
-                </button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
 
 
-      <div>
+      {/* Aspect Ratio - Only show in edit mode */}
+      {!isSaveMode && (
         <div className="flex justify-between items-center mb-1.5 opacity-100">
           <label className="block text-sm font-medium text-slate-300">Aspect Ratio</label>
           <div className="flex items-center gap-2">
@@ -863,13 +913,15 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
             )}
           </div>
         </div>
-      </div>
+      )}
 
 
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-slate-300">Gallery Images</label>
+      {/* Gallery Images - Only show in edit mode */}
+      {!isSaveMode && (
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-slate-300">Gallery Images</label>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {/* Existing Gallery Items */}
           {galleryItems.map((item) => (
             <div key={item.id} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
@@ -965,6 +1017,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, on
           multiple
         />
       </div>
+      )}
 
       <div className="flex justify-end gap-3 pt-2 border-t border-slate-700">
         <button

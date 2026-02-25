@@ -578,6 +578,7 @@ export default function Generator() {
         {editingPromptData && (
           <PromptEditor
             prompt={editingPromptData.id ? (editingPromptData as Prompt) : null}
+            mode={editingPromptData.id ? 'edit' : 'save'}
             {...(!editingPromptData.id && { initialData: editingPromptData })}
             onSave={() => {
               setSaveCount((c) => c + 1);

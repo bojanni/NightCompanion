@@ -398,12 +398,16 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
       ] : [{ step: 'Generated with AI', label: text }];
 
       if (onRequestSavePrompt) {
-        onRequestSavePrompt({
+        const data: Partial<Prompt> = {
           title,
           content: text,
           notes: 'Generated with AI Tools',
           generation_journey: journeySteps,
-        });
+        };
+        if (options?.suggestedModelId) {
+          data.suggested_model = options.suggestedModelId;
+        }
+        onRequestSavePrompt(data);
         setSaving('');
         return;
       }
