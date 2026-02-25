@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 
 // Check if CSV file exists
 function csvFileExists() {
-  const csvPath = path.join(__dirname, '..', 'csv', 'nightcafe_models_compleet.csv');
+  const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
   return fs.existsSync(csvPath);
 }
 

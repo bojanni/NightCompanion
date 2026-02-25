@@ -5,7 +5,8 @@ export const PromptSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long').optional(),
   is_template: z.boolean().default(false),
   rating: z.number().min(0).max(5).optional().nullable(),
-  tags: z.array(z.string().max(50)).max(20).default([])
+  tags: z.array(z.string().max(50)).max(20).default([]),
+  negative_prompt: z.string().max(1000, 'Negative prompt too long').optional()
 });
 
 export const CharacterSchema = z.object({

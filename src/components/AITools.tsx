@@ -389,7 +389,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
     }
   }
 
-  async function handleSavePrompt(text: string, title: string, options?: { originalPrompt?: string, suggestedModelId?: string | undefined }) {
+  async function handleSavePrompt(text: string, title: string, options?: { originalPrompt?: string, suggestedModelId?: string | undefined, negativePrompt?: string }) {
     setSaving(title);
     try {
       const journeySteps = options?.originalPrompt ? [
@@ -406,6 +406,9 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         };
         if (options?.suggestedModelId) {
           data.suggested_model = options.suggestedModelId;
+        }
+        if (options?.negativePrompt) {
+          data.negative_prompt = options.negativePrompt;
         }
         onRequestSavePrompt(data);
         setSaving('');
@@ -453,7 +456,8 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         rating: 0,
         is_template: false,
         is_favorite: false,
-        suggested_model: suggestedModelIdToSave
+        suggested_model: suggestedModelIdToSave,
+        negative_prompt: options?.negativePrompt || null
       });
 
       if (error) throw error;
@@ -531,7 +535,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
                 if (onPromptGenerated) onPromptGenerated(improveResult);
                 if (negativeResult && onNegativePromptGenerated) onNegativePromptGenerated(negativeResult);
               }}
-              onSave={(text) => handleSavePrompt(text, (text.split(',')[0] || 'Untitled').trim().slice(0, 160), { originalPrompt: improveInput, suggestedModelId: suggestedModel?.id })}
+              onSave={(text) => handleSavePrompt(text, (text.split(',')[0] || 'Untitled').trim().slice(0, 160), { originalPrompt: improveInput, suggestedModelId: suggestedModel?.id, negativePrompt: negativeResult })}
               onClear={() => { setImproveResult(''); setNegativeResult(''); }}
               generatedPrompt={generatedPrompt}
               generatedNegativePrompt={generatedNegativePrompt}

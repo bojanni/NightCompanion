@@ -43,6 +43,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, mo
 
   // Enhanced Fields
   const [revisedPrompt, setRevisedPrompt] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
   const [seed, setSeed] = useState<number | undefined>(undefined);
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [useCustomAspectRatio, setUseCustomAspectRatio] = useState(false);
@@ -122,6 +123,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, mo
       setIsTemplate(prompt.is_template);
       setIsFavorite(prompt.is_favorite);
       setRevisedPrompt(prompt.revised_prompt || '');
+      setNegativePrompt(prompt.negative_prompt || '');
       setSeed(prompt.seed);
       setAspectRatio(prompt.aspect_ratio || '1:1');
       setUseCustomAspectRatio(prompt.use_custom_aspect_ratio || false);
@@ -145,6 +147,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, mo
         if (initialData.is_template !== undefined) setIsTemplate(initialData.is_template);
         if (initialData.is_favorite !== undefined) setIsFavorite(initialData.is_favorite);
         if (initialData.revised_prompt) setRevisedPrompt(initialData.revised_prompt);
+        if (initialData.negative_prompt) setNegativePrompt(initialData.negative_prompt);
       }
     }
 
@@ -361,7 +364,8 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, mo
         title: title.trim() || 'Untitled',
         is_template: isTemplate,
         rating: rating ?? 0,
-        tags: []
+        tags: [],
+        negative_prompt: negativePrompt.trim() || undefined
       });
 
       // Get suggested model - either from initialData (AI tools) or from prompt analysis
@@ -382,6 +386,7 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, mo
         is_template: isSaveMode ? false : validated.is_template,
         is_favorite: isSaveMode ? false : isFavorite,
         revised_prompt: isSaveMode ? null : (revisedPrompt.trim() || null),
+        negative_prompt: isSaveMode ? (negativePrompt.trim() || null) : (negativePrompt.trim() || null),
         seed: isSaveMode ? null : (seed || null),
         aspect_ratio: isSaveMode ? null : aspectRatio,
         use_custom_aspect_ratio: isSaveMode ? false : useCustomAspectRatio,
@@ -600,6 +605,23 @@ export default function PromptEditor({ prompt, initialData, isLinked = false, mo
           <p className="text-xs text-red-400 mt-1">{formErrors.content}</p>
         )}
       </div>
+
+      {/* Negative Prompt - Show in save mode if there's a negative prompt */}
+      {isSaveMode && negativePrompt && (
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="block text-sm font-medium text-red-300">
+              Negative Prompt
+            </label>
+            <span className={`text-[10px] font-mono ${negativePrompt.length > 900 ? 'text-red-400 font-bold' : 'text-slate-500'}`}>
+              {negativePrompt.length}/1000
+            </span>
+          </div>
+          <div className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-red-200 text-sm resize-none whitespace-pre-wrap">
+            {negativePrompt}
+          </div>
+        </div>
+      )}
 
       {/* Advanced Settings - Only show in edit mode */}
       {!isSaveMode && (

@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS prompts (
     use_count INTEGER DEFAULT 0,
     last_used_at TIMESTAMP WITH TIME ZONE,
     suggested_model TEXT,
-    generation_journey JSONB DEFAULT '[]'
+    generation_journey JSONB DEFAULT '[]',
+    negative_prompt TEXT
 );
 
 -- Add pg_trgm index for similarity search
