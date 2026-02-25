@@ -10,6 +10,7 @@ import { diffWords } from '../lib/diff-utils';
 import { handleAIError } from '../lib/error-handler';
 import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
+import { recommendNCModel } from '../lib/nc-model-recommender';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
 import { db } from '../lib/api';
 import { listApiKeys } from '../lib/api-keys-service';
@@ -420,13 +421,30 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         return;
       }
 
+      // Get model recommendations
       const suggestion = analyzePrompt(text)[0];
       const suggestedModelIdToSave = suggestion ? suggestion.model.id : undefined;
+
+      // Get NC model recommendation
+      let ncModelNote = '';
+      try {
+        const ncRecommendation = await recommendNCModel(text);
+        if (ncRecommendation) {
+          ncModelNote = ` | Best NC Model: ${ncRecommendation.model.name} (${ncRecommendation.reasons[0]})`;
+          toast.success(`Recommended NightCafe model: ${ncRecommendation.model.name}`, {
+            description: ncRecommendation.reasons[0],
+            duration: 5000,
+          });
+        }
+      } catch (e) {
+        // Non-fatal, continue without NC recommendation
+        console.warn('NC model recommendation failed:', e);
+      }
 
       const { error } = await db.from('prompts').insert({
         title: title,
         content: text,
-        notes: 'Generated with AI Tools',
+        notes: 'Generated with AI Tools' + ncModelNote,
         generation_journey: journeySteps,
         rating: 0,
         is_template: false,

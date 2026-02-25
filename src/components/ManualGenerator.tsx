@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { generateRandomPromptAI, improvePromptWithNegative, optimizePromptForModel, generateNegativePrompt, listModels, ModelListItem, recommendModels } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt, getTopCandidates, ModelInfo } from '../lib/models-data';
+import { recommendNCModel } from '../lib/nc-model-recommender';
 import { handleAIError } from '../lib/error-handler';
 import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models';
 import { listApiKeys } from '../lib/api-keys-service';

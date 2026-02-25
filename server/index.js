@@ -20,6 +20,8 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const createCrudRouter = require('./routes/crud');
 const apiKeysRouter = require('./routes/api-keys');
 const localEndpointsRouter = require('./routes/local-endpoints');
+const ncModelsRouter = require('./routes/nc-models');
+const { importModels } = require('./scripts/import_nc_models');
 
 // Custom Prompts Endpoint for Similarity Search
 app.get('/api/prompts/similar', async (req, res, next) => {
@@ -57,6 +59,7 @@ app.use('/api/batch_tests', createCrudRouter('batch_tests'));
 app.use('/api/batch_test_prompts', createCrudRouter('batch_test_prompts'));
 app.use('/api/batch_test_results', createCrudRouter('batch_test_results'));
 app.use('/api/model_usage', createCrudRouter('model_usage'));
+app.use('/api/nc-models', ncModelsRouter);
 
 // Rate limiting setup for sensitive routes
 const apiKeysLimiter = rateLimit({
@@ -162,8 +165,16 @@ app.get('/api/db-test', async (req, res) => {
 });
 
 // Initialize DB and start server
-initSchema().then(() => {
+initSchema().then(async () => {
   logger.info('✅ Database check complete.');
+  
+  // Auto-import NC models if CSV exists
+  try {
+    await importModels(false);
+  } catch (err) {
+    logger.warn('⚠️  NC models import failed (non-fatal):', err.message);
+  }
+  
   app.listen(port, () => {
     logger.info(`✅ Server running on http://localhost:${port}`);
   });

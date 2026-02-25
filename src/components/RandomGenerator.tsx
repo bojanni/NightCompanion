@@ -5,6 +5,7 @@ import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, Pen
 import ChoiceModal from './ChoiceModal';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt, getTopCandidates } from '../lib/models-data';
+import { recommendNCModel } from '../lib/nc-model-recommender';
 import { db } from '../lib/api';
 import { generateRandomPromptAI, listModels, ModelListItem, recommendModels } from '../lib/ai-service';
 import { listApiKeys } from '../lib/api-keys-service';
@@ -261,6 +262,21 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
     const suggestedModelIdToSave = aiAdvice ? aiAdvice.id : (topSuggestion ? topSuggestion.model.id : undefined);
 
+    // Get NC model recommendation
+    let ncModelNote = '';
+    try {
+      const ncRecommendation = await recommendNCModel(prompt);
+      if (ncRecommendation) {
+        ncModelNote = ` | Best NC Model: ${ncRecommendation.model.name} (${ncRecommendation.reasons[0]})`;
+        toast.success(`Recommended NightCafe model: ${ncRecommendation.model.name}`, {
+          description: ncRecommendation.reasons[0],
+          duration: 5000,
+        });
+      }
+    } catch (e) {
+      console.warn('NC model recommendation failed:', e);
+    }
+
     // Check for duplicates
     const { data: existingPrompts } = await db
       .from('prompts')
@@ -277,7 +293,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     await db.from('prompts').insert({
       title: (prompt.split(',')[0] || 'Untitled').trim().slice(0, 160),
       content: fullContent,
-      notes: generatedStyle ? `Style: ${generatedStyle}` : undefined,
+      notes: (generatedStyle ? `Style: ${generatedStyle}` : '') + ncModelNote || undefined,
       generation_journey: journeySteps,
       rating: 0,
       is_template: false,
