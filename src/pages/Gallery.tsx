@@ -531,7 +531,7 @@ export default function Gallery() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2">
           <button
             onClick={() => setShowCollectionEditor(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-700 transition-colors border border-slate-700"
@@ -619,7 +619,7 @@ export default function Gallery() {
         </div>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50">
         <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
