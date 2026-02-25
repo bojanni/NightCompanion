@@ -1,51 +1,127 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../db');
+const fs = require('fs');
+const path = require('path');
+
+// Function to parse CSV file
+function parseCSV() {
+  const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
+  const csvContent = fs.readFileSync(csvPath, 'utf-8');
+  const lines = csvContent.trim().split('\n');
+  
+  // Skip header
+  const models = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+
+    // Handle CSV with commas inside quotes
+    const parts = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (const char of line) {
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        parts.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    parts.push(current.trim());
+
+    if (parts.length >= 8) {
+      const name = parts[0].replace(/^"|"$/g, '');
+      const description = parts[1].replace(/^"|"$/g, '');
+      
+      // Parse star ratings (convert ★ to number)
+      const artRating = (parts[2].match(/★/g) || []).length;
+      const promptingRating = (parts[3].match(/★/g) || []).length;
+      const realismRating = (parts[4].match(/★/g) || []).length;
+      const typographyRating = (parts[5].match(/★/g) || []).length;
+      
+      // Parse cost level (convert $ to number)
+      const costLevel = (parts[6].match(/\$/g) || []).length;
+      
+      // Parse type
+      const modelType = parts[7].replace(/^"|"$/g, '');
+
+      models.push({
+        id: i, // Add synthetic ID
+        name,
+        description,
+        art_rating: artRating,
+        prompting_rating: promptingRating,
+        realism_rating: realismRating,
+        typography_rating: typographyRating,
+        cost_level: costLevel,
+        model_type: modelType
+      });
+    }
+  }
+  return models;
+}
 
 // GET /api/nc-models - Get all NightCafe models with filtering and sorting
 router.get('/', async (req, res, next) => {
   try {
     const { type, min_cost, max_cost, sort_by, sort_order, search } = req.query;
     
-    let query = 'SELECT * FROM nc_models WHERE 1=1';
-    const params = [];
-    let paramIndex = 1;
-
-    // Filter by type (Image, Edit, Video)
-    if (type && type !== 'all') {
-      query += ` AND model_type = $${paramIndex}`;
-      params.push(type);
-      paramIndex++;
-    }
-
-    // Filter by cost range
-    if (min_cost) {
-      query += ` AND cost_level >= $${paramIndex}`;
-      params.push(parseInt(min_cost));
-      paramIndex++;
-    }
-    if (max_cost) {
-      query += ` AND cost_level <= $${paramIndex}`;
-      params.push(parseInt(max_cost));
-      paramIndex++;
-    }
-
-    // Search by name or description
-    if (search) {
-      query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
+    // Load and parse CSV
+    const allModels = parseCSV();
+    
+    // Apply filters
+    let filteredModels = allModels.filter(model => {
+      // Filter by type
+      if (type && type !== 'all' && model.model_type !== type) {
+        return false;
+      }
+      
+      // Filter by cost range
+      if (min_cost && model.cost_level < parseInt(min_cost)) {
+        return false;
+      }
+      if (max_cost && model.cost_level > parseInt(max_cost)) {
+        return false;
+      }
+      
+      // Search by name or description
+      if (search) {
+        const searchLower = search.toLowerCase();
+        const nameMatch = model.name.toLowerCase().includes(searchLower);
+        const descMatch = model.description.toLowerCase().includes(searchLower);
+        if (!nameMatch && !descMatch) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+    
     // Sorting
     const validSortFields = ['name', 'art_rating', 'prompting_rating', 'realism_rating', 'typography_rating', 'cost_level'];
     const sortField = validSortFields.includes(sort_by) ? sort_by : 'name';
-    const sortOrder = sort_order === 'asc' ? 'ASC' : 'DESC';
+    const sortOrder = sort_order === 'asc' ? 'asc' : 'desc';
     
-    query += ` ORDER BY ${sortField} ${sortOrder}`;
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+    filteredModels.sort((a, b) => {
+      if (sortField === 'name') {
+        return sortOrder === 'asc' 
+          ? a.name.localeCompare(b.name) 
+          : b.name.localeCompare(a.name);
+      }
+      
+      if (a[sortField] < b[sortField]) {
+        return sortOrder === 'asc' ? -1 : 1;
+      }
+      if (a[sortField] > b[sortField]) {
+        return sortOrder === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+    
+    res.json(filteredModels);
   } catch (err) {
     console.error('Error fetching nc_models:', err);
     next(err);
@@ -56,13 +132,14 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM nc_models WHERE id = $1', [id]);
+    const allModels = parseCSV();
+    const model = allModels.find(m => m.id === parseInt(id));
     
-    if (result.rows.length === 0) {
+    if (!model) {
       return res.status(404).json({ error: 'Model not found' });
     }
     
-    res.json(result.rows[0]);
+    res.json(model);
   } catch (err) {
     console.error('Error fetching nc_model:', err);
     next(err);
@@ -72,24 +149,43 @@ router.get('/:id', async (req, res, next) => {
 // GET /api/nc-models/stats/summary - Get model statistics
 router.get('/stats/summary', async (req, res, next) => {
   try {
-    const result = await pool.query(`
-      SELECT 
-        model_type,
-        COUNT(*) as count,
-        AVG(cost_level) as avg_cost,
-        AVG(art_rating) as avg_art,
-        AVG(prompting_rating) as avg_prompting,
-        AVG(realism_rating) as avg_realism,
-        AVG(typography_rating) as avg_typography
-      FROM nc_models 
-      GROUP BY model_type
-    `);
+    const allModels = parseCSV();
     
-    const totalResult = await pool.query('SELECT COUNT(*) as total FROM nc_models');
+    const statsByType = {};
+    allModels.forEach(model => {
+      if (!statsByType[model.model_type]) {
+        statsByType[model.model_type] = {
+          count: 0,
+          total_cost: 0,
+          total_art: 0,
+          total_prompting: 0,
+          total_realism: 0,
+          total_typography: 0
+        };
+      }
+      
+      const typeStats = statsByType[model.model_type];
+      typeStats.count++;
+      typeStats.total_cost += model.cost_level;
+      typeStats.total_art += model.art_rating;
+      typeStats.total_prompting += model.prompting_rating;
+      typeStats.total_realism += model.realism_rating;
+      typeStats.total_typography += model.typography_rating;
+    });
+    
+    const byType = Object.entries(statsByType).map(([model_type, stats]) => ({
+      model_type,
+      count: stats.count,
+      avg_cost: stats.total_cost / stats.count,
+      avg_art: stats.total_art / stats.count,
+      avg_prompting: stats.total_prompting / stats.count,
+      avg_realism: stats.total_realism / stats.count,
+      avg_typography: stats.total_typography / stats.count
+    }));
     
     res.json({
-      total: parseInt(totalResult.rows[0].total),
-      byType: result.rows
+      total: allModels.length,
+      byType
     });
   } catch (err) {
     console.error('Error fetching nc_models stats:', err);

@@ -6,13 +6,29 @@ const logger = require('../lib/logger');
 // GET /api/usage/dashboard → combined dashboard stats
 router.get('/dashboard', async (req, res) => {
     try {
-        // Today and This Month boundaries
+        const { from, to } = req.query;
+        
+        // Determine date boundaries
+        let rangeStart, rangeEnd;
+        
+        if (from && to) {
+            // Use provided date range
+            rangeStart = new Date(from);
+            rangeEnd = new Date(to);
+            rangeEnd.setHours(23, 59, 59, 999); // End of day
+        } else {
+            // Default to this month
+            rangeStart = new Date();
+            rangeStart.setDate(1);
+            rangeStart.setHours(0, 0, 0, 0);
+            
+            rangeEnd = new Date();
+            rangeEnd.setHours(23, 59, 59, 999);
+        }
+        
+        // Today boundary for today's stats
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
-
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
 
         // Fetch User Budget (assuming stored in user_profiles.user_metadata or a new settings table - we'll use user_profiles for now since it exists)
         // Default budget if none is set
@@ -27,57 +43,62 @@ router.get('/dashboard', async (req, res) => {
             logger.warn('Could not fetch user budget:', e.message);
         }
 
-        // Global Totals (This Month)
-        const monthTotalsRes = await pool.query(`
+        // Global Totals for the requested range
+        const rangeTotalsRes = await pool.query(`
             SELECT
                 COUNT(*)::int AS requests,
+                COALESCE(SUM(prompt_tokens), 0)::int AS prompt_tokens,
+                COALESCE(SUM(completion_tokens), 0)::int AS completion_tokens,
                 COALESCE(SUM(estimated_cost_usd), 0) AS cost_usd
             FROM api_usage_log
-            WHERE created_at >= $1
-        `, [monthStart.toISOString()]);
+            WHERE created_at >= $1 AND created_at <= $2
+        `, [rangeStart.toISOString(), rangeEnd.toISOString()]);
 
         const todayTotalsRes = await pool.query(`
             SELECT COALESCE(SUM(estimated_cost_usd), 0) AS cost_usd
             FROM api_usage_log
-            WHERE created_at >= $1
-        `, [todayStart.toISOString()]);
+            WHERE created_at >= $1 AND created_at <= $2
+        `, [todayStart.toISOString(), rangeEnd.toISOString()]);
 
         const topProviderRes = await pool.query(`
             SELECT provider, COUNT(*) as count 
-            FROM api_usage_log WHERE created_at >= $1 AND provider IS NOT NULL
+            FROM api_usage_log WHERE created_at >= $1 AND created_at <= $2 AND provider IS NOT NULL
             GROUP BY provider ORDER BY count DESC LIMIT 1
-        `, [monthStart.toISOString()]);
+        `, [rangeStart.toISOString(), rangeEnd.toISOString()]);
 
         const topModelRes = await pool.query(`
             SELECT model, COUNT(*) as count 
-            FROM api_usage_log WHERE created_at >= $1 AND model IS NOT NULL
+            FROM api_usage_log WHERE created_at >= $1 AND created_at <= $2 AND model IS NOT NULL
             GROUP BY model ORDER BY count DESC LIMIT 1
-        `, [monthStart.toISOString()]);
+        `, [rangeStart.toISOString(), rangeEnd.toISOString()]);
 
-        // Per Provider Breakdown
+        // Per Provider Breakdown for the requested range
         const providersRes = await pool.query(`
             SELECT 
                 provider,
-                SUM(CASE WHEN created_at >= $1 THEN 1 ELSE 0 END)::int AS today_requests,
-                COALESCE(SUM(CASE WHEN created_at >= $1 THEN prompt_tokens ELSE 0 END), 0)::int AS today_prompt_tokens,
-                COALESCE(SUM(CASE WHEN created_at >= $1 THEN completion_tokens ELSE 0 END), 0)::int AS today_completion_tokens,
-                COALESCE(SUM(CASE WHEN created_at >= $1 THEN estimated_cost_usd ELSE 0 END), 0) AS today_cost_usd,
+                SUM(CASE WHEN created_at >= $1 AND created_at <= $2 THEN 1 ELSE 0 END)::int AS today_requests,
+                COALESCE(SUM(CASE WHEN created_at >= $1 AND created_at <= $2 THEN prompt_tokens ELSE 0 END), 0)::int AS today_prompt_tokens,
+                COALESCE(SUM(CASE WHEN created_at >= $1 AND created_at <= $2 THEN completion_tokens ELSE 0 END), 0)::int AS today_completion_tokens,
+                COALESCE(SUM(CASE WHEN created_at >= $1 AND created_at <= $2 THEN estimated_cost_usd ELSE 0 END), 0) AS today_cost_usd,
                 
-                SUM(CASE WHEN created_at >= $2 THEN 1 ELSE 0 END)::int AS month_requests,
-                COALESCE(SUM(CASE WHEN created_at >= $2 THEN prompt_tokens ELSE 0 END), 0)::int AS month_prompt_tokens,
-                COALESCE(SUM(CASE WHEN created_at >= $2 THEN completion_tokens ELSE 0 END), 0)::int AS month_completion_tokens,
-                COALESCE(SUM(CASE WHEN created_at >= $2 THEN estimated_cost_usd ELSE 0 END), 0) AS month_cost_usd
+                SUM(CASE WHEN created_at >= $3 AND created_at <= $4 THEN 1 ELSE 0 END)::int AS month_requests,
+                COALESCE(SUM(CASE WHEN created_at >= $3 AND created_at <= $4 THEN prompt_tokens ELSE 0 END), 0)::int AS month_prompt_tokens,
+                COALESCE(SUM(CASE WHEN created_at >= $3 AND created_at <= $4 THEN completion_tokens ELSE 0 END), 0)::int AS month_completion_tokens,
+                COALESCE(SUM(CASE WHEN created_at >= $3 AND created_at <= $4 THEN estimated_cost_usd ELSE 0 END), 0) AS month_cost_usd
             FROM api_usage_log
-            WHERE created_at >= $2 AND provider IS NOT NULL
+            WHERE created_at >= $3 AND created_at <= $4 AND provider IS NOT NULL
             GROUP BY provider
-        `, [todayStart.toISOString(), monthStart.toISOString()]);
+        `, [todayStart.toISOString(), rangeEnd.toISOString(), rangeStart.toISOString(), rangeEnd.toISOString()]);
 
         const modelsRes = await pool.query(`
-            SELECT provider, model, COUNT(*)::int AS requests, COALESCE(SUM(estimated_cost_usd), 0) AS cost_usd
+            SELECT provider, model, COUNT(*)::int AS requests, 
+                   COALESCE(SUM(prompt_tokens), 0)::int AS prompt_tokens, 
+                   COALESCE(SUM(completion_tokens), 0)::int AS completion_tokens, 
+                   COALESCE(SUM(estimated_cost_usd), 0) AS cost_usd
             FROM api_usage_log
-            WHERE created_at >= $1 AND provider IS NOT NULL AND model IS NOT NULL
+            WHERE created_at >= $1 AND created_at <= $2 AND provider IS NOT NULL AND model IS NOT NULL
             GROUP BY provider, model
-        `, [monthStart.toISOString()]);
+        `, [rangeStart.toISOString(), rangeEnd.toISOString()]);
 
         // Rate Limit Windows (last 15 minutes logic)
         // Hardcoded limit for now, ideally fetched from a settings table per provider
@@ -118,16 +139,18 @@ router.get('/dashboard', async (req, res) => {
                     completion_tokens: p.month_completion_tokens,
                     cost_usd: p.month_cost_usd
                 },
-                models: modelsRes.rows.filter(m => m.provider === p.provider).map(m => ({
+                 models: modelsRes.rows.filter(m => m.provider === p.provider).map(m => ({
                     model: m.model,
                     requests: m.requests,
+                    prompt_tokens: m.prompt_tokens,
+                    completion_tokens: m.completion_tokens,
                     cost_usd: m.cost_usd
                 }))
             };
         });
 
         // Budget Calculation
-        const current_spend_usd = Number(monthTotalsRes.rows[0]?.cost_usd || 0);
+        const current_spend_usd = Number(rangeTotalsRes.rows[0]?.cost_usd || 0);
         const percent_used = monthly_limit_usd > 0 ? (current_spend_usd / monthly_limit_usd) * 100 : 0;
 
         const now = new Date();
@@ -140,7 +163,9 @@ router.get('/dashboard', async (req, res) => {
             totals: {
                 today_cost_usd: Number(todayTotalsRes.rows[0]?.cost_usd || 0),
                 this_month_cost_usd: current_spend_usd,
-                this_month_requests: Number(monthTotalsRes.rows[0]?.requests || 0),
+                this_month_requests: Number(rangeTotalsRes.rows[0]?.requests || 0),
+                this_month_prompt_tokens: Number(rangeTotalsRes.rows[0]?.prompt_tokens || 0),
+                this_month_completion_tokens: Number(rangeTotalsRes.rows[0]?.completion_tokens || 0),
                 most_used_provider: topProviderRes.rows[0]?.provider || 'N/A',
                 most_used_model: topModelRes.rows[0]?.model || 'N/A'
             },

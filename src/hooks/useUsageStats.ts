@@ -42,24 +42,24 @@ export function useUsageStats(from: string, to: string) {
             // Use the dashboard endpoint and map its shape to the simpler UsageStats
             const res = await fetch(`${API_BASE_URL}/api/usage/dashboard?${params}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json();
+            const json: any = await res.json();
 
             // Map UsageDashboardData -> UsageStats (best-effort)
             const totals = {
                 calls: json.totals?.this_month_requests || 0,
-                prompt_tokens: 0,
-                completion_tokens: 0,
+                prompt_tokens: json.totals?.this_month_prompt_tokens || 0,
+                completion_tokens: json.totals?.this_month_completion_tokens || 0,
                 total_cost_usd: String(json.totals?.this_month_cost_usd || 0)
             };
 
             // Flatten models across providers into breakdown rows
-            const breakdown = (json.providers || []).flatMap((p) => {
-                return (p.models || []).map((m) => ({
+            const breakdown = (json.providers || []).flatMap((p: any) => {
+                return (p.models || []).map((m: any) => ({
                     provider: p.provider,
                     model: m.model,
                     calls: m.requests || 0,
-                    prompt_tokens: 0,
-                    completion_tokens: 0,
+                    prompt_tokens: m.prompt_tokens || m.month_prompt_tokens || 0,
+                    completion_tokens: m.completion_tokens || m.month_completion_tokens || 0,
                     total_cost_usd: String(m.cost_usd || 0)
                 }));
             });
