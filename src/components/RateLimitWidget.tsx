@@ -7,7 +7,7 @@ interface RateLimitData {
 }
 
 export function RateLimitWidget({ collapsed }: { collapsed: boolean }) {
-    const [data, setData] = useState<RateLimitData>({ remaining: 500, reset: null });
+    const [data, setData] = useState<RateLimitData>({ remaining: null, reset: null });
 
     useEffect(() => {
         const handleUpdate = (e: Event) => {
@@ -20,12 +20,10 @@ export function RateLimitWidget({ collapsed }: { collapsed: boolean }) {
     }, []);
 
     // Show default state on startup instead of returning null
-    if (data.remaining === null) {
-        data.remaining = 500;
-    }
+    const displayRemaining = data.remaining !== null ? data.remaining : 5000;
 
-    const isLow = data.remaining < 50;
-    const isCritical = data.remaining < 10;
+    const isLow = displayRemaining < 50;
+    const isCritical = displayRemaining < 10;
 
     let bgColor = 'bg-slate-800/50';
     let iconColor = 'text-slate-400';
@@ -47,7 +45,7 @@ export function RateLimitWidget({ collapsed }: { collapsed: boolean }) {
                 className={`w-10 h-10 mx-auto rounded-xl flex flex-col items-center justify-center ${bgColor} transition-colors`}
                 title={`AI Requests Remaining (resets at ${data.reset ? new Date(data.reset * 1000).toLocaleTimeString() : '?'})`}
             >
-                <span className={`text-[10px] font-bold ${textColor}`}>{data.remaining}</span>
+                <span className={`text-[10px] font-bold ${textColor}`}>{displayRemaining}</span>
                 <Activity size={10} className={`${iconColor} opacity-70`} />
             </div>
         );
@@ -64,7 +62,7 @@ export function RateLimitWidget({ collapsed }: { collapsed: boolean }) {
                         AI Limits
                     </p>
                     <span className={`text-xs font-bold ${textColor}`}>
-                        {data.remaining} <span className="text-[10px] text-slate-500 font-normal">left</span>
+                        {displayRemaining} <span className="text-[10px] text-slate-500 font-normal">left</span>
                     </span>
                 </div>
                 {isCritical && (

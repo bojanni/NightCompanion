@@ -910,9 +910,9 @@ router.post('/', async (req, res) => {
         }
 
         // Set rate limit headers
-        res.set('ratelimit-remaining', '500'); // Default value
+        res.set('ratelimit-remaining', '5000'); // Default value
         res.set('ratelimit-reset', Math.floor(Date.now() / 1000) + 900); // 15 minutes from now
-        
+
         res.json({
             result: parsedResult,
             usage: {
