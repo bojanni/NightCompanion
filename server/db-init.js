@@ -268,18 +268,6 @@ async function initSchema() {
             );
         `);
 
-        // Rate Limit Settings
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS rate_limit_settings (
-                provider TEXT PRIMARY KEY,
-                max_requests INTEGER DEFAULT 500,
-                window_minutes INTEGER DEFAULT 15,
-                enabled BOOLEAN DEFAULT TRUE,
-                warning_percent INTEGER DEFAULT 80,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-            );
-        `);
-
 
         // Style Profiles
         await pool.query(`

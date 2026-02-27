@@ -1,17 +1,16 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-    BarChart2, Activity, Settings, AlertTriangle, Pencil,
+    BarChart2, Activity, Settings, AlertTriangle,
     TrendingUp, CreditCard, Clock, Zap, Target, LucideIcon
 } from 'lucide-react';
-import { useUsageDashboard, useUpdateBudget, useUsageHistory, useUpdateRateLimit } from '../hooks/useUsage';
+import { useUsageDashboard, useUpdateBudget } from '../hooks/useUsage';
 import { toast } from 'sonner';
+// import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { ProviderUsage, BudgetSettings } from '../types/usage';
 
 export default function UsageDashboard() {
     const { data: usage, isLoading, error } = useUsageDashboard();
     const [showBudgetModal, setShowBudgetModal] = useState(false);
-    const [chartMode, setChartMode] = useState<'cost' | 'requests'>('cost');
-    const [chartProvider, setChartProvider] = useState<string>('all');
 
     // Default loading view
     if (isLoading) {
@@ -130,30 +129,6 @@ export default function UsageDashboard() {
                 </p>
             </div>
 
-            {/* Usage Chart */}
-            <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/40">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-white font-semibold">Gebruik laatste 30 dagen</h3>
-                    <div className="flex items-center gap-2">
-                        <select
-                            value={chartProvider}
-                            onChange={(e) => setChartProvider(e.target.value)}
-                            className="bg-slate-950 border border-slate-800 text-slate-300 text-sm rounded-lg px-3 py-1.5"
-                        >
-                            <option value="all">Alle providers</option>
-                            {providers.map(p => (
-                                <option key={p.provider} value={p.provider}>{p.provider}</option>
-                            ))}
-                        </select>
-                        <div className="flex bg-slate-800/60 rounded-lg p-0.5">
-                            <button onClick={() => setChartMode('cost')} className={`px-3 py-1.5 text-xs rounded-md ${chartMode === 'cost' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}>Kosten</button>
-                            <button onClick={() => setChartMode('requests')} className={`px-3 py-1.5 text-xs rounded-md ${chartMode === 'requests' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}>Requests</button>
-                        </div>
-                    </div>
-                </div>
-                <SimpleLineChart provider={chartProvider} mode={chartMode} />
-            </div>
-
             {/* Per-Provider Breakdowns */}
             <h3 className="text-xl font-bold text-white mt-12 mb-6">Active Provider Limits</h3>
 
@@ -206,7 +181,6 @@ function StatCard({ icon: Icon, label, value, subValue, color }: { icon: LucideI
 function ProviderCard({ data }: { data: ProviderUsage }) {
     const p = data;
     const isCapped = p.current_window.percent_used >= 100;
-    const [showEdit, setShowEdit] = useState(false);
 
     return (
         <div className={`p-6 rounded-2xl border bg-slate-900/40 flex flex-col transition-all ${isCapped ? 'border-red-500/40 shadow-[0_0_15px_-3px_rgba(239,68,68,0.2)]' : 'border-slate-800'}`}>
@@ -216,17 +190,7 @@ function ProviderCard({ data }: { data: ProviderUsage }) {
                     <div className={`w-3 h-3 rounded-full shadow-lg ${isCapped ? 'bg-red-500 shadow-red-500/50' : p.current_window.percent_used > 80 ? 'bg-amber-500 shadow-amber-500/50' : 'bg-emerald-500 shadow-emerald-500/50'}`} />
                     <h4 className="text-lg font-bold text-white uppercase tracking-wider">{p.provider}</h4>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500 font-mono tracking-widest">{Number(p.this_month.cost_usd || 0).toFixed(2)}$ / mo</span>
-                    <button
-                        onClick={() => setShowEdit(true)}
-                        className="px-2 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1"
-                        title="Edit rate limit"
-                    >
-                        <Pencil size={14} />
-                        Edit
-                    </button>
-                </div>
+                <span className="text-xs font-bold text-slate-500 font-mono tracking-widest">{Number(p.this_month.cost_usd || 0).toFixed(2)}$ / mo</span>
             </div>
 
             <div className="flex-1 flex flex-col md:flex-row gap-8 items-center justify-between py-2">
@@ -254,10 +218,16 @@ function ProviderCard({ data }: { data: ProviderUsage }) {
                 <div className="flex-1 w-full space-y-4">
                     <div>
                         <div className="flex justify-between text-xs font-semibold text-slate-500 uppercase mb-1">
-                            <span>{p.limit.window_minutes}-Min Window</span>
+                            <span>15-Min Window</span>
                             <span className={isCapped ? 'text-red-400' : 'text-white'}>{p.current_window.requests_remaining} Left</span>
                         </div>
-                        <ResetCountdown target={p.current_window.window_resets_at} capped={isCapped} />
+                        {isCapped ? (
+                            <p className="text-[11px] text-red-500/80 bg-red-500/10 px-2 py-1 rounded">Resetting soon...</p>
+                        ) : (
+                            <p className="text-[11px] text-slate-400 flex items-center gap-1 group-hover:text-amber-400 transition-colors">
+                                <Clock size={12} /> Resets dynamically
+                            </p>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -272,8 +242,6 @@ function ProviderCard({ data }: { data: ProviderUsage }) {
                     </div>
                 </div>
             </div>
-
-            {showEdit && <RateLimitSettingsModal provider={p.provider} initial={p.limit} onClose={() => setShowEdit(false)} />}
 
         </div>
     );
@@ -332,123 +300,5 @@ function BudgetConfigModal({ initial, onClose }: { initial: BudgetSettings, onCl
                 </div>
             </div>
         </div >
-    );
-}
-
-function RateLimitSettingsModal({ provider, initial, onClose }: { provider: string; initial: { max_requests: number; window_minutes: number; enabled: boolean }; onClose: () => void }) {
-    const [maxReq, setMaxReq] = useState<number>(initial.max_requests);
-    const [windowMin, setWindowMin] = useState<number>(initial.window_minutes);
-    const [enabled, setEnabled] = useState<boolean>(initial.enabled);
-    const mutate = useUpdateRateLimit();
-
-    const handleSave = async () => {
-        try {
-            await mutate.mutateAsync({ provider, max_requests: maxReq, window_minutes: windowMin, enabled });
-            toast.success('Rate limit opgeslagen');
-            onClose();
-        } catch {
-            toast.error('Opslaan mislukt');
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                <div className="p-6 border-b border-slate-800">
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Settings size={18} className="text-teal-400" /> Rate limit voor {provider}
-                    </h2>
-                </div>
-                <div className="p-6 space-y-5">
-                    <label className="block text-sm font-bold text-slate-300 mb-1">Max requests</label>
-                    <input
-                        type="number"
-                        min={10}
-                        max={2000}
-                        value={maxReq}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMaxReq(parseInt(e.target.value) || 0)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white"
-                    />
-                    <label className="block text-sm font-bold text-slate-300 mb-1">Tijdvenster (minuten)</label>
-                    <select
-                        value={windowMin}
-                        onChange={(e) => setWindowMin(parseInt(e.target.value))}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white"
-                    >
-                        {[5, 15, 30, 60].map(m => <option key={m} value={m}>{m} minuten</option>)}
-                    </select>
-                    <label className="flex items-center gap-2 text-sm font-bold text-slate-300">
-                        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-                        Ingeschakeld
-                    </label>
-                </div>
-                <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex gap-3 justify-end">
-                    <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">Annuleren</button>
-                    <button onClick={handleSave} disabled={mutate.isPending} className="px-6 py-2.5 rounded-xl font-bold text-slate-900 bg-teal-400 hover:bg-teal-300 transition-all disabled:opacity-50">
-                        {mutate.isPending ? 'Opslaan...' : 'Opslaan'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ResetCountdown({ target, capped }: { target: string; capped: boolean }) {
-    const [remaining, setRemaining] = useState<string>('');
-    useEffect(() => {
-        function tick() {
-            const t = new Date(target).getTime() - Date.now();
-            if (t <= 0) {
-                setRemaining('0m 0s');
-                return;
-            }
-            const m = Math.floor(t / 60000);
-            const s = Math.floor((t % 60000) / 1000);
-            setRemaining(`${m}m ${s}s`);
-        }
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, [target]);
-    return capped ? (
-        <p className="text-[11px] text-red-500/80 bg-red-500/10 px-2 py-1 rounded">Reset over {remaining}</p>
-    ) : (
-        <p className="text-[11px] text-slate-400 flex items-center gap-1">
-            <Clock size={12} /> Reset over {remaining}
-        </p>
-    );
-}
-
-function SimpleLineChart({ provider, mode }: { provider: string; mode: 'cost' | 'requests' }) {
-    const { data, isLoading } = useUsageHistory(provider, '30d');
-    const points = useMemo(() => (data || []).map(d => ({
-        x: new Date(d.date).getTime(),
-        y: mode === 'cost' ? Number(d.cost_usd || 0) : Number(d.requests || 0)
-    })), [data, mode]);
-    if (isLoading) {
-        return <div className="h-40 flex items-center justify-center text-slate-500">Laden...</div>;
-    }
-    if (!points.length) {
-        return <div className="h-40 flex items-center justify-center text-slate-500">Geen data</div>;
-    }
-    const xs = points.map(p => p.x);
-    const ys = points.map(p => p.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = 0;
-    const maxY = Math.max(...ys) || 1;
-    const w = 800;
-    const h = 240;
-    const pad = 24;
-    const path = points.map((p, i) => {
-        const x = pad + ((p.x - minX) / (maxX - minX || 1)) * (w - pad * 2);
-        const y = h - pad - ((p.y - minY) / (maxY - minY || 1)) * (h - pad * 2);
-        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    }).join(' ');
-    return (
-        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-60">
-            <rect x="0" y="0" width={w} height={h} fill="transparent" />
-            <path d={path} stroke="#10b981" strokeWidth="2" fill="none" />
-        </svg>
     );
 }
