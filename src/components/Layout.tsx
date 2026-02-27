@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import SidebarCostWidget from './SidebarCostWidget';
 import { RateLimitWidget } from './RateLimitWidget';
 import { BudgetAlertWidget } from './BudgetAlertWidget';
+import { RateLimitAlertWidget } from './RateLimitAlertWidget';
+import { useUsageDashboard } from '../hooks/useUsage';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
@@ -45,6 +47,19 @@ export default function Layout() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const isFullWidthPage = FULL_WIDTH_PAGES.includes(location.pathname);
+
+  function UsageBadge() {
+    const { data } = useUsageDashboard();
+    if (!data || !data.providers || data.providers.length === 0) return null;
+    const max = Math.max(...data.providers.map(p => Number(p.current_window.percent_used || 0)));
+    if (!isFinite(max) || max <= 0) return null;
+    const color = max >= 85 ? 'bg-red-500/20 text-red-400 border-red-500/20' : max >= 60 ? 'bg-amber-500/20 text-amber-400 border-amber-500/20' : 'bg-teal-500/20 text-teal-400 border-teal-500/20';
+    return (
+      <span className={`ml-2 inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${color}`}>
+        {max.toFixed(0)}%
+      </span>
+    );
+  }
 
   const { theme, setTheme } = useTheme();
   const { connectionStatus, lastSyncTime } = useExtension();
@@ -172,6 +187,7 @@ export default function Layout() {
         <RateLimitWidget collapsed={collapsed} />
         <SidebarCostWidget collapsed={collapsed} />
         <BudgetAlertWidget />
+        <RateLimitAlertWidget />
         <nav className="flex-1 px-3 py-4 space-y-4 overflow-x-hidden">
           <div className="space-y-1">
             {navItems.map(({ to, icon: Icon, labelKey }) => (
@@ -212,6 +228,7 @@ export default function Layout() {
                   {!collapsed && (
                     <span className="animate-in fade-in slide-in-from-left-2 duration-300">
                       {t(labelKey) !== labelKey ? t(labelKey) : fallbackLabel || t(labelKey)}
+                      {to === '/usage' && <UsageBadge />}
                     </span>
                   )}
                 </NavLink>

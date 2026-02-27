@@ -73,15 +73,17 @@ const apiKeysLimiter = rateLimit({
   message: { error: 'Too many requests for API keys, please try again later.' }
 });
 
+const { ipKeyGenerator } = require('express-rate-limit');
 const providerAwareLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5000, // Higher ceiling for active usage
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (req) => {
-    // Determine provider from body or query, fallback to IP if none provided
-    const provider = req.body?.provider || req.query?.provider || req.ip;
-    return String(provider).toLowerCase();
+  keyGenerator: (req, res) => {
+    // Provider-aware limiting; fallback to IPv4-safe helper for IPs (avoids IPv6 bypass)
+    const provider = req.body?.provider || req.query?.provider;
+    if (provider) return String(provider).toLowerCase();
+    return ipKeyGenerator(req, res);
   },
   skip: async (req) => {
     const provider = String(req.body?.provider || req.query?.provider || '').toLowerCase();
