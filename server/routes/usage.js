@@ -100,32 +100,40 @@ router.get('/dashboard', async (req, res) => {
             GROUP BY provider, model
         `, [rangeStart.toISOString(), rangeEnd.toISOString()]);
 
-        // Rate Limit Windows (last 15 minutes logic)
-        // Hardcoded limit for now, ideally fetched from a settings table per provider
-        const windowMinutes = 15;
-        const maxRequests = 500;
-        const windowStart = new Date(Date.now() - windowMinutes * 60 * 1000);
+        // Rate Limit Windows per provider
+        const providerNames = providersRes.rows.map(r => r.provider);
+        let settingsMap = {};
+        if (providerNames.length > 0) {
+            const settingsRes = await pool.query(
+                `SELECT provider, max_requests, window_minutes, enabled FROM rate_limit_settings WHERE provider = ANY($1)`,
+                [providerNames]
+            );
+            settingsRes.rows.forEach(s => {
+                settingsMap[s.provider] = {
+                    max_requests: Number(s.max_requests) || 500,
+                    window_minutes: Number(s.window_minutes) || 15,
+                    enabled: s.enabled !== false
+                };
+            });
+        }
 
-        const windowRes = await pool.query(`
-            SELECT provider, COUNT(*)::int AS requests_used
-            FROM api_usage_log
-            WHERE created_at >= $1 AND provider IS NOT NULL
-            GROUP BY provider
-        `, [windowStart.toISOString()]);
-
-        const windowMap = {};
-        windowRes.rows.forEach(r => windowMap[r.provider] = r.requests_used);
-
-        const providers = providersRes.rows.map(p => {
-            const used = windowMap[p.provider] || 0;
-            return {
+        const providers = [];
+        for (const p of providersRes.rows) {
+            const settings = settingsMap[p.provider] || { max_requests: 500, window_minutes: 15, enabled: true };
+            const windowStart = new Date(Date.now() - settings.window_minutes * 60 * 1000);
+            const usedRes = await pool.query(
+                `SELECT COUNT(*)::int AS requests_used FROM api_usage_log WHERE provider = $1 AND created_at >= $2`,
+                [p.provider, windowStart.toISOString()]
+            );
+            const used = Number(usedRes.rows[0]?.requests_used || 0);
+            providers.push({
                 provider: p.provider,
-                limit: { max_requests: maxRequests, window_minutes: windowMinutes, enabled: true },
+                limit: settings,
                 current_window: {
                     requests_used: used,
-                    requests_remaining: Math.max(0, maxRequests - used),
-                    window_resets_at: new Date(Date.now() + windowMinutes * 60 * 1000).toISOString(), // rough approx
-                    percent_used: (used / maxRequests) * 100
+                    requests_remaining: Math.max(0, settings.max_requests - used),
+                    window_resets_at: new Date(windowStart.getTime() + settings.window_minutes * 60 * 1000).toISOString(),
+                    percent_used: settings.max_requests > 0 ? (used / settings.max_requests) * 100 : 0
                 },
                 today: {
                     requests: p.today_requests,
@@ -139,15 +147,15 @@ router.get('/dashboard', async (req, res) => {
                     completion_tokens: p.month_completion_tokens,
                     cost_usd: p.month_cost_usd
                 },
-                 models: modelsRes.rows.filter(m => m.provider === p.provider).map(m => ({
+                models: modelsRes.rows.filter(m => m.provider === p.provider).map(m => ({
                     model: m.model,
                     requests: m.requests,
                     prompt_tokens: m.prompt_tokens,
                     completion_tokens: m.completion_tokens,
                     cost_usd: m.cost_usd
                 }))
-            };
-        });
+            });
+        }
 
         // Budget Calculation
         const current_spend_usd = Number(rangeTotalsRes.rows[0]?.cost_usd || 0);
@@ -253,6 +261,31 @@ router.post('/budget', async (req, res) => {
         res.json({ ok: true, budget: updatedMeta });
     } catch (err) {
         logger.error('Update budget error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/usage/rate-limit-settings/:provider
+router.put('/rate-limit-settings/:provider', async (req, res) => {
+    try {
+        const provider = req.params.provider;
+        const { max_requests, window_minutes, enabled, warning_percent } = req.body || {};
+        if (!provider) return res.status(400).json({ error: 'Missing provider' });
+
+        await pool.query(`
+            INSERT INTO rate_limit_settings (provider, max_requests, window_minutes, enabled, warning_percent, updated_at)
+            VALUES ($1, $2, $3, $4, COALESCE($5, 80), NOW())
+            ON CONFLICT (provider) DO UPDATE SET
+                max_requests = EXCLUDED.max_requests,
+                window_minutes = EXCLUDED.window_minutes,
+                enabled = EXCLUDED.enabled,
+                warning_percent = EXCLUDED.warning_percent,
+                updated_at = NOW()
+        `, [provider, max_requests || 500, window_minutes || 15, enabled !== false, warning_percent || 80]);
+
+        res.json({ ok: true });
+    } catch (err) {
+        logger.error('Update rate limit error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

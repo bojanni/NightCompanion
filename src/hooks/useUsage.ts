@@ -46,3 +46,26 @@ export function useUpdateBudget() {
         }
     });
 }
+
+export function useUpdateRateLimit() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (vars: { provider: string; max_requests: number; window_minutes: number; enabled: boolean; warning_percent?: number }) => {
+            const res = await fetch(`${API_BASE}/rate-limit-settings/${encodeURIComponent(vars.provider)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    max_requests: vars.max_requests,
+                    window_minutes: vars.window_minutes,
+                    enabled: vars.enabled,
+                    warning_percent: vars.warning_percent ?? 80
+                })
+            });
+            if (!res.ok) throw new Error('Failed to update rate limit settings');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: USAGE_DASHBOARD_KEY });
+        }
+    });
+}
