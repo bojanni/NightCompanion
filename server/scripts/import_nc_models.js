@@ -22,18 +22,7 @@ async function importModels(force = false) {
   });
 
   try {
-    // Check if models already exist (skip if table is empty or doesn't exist)
-    if (!force) {
-      try {
-        const existingCount = await pool.query('SELECT COUNT(*) FROM nc_models');
-        if (parseInt(existingCount.rows[0].count) > 0) {
-          console.log(`✓ nc_models table already has ${existingCount.rows[0].count} models, skipping import`);
-          return;
-        }
-      } catch {
-        // Table doesn't exist yet, will create it below
-      }
-    }
+    // Check if models table exists, create if not
 
     // Create nc_models table
     await pool.query(`
@@ -122,45 +111,94 @@ async function importModels(force = false) {
       }
     }
 
-    console.log(`✓ Parsed ${models.length} models`);
+    console.log(`✓ Parsed ${models.length} models from CSV`);
 
-    // Clear existing data and insert new
-    await pool.query('TRUNCATE TABLE nc_models RESTART IDENTITY CASCADE');
-    console.log('✓ Cleared existing nc_models data');
+    // Get existing models
+    const existingResult = await pool.query('SELECT name, description, art_rating, prompting_rating, realism_rating, typography_rating, cost_level, model_type FROM nc_models');
+    const existingModels = new Map(existingResult.rows.map(m => [m.name, m]));
 
-    // Insert in batches
-    const batchSize = 20;
-    for (let i = 0; i < models.length; i += batchSize) {
-      const batch = models.slice(i, i + batchSize);
-      const values = [];
-      const params = [];
-      
-      batch.forEach((model, idx) => {
-        const offset = idx * 8;
-        values.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`);
-        params.push(
-          model.name,
-          model.description,
-          model.art_rating,
-          model.prompting_rating,
-          model.realism_rating,
-          model.typography_rating,
-          model.cost_level,
-          model.model_type
-        );
-      });
+    const toInsert = [];
+    const toUpdate = [];
 
-      await pool.query(
-        `INSERT INTO nc_models (name, description, art_rating, prompting_rating, realism_rating, typography_rating, cost_level, model_type) VALUES ${values.join(', ')}`,
-        params
-      );
+    for (const model of models) {
+      if (!existingModels.has(model.name)) {
+        toInsert.push(model);
+      } else {
+        const ext = existingModels.get(model.name);
+        
+        const propsChanged = 
+          ext.description !== model.description ||
+          Number(ext.art_rating) !== model.art_rating ||
+          Number(ext.prompting_rating) !== model.prompting_rating ||
+          Number(ext.realism_rating) !== model.realism_rating ||
+          Number(ext.typography_rating) !== model.typography_rating ||
+          Number(ext.cost_level) !== model.cost_level ||
+          ext.model_type !== model.model_type;
+
+        if (propsChanged || force) {
+          toUpdate.push(model);
+        }
+      }
     }
 
-    console.log(`✓ Inserted ${models.length} models into database`);
+    if (toInsert.length === 0 && toUpdate.length === 0) {
+      console.log('✓ No changes found. Models match DB exactly.');
+      return;
+    }
+
+    console.log(`✓ Found ${toInsert.length} new models to insert and ${toUpdate.length} existing models to update.`);
+
+    if (toInsert.length > 0) {
+      const batchSize = 20;
+      for (let i = 0; i < toInsert.length; i += batchSize) {
+        const batch = toInsert.slice(i, i + batchSize);
+        const values = [];
+        const params = [];
+        
+        batch.forEach((model, idx) => {
+          const offset = idx * 8;
+          values.push(`($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`);
+          params.push(
+            model.name,
+            model.description,
+            model.art_rating,
+            model.prompting_rating,
+            model.realism_rating,
+            model.typography_rating,
+            model.cost_level,
+            model.model_type
+          );
+        });
+
+        await pool.query(
+          `INSERT INTO nc_models (name, description, art_rating, prompting_rating, realism_rating, typography_rating, cost_level, model_type) VALUES ${values.join(', ')}`,
+          params
+        );
+      }
+      console.log(`✓ Inserted ${toInsert.length} new models`);
+    }
+
+    if (toUpdate.length > 0) {
+      for (const model of toUpdate) {
+          await pool.query(`
+            UPDATE nc_models SET 
+              description = $1, art_rating = $2, prompting_rating = $3, 
+              realism_rating = $4, typography_rating = $5, cost_level = $6, 
+              model_type = $7, updated_at = CURRENT_TIMESTAMP
+            WHERE name = $8
+          `, [
+            model.description, model.art_rating, model.prompting_rating, 
+            model.realism_rating, model.typography_rating, model.cost_level, 
+            model.model_type, model.name
+          ]);
+      }
+      console.log(`✓ Updated ${toUpdate.length} models`);
+    }
 
     // Verify
     const result = await pool.query('SELECT COUNT(*) as count FROM nc_models');
-    console.log(`✓ Database now has ${result.rows[0].count} models`);
+    console.log(`✓ Database now has ${result.rows[0].count} total models`);
+
 
   } catch (error) {
     console.error('Error:', error.message);
@@ -176,14 +214,14 @@ async function main() {
   if (process.env.CONFIRM_IMPORT === 'true') {
     await importModels(true);
   } else {
-    console.log('⚠️  This script will TRUNCATE the nc_models table and import new data.');
-    console.log('⚠️  All existing data will be permanently deleted.');
+    console.log('⚠️  This script will SYNC the nc_models table based on the CSV data.');
     console.log('');
-    console.log('To proceed with import, run with:');
+    console.log('To force an import regardless of differences, run with:');
     console.log('  CONFIRM_IMPORT=true node server/scripts/import_nc_models.js');
     console.log('');
     console.log('Or add to your .env file:');
     console.log('  CONFIRM_IMPORT=true');
+    console.log('Otherwise the sync is evaluated at server startup.');
     process.exit(0);
   }
 }
