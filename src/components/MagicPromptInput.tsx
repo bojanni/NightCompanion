@@ -12,9 +12,10 @@ interface MagicPromptInputProps {
     maxWords: number;
     className?: string;
     greylist?: string[];
+    onCheckBeforeGenerate?: (proceed: () => void) => void;
 }
 
-export default function MagicPromptInput({ onPromptGenerated, maxWords, className, greylist }: MagicPromptInputProps) {
+export default function MagicPromptInput({ onPromptGenerated, maxWords, className, greylist, onCheckBeforeGenerate }: MagicPromptInputProps) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPicker, setShowPicker] = useState(false);
@@ -25,44 +26,52 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
 
     async function handleMagicAI() {
         if (!input.trim()) return;
-        setLoading(true);
-        // ... (rest of function logic remains same, but omitted for brevity in thought, inclusion in tool call required)
-        try {
-            // const { data: { session } } = await db.auth.getSession();
-            const token = '';
 
-            // Get successful prompts for better generation context
-            const topPromptsRes = await db
-                .from('prompts')
-                .select('content')
-                .gte('rating', 4)
-                .order('rating', { ascending: false })
-                .limit(3);
+        const runGeneration = async () => {
+            setLoading(true);
+            try {
+                // const { data: { session } } = await db.auth.getSession();
+                const token = '';
 
-            const successfulPrompts = topPromptsRes.data?.map((p: { content: string }) => p.content) ?? [];
-            const context = successfulPrompts.length > 0 ? `Style Examples: ${successfulPrompts.join(' | ')}` : undefined;
+                // Get successful prompts for better generation context
+                const topPromptsRes = await db
+                    .from('prompts')
+                    .select('content')
+                    .gte('rating', 4)
+                    .order('rating', { ascending: false })
+                    .limit(3);
 
-            const result = await generateFromDescription(
-                input,
-                {
-                    context: context || undefined,
-                    preferences: {
-                        maxWords,
+                const successfulPrompts = topPromptsRes.data?.map((p: { content: string }) => p.content) ?? [];
+                const context = successfulPrompts.length > 0 ? `Style Examples: ${successfulPrompts.join(' | ')}` : undefined;
+
+                const result = await generateFromDescription(
+                    input,
+                    {
+                        context: context || undefined,
+                        preferences: {
+                            maxWords,
+                        },
+                        successfulPrompts: successfulPrompts.length > 0 ? successfulPrompts : undefined,
+                        greylist,
                     },
-                    successfulPrompts: successfulPrompts.length > 0 ? successfulPrompts : undefined,
-                    greylist,
-                },
-                token
-            );
+                    token
+                );
 
-            if (result) {
-                onPromptGenerated(result);
-                toast.success('Prompt expanded successfully!');
+                if (result) {
+                    onPromptGenerated(result);
+                    toast.success('Prompt expanded successfully!');
+                }
+            } catch (err) {
+                handleAIError(err);
+            } finally {
+                setLoading(false);
             }
-        } catch (err) {
-            handleAIError(err);
-        } finally {
-            setLoading(false);
+        };
+
+        if (onCheckBeforeGenerate) {
+            onCheckBeforeGenerate(runGeneration);
+        } else {
+            runGeneration();
         }
     }
 

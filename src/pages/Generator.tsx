@@ -477,6 +477,14 @@ export default function Generator() {
               }}
               maxWords={maxWords}
               greylist={greylist}
+              onCheckBeforeGenerate={(proceed) => {
+                const isLocalDirty = randomPrompt.trim().length > 0;
+                // For magic prompt input, we might want to preserve the negative prompt,
+                // but standard behaviour of "Proceed" clears everything.
+                handleCheckExternalFields(() => {
+                  proceed();
+                }, isLocalDirty);
+              }}
             />
           }
           recentPrompts={lastPrompts.slice(0, 3).map(p => p.content)}
