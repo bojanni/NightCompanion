@@ -160,7 +160,7 @@ export async function generateFromDescription(
     taskModel?: string | undefined;
   },
   token: string
-): Promise<string> {
+): Promise<{ prompt: string; negativePrompt?: string }> {
   const payload: Record<string, unknown> = {
     description,
     context: options.context,

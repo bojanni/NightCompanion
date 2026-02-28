@@ -8,7 +8,7 @@ import {
 import { toast } from 'sonner';
 import { diffWords } from '../lib/diff-utils';
 import { handleAIError } from '../lib/error-handler';
-import { improvePrompt, improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
+import { improvePromptWithNegative, analyzeStyle, generateFromDescription, diagnosePrompt, optimizePromptForModel } from '../lib/ai-service';
 import { analyzePrompt, supportsNegativePrompt } from '../lib/models-data';
 import { recommendNCModel } from '../lib/nc-model-recommender';
 import type { StyleAnalysis, Diagnosis, GeneratePreferences } from '../lib/ai-service';
@@ -100,6 +100,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
 
   const [generateInput, setGenerateInput] = useState(() => loadAIToolsState('generateInput', ''));
   const [generateResult, setGenerateResult] = useState(() => loadAIToolsState('generateResult', ''));
+  const [generateNegativeResult, setGenerateNegativeResult] = useState(() => loadAIToolsState('generateNegativeResult', ''));
   const [generatePrefs, setGeneratePrefs] = useState<GeneratePreferences>(() => loadAIToolsState('generatePrefs', {}));
 
   const [styleResult, setStyleResult] = useState<StyleAnalysis | null>(() => loadAIToolsState('styleResult', null));
@@ -196,12 +197,12 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
     const state = {
       tab, expanded,
       improveInput, improveResult, negativeInput, negativeResult,
-      generateInput, generateResult, generatePrefs,
+      generateInput, generateResult, generateNegativeResult, generatePrefs,
       styleResult,
       diagnosePromptInput, diagnoseIssue, diagnoseResult,
     };
     localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
-  }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
+  }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generateNegativeResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
 
   useEffect(() => {
     fetchActiveModel();
@@ -287,15 +288,12 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         );
         setImproveResult(result.optimizedPrompt);
         setNegativeResult(result.negativePrompt || ''); // Should be empty typically
-      } else if (negativeInput.trim()) {
-        const tips = useModelTips ? modelTips : undefined;
-        const result = await improvePromptWithNegative(improveInput, negativeInput, token, apiPreferences, taskImproveModel, tips);
-        setImproveResult(result.improved);
-        setNegativeResult(result.negativePrompt);
       } else {
         const tips = useModelTips ? modelTips : undefined;
-        const result = await improvePrompt(improveInput, token, apiPreferences, taskImproveModel, tips);
-        setImproveResult(result);
+        // Even if negativeInput is empty, we call improvePromptWithNegative to generate a negative prompt
+        const result = await improvePromptWithNegative(improveInput, negativeInput.trim(), token, apiPreferences, taskImproveModel, tips);
+        setImproveResult(result.improved);
+        setNegativeResult(result.negativePrompt);
       }
     } catch (e) {
       handleAIError(e);
@@ -308,6 +306,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
     if (!generateInput.trim()) return;
     setLoading(true);
     setGenerateResult('');
+    setGenerateNegativeResult('');
     try {
       const token = await getToken();
 
@@ -341,7 +340,10 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         },
         token,
       );
-      setGenerateResult(result);
+      if (result) {
+        setGenerateResult(result.prompt);
+        if (result.negativePrompt) setGenerateNegativeResult(result.negativePrompt);
+      }
     } catch (e) {
       handleAIError(e);
     } finally {
@@ -556,13 +558,18 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
               preferences={generatePrefs}
               setPreferences={setGeneratePrefs}
               result={generateResult}
+              negativeResult={generateNegativeResult}
               loading={loading}
               copied={copied}
               saving={saving}
               onSubmit={handleGenerate}
               onCopy={handleCopy}
-              onUse={() => { if (onPromptGenerated) onPromptGenerated(generateResult); }}
-              onSave={(text) => handleSavePrompt(text, (text.split(',')[0] || 'Untitled').trim().slice(0, 160), { originalPrompt: generateInput })}
+              onUse={() => {
+                if (onPromptGenerated) onPromptGenerated(generateResult);
+                if (generateNegativeResult && onNegativePromptGenerated) onNegativePromptGenerated(generateNegativeResult);
+              }}
+              onSave={(text) => handleSavePrompt(text, (text.split(',')[0] || 'Untitled').trim().slice(0, 160), { originalPrompt: generateInput, negativePrompt: generateNegativeResult })}
+              onClear={() => { setGenerateResult(''); setGenerateNegativeResult(''); }}
               generatedPrompt={generatedPrompt}
             />
           )}
@@ -968,13 +975,14 @@ const SUBJECT_OPTIONS = [
 ];
 
 function GenerateTab({
-  input, setInput, preferences, setPreferences, result, loading, copied, saving, onSubmit, onCopy, onUse, onSave, generatedPrompt,
+  input, setInput, preferences, setPreferences, result, negativeResult, loading, copied, saving, onSubmit, onCopy, onUse, onSave, onClear, generatedPrompt,
 }: {
   input: string;
   setInput: (v: string) => void;
   preferences: GeneratePreferences;
   setPreferences: (v: GeneratePreferences) => void;
   result: string;
+  negativeResult: string;
   loading: boolean;
   copied: string;
   saving: string;
@@ -982,6 +990,7 @@ function GenerateTab({
   onCopy: (text: string, id: string) => void;
   onUse: () => void;
   onSave: (text: string) => void;
+  onClear: () => void;
   generatedPrompt?: string | undefined;
 }) {
   const { t } = useTranslation();
@@ -1083,17 +1092,24 @@ function GenerateTab({
 
         {result && (
           <button
-            onClick={() => setInput(result)}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-teal-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-teal-300 transition-colors border border-slate-700"
-            title="Use result as input for another pass"
+            onClick={onClear}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-800 text-slate-400 text-xs font-medium rounded-xl hover:bg-slate-700 hover:text-white transition-colors border border-slate-700"
+            title="Clear Results"
           >
-            <ArrowUp size={14} />
-            {t('aiTools.describe.useResult')}
+            <Eraser size={14} />
+            {t('aiTools.improve.clear')}
           </button>
         )}
       </div>
 
-      {result && <PromptResult text={result} id="generate" copied={copied} saving={saving} onCopy={onCopy} onUse={onUse} onSave={() => onSave(result)} />}
+      {result && (
+        <div className="space-y-4">
+          <PromptResult text={result} id="generate" copied={copied} saving={saving} onCopy={onCopy} onUse={onUse} onSave={() => onSave(result)} label="Positive Prompt" />
+          {negativeResult && (
+            <PromptResult text={negativeResult} id="generate-neg" copied={copied} saving={saving} onCopy={onCopy} onUse={() => { }} onSave={() => onSave(negativeResult)} label="Negative Prompt" />
+          )}
+        </div>
+      )}
     </div>
   );
 }

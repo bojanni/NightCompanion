@@ -7,7 +7,7 @@ import { useCharacters } from '../hooks/useCharacters';
 import { supabase } from '../lib/supabase';
 
 interface MagicPromptInputProps {
-    onGenerate: (prompt: string) => void;
+    onGenerate: (prompt: string, negativePrompt?: string) => void;
     maxWords: number;
     className?: string;
     greylist: string[];
@@ -37,7 +37,7 @@ export default function MagicPromptInput({ onGenerate, maxWords, className, grey
                 const { data } = await supabase.from('prompts').select('content').limit(5);
                 const recentPrompts = data?.map((p: { content: string }) => p.content) || [];
 
-                const generated = await generateFromDescription(
+                const result = await generateFromDescription(
                     input.trim(),
                     {
                         preferences: { maxWords: maxWords || 75, creativity: creativityLevel },
@@ -47,8 +47,8 @@ export default function MagicPromptInput({ onGenerate, maxWords, className, grey
                     token
                 );
 
-                if (generated) {
-                    onGenerate(generated);
+                if (result) {
+                    onGenerate(result.prompt, result.negativePrompt);
                     toast.success('Prompt expanded successfully!');
                 }
             } catch (err: unknown) {

@@ -26,7 +26,7 @@ const SYSTEM_PROMPTS = {
 
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. ${LANGUAGE_INSTRUCTION} Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
-    generate: `${BASE_PERSONA}\n\nTask: Transform the description into a technical NightCafe prompt. Return ONLY the prompt text.\nCRITICAL: Keep the generated prompt under 1500 characters.`,
+    generate: `${BASE_PERSONA}\n\nTask: Transform the description into technical NightCafe prompts. Return BOTH a positive prompt and a matching negative prompt. ${LANGUAGE_INSTRUCTION}\nReturn ONLY valid JSON: { "prompt": "...", "negativePrompt": "..." }.\nCRITICAL: Keep the generated positive prompt under 1500 characters and the negative prompt under 600 characters.`,
 
     diagnose: `You are an AI troubleshooting expert. Analyze failed prompts. Provide: 1. Likely cause. 2. 3 fixes. 3. Improved prompt. ${LANGUAGE_INSTRUCTION} Format as JSON: { cause, fixes[], improvedPrompt }. CRITICAL: Keep 'improvedPrompt' under 1500 characters.`,
 
@@ -906,7 +906,7 @@ router.post('/', async (req, res) => {
 
         // Parse JSON if needed (for actions that return JSON)
         let parsedResult = result;
-        if (['analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'improve-with-negative', 'generate-variations', 'describe-character', 'random', 'optimize-for-model'].includes(action)) {
+        if (['generate', 'analyze-style', 'diagnose', 'recommend-models', 'improve-detailed', 'improve-with-negative', 'generate-variations', 'describe-character', 'random', 'optimize-for-model'].includes(action)) {
             try {
                 let jsonStr = result;
                 // Attempt to find JSON within markdown code blocks first
