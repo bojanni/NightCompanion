@@ -871,6 +871,9 @@ router.post('/', async (req, res) => {
 
         const { content: result, usage } = await callAI(provider, systemPrompt, userPrompt, maxTokens, temperature);
 
+        const promptTokens = usage?.prompt_tokens || 0;
+        const completionTokens = usage?.completion_tokens || 0;
+
         if (isLoggingEnabled) {
             logger.info(`[API Response <- ${action}] Usage: ${JSON.stringify(usage)}`);
             logger.info(`[API Response Content]: ${result}`);

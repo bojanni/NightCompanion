@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Activity, ChevronDown, ChevronUp, RefreshCw, X } from 'lucide-react';
 import { useSessionStats } from '../context/SessionStatsContext';
 import { useUsageStats } from '../hooks/useUsageStats';
+import { useUsageDashboard } from '../hooks/useUsage';
 
 type Period = 'today' | 'week' | 'month' | 'all' | 'custom';
 
@@ -57,9 +58,14 @@ export default function SidebarCostWidget({ collapsed }: Props) {
     );
 
     const { data, loading, reload } = useUsageStats(from, to);
+    const { data: dashboardData } = useUsageDashboard();
 
     const sessionCost = stats.estimatedCostUsd;
     const sessionTokens = stats.promptTokens + stats.completionTokens;
+
+    const todayCost = dashboardData?.totals?.today_cost_usd || 0;
+    const todayCalls = dashboardData?.providers?.reduce((sum, p) => sum + p.today.requests, 0) || 0;
+    const todayTokens = dashboardData?.providers?.reduce((sum, p) => sum + p.today.prompt_tokens + p.today.completion_tokens, 0) || 0;
 
     const PERIOD_LABELS: Record<Period, string> = {
         today: 'Today',
@@ -89,16 +95,30 @@ export default function SidebarCostWidget({ collapsed }: Props) {
                 className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 transition-all group"
             >
                 <Activity size={14} className="text-amber-500 shrink-0" />
-                <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-slate-300">
-                            {stats.calls} call{stats.calls !== 1 ? 's' : ''} · {fmtTokens(sessionTokens)} tok
-                        </span>
-                        <span className="text-[11px] font-bold text-amber-400 tabular-nums">
-                            {fmt(sessionCost)}
-                        </span>
+                <div className="flex-1 min-w-0 text-left space-y-1">
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-slate-300">
+                                {stats.calls} call{stats.calls !== 1 ? 's' : ''} · {fmtTokens(sessionTokens)} tok
+                            </span>
+                            <span className="text-[11px] font-bold text-amber-400 tabular-nums">
+                                {fmt(sessionCost)}
+                            </span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">Session usage</span>
                     </div>
-                    <span className="text-[9px] text-slate-500 uppercase tracking-wide">Session usage</span>
+
+                    <div className="border-t border-slate-700/50 pt-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-slate-400">
+                                {todayCalls} call{todayCalls !== 1 ? 's' : ''} · {fmtTokens(todayTokens)} tok
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-400 tabular-nums">
+                                {fmt(todayCost)}
+                            </span>
+                        </div>
+                        <span className="text-[9px] text-slate-500 uppercase tracking-wide">Daily usage</span>
+                    </div>
                 </div>
                 {open
                     ? <ChevronUp size={12} className="text-slate-500 shrink-0" />
