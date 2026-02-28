@@ -57,7 +57,6 @@ export default function MagicPromptInput({ onPromptGenerated, maxWords, classNam
 
             if (result) {
                 onPromptGenerated(result);
-                setInput('');
                 toast.success('Prompt expanded successfully!');
             }
         } catch (err) {
