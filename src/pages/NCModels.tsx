@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Search, Zap, Filter, ArrowUpDown, Loader2 } from 'lucide-react';
+import { Search, Zap, Filter, ArrowUpDown, Loader2, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../lib/constants';
+import { toast } from 'sonner';
 
 interface NCModel {
   id: number;
@@ -38,6 +39,8 @@ export default function NCModels() {
   const [models, setModels] = useState<NCModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncTrigger, setSyncTrigger] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,7 +92,34 @@ export default function NCModels() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [searchTerm, typeFilter, costFilter, sortBy, sortOrder]);
+  }, [searchTerm, typeFilter, costFilter, sortBy, sortOrder, syncTrigger]);
+
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch(`${API_BASE_URL}/api/nc-models/sync`, {
+        method: 'POST',
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to sync models');
+      }
+      
+      if (data.inserted > 0 || data.updated > 0 || data.deleted > 0) {
+        toast.success(`Sync compleet: ${data.inserted} toegevoegd, ${data.updated} bewerkt, ${data.deleted} verwijderd.`);
+        setSyncTrigger(prev => prev + 1); // Trigger reload
+      } else {
+        toast.info('Geen wijzigingen gevonden. Modellen zijn up-to-date.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Fout bij synchroniseren van modellen.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const costStr = (level: number) => '$'.repeat(level);
   const isPro = (level: number) => level >= 4;
@@ -105,15 +135,25 @@ export default function NCModels() {
           <p className="text-slate-400 mt-1 text-sm">Comprehensive guide to all available models and their capabilities.</p>
         </div>
 
-        <div className="relative w-full sm:w-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-          <input
-            type="text"
-            placeholder="Search models..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-64 pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all"
-          />
+        <div className="flex w-full sm:w-auto gap-2">
+          <div className="relative flex-1 sm:flex-initial">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <input
+              type="text"
+              placeholder="Search models..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64 pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all"
+            />
+          </div>
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-medium text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {isSyncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+            Sync
+          </button>
         </div>
       </div>
 

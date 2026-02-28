@@ -6,7 +6,7 @@ const logger = require('../lib/logger');
 
 // Check if CSV file exists
 function csvFileExists() {
-  const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
+  const csvPath = path.join(__dirname, '..', 'csv', 'nightcafe_models_compleet.csv');
   return fs.existsSync(csvPath);
 }
 
@@ -15,7 +15,7 @@ async function importModels(force = false) {
   // Skip if CSV doesn't exist
   if (!csvFileExists()) {
     logger.info('⚠️  CSV file not found, skipping NC models import');
-    return;
+    return { inserted: 0, updated: 0, deleted: 0, total: 0 };
   }
   
   // Using pool from ../db.js so it handles proper authentication parameters
@@ -50,7 +50,7 @@ async function importModels(force = false) {
     logger.info('✓ Created indexes');
 
     // Read and parse CSV
-    const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
+    const csvPath = path.join(__dirname, '..', 'csv', 'nightcafe_models_compleet.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvContent.trim().split('\n');
     
@@ -150,7 +150,7 @@ async function importModels(force = false) {
 
     if (toInsert.length === 0 && toUpdate.length === 0 && toDelete.length === 0) {
       logger.info('✓ No changes found. NC Models match DB exactly.');
-      return;
+      return { inserted: 0, updated: 0, deleted: 0, total: existingResult.rowCount };
     }
 
     logger.info(`✓ Sync evaluation: ${toInsert.length} new, ${toUpdate.length} updated, ${toDelete.length} deleted.`);
@@ -213,6 +213,12 @@ async function importModels(force = false) {
     const result = await pool.query('SELECT COUNT(*) as count FROM nc_models');
     logger.info(`✓ Database now has ${result.rows[0].count} total models`);
 
+    return {
+      inserted: toInsert.length,
+      updated: toUpdate.length,
+      deleted: toDelete.length,
+      total: parseInt(result.rows[0].count)
+    };
 
   } catch (error) {
     logger.error('Error:', error.message);

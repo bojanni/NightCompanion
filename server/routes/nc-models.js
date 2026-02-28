@@ -5,7 +5,7 @@ const path = require('path');
 
 // Function to parse CSV file
 function parseCSV() {
-  const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
+  const csvPath = path.join(__dirname, '..', 'csv', 'nightcafe_models_compleet.csv');
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
   const lines = csvContent.trim().split('\n');
   
@@ -128,24 +128,6 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// GET /api/nc-models/:id - Get single model by ID
-router.get('/:id', async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const allModels = parseCSV();
-    const model = allModels.find(m => m.id === parseInt(id));
-    
-    if (!model) {
-      return res.status(404).json({ error: 'Model not found' });
-    }
-    
-    res.json(model);
-  } catch (err) {
-    console.error('Error fetching nc_model:', err);
-    next(err);
-  }
-});
-
 // GET /api/nc-models/stats/summary - Get model statistics
 router.get('/stats/summary', async (req, res, next) => {
   try {
@@ -192,5 +174,50 @@ router.get('/stats/summary', async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/nc-models/sync - Sync models from CSV to database
+router.post('/sync', async (req, res, next) => {
+  try {
+    // Basic localhost restriction
+    const clientIp = req.socket.remoteAddress;
+    const isLocalhost = clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === '::ffff:127.0.0.1';
+    
+    if (!isLocalhost && process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Sync can only be triggered from localhost' });
+    }
+
+    const { importModels } = require('../scripts/import_nc_models');
+    const stats = await importModels(true);
+    
+    res.json({ 
+      success: true, 
+      message: 'Sync completed',
+      ...stats
+    });
+  } catch (err) {
+    console.error('Error syncing models:', err);
+    next(err);
+  }
+});
+
+// GET /api/nc-models/:id - Get single model by ID
+router.get('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const allModels = parseCSV();
+    const model = allModels.find(m => m.id === parseInt(id));
+    
+    if (!model) {
+      return res.status(404).json({ error: 'Model not found' });
+    }
+    
+    res.json(model);
+  } catch (err) {
+    console.error('Error fetching nc_model:', err);
+    next(err);
+  }
+});
+
+
 
 module.exports = router;
