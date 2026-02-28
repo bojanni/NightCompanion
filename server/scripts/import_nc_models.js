@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { pool } = require('../db');
+const logger = require('../lib/logger');
 
 // Check if CSV file exists
 function csvFileExists() {
@@ -13,7 +14,7 @@ function csvFileExists() {
 async function importModels(force = false) {
   // Skip if CSV doesn't exist
   if (!csvFileExists()) {
-    console.log('⚠️  CSV file not found, skipping NC models import');
+    logger.info('⚠️  CSV file not found, skipping NC models import');
     return;
   }
   
@@ -38,7 +39,7 @@ async function importModels(force = false) {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('✓ Created nc_models table');
+    logger.info('✓ Created nc_models table');
 
     // Create indexes for filtering
     await pool.query(`
@@ -46,7 +47,7 @@ async function importModels(force = false) {
       CREATE INDEX IF NOT EXISTS idx_nc_models_cost ON nc_models(cost_level);
       CREATE INDEX IF NOT EXISTS idx_nc_models_art ON nc_models(art_rating);
     `);
-    console.log('✓ Created indexes');
+    logger.info('✓ Created indexes');
 
     // Read and parse CSV
     const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
@@ -55,7 +56,7 @@ async function importModels(force = false) {
     
     // Skip header
     const headers = lines[0].split(',');
-    console.log(`✓ Found ${lines.length - 1} models in CSV`);
+    logger.info(`✓ Found ${lines.length - 1} models in CSV`);
 
     // Parse each line
     const models = [];
@@ -109,7 +110,7 @@ async function importModels(force = false) {
       }
     }
 
-    console.log(`✓ Parsed ${models.length} models from CSV`);
+    logger.info(`✓ Parsed ${models.length} models from CSV`);
 
     // Get existing models
     const existingResult = await pool.query('SELECT name, description, art_rating, prompting_rating, realism_rating, typography_rating, cost_level, model_type FROM nc_models');
@@ -148,14 +149,14 @@ async function importModels(force = false) {
     }
 
     if (toInsert.length === 0 && toUpdate.length === 0 && toDelete.length === 0) {
-      console.log('✓ No changes found. NC Models match DB exactly.');
+      logger.info('✓ No changes found. NC Models match DB exactly.');
       return;
     }
 
-    console.log(`✓ Sync evaluation: ${toInsert.length} new, ${toUpdate.length} updated, ${toDelete.length} deleted.`);
+    logger.info(`✓ Sync evaluation: ${toInsert.length} new, ${toUpdate.length} updated, ${toDelete.length} deleted.`);
 
     if (toInsert.length > 0) {
-      console.log(`+ Added models: ${toInsert.map(m => m.name).join(', ')}`);
+      logger.info(`+ Added models: ${toInsert.map(m => m.name).join(', ')}`);
       const batchSize = 20;
       for (let i = 0; i < toInsert.length; i += batchSize) {
         const batch = toInsert.slice(i, i + batchSize);
@@ -185,7 +186,7 @@ async function importModels(force = false) {
     }
 
     if (toUpdate.length > 0) {
-      console.log(`~ Updated models: ${toUpdate.map(m => m.name).join(', ')}`);
+      logger.info(`~ Updated models: ${toUpdate.map(m => m.name).join(', ')}`);
       for (const model of toUpdate) {
           await pool.query(`
             UPDATE nc_models SET 
@@ -202,7 +203,7 @@ async function importModels(force = false) {
     }
     
     if (toDelete.length > 0) {
-      console.log(`- Deleted models: ${toDelete.join(', ')}`);
+      logger.info(`- Deleted models: ${toDelete.join(', ')}`);
       for (const name of toDelete) {
         await pool.query('DELETE FROM nc_models WHERE name = $1', [name]);
       }
@@ -210,11 +211,11 @@ async function importModels(force = false) {
 
     // Verify
     const result = await pool.query('SELECT COUNT(*) as count FROM nc_models');
-    console.log(`✓ Database now has ${result.rows[0].count} total models`);
+    logger.info(`✓ Database now has ${result.rows[0].count} total models`);
 
 
   } catch (error) {
-    console.error('Error:', error.message);
+    logger.error('Error:', error.message);
     throw error;
   }
 }
@@ -225,14 +226,14 @@ async function main() {
   if (process.env.CONFIRM_IMPORT === 'true') {
     await importModels(true);
   } else {
-    console.log('⚠️  This script will SYNC the nc_models table based on the CSV data.');
-    console.log('');
-    console.log('To force an import regardless of differences, run with:');
-    console.log('  CONFIRM_IMPORT=true node server/scripts/import_nc_models.js');
-    console.log('');
-    console.log('Or add to your .env file:');
-    console.log('  CONFIRM_IMPORT=true');
-    console.log('Otherwise the sync is evaluated at server startup.');
+    logger.info('⚠️  This script will SYNC the nc_models table based on the CSV data.');
+    logger.info('');
+    logger.info('To force an import regardless of differences, run with:');
+    logger.info('  CONFIRM_IMPORT=true node server/scripts/import_nc_models.js');
+    logger.info('');
+    logger.info('Or add to your .env file:');
+    logger.info('  CONFIRM_IMPORT=true');
+    logger.info('Otherwise the sync is evaluated at server startup.');
     process.exit(0);
   }
 }
