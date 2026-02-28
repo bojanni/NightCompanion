@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // Check if CSV file exists
 function csvFileExists() {
@@ -119,6 +120,8 @@ async function importModels(force = false) {
 
     const toInsert = [];
     const toUpdate = [];
+    const csvModelNames = new Set(models.map(m => m.name));
+    const toDelete = [];
 
     for (const model of models) {
       if (!existingModels.has(model.name)) {
@@ -141,14 +144,21 @@ async function importModels(force = false) {
       }
     }
 
-    if (toInsert.length === 0 && toUpdate.length === 0) {
-      console.log('✓ No changes found. Models match DB exactly.');
+    for (const name of existingModels.keys()) {
+      if (!csvModelNames.has(name)) {
+        toDelete.push(name);
+      }
+    }
+
+    if (toInsert.length === 0 && toUpdate.length === 0 && toDelete.length === 0) {
+      console.log('✓ No changes found. NC Models match DB exactly.');
       return;
     }
 
-    console.log(`✓ Found ${toInsert.length} new models to insert and ${toUpdate.length} existing models to update.`);
+    console.log(`✓ Sync evaluation: ${toInsert.length} new, ${toUpdate.length} updated, ${toDelete.length} deleted.`);
 
     if (toInsert.length > 0) {
+      console.log(`+ Added models: ${toInsert.map(m => m.name).join(', ')}`);
       const batchSize = 20;
       for (let i = 0; i < toInsert.length; i += batchSize) {
         const batch = toInsert.slice(i, i + batchSize);
@@ -175,10 +185,10 @@ async function importModels(force = false) {
           params
         );
       }
-      console.log(`✓ Inserted ${toInsert.length} new models`);
     }
 
     if (toUpdate.length > 0) {
+      console.log(`~ Updated models: ${toUpdate.map(m => m.name).join(', ')}`);
       for (const model of toUpdate) {
           await pool.query(`
             UPDATE nc_models SET 
@@ -192,7 +202,13 @@ async function importModels(force = false) {
             model.model_type, model.name
           ]);
       }
-      console.log(`✓ Updated ${toUpdate.length} models`);
+    }
+    
+    if (toDelete.length > 0) {
+      console.log(`- Deleted models: ${toDelete.join(', ')}`);
+      for (const name of toDelete) {
+        await pool.query('DELETE FROM nc_models WHERE name = $1', [name]);
+      }
     }
 
     // Verify
