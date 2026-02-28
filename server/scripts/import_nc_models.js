@@ -49,7 +49,7 @@ async function importModels(force = false) {
     console.log('✓ Created indexes');
 
     // Read and parse CSV
-    const csvPath = path.join(__dirname, '..', 'csv', 'nightcafe_models_compleet.csv');
+    const csvPath = path.join(__dirname, '..', '..', 'csv', 'nightcafe_models_compleet.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     const lines = csvContent.trim().split('\n');
     
