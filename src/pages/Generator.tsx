@@ -185,8 +185,9 @@ export default function Generator() {
   const [showExternalClearModal, setShowExternalClearModal] = useState(false);
   // pendingExternalAction now accepts (keepNegative: boolean)
   const [pendingExternalAction, setPendingExternalAction] = useState<((keepNegative: boolean) => void) | null>(null);
+  const [externalModalConfig, setExternalModalConfig] = useState<{title?: string, message?: React.ReactNode, fullClear?: boolean}>({});
 
-  function handleCheckExternalFields(proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) {
+  function handleCheckExternalFields(proceed: (keepNegative: boolean) => void, isLocalDirty: boolean, config?: {title?: string, message?: React.ReactNode, fullClear?: boolean}) {
     const isExternalDirty = aiToolsRef.current?.hasContent();
 
     if (!isLocalDirty && !isExternalDirty) {
@@ -195,6 +196,7 @@ export default function Generator() {
       return;
     }
 
+    setExternalModalConfig(config || { fullClear: true });
     // Show Unified ChoiceModal
     setPendingExternalAction(() => proceed);
     setShowExternalClearModal(true);
@@ -479,11 +481,13 @@ export default function Generator() {
               greylist={greylist}
               onCheckBeforeGenerate={(proceed) => {
                 const isLocalDirty = randomPrompt.trim().length > 0;
-                // For magic prompt input, we might want to preserve the negative prompt,
-                // but standard behaviour of "Proceed" clears everything.
                 handleCheckExternalFields(() => {
                   proceed();
-                }, isLocalDirty);
+                }, isLocalDirty, {
+                  title: 'Do you want to proceed?',
+                  message: 'All other fields will be cleared to make room for your new prompt.',
+                  fullClear: false
+                });
               }}
             />
           }
@@ -601,14 +605,25 @@ export default function Generator() {
           setShowExternalClearModal(false);
           setPendingExternalAction(null);
         }}
-        title={t('generator.modals.notEmptyTitle')}
-        message={t('generator.modals.notEmptyMsg')}
+        title={externalModalConfig.title || t('generator.modals.notEmptyTitle')}
+        message={externalModalConfig.message || t('generator.modals.notEmptyMsg')}
         choices={[
           {
             label: t('generator.buttons.proceed'),
             onClick: async () => {
-              // Clear EVERYTHING before proceeding
-              handleClearAll();
+              if (externalModalConfig.fullClear !== false) {
+                // Clear EVERYTHING before proceeding
+                handleClearAll();
+              } else {
+                // Partial clear for Magic AI Expansion - keep MagicPromptInput intact
+                if (aiToolsRef.current) {
+                  aiToolsRef.current.clearContent();
+                }
+                setGuidedInitial('');
+                setRandomPrompt('');
+                if (mode !== 'manual') setRandomNegativePrompt('');
+              }
+
               if (pendingExternalAction) await pendingExternalAction(false); // keepNegative = false
               setShowExternalClearModal(false);
               setPendingExternalAction(null);
