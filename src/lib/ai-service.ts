@@ -112,6 +112,10 @@ export interface DetailedImprovement {
 export interface ApiPreferences {
   provider: string;
   model?: string;
+  pricing?: {
+    prompt: string | number;
+    completion: string | number;
+  };
 }
 
 export async function improvePromptDetailed(

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Wrench, Clock, ChevronLeft, ChevronRight,
   LayoutDashboard, Wand2, Sparkles, Users, Image as ImageIcon,
-  Compass, FlaskConical, Fingerprint, Settings, Flame,
+  Compass, FlaskConical, Fingerprint, Settings,
   Moon, Sun, BarChart2, Loader2, Info, Download, Wifi, WifiOff
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -104,8 +104,8 @@ export default function Layout() {
 
         <div className={`px-6 py-5 border-b border-slate-800 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
-              <Flame size={20} className="text-white" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+              <img src="/logo.webp" alt="Nightcafe Companion Logo" className="w-full h-full object-contain" />
             </div>
             {!collapsed && (
               <div className="min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
