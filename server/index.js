@@ -129,7 +129,7 @@ app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || 'http://localhost:5173');
   res.flushHeaders();
 
   // Stuur ping elke 30 seconden
@@ -180,6 +180,9 @@ initSchema().then(async () => {
     logger.warn('⚠️  NC models import failed (non-fatal):', err.message);
   }
   
+  // Error handling middleware should be the last app.use()
+  app.use(errorMiddleware);
+  
   app.listen(port, () => {
     logger.info(`✅ Server running on http://localhost:${port}`);
   });
@@ -187,6 +190,3 @@ initSchema().then(async () => {
   logger.error('❌ Failed to initialize database:', err);
   process.exit(1);
 });
-
-// Error handling middleware should be the last app.use()
-app.use(errorMiddleware);

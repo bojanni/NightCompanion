@@ -3,9 +3,25 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 
+let cachedModels = null;
+let lastModifiedTime = 0;
+
 // Function to parse CSV file
 function parseCSV() {
   const csvPath = path.join(__dirname, '..', 'csv', 'nightcafe_models_compleet.csv');
+  
+  try {
+    const stats = fs.statSync(csvPath);
+    if (cachedModels && stats.mtimeMs <= lastModifiedTime) {
+      return cachedModels;
+    }
+    lastModifiedTime = stats.mtimeMs;
+  } catch (err) {
+    // If stat fails (e.g. file deleted), but we have cache, return cache
+    if (cachedModels) return cachedModels;
+    return [];
+  }
+
   const csvContent = fs.readFileSync(csvPath, 'utf-8');
   const lines = csvContent.trim().split('\n');
   
@@ -61,6 +77,7 @@ function parseCSV() {
       });
     }
   }
+  cachedModels = models;
   return models;
 }
 

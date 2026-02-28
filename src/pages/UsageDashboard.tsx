@@ -3,13 +3,14 @@ import {
     BarChart2, Activity, Settings, AlertTriangle,
     TrendingUp, CreditCard, Clock, Zap, Target, LucideIcon
 } from 'lucide-react';
-import { useUsageDashboard, useUpdateBudget } from '../hooks/useUsage';
+import { useUsageDashboard, useUpdateBudget, useUsageHistory } from '../hooks/useUsage';
 import { toast } from 'sonner';
-// import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { ProviderUsage, BudgetSettings } from '../types/usage';
 
 export default function UsageDashboard() {
     const { data: usage, isLoading, error } = useUsageDashboard();
+    const { data: historyData, isLoading: historyLoading } = useUsageHistory('all', '30d');
     const [showBudgetModal, setShowBudgetModal] = useState(false);
 
     // Default loading view
@@ -127,6 +128,55 @@ export default function UsageDashboard() {
                         ? `Warning: Projected to end month at $${Number(budget.projected_month_end_usd || 0).toFixed(2)} based on current velocity.`
                         : `Projected to end month at $${Number(budget.projected_month_end_usd || 0).toFixed(2)}.`}
                 </p>
+            </div>
+
+            {/* Usage History Chart */}
+            <h3 className="text-xl font-bold text-white mt-12 mb-6">30-Day Cost History</h3>
+            <div className="p-6 rounded-2xl border bg-slate-900/40 border-slate-800 h-80">
+                {historyLoading ? (
+                    <div className="w-full h-full flex items-center justify-center text-slate-500">
+                        <Activity className="animate-spin mr-3" size={24} /> Loading chart...
+                    </div>
+                ) : historyData && historyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={historyData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                            <XAxis 
+                                dataKey="date" 
+                                stroke="#94a3b8" 
+                                tickFormatter={(val: string | number) => {
+                                    const d = new Date(val);
+                                    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                }}
+                                tick={{ fontSize: 12 }}
+                                tickMargin={10}
+                            />
+                            <YAxis 
+                                stroke="#94a3b8" 
+                                tickFormatter={(val: string | number) => `$${Number(val).toFixed(2)}`} 
+                                tick={{ fontSize: 12 }}
+                            />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '0.5rem' }}
+                                itemStyle={{ color: '#2dd4bf', fontWeight: 'bold' }}
+                                formatter={(value: number) => [`$${Number(value).toFixed(2)}`, 'Cost']}
+                                labelFormatter={(label: string) => new Date(label).toLocaleDateString()}
+                            />
+                            <Line 
+                                type="monotone" 
+                                dataKey="cost_usd" 
+                                stroke="#2dd4bf" 
+                                strokeWidth={2} 
+                                dot={{ fill: '#0f172a', stroke: '#2dd4bf', strokeWidth: 2, r: 4 }}
+                                activeDot={{ r: 6, fill: '#2dd4bf', stroke: '#0f172a' }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-500">
+                        No usage history available for this period.
+                    </div>
+                )}
             </div>
 
             {/* Per-Provider Breakdowns */}

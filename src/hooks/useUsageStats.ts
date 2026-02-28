@@ -42,7 +42,7 @@ export function useUsageStats(from: string, to: string) {
             // Use the dashboard endpoint and map its shape to the simpler UsageStats
             const res = await fetch(`${API_BASE_URL}/api/usage/dashboard?${params}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json: any = await res.json();
+            const json = await res.json() as any;
 
             // Map UsageDashboardData -> UsageStats (fixing totals calculation)
             const totals = {
@@ -53,12 +53,10 @@ export function useUsageStats(from: string, to: string) {
             };
 
             // Verify totals calculation - ensure values are numbers and sum correctly
-            console.log('Usage Stats Response:', json);
-            console.log('Calculated Totals:', totals);
 
             // Flatten models across providers into breakdown rows (fixing model data mapping)
-            const breakdown = (json.providers || []).flatMap((p: any) => {
-                return (p.models || []).map((m: any) => ({
+            const breakdown = (json.providers || []).flatMap((p: Record<string, any>) => {
+                return (p.models || []).map((m: Record<string, any>) => ({
                     provider: p.provider,
                     model: m.model,
                     calls: m.requests || 0,

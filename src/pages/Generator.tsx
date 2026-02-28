@@ -474,7 +474,7 @@ export default function Generator() {
           magicInputSlot={
             <MagicPromptInput
               className="h-full"
-              onPromptGenerated={(prompt) => {
+              onGenerate={(prompt) => {
                 setRandomPrompt(prompt);
               }}
               maxWords={maxWords}
