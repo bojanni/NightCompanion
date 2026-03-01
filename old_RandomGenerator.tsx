@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { handleAIError } from '../lib/error-handler';
 import { toast } from 'sonner';
 import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser, Coins, RefreshCcw } from 'lucide-react';
@@ -30,7 +30,7 @@ interface RandomGeneratorProps {
   maxWords: number;
   initialPrompt?: string;
   initialNegativePrompt?: string;
-  onCheckExternalFields?: (proceed: (keepNegative: boolean) => void, isLocalDirty: boolean, config?: {title?: string, message?: React.ReactNode, fullClear?: boolean}) => void;
+  onCheckExternalFields?: (proceed: (keepNegative: boolean) => void, isLocalDirty: boolean) => void;
   onAiAdviceTips?: (tips: string[]) => void;
   magicInputSlot?: React.ReactNode;
   greylist: string[];
@@ -40,7 +40,6 @@ interface RandomGeneratorProps {
 
 export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, onSaved, onRequestSavePrompt, onPromptGenerated, onNegativePromptChanged, maxWords, initialPrompt, initialNegativePrompt, onCheckExternalFields, onAiAdviceTips, magicInputSlot, greylist, recentPrompts }: RandomGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt || '');
-  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState(initialPrompt || '');
   const [negativePrompt, setNegativePrompt] = useState(initialNegativePrompt || '');
   const { generate: taskGenerateModel } = useTaskModels();
 
@@ -48,7 +47,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   useEffect(() => {
     if (initialPrompt !== undefined) {
       setPrompt(initialPrompt);
-      setLastGeneratedPrompt(initialPrompt);
     }
   }, [initialPrompt]);
 
@@ -180,19 +178,11 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   }, [fetchActiveModel]);
 
   function handleGenerate() {
-    const isLocalDirty = prompt.trim().length > 0 && prompt.trim() !== lastGeneratedPrompt.trim();
+    const isLocalDirty = prompt.trim().length > 0;
     if (onCheckExternalFields) {
-      onCheckExternalFields(executeGenerate, isLocalDirty, {
-        title: 'Clear AI Draft?',
-        message: 'Generating a new prompt will clear your current AI Draft. Proceed?',
-        fullClear: false
-      });
+      onCheckExternalFields(executeGenerate, isLocalDirty);
     } else {
-      if (isLocalDirty) {
-        confirmClear(executeGenerate);
-      } else {
-        executeGenerate(false);
-      }
+      confirmClear(executeGenerate);
     }
   }
 
@@ -200,7 +190,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     const run = () => {
       const newPrompt = generateRandomPrompt(filters, greylist);
       setPrompt(newPrompt);
-      setLastGeneratedPrompt(newPrompt);
       if (!keepNegative) {
         setNegativePrompt('');
         onNegativePromptChanged?.('');
@@ -252,12 +241,12 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
 
     // Build the generation journey chain
     const journeySteps = [
-      { step: regenerating ? 'Magic Random (AI)' : 'Random', label: '🎲 Random' },
+      { step: regenerating ? 'Magic Random (AI)' : 'Random', label: '­ƒÄ▓ Random' },
     ];
-    if (generatedStyle) journeySteps.push({ step: 'Style', label: `🎨 ${generatedStyle}` });
-    if (filters.dreamy) journeySteps.push({ step: 'Filter', label: '💫 Dreamy' });
-    if (filters.characters) journeySteps.push({ step: 'Filter', label: '👤 Characters' });
-    if (filters.cinematic) journeySteps.push({ step: 'Filter', label: '🎬 Cinematic' });
+    if (generatedStyle) journeySteps.push({ step: 'Style', label: `­ƒÄ¿ ${generatedStyle}` });
+    if (filters.dreamy) journeySteps.push({ step: 'Filter', label: '­ƒÆ½ Dreamy' });
+    if (filters.characters) journeySteps.push({ step: 'Filter', label: '­ƒæñ Characters' });
+    if (filters.cinematic) journeySteps.push({ step: 'Filter', label: '­ƒÄ¼ Cinematic' });
 
     if (onRequestSavePrompt) {
       onRequestSavePrompt({
@@ -352,19 +341,11 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
     // Refresh model info before generating to ensure accuracy
     await fetchActiveModel();
 
-    const isLocalDirty = prompt.trim().length > 0 && prompt.trim() !== lastGeneratedPrompt.trim();
+    const isLocalDirty = prompt.trim().length > 0;
     if (onCheckExternalFields) {
-      onCheckExternalFields(executeMagicRandom, isLocalDirty, {
-        title: 'Clear AI Draft?',
-        message: 'Generating a new prompt will clear your current AI Draft. Proceed?',
-        fullClear: false
-      });
+      onCheckExternalFields(executeMagicRandom, isLocalDirty);
     } else {
-      if (isLocalDirty) {
-        confirmClear(executeMagicRandom);
-      } else {
-        executeMagicRandom(false);
-      }
+      confirmClear(executeMagicRandom);
     }
   }
 
@@ -384,7 +365,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
           const styleText = result.style || '';
 
           setPrompt(promptText);
-          setLastGeneratedPrompt(promptText);
           if (!keepNegative) {
             setNegativePrompt(negText); // If we clear everything, we accept the AI's new negative
             onNegativePromptChanged?.(negText);
@@ -405,7 +385,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
           onPromptGenerated(promptText);
         } else if (typeof result === 'string') {
           setPrompt(result);
-          setLastGeneratedPrompt(result);
           if (!keepNegative) {
             setNegativePrompt('');
             onNegativePromptChanged?.('');
@@ -419,7 +398,6 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
         console.error('Failed to generate random prompt:', err);
         const fallback = generateRandomPrompt(filters, greylist);
         setPrompt(fallback);
-        setLastGeneratedPrompt(fallback);
         if (!keepNegative) {
           setNegativePrompt('');
           onNegativePromptChanged?.('');
@@ -763,17 +741,17 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
                       >
                         <RefreshCcw size={10} className={loadingAiAdvice ? 'animate-spin' : ''} />
                       </button>
-                      <button onClick={() => setAiAdvice(null)} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors" title="Switch back to local heuristics">↩ Local</button>
+                      <button onClick={() => setAiAdvice(null)} className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors" title="Switch back to local heuristics">Ôå® Local</button>
                     </div>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-700/50">
-                    <span className="text-amber-400/80 mr-1">✦</span>{aiAdvice.reasoning}
+                    <span className="text-amber-400/80 mr-1">Ô£ª</span>{aiAdvice.reasoning}
                   </p>
                   {aiAdvice.tips.length > 0 && (
                     <ul className="space-y-1">
                       {aiAdvice.tips.map((tip, i) => (
                         <li key={i} className="flex items-start gap-1.5 text-[11px] text-slate-400">
-                          <span className="text-amber-500 mt-0.5 shrink-0">💡</span>{tip}
+                          <span className="text-amber-500 mt-0.5 shrink-0">­ƒÆí</span>{tip}
                         </li>
                       ))}
                     </ul>
