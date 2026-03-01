@@ -475,6 +475,7 @@ export default function Generator() {
             <MagicPromptInput
               className="h-full"
               onGenerate={(prompt, negativePrompt) => {
+                setGuidedInitial(prompt);
                 setRandomPrompt(prompt);
                 if (negativePrompt) setRandomNegativePrompt(negativePrompt);
               }}
