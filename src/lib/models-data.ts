@@ -3015,6 +3015,15 @@ export function analyzePrompt(prompt: string): { model: ModelInfo; score: number
       reasons.push('Handles complex prompts well');
     }
 
+    // Default to the standard Flux model when no prompt is provided to avoid suggesting expensive max models
+    if (prompt.trim().length === 0 && model.id === 'flux') {
+      score += 100;
+      reasons.push('Great balanced default model');
+    } else if (prompt.trim().length === 0 && model.id === 'flux-schnell') {
+      score += 50;
+      reasons.push('Fast default model');
+    }
+
     return { model, score, reasons: reasons.length > 0 ? reasons : ['General-purpose model'] };
   })
     .sort((a, b) => b.score - a.score);
