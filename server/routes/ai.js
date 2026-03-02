@@ -20,9 +20,9 @@ Key Elements of a Great Prompt:
 You must combine these elements into a single, flowing text description without using labels like 'Subject:' or lines.`;
 
 const SYSTEM_PROMPTS = {
-    improve: `You are an expert AI image prompt engineer. Improve the user's prompt by enhancing subject, style, details, and atmosphere. Return ONLY the improved prompt text. ${LANGUAGE_INSTRUCTION} CRITICAL: Keep valid prompt response under 1500 characters.`,
+    improve: `You are an expert AI image prompt engineer. Improve the user's prompt by enhancing subject, style, details, and atmosphere. IMPORTANT: You must keep the original prompt concept but improve its descriptive quality with a maximum deviation of 10% from the original prompt in intent. Return ONLY the improved prompt text. ${LANGUAGE_INSTRUCTION} CRITICAL: Keep valid prompt response under 1500 characters.`,
 
-    'improve-with-negative': `You are an expert AI image prompt engineer. Improve both the positive prompt and the negative prompt. For the positive prompt, enhance subject, style, details, and atmosphere. For the negative prompt, refine it with better exclusion terms (e.g., deformed, blurry, low quality, extra limbs, bad anatomy). ${LANGUAGE_INSTRUCTION} Return ONLY valid JSON: { "improved": "...", "negativePrompt": "..." }. CRITICAL: Limit 'improved' positive prompt to 1500 characters. Limit 'negativePrompt' to 600 characters max.`,
+    'improve-with-negative': `You are an expert AI image prompt engineer. Improve both the positive prompt and the negative prompt. For the positive prompt, enhance subject, style, details, and atmosphere. IMPORTANT: You must keep the original prompt concept but improve its descriptive quality with a maximum deviation of 10% from the original prompt in intent. For the negative prompt, refine it with better exclusion terms (e.g., deformed, blurry, low quality, extra limbs, bad anatomy). The negative prompt must be between 5 and 15 words in length. ${LANGUAGE_INSTRUCTION} Return ONLY valid JSON: { "improved": "...", "negativePrompt": "..." }. CRITICAL: Limit 'improved' positive prompt to 1500 characters. Limit 'negativePrompt' length to exactly 5-15 words.`,
 
     'analyze-style': `You are an AI art style analyst. Analyze collections of image prompts to find patterns. Provide: 1. Style profile (2-3 sentences). 2. Top 3 themes. 3. Top 3 techniques. 4. 2-3 suggestions. 5. Style signature. ${LANGUAGE_INSTRUCTION} Format response as JSON: { profile, themes[], techniques[], suggestions[], signature }.`,
 
@@ -68,15 +68,15 @@ const SYSTEM_PROMPTS = {
     ${LANGUAGE_INSTRUCTION}
     Example: "nature, landscape, mountain, blue sky, cinematic lighting"`,
 
-    'optimize-for-model': `You are an expert AI prompt engineer. Optimize the user's prompt for a specific AI model. ${LANGUAGE_INSTRUCTION}
+    'optimize-for-model': `You are an expert AI prompt engineer. Optimize the user's prompt for a specific AI model. IMPORTANT: You must keep the original prompt concept but improve its descriptive quality with a maximum deviation of 10% from the original prompt in intent. ${LANGUAGE_INSTRUCTION}
     - If the model is DALL-E 3 or any GPT-Image model (e.g. GPT1.5, GPT-4o): These do NOT support negative prompts. You MUST merge any key negative constraints (e.g. "no blur", "no text") naturally into the positive prompt formulation or ignore them if minor. Return ONLY the optimized positive prompt.
-    - If the model is Stable Diffusion / SDXL / Flux / Ideogram: You can keep negative constraints separate if provided, or refine the positive prompt to better suit the model's strengths (e.g. lighting, composition).
+    - If the model is Stable Diffusion / SDXL / Flux / Ideogram: You can keep negative constraints separate if provided, or refine the positive prompt to better suit the model's strengths (e.g. lighting, composition). The negative prompt must be between 5 and 15 words in length.
     CRITICAL: Return ONLY valid JSON: { "optimizedPrompt": "...", "negativePrompt": "..." (optional, empty if DALL-E 3/GPT) }.
-    LIMITS: Positive prompt < 1500 chars. Negative prompt < 600 chars.`,
+    LIMITS: Positive prompt < 1500 chars. Negative prompt length MUST be 5-15 words if provided.`,
 
     'generate-negative-prompt': `You are an AI assistant helping to generate negative prompts for AI art.
     RULES:
-    1. Maximum 100 words
+    1. Must be between 5 and 15 words in length
     2. Comma-separated list of unwanted characteristics
     3. Focus on technical quality issues (blurry, distorted, low quality, etc.)
     4. Avoid extreme or repetitive terms
@@ -88,8 +88,8 @@ const SYSTEM_PROMPTS = {
     - Composition: cropped, out of frame, duplicate, bad proportions
     - Rendering: oversaturated, underexposed, overexposed, amateur
 
-    Generate a negative prompt of maximum 100 words.
-    STOP after 100 words.`
+    Generate a negative prompt of between 5 and 15 words.
+    STOP after 15 words max.`
 };
 
 // ─── LLM pricing (USD per 1M tokens) ────────────────────────────────────────
