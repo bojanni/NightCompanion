@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { handleAIError } from '../lib/error-handler';
 import { toast } from 'sonner';
-import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser, Coins, RefreshCcw } from 'lucide-react';
+import { Shuffle, Copy, Check, Save, Loader2, ArrowRight, Compass, Sparkles, PenTool, Palette, Eraser, Coins, RefreshCcw, BarChart2 } from 'lucide-react';
 import ChoiceModal from './ChoiceModal';
 import { generateRandomPrompt } from '../lib/prompt-fragments';
 import { analyzePrompt, supportsNegativePrompt, getTopCandidates } from '../lib/models-data';
@@ -63,6 +63,35 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   const [generatedStyle, setGeneratedStyle] = useState<string>('');
   const [activeModel, setActiveModel] = useState<string>('');
   const [activeModelPricing, setActiveModelPricing] = useState<{ prompt: string, completion: string } | undefined>(undefined);
+
+  // Diversity State
+  const [showDiversity, setShowDiversity] = useState(false);
+  const [autoDiversityEnabled, setAutoDiversityEnabled] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nightcompanion_auto_diversity');
+      return saved === 'true';
+    } catch { return false; }
+  });
+  const [diversityContext, setDiversityContext] = useState<DiversityContext | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('nightcompanion_auto_diversity', String(autoDiversityEnabled));
+  }, [autoDiversityEnabled]);
+
+  const loadDiversity = useCallback(async () => {
+    try {
+        const ctx = await buildDiversityContext();
+        setDiversityContext(ctx);
+    } catch (e) {
+        console.error('Failed to load diversity context', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showDiversity && !diversityContext) {
+      loadDiversity();
+    }
+  }, [showDiversity, loadDiversity, diversityContext]);
 
   // Modal State
   const [showClearModal, setShowClearModal] = useState(false);
@@ -199,8 +228,12 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   }
 
   function executeGenerate(keepNegative: boolean) {
+    const computedGreylist = autoDiversityEnabled && diversityContext
+      ? Array.from(new Set([...greylist, ...diversityContext.overusedKeywords]))
+      : greylist;
+
     const run = () => {
-      const newPrompt = generateRandomPrompt(filters, greylist);
+      const newPrompt = generateRandomPrompt(filters, computedGreylist);
       setPrompt(newPrompt);
       setLastGeneratedPrompt(newPrompt);
       if (!keepNegative) {
@@ -376,13 +409,17 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
   }
 
   async function executeMagicRandom(keepNegative: boolean) {
+    const computedGreylist = autoDiversityEnabled && diversityContext
+      ? Array.from(new Set([...greylist, ...diversityContext.overusedKeywords]))
+      : greylist;
+
     const run = async () => {
       setRegenerating(true);
       setAiAdvice(null);
       localStorage.removeItem('nightcompanion_random_ai_advice');
       try {
         const token = '';
-        const result = await generateRandomPromptAI(token, undefined, maxWords, greylist, creativityLevel, recentPrompts, taskGenerateModel);
+        const result = await generateRandomPromptAI(token, undefined, maxWords, computedGreylist, creativityLevel, recentPrompts, taskGenerateModel);
 
         // result is { prompt: string, negativePrompt?: string, style?: string }
         if (result && typeof result === 'object' && 'prompt' in result) {
@@ -424,7 +461,7 @@ export default function RandomGenerator({ onSwitchToGuided, onSwitchToManual, on
       } catch (err) {
         handleAIError(err);
         console.error('Failed to generate random prompt:', err);
-        const fallback = generateRandomPrompt(filters, greylist);
+        const fallback = generateRandomPrompt(filters, computedGreylist);
         setPrompt(fallback);
         setLastGeneratedPrompt(fallback);
         if (!keepNegative) {
