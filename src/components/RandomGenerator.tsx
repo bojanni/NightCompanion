@@ -13,6 +13,8 @@ import { getDefaultModelForProvider, ModelOption } from '../lib/provider-models'
 import { estimateLLMCost } from '../lib/pricing';
 import { useTaskModels } from '../hooks/useTaskModels';
 import type { Prompt } from '../lib/types';
+import DiversityInsights from './DiversityInsights';
+import { buildDiversityContext, type DiversityContext } from '../lib/diversity-context';
 
 interface FilterState {
   dreamy: boolean;
