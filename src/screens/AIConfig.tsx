@@ -4,6 +4,21 @@ import { ConfigurationWizard } from './Settings/ConfigurationWizard'
 import { Dashboard } from './Settings/Dashboard'
 import type { ApiKeyInfo, LocalEndpoint, ModelOption } from './Settings/types'
 
+type DashboardRole = 'generation' | 'improvement' | 'vision' | 'general'
+
+interface RoleRouteSelection {
+  enabled: boolean
+  providerId: string
+  modelId: string
+}
+
+type RoleRouteState = Record<DashboardRole, RoleRouteSelection>
+
+interface ProviderOption {
+  id: string
+  label: string
+}
+
 interface ProviderMetaStore {
   model_gen: string
   model_improve: string
@@ -98,11 +113,43 @@ function migrateLegacyLocalEndpoints(rawEndpoints: LegacyLocalEndpoint[]): {
   return { endpoints: migrated, didMigrate }
 }
 
+function buildRoleDefaults(): RoleRouteState {
+  return {
+    generation: { enabled: true, providerId: '', modelId: '' },
+    improvement: { enabled: true, providerId: '', modelId: '' },
+    vision: { enabled: true, providerId: '', modelId: '' },
+    general: { enabled: true, providerId: '', modelId: '' },
+  }
+}
+
+function getLocalProviderId(endpoint: LocalEndpoint): string {
+  if (endpoint.provider) return endpoint.provider
+  const name = endpoint.name.toLowerCase()
+  if (name.includes('ollama')) return 'ollama'
+  if (name.includes('lm studio') || name.includes('lmstudio')) return 'lmstudio'
+  return endpoint.id
+}
+
+function getSourceProviderId(source?: ApiKeyInfo | LocalEndpoint): string {
+  if (!source) return ''
+  if ('apiKeyMasked' in source) return source.provider
+  return getLocalProviderId(source)
+}
+
 export function AIConfig() {
   const [view, setView] = useState<'dashboard' | 'wizard'>('dashboard')
   const [keys, setKeys] = useState<ApiKeyInfo[]>([])
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([])
   const [loading, setLoading] = useState(true)
+  const [roleRouting, setRoleRouting] = useState<RoleRouteState>(() => {
+    try {
+      const saved = localStorage.getItem('dashboardRoleRouting')
+      if (!saved) return buildRoleDefaults()
+      return { ...buildRoleDefaults(), ...(JSON.parse(saved) as Partial<RoleRouteState>) }
+    } catch {
+      return buildRoleDefaults()
+    }
+  })
 
   const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
     try {
@@ -121,6 +168,11 @@ export function AIConfig() {
       console.error('Failed to save cached models', error)
     }
   }, [dynamicModels])
+
+  useEffect(() => {
+    localStorage.setItem('dashboardRoleRouting', JSON.stringify(roleRouting))
+    localStorage.setItem('advisorModelRoute', JSON.stringify(roleRouting.general))
+  }, [roleRouting])
 
   const getToken = useCallback(async () => 'local-desktop-token', [])
 
@@ -225,6 +277,130 @@ export function AIConfig() {
   const activeResearch = activeGen
   const configuredCount = keys.length + localEndpoints.length
 
+  const providerOptions = useMemo<ProviderOption[]>(() => {
+    const cloudProviders = keys.map((key) => ({
+      id: key.provider,
+      label: key.provider,
+    }))
+
+    const localProviders = localEndpoints.map((endpoint) => {
+      const providerId = getLocalProviderId(endpoint)
+      return {
+        id: providerId,
+        label: endpoint.name,
+      }
+    })
+
+    const merged = [...cloudProviders, ...localProviders]
+    const deduped = new Map<string, ProviderOption>()
+    merged.forEach((item) => deduped.set(item.id, item))
+    return Array.from(deduped.values())
+  }, [keys, localEndpoints])
+
+  const modelsByProvider = useMemo<Record<string, string[]>>(() => {
+    const modelMap = new Map<string, Set<string>>()
+
+    keys.forEach((key) => {
+      const providerId = key.provider
+      const models = [
+        key.model_name,
+        key.model_gen,
+        key.model_improve,
+        key.model_vision,
+      ].filter(Boolean) as string[]
+
+      const dynamic = (dynamicModels[providerId] || []).map((item) => item.id)
+      const bucket = modelMap.get(providerId) || new Set<string>()
+      ;[...models, ...dynamic].forEach((model) => bucket.add(model))
+      modelMap.set(providerId, bucket)
+    })
+
+    localEndpoints.forEach((endpoint) => {
+      const providerId = getLocalProviderId(endpoint)
+      const models = [
+        endpoint.model_name,
+        endpoint.model_gen,
+        endpoint.model_improve,
+        endpoint.model_vision,
+      ].filter(Boolean) as string[]
+      const bucket = modelMap.get(providerId) || new Set<string>()
+      models.forEach((model) => bucket.add(model))
+      modelMap.set(providerId, bucket)
+    })
+
+    const out: Record<string, string[]> = {}
+    modelMap.forEach((value, key) => {
+      out[key] = Array.from(value)
+    })
+    return out
+  }, [keys, localEndpoints, dynamicModels])
+
+  useEffect(() => {
+    if (providerOptions.length === 0) return
+
+    const fallbackProviderId = providerOptions[0].id
+
+    setRoleRouting((prev) => {
+      const next = { ...prev }
+      const roleKeys: DashboardRole[] = ['generation', 'improvement', 'vision', 'general']
+      let changed = false
+
+      roleKeys.forEach((role) => {
+        const current = next[role]
+        const isProviderValid = providerOptions.some((option) => option.id === current.providerId)
+
+        const preferredProvider = role === 'generation'
+          ? getSourceProviderId(activeGen)
+          : role === 'improvement'
+            ? getSourceProviderId(activeImprove)
+            : role === 'vision'
+              ? getSourceProviderId(activeVision)
+              : ''
+
+        const providerId = isProviderValid
+          ? current.providerId
+          : preferredProvider || fallbackProviderId
+
+        const models = modelsByProvider[providerId] || []
+        const modelId = models.includes(current.modelId)
+          ? current.modelId
+          : models[0] || ''
+
+        if (providerId !== current.providerId || modelId !== current.modelId) {
+          next[role] = {
+            ...current,
+            providerId,
+            modelId,
+          }
+          changed = true
+        }
+      })
+
+      return changed ? next : prev
+    })
+  }, [providerOptions, modelsByProvider, activeGen, activeImprove, activeVision])
+
+  const updateRoleRouting = useCallback((role: DashboardRole, patch: Partial<RoleRouteSelection>) => {
+    setRoleRouting((prev) => {
+      const current = prev[role]
+      const nextProvider = patch.providerId ?? current.providerId
+      const nextModel = patch.modelId ?? current.modelId
+
+      const shouldPickDefaultModel = Object.prototype.hasOwnProperty.call(patch, 'providerId') && !patch.modelId
+      const defaultModel = shouldPickDefaultModel ? (modelsByProvider[nextProvider] || [])[0] || '' : nextModel
+
+      return {
+        ...prev,
+        [role]: {
+          ...current,
+          ...patch,
+          providerId: nextProvider,
+          modelId: defaultModel,
+        },
+      }
+    })
+  }, [modelsByProvider])
+
   if (loading && keys.length === 0 && localEndpoints.length === 0) {
     return (
       <div className="no-drag-region h-full flex items-center justify-center">
@@ -249,6 +425,10 @@ export function AIConfig() {
           setDynamicModels={setDynamicModels}
           onRefreshData={refreshData}
           getToken={getToken}
+          providerOptions={providerOptions}
+          modelsByProvider={modelsByProvider}
+          roleRouting={roleRouting}
+          onChangeRoleRouting={updateRoleRouting}
         />
       ) : (
         <ConfigurationWizard

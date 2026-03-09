@@ -1,6 +1,19 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { ApiKeyInfo, LocalEndpoint, ModelOption } from './types'
 
+type DashboardRole = 'generation' | 'improvement' | 'vision' | 'general'
+
+interface RoleRouteSelection {
+  enabled: boolean
+  providerId: string
+  modelId: string
+}
+
+interface ProviderOption {
+  id: string
+  label: string
+}
+
 interface DashboardProps {
   activeGen?: ApiKeyInfo | LocalEndpoint
   activeImprove?: ApiKeyInfo | LocalEndpoint
@@ -14,12 +27,16 @@ interface DashboardProps {
   setDynamicModels: Dispatch<SetStateAction<Record<string, ModelOption[]>>>
   onRefreshData: () => Promise<void>
   getToken: () => Promise<string>
+  providerOptions: ProviderOption[]
+  modelsByProvider: Record<string, string[]>
+  roleRouting: Record<DashboardRole, RoleRouteSelection>
+  onChangeRoleRouting: (role: DashboardRole, patch: Partial<RoleRouteSelection>) => void
 }
 
 function formatProvider(source?: ApiKeyInfo | LocalEndpoint) {
   if (!source) return 'Not configured'
-  if ('provider' in source && source.provider) return `${source.provider} (${source.model_name})`
-  return `${source.name} (${source.model_name})`
+  if ('name' in source) return `${source.name} (${source.model_name})`
+  return `${source.provider} (${source.model_name})`
 }
 
 export function Dashboard({
@@ -35,6 +52,10 @@ export function Dashboard({
   setDynamicModels,
   onRefreshData,
   getToken,
+  providerOptions,
+  modelsByProvider,
+  roleRouting,
+  onChangeRoleRouting,
 }: DashboardProps) {
   void setDynamicModels
   void getToken
@@ -59,6 +80,48 @@ export function Dashboard({
         <button className="btn-ghost border border-night-600/50" onClick={onRefreshData}>Refresh data</button>
         <span className="text-xs text-night-500">Geconfigureerde bronnen: {configuredCount}</span>
         <span className="text-xs text-night-500">Modelgroepen in cache: {modelGroups}</span>
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Role Routing</h2>
+          <p className="text-xs text-night-400 mt-1">Select provider, model, and enabled state for generation, improvement, vision, and general advice.</p>
+        </div>
+
+        <div className="grid gap-3">
+          <RoleRouteRow
+            role="generation"
+            label="Generation"
+            value={roleRouting.generation}
+            providerOptions={providerOptions}
+            modelOptions={modelsByProvider[roleRouting.generation.providerId] || []}
+            onChange={onChangeRoleRouting}
+          />
+          <RoleRouteRow
+            role="improvement"
+            label="Improvement"
+            value={roleRouting.improvement}
+            providerOptions={providerOptions}
+            modelOptions={modelsByProvider[roleRouting.improvement.providerId] || []}
+            onChange={onChangeRoleRouting}
+          />
+          <RoleRouteRow
+            role="vision"
+            label="Vision"
+            value={roleRouting.vision}
+            providerOptions={providerOptions}
+            modelOptions={modelsByProvider[roleRouting.vision.providerId] || []}
+            onChange={onChangeRoleRouting}
+          />
+          <RoleRouteRow
+            role="general"
+            label="General"
+            value={roleRouting.general}
+            providerOptions={providerOptions}
+            modelOptions={modelsByProvider[roleRouting.general.providerId] || []}
+            onChange={onChangeRoleRouting}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -90,6 +153,59 @@ export function Dashboard({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function RoleRouteRow({
+  role,
+  label,
+  value,
+  providerOptions,
+  modelOptions,
+  onChange,
+}: {
+  role: DashboardRole
+  label: string
+  value: RoleRouteSelection
+  providerOptions: ProviderOption[]
+  modelOptions: string[]
+  onChange: (role: DashboardRole, patch: Partial<RoleRouteSelection>) => void
+}) {
+  return (
+    <div className="rounded-lg border border-night-600/50 p-3 bg-night-900/40 grid gap-3 md:grid-cols-[140px_120px_1fr_1fr] md:items-center">
+      <p className="text-sm text-night-100 font-medium">{label}</p>
+
+      <label className="inline-flex items-center gap-2 text-xs text-night-300">
+        <input
+          type="checkbox"
+          checked={value.enabled}
+          onChange={(event) => onChange(role, { enabled: event.target.checked })}
+        />
+        Enabled
+      </label>
+
+      <select
+        className="input"
+        value={value.providerId}
+        onChange={(event) => onChange(role, { providerId: event.target.value, modelId: '' })}
+        aria-label={`${label} provider`}
+      >
+        {providerOptions.map((provider) => (
+          <option key={provider.id} value={provider.id}>{provider.label}</option>
+        ))}
+      </select>
+
+      <select
+        className="input"
+        value={value.modelId}
+        onChange={(event) => onChange(role, { modelId: event.target.value })}
+        aria-label={`${label} model`}
+      >
+        {modelOptions.map((model) => (
+          <option key={model} value={model}>{model}</option>
+        ))}
+      </select>
     </div>
   )
 }
