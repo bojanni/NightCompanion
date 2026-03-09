@@ -24,3 +24,13 @@
 - Findings: User requested to remove `dev:vite` from the startup flow.
 - Conclusions: Desktop startup should remain single-command and avoid exposing separate browser-first script usage.
 - Actions: Refactored scripts so `electron:dev` runs `concurrently "vite" "npm run dev:electron"`, set `dev` and `desktop:dev` to `electron:dev`, and removed the `dev:vite` script entry.
+
+## 2026-03-09 (Generator Not Visible Root Cause)
+- Findings: Vite auto-switched to port `5174` because `5173` was already in use; Electron still targets `http://localhost:5173`.
+- Conclusions: This can make Electron load an older/stale dev server and hide new UI changes like the Generator page.
+- Actions: Updated `electron:dev` to `vite --port 5173 --strictPort` so port mismatch cannot happen silently.
+
+## 2026-03-09 (Port Access Workaround)
+- Findings: Existing process on `5173` could not be terminated due to access denied.
+- Conclusions: Use an isolated desktop-dev port to avoid conflicts with stale/privileged processes.
+- Actions: Switched desktop dev port from `5173` to `5187` in `package.json` (`electron:dev`, `dev:electron`) and `electron/main.ts` dev `loadURL`.
