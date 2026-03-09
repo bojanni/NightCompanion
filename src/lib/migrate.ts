@@ -3,11 +3,13 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 
-const connectionString = process.env.DATABASE_URL
+const envConnectionString = process.env.DATABASE_URL
 
-if (!connectionString) {
+if (!envConnectionString) {
   throw new Error('DATABASE_URL environment variable is not set')
 }
+
+const connectionString = envConnectionString
 
 function quoteIdentifier(value: string) {
   return `"${value.replace(/"/g, '""')}"`
@@ -36,6 +38,8 @@ async function ensureDatabaseExists() {
   const adminClient = postgres(adminConnectionString, { max: 1 })
 
   try {
+    console.log(`Using database "${dbName}" from DATABASE_URL`)
+
     const existing = await adminClient`
       SELECT 1
       FROM pg_database
@@ -56,7 +60,7 @@ async function ensureDatabaseExists() {
 async function runMigrations() {
   await ensureDatabaseExists()
 
-  const client = postgres(connectionString!, { max: 1 })
+  const client = postgres(connectionString, { max: 1 })
   const db = drizzle(client)
 
   console.log('Running migrations...')
