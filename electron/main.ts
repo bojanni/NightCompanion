@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
+import { mkdirSync } from 'fs'
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
@@ -9,6 +10,16 @@ import { eq, desc, and, or, ilike, sql } from 'drizzle-orm'
 import * as schema from '../src/lib/schema'
 import { prompts, styleProfiles, generationLog } from '../src/lib/schema'
 import type { NewPrompt, NewStyleProfile, NewGenerationEntry } from '../src/lib/schema'
+
+// Keep Chromium disk caches in a writable temp location to avoid Windows access-denied startup errors.
+const sessionDataPath = path.join(app.getPath('temp'), 'NightCompanion', 'session-data')
+try {
+  mkdirSync(sessionDataPath, { recursive: true })
+  app.setPath('sessionData', sessionDataPath)
+  app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
+} catch (error) {
+  console.warn('Could not set custom sessionData path:', error)
+}
 
 // ─── Database ─────────────────────────────────────────────────────────────────
 
