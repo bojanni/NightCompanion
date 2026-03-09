@@ -61,6 +61,37 @@ const TABS: { id: Tab; labelKey: string; icon: typeof Sparkles; descKey: string 
 
 const AITOOLS_STORAGE_KEY = 'nightcompanion_aitools_state';
 
+// Cache for analyzePrompt results
+const analyzePromptCache = new Map<string, { model: ModelInfo; score: number; reasons: string[] }[]>();
+const CACHE_MAX_SIZE = 100;
+
+// Cached version of analyzePrompt with LRU eviction
+function getCachedAnalyzePrompt(prompt: string): { model: ModelInfo; score: number; reasons: string[] }[] {
+  const cacheKey = prompt.toLowerCase().trim();
+  
+  if (analyzePromptCache.has(cacheKey)) {
+    // Move to end (LRU)
+    const result = analyzePromptCache.get(cacheKey)!;
+    analyzePromptCache.delete(cacheKey);
+    analyzePromptCache.set(cacheKey, result);
+    return result;
+  }
+  
+  // Compute and cache
+  const result = analyzePrompt(prompt);
+  
+  // Evict oldest if cache is full
+  if (analyzePromptCache.size >= CACHE_MAX_SIZE) {
+    const firstKey = analyzePromptCache.keys().next().value;
+    if (firstKey !== undefined) {
+      analyzePromptCache.delete(firstKey);
+    }
+  }
+  
+  analyzePromptCache.set(cacheKey, result);
+  return result;
+}
+
 function loadAIToolsState<T>(key: string, fallback: T): T {
   try {
     const s = localStorage.getItem(AITOOLS_STORAGE_KEY);
@@ -167,7 +198,7 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
   useEffect(() => {
     if (!improveInput.trim()) { setSuggestedModel(null); setModelTips([]); return; }
     const timeout = setTimeout(() => {
-      const results = analyzePrompt(improveInput);
+      const results = getCachedAnalyzePrompt(improveInput);
       if (results && results.length > 0 && results[0]) {
         setSuggestedModel(results[0].model as ModelInfo);
       }
@@ -176,14 +207,21 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
   }, [improveInput]);
 
   useEffect(() => {
-    const state = {
-      tab, expanded,
-      improveInput, improveResult, negativeInput, negativeResult,
-      generateInput, generateResult, generateNegativeResult, generatePrefs,
-      styleResult,
-      diagnosePromptInput, diagnoseIssue, diagnoseResult,
-    };
-    localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
+    const timeout = setTimeout(() => {
+      const state = {
+        tab, expanded,
+        improveInput, improveResult, negativeInput, negativeResult,
+        generateInput, generateResult, generateNegativeResult, generatePrefs,
+        styleResult,
+        diagnosePromptInput, diagnoseIssue, diagnoseResult,
+      };
+      try {
+        localStorage.setItem(AITOOLS_STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Failed to save AI tools state:', e);
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
   }, [tab, expanded, improveInput, improveResult, negativeInput, negativeResult, generateInput, generateResult, generateNegativeResult, generatePrefs, styleResult, diagnosePromptInput, diagnoseIssue, diagnoseResult]);
 
   useEffect(() => {
@@ -243,38 +281,59 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
     setLoading(true); setGenerateResult(''); setGenerateNegativeResult('');
     try {
       const token = '';
+      
+      // Optimize: Make database calls in parallel and limit data retrieved
       const [charsRes, topPromptsRes] = await Promise.all([
-        db.from('characters').select('name, description').limit(5),
-        db.from('prompts').select('content').gte('rating', 4).order('rating', { ascending: false }).limit(5),
+        db.from('characters').select('name, description').limit(3), // Reduced from 5
+        db.from('prompts').select('content').gte('rating', 4).order('rating', { ascending: false }).limit(3), // Reduced from 5
       ]);
-      const context = charsRes.data?.map((c: any) => `${c.name}: ${c.description}`).join('; ');
+      
+      const context = charsRes.data?.map((c: any) => `${c.name}: ${c.description}`).join('; ') || '';
       const successfulPrompts = topPromptsRes.data?.map((p: any) => p.content) ?? [];
+      
       const result = await generateFromDescription(generateInput, {
         context: context || undefined,
         preferences: { ...generatePrefs, maxWords },
         successfulPrompts: successfulPrompts.length > 0 ? successfulPrompts : undefined,
         taskModel: taskGenerateModel,
       }, token);
+      
       if (result) {
         setGenerateResult(result.prompt);
         if (result.negativePrompt) setGenerateNegativeResult(result.negativePrompt);
       }
-    } catch (e) { handleAIError(e); } finally { setLoading(false); }
+    } catch (e) { 
+      handleAIError(e); 
+    } finally { 
+      setLoading(false); 
+    }
   }
 
   async function handleAnalyze() {
     setLoading(true); setStyleResult(null);
     try {
       const token = '';
-      const { data } = await db.from('prompts').select('content').order('created_at', { ascending: false }).limit(20);
+      // Optimize: Reduce data retrieved and add error handling
+      const { data, error } = await db.from('prompts').select('content').order('created_at', { ascending: false }).limit(15); // Reduced from 20
+      
+      if (error) {
+        toast.error('Failed to fetch prompts for analysis');
+        setLoading(false); return;
+      }
+      
       if (!data || data.length < 3) {
         toast.error('Need at least 3 saved prompts to analyze your style');
         setLoading(false); return;
       }
+      
       const result = await analyzeStyle(data.map((p: any) => p.content), token);
       setStyleResult(result);
       saveStyleProfile(result, data.length).catch(() => { });
-    } catch (e) { handleAIError(e); } finally { setLoading(false); }
+    } catch (e) { 
+      handleAIError(e); 
+    } finally { 
+      setLoading(false); 
+    }
   }
 
   async function handleDiagnose() {
@@ -301,10 +360,21 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         onRequestSavePrompt(data); setSaving(''); return;
       }
 
-      const { data: existingPrompts } = await db.from('prompts').select('id').eq('content', text).limit(1);
-      if (existingPrompts && existingPrompts.length > 0) { toast.error('Already in library'); setSaving(''); return; }
+      // Optimize: Add error handling for database operations
+      const { data: existingPrompts, error: checkError } = await db.from('prompts').select('id').eq('content', text).limit(1);
+      
+      if (checkError) {
+        toast.error('Failed to check for existing prompts');
+        setSaving(''); return;
+      }
+      
+      if (existingPrompts && existingPrompts.length > 0) { 
+        toast.error('Already in library'); 
+        setSaving(''); 
+        return; 
+      }
 
-      const suggestion = analyzePrompt(text)[0];
+      const suggestion = getCachedAnalyzePrompt(text)[0];
       const suggestedModelIdToSave = suggestion ? suggestion.model.id : undefined;
 
       let ncModelNote = '';
@@ -314,7 +384,9 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
           ncModelNote = ` | Best NC Model: ${ncRecommendation.model.name}`;
           toast.success(`Recommended: ${ncRecommendation.model.name}`);
         }
-      } catch (e) { }
+      } catch (e) { 
+        console.warn('Failed to get NC model recommendation:', e);
+      }
 
       const { data: newPrompt, error } = await db.from('prompts').insert({
         title, content: text, notes: 'Generated with AI Tools' + ncModelNote, generation_journey: journeySteps,
@@ -322,14 +394,25 @@ const AITools = forwardRef<AIToolsRef, AIToolsProps>(({ onRequestSavePrompt, onP
         negative_prompt: options?.negativePrompt || null
       }).select().single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to save prompt:', error);
+        toast.error('Failed to save prompt');
+        setSaving('');
+        return;
+      }
       
       if (newPrompt) {
         triggerKeywordExtraction(newPrompt.id, newPrompt.content);
       }
       
-      toast.success('Prompt saved'); if (onSaved) onSaved();
-    } catch (e) { toast.error('Failed to save prompt'); } finally { setSaving(''); }
+      toast.success('Prompt saved'); 
+      if (onSaved) onSaved();
+    } catch (e) { 
+      console.error('Unexpected error in handleSavePrompt:', e);
+      toast.error('Failed to save prompt'); 
+    } finally { 
+      setSaving(''); 
+    }
   }
 
   const visibleTabs = allowedTabs ? TABS.filter(t => allowedTabs.includes(t.id)) : TABS;
@@ -472,17 +555,30 @@ function ImproveTab({
             <span className="text-[11px] text-teal-300 font-medium">Model tips ({modelTips.length})</span>
             <button
               onClick={async (e) => {
-                e.preventDefault(); setFetchingTips(true);
+                e.preventDefault(); 
+                setFetchingTips(true);
                 try {
                   const { getTopCandidates } = await import('../lib/models-data');
                   const { recommendModels } = await import('../lib/ai-service');
                   const candidates = getTopCandidates(input, 5);
                   const res = await recommendModels(input, { candidates });
                   const top = res.recommendations[0];
-                  if (top?.tips?.length) { onSetModelTips(top.tips); onSetUseModelTips(true); }
-                } catch { } finally { setFetchingTips(false); }
+                  if (top?.tips?.length) { 
+                    onSetModelTips(top.tips); 
+                    onSetUseModelTips(true); 
+                  } else {
+                    toast.info('No tips available for this prompt');
+                  }
+                } catch (error) {
+                  console.error('Failed to fetch model tips:', error);
+                  toast.error('Failed to fetch model tips');
+                } finally { 
+                  setFetchingTips(false); 
+                }
               }}
-              disabled={fetchingTips} className="p-1 text-slate-500 hover:text-teal-400"
+              disabled={fetchingTips} 
+              className="p-1 text-slate-500 hover:text-teal-400 disabled:opacity-50"
+              title={fetchingTips ? 'Fetching tips...' : 'Get model tips'}
             >
               <RefreshCcw size={10} className={fetchingTips ? 'animate-spin' : ''} />
             </button>
