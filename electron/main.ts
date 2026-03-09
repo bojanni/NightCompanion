@@ -27,7 +27,7 @@ async function runMigrations() {
   const migrateDb = drizzle(migrateClient)
   const migrationsFolder = app.isPackaged
     ? path.join(process.resourcesPath, 'drizzle')
-    : path.join(__dirname, '..', 'drizzle')
+    : path.join(app.getAppPath(), 'drizzle')
 
   await migrate(migrateDb, { migrationsFolder })
   await migrateClient.end()
