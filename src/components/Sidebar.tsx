@@ -32,6 +32,18 @@ const NAV_ITEMS: NavItem[] = [
     icon: '⊕',
     description: 'Compose from parts',
   },
+  {
+    id: 'generator',
+    label: 'Generator',
+    icon: '⚡',
+    description: 'Magic random (AI)',
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: '⚙',
+    description: 'OpenRouter credentials',
+  },
 ]
 
 type Props = {

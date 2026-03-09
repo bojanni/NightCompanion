@@ -7,6 +7,13 @@ export type PromptFilters = {
   model?: string
 }
 
+export type OpenRouterSettings = {
+  apiKey: string
+  model: string
+  siteUrl: string
+  appName: string
+}
+
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -43,5 +50,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('generationLog:update', id, data),
     delete: (id: number): Promise<IpcResult<void>> =>
       ipcRenderer.invoke('generationLog:delete', id),
+  },
+  settings: {
+    getOpenRouter: (): Promise<IpcResult<OpenRouterSettings>> =>
+      ipcRenderer.invoke('settings:getOpenRouter'),
+    saveOpenRouter: (input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>> =>
+      ipcRenderer.invoke('settings:saveOpenRouter', input),
+  },
+  generator: {
+    magicRandom: (input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>> =>
+      ipcRenderer.invoke('generator:magicRandom', input),
   },
 })

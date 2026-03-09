@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
+import { readFile, writeFile, mkdir } from 'fs/promises'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
@@ -68,6 +69,51 @@ function createWindow() {
 // ─── IPC: Prompts ─────────────────────────────────────────────────────────────
 
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
+type OpenRouterSettings = {
+  apiKey: string
+  model: string
+  siteUrl: string
+  appName: string
+}
+
+const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
+
+function getSettingsFilePath() {
+  return path.join(app.getPath('userData'), 'settings.json')
+}
+
+function normalizeOpenRouterSettings(input?: Partial<OpenRouterSettings>): OpenRouterSettings {
+  return {
+    apiKey: input?.apiKey?.trim() ?? '',
+    model: input?.model?.trim() || DEFAULT_OPENROUTER_MODEL,
+    siteUrl: input?.siteUrl?.trim() ?? '',
+    appName: input?.appName?.trim() ?? 'NightCompanion',
+  }
+}
+
+async function readStoredSettings(): Promise<{ openRouter?: Partial<OpenRouterSettings> }> {
+  try {
+    const raw = await readFile(getSettingsFilePath(), 'utf-8')
+    return JSON.parse(raw) as { openRouter?: Partial<OpenRouterSettings> }
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException
+    if (err.code === 'ENOENT') {
+      return {}
+    }
+    throw error
+  }
+}
+
+async function writeStoredSettings(settings: { openRouter: OpenRouterSettings }) {
+  const settingsPath = getSettingsFilePath()
+  await mkdir(path.dirname(settingsPath), { recursive: true })
+  await writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf-8')
+}
+
+async function getOpenRouterSettings() {
+  const stored = await readStoredSettings()
+  return normalizeOpenRouterSettings(stored.openRouter)
+}
 
 ipcMain.handle('prompts:list', async (_, filters: PromptFilters = {}) => {
   try {
@@ -245,6 +291,85 @@ ipcMain.handle('generationLog:delete', async (_, id: number) => {
   try {
     await db.delete(generationLog).where(eq(generationLog.id, id))
     return { data: undefined }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+// ─── IPC: Settings / AI Generation ───────────────────────────────────────────
+
+ipcMain.handle('settings:getOpenRouter', async () => {
+  try {
+    const data = await getOpenRouterSettings()
+    return { data }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('settings:saveOpenRouter', async (_, input: Partial<OpenRouterSettings>) => {
+  try {
+    const data = normalizeOpenRouterSettings(input)
+    await writeStoredSettings({ openRouter: data })
+    return { data }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string }) => {
+  try {
+    const settings = await getOpenRouterSettings()
+    if (!settings.apiKey) {
+      return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
+    }
+
+    const theme = input?.theme?.trim()
+    const userPrompt = theme
+      ? `Create one random, vivid text-to-image prompt themed around: ${theme}`
+      : 'Create one random, vivid text-to-image prompt on any surprising subject.'
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${settings.apiKey}`,
+        'Content-Type': 'application/json',
+        ...(settings.siteUrl ? { 'HTTP-Referer': settings.siteUrl } : {}),
+        ...(settings.appName ? { 'X-Title': settings.appName } : {}),
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        temperature: 1.2,
+        max_tokens: 220,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You generate exactly one high-quality text-to-image prompt. Return only the final prompt text with no numbering, no quotes, and no explanation.',
+          },
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+      }),
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+
+    const prompt = payload.choices?.[0]?.message?.content?.trim()
+    if (!prompt) {
+      throw new Error('No prompt content returned from OpenRouter.')
+    }
+
+    return { data: { prompt } }
   } catch (error) {
     return { error: String(error) }
   }

@@ -1,7 +1,13 @@
 // Re-export schema types for use in the renderer
 export type { Prompt, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry } from '../lib/schema'
 
-export type Screen = 'library' | 'style-profiles' | 'generation-log' | 'prompt-builder'
+export type Screen =
+  | 'library'
+  | 'style-profiles'
+  | 'generation-log'
+  | 'prompt-builder'
+  | 'generator'
+  | 'settings'
 
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 

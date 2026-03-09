@@ -2,6 +2,7 @@ import type { Prompt, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry,
 
 type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
+type OpenRouterSettings = { apiKey: string; model: string; siteUrl: string; appName: string }
 
 declare global {
   interface Window {
@@ -25,6 +26,13 @@ declare global {
         create(data: NewGenerationEntry): Promise<IpcResult<GenerationEntry>>
         update(id: number, data: Partial<NewGenerationEntry>): Promise<IpcResult<GenerationEntry>>
         delete(id: number): Promise<IpcResult<void>>
+      }
+      settings: {
+        getOpenRouter(): Promise<IpcResult<OpenRouterSettings>>
+        saveOpenRouter(input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>>
+      }
+      generator: {
+        magicRandom(input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>>
       }
     }
   }

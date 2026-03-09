@@ -64,7 +64,7 @@ export default function PromptBuilder() {
   }
 
   return (
-    <div className="flex h-full" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+    <div className="no-drag-region flex h-full">
       {/* Left: part inputs */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-8 pt-8 pb-5">
