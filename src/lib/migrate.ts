@@ -9,7 +9,53 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is not set')
 }
 
+function quoteIdentifier(value: string) {
+  return `"${value.replace(/"/g, '""')}"`
+}
+
+function getDatabaseNameFromUrl(connectionUrl: string) {
+  const parsed = new URL(connectionUrl)
+  const dbName = parsed.pathname.replace(/^\//, '')
+
+  if (!dbName) {
+    throw new Error('DATABASE_URL must include a database name in the path')
+  }
+
+  return dbName
+}
+
+function getAdminConnectionString(connectionUrl: string) {
+  const parsed = new URL(connectionUrl)
+  parsed.pathname = '/postgres'
+  return parsed.toString()
+}
+
+async function ensureDatabaseExists() {
+  const dbName = getDatabaseNameFromUrl(connectionString)
+  const adminConnectionString = getAdminConnectionString(connectionString)
+  const adminClient = postgres(adminConnectionString, { max: 1 })
+
+  try {
+    const existing = await adminClient`
+      SELECT 1
+      FROM pg_database
+      WHERE datname = ${dbName}
+      LIMIT 1
+    `
+
+    if (existing.length === 0) {
+      console.log(`Database "${dbName}" not found. Creating...`)
+      await adminClient.unsafe(`CREATE DATABASE ${quoteIdentifier(dbName)}`)
+      console.log(`Database "${dbName}" created.`)
+    }
+  } finally {
+    await adminClient.end()
+  }
+}
+
 async function runMigrations() {
+  await ensureDatabaseExists()
+
   const client = postgres(connectionString!, { max: 1 })
   const db = drizzle(client)
 
