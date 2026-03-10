@@ -10,12 +10,14 @@
   body {
     @apply bg-night-950 text-night-100 font-sans;
     overflow: hidden;
+    -webkit-user-select: none;
     user-select: none;
     -webkit-font-smoothing: antialiased;
   }
 
   /* Allow text selection in inputs and text areas */
   input, textarea {
+    -webkit-user-select: text;
     user-select: text;
   }
 
