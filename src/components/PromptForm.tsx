@@ -9,16 +9,6 @@ type Props = {
   onClose: () => void
 }
 
-const COMMON_MODELS = [
-  '',
-  'Stable Diffusion XL',
-  'Stable Diffusion 1.5',
-  'Stable Diffusion 2.1',
-  'DALL-E 3',
-  'Midjourney',
-  'Leonardo',
-]
-
 export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [promptText, setPromptText] = useState(initial?.promptText ?? '')
@@ -32,12 +22,34 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [modelOptions, setModelOptions] = useState<string[]>([])
 
   const titleRef = useRef<HTMLInputElement>(null)
   const isEdit = !!initial
 
   useEffect(() => {
     titleRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadNightcafeModels() {
+      const result = await window.electronAPI.nightcafeModels.list({ mediaType: 'image' })
+      if (ignore || result.error || !result.data) return
+
+      const options = result.data
+        .map((item) => item.modelName)
+        .filter((name, index, arr) => name && arr.indexOf(name) === index)
+
+      setModelOptions(options)
+    }
+
+    loadNightcafeModels()
+
+    return () => {
+      ignore = true
+    }
   }, [])
 
   const addTag = () => {
@@ -160,13 +172,14 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
               <label className="label">Model</label>
               <div className="flex gap-2">
                 <select
-                  value={COMMON_MODELS.includes(model) ? model : ''}
+                  value={modelOptions.includes(model) ? model : ''}
                   onChange={(e) => setModel(e.target.value)}
                   className="input w-1/2"
                 >
-                  {COMMON_MODELS.map((m) => (
+                  <option value="">— kies model —</option>
+                  {modelOptions.map((m) => (
                     <option key={m} value={m}>
-                      {m || '— select or type —'}
+                      {m}
                     </option>
                   ))}
                 </select>
@@ -175,7 +188,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                   className="input w-1/2"
-                  placeholder="or type a model name"
+                  placeholder="of typ een modelnaam"
                 />
               </div>
             </div>

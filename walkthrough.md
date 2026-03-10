@@ -119,3 +119,9 @@
 - Findings: User requested startup synchronization from `resources/models/nightcafe_models_compleet.csv` with automatic DB updates and strict image/video distinction.
 - Conclusions: A dedicated `nightcafe_models` cache table plus app-start CSV sync is the safest approach for first-run inserts and ongoing updates.
 - Actions: Added `nightcafe_models` schema in `src/lib/schema.ts` with `modelType` and `mediaType`; created migration `drizzle/0003_nightcafe_models_cache.sql` and journal entry; implemented CSV parsing + startup sync in `electron/main.ts` (`syncNightCafeModelsFromCsv`) with upsert+prune behavior each app start; normalized media classification to `video` only when type contains video, otherwise `image` (including edit models); validated with `npm run build` and applied DB migration via `npm run db:migrate`.
+
+## 2026-03-10 (Prompt Model Dropdown Uit DB NightCafe Models)
+
+- Findings: User requested prompt model selection to use models already stored in DB and sorted alphabetically.
+- Conclusions: Best implementation is a dedicated IPC list endpoint and loading dropdown options dynamically in `PromptForm`, filtered to `mediaType=image`.
+- Actions: Added `nightcafeModels:list` IPC in `electron/main.ts` (alphabetical `orderBy(modelName)` with optional mediaType filter), exposed in `electron/preload.ts` and typed in `src/types/electron.d.ts`; replaced static `COMMON_MODELS` in `src/components/PromptForm.tsx` with DB-driven options loaded from `window.electronAPI.nightcafeModels.list({ mediaType: 'image' })`; validated via `npm run build`.

@@ -20,6 +20,12 @@ export type OpenRouterModel = {
   contextLength: number | null
 }
 
+export type NightcafeModelOption = {
+  modelName: string
+  modelType: string
+  mediaType: string
+}
+
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -72,6 +78,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generator: {
     magicRandom: (input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:magicRandom', input),
+  },
+  nightcafeModels: {
+    list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>
+      ipcRenderer.invoke('nightcafeModels:list', filters),
   },
   characters: {
     saveImage: (input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>> =>

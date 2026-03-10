@@ -95,6 +95,10 @@ type OpenRouterModel = {
   contextLength: number | null
 }
 
+type NightcafeModelFilters = {
+  mediaType?: 'image' | 'video'
+}
+
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
 const NIGHTCAFE_MODELS_FILE = 'nightcafe_models_compleet.csv'
 
@@ -707,6 +711,27 @@ ipcMain.handle('settings:testOpenRouter', async (_, input?: Partial<OpenRouterSe
     const data = normalizeOpenRouterSettings(input)
     const result = await testOpenRouterConnection(data)
     return { data: result }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+// ─── IPC: NightCafe Models ───────────────────────────────────────────────────
+
+ipcMain.handle('nightcafeModels:list', async (_, filters: NightcafeModelFilters = {}) => {
+  try {
+    const mediaType = filters.mediaType?.trim().toLowerCase()
+    const data = await db
+      .select({
+        modelName: nightcafeModels.modelName,
+        modelType: nightcafeModels.modelType,
+        mediaType: nightcafeModels.mediaType,
+      })
+      .from(nightcafeModels)
+      .where(mediaType === 'image' || mediaType === 'video' ? eq(nightcafeModels.mediaType, mediaType) : undefined)
+      .orderBy(nightcafeModels.modelName)
+
+    return { data }
   } catch (error) {
     return { error: String(error) }
   }

@@ -4,6 +4,7 @@ type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
 type OpenRouterSettings = { apiKey: string; model: string; siteUrl: string; appName: string }
 type OpenRouterModel = { modelId: string; displayName: string; contextLength: number | null }
+type NightcafeModelOption = { modelName: string; modelType: string; mediaType: string }
 
 declare global {
   interface Window {
@@ -37,6 +38,9 @@ declare global {
       }
       generator: {
         magicRandom(input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>>
+      }
+      nightcafeModels: {
+        list(filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>>
       }
       characters: {
         saveImage(input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>>
