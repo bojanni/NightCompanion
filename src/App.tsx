@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import Sidebar from './components/Sidebar'
+import Dashboard from './screens/Dashboard'
 import Library from './screens/Library'
+import Characters from './screens/Characters'
 import StyleProfiles from './screens/StyleProfiles'
 import GenerationLog from './screens/GenerationLog'
 import Generator from './screens/Generator'
@@ -9,7 +11,7 @@ import type { Screen } from './types'
 import { Toaster } from 'sonner'
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('library')
+  const [screen, setScreen] = useState<Screen>('dashboard')
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-night-950">
@@ -20,7 +22,9 @@ export default function App() {
 
       <main className="flex-1 overflow-hidden">
         <div className="animate-fade-in h-full">
+          {screen === 'dashboard' && <Dashboard onNavigate={setScreen} />}
           {screen === 'library' && <Library />}
+          {screen === 'characters' && <Characters />}
           {screen === 'style-profiles' && <StyleProfiles />}
           {screen === 'generation-log' && <GenerationLog />}
           {screen === 'generator' && <Generator />}

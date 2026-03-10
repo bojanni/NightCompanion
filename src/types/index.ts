@@ -2,7 +2,9 @@
 export type { Prompt, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry } from '../lib/schema'
 
 export type Screen =
+  | 'dashboard'
   | 'library'
+  | 'characters'
   | 'style-profiles'
   | 'generation-log'
   | 'generator'

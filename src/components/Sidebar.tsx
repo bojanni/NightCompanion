@@ -9,10 +9,22 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: '◬',
+    description: 'Overview & quick actions',
+  },
+  {
     id: 'library',
     label: 'Prompt Library',
     icon: '✦',
     description: 'Browse & manage prompts',
+  },
+  {
+    id: 'characters',
+    label: 'Characters',
+    icon: '◉',
+    description: 'Reference cast sheets',
   },
   {
     id: 'style-profiles',

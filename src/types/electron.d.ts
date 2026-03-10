@@ -38,6 +38,10 @@ declare global {
       generator: {
         magicRandom(input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>>
       }
+      characters: {
+        saveImage(input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>>
+        deleteImage(input: { fileUrl: string }): Promise<IpcResult<{ ok: boolean }>>
+      }
     }
   }
 }

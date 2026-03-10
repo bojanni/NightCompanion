@@ -73,4 +73,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     magicRandom: (input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:magicRandom', input),
   },
+  characters: {
+    saveImage: (input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>> =>
+      ipcRenderer.invoke('characters:saveImage', input),
+    deleteImage: (input: { fileUrl: string }): Promise<IpcResult<{ ok: boolean }>> =>
+      ipcRenderer.invoke('characters:deleteImage', input),
+  },
 })

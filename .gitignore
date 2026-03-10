@@ -24,6 +24,10 @@ dist-electron/
 .idea/
 *.swp
 *.swo
+*.swn
+.agents/
+.DS_Store
+.claude/
 
 # OS
 .DS_Store

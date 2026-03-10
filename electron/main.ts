@@ -2,7 +2,9 @@ import 'dotenv/config'
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import path from 'path'
 import { mkdirSync } from 'fs'
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { readFile, writeFile, mkdir, unlink } from 'fs/promises'
+import { randomUUID } from 'crypto'
+import { fileURLToPath, pathToFileURL } from 'url'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
@@ -94,6 +96,75 @@ type OpenRouterModel = {
 }
 
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
+
+function getCharactersImageDir() {
+  const localAppData = process.env.LOCALAPPDATA
+    || path.join(app.getPath('home'), 'AppData', 'Local')
+
+  return path.join(localAppData, 'NightCompanion', 'characters')
+}
+
+function getImageExtension(mimeType: string) {
+  const map: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+    'image/bmp': 'bmp',
+  }
+
+  return map[mimeType] || 'png'
+}
+
+async function saveCharacterImageDataUrl(dataUrl: string, originalName?: string) {
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/)
+  if (!match) {
+    throw new Error('Invalid image payload. Expected a base64 data URL.')
+  }
+
+  const mimeType = match[1]
+  const base64Data = match[2]
+  const imageBuffer = Buffer.from(base64Data, 'base64')
+  const extension = getImageExtension(mimeType)
+  const safeBaseName = (originalName || 'image')
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[^a-zA-Z0-9-_]/g, '_')
+    .slice(0, 50)
+  const fileName = `${Date.now()}-${safeBaseName || randomUUID()}.${extension}`
+
+  const imageDir = getCharactersImageDir()
+  await mkdir(imageDir, { recursive: true })
+
+  const filePath = path.join(imageDir, fileName)
+  await writeFile(filePath, imageBuffer)
+
+  return pathToFileURL(filePath).href
+}
+
+async function deleteCharacterImageFile(fileUrl: string) {
+  let parsed: URL
+  try {
+    parsed = new URL(fileUrl)
+  } catch {
+    return
+  }
+
+  if (parsed.protocol !== 'file:') return
+
+  const imageDir = path.resolve(getCharactersImageDir())
+  const targetPath = path.resolve(fileURLToPath(parsed))
+
+  if (!targetPath.startsWith(imageDir)) {
+    throw new Error('Refused to delete file outside character image directory.')
+  }
+
+  try {
+    await unlink(targetPath)
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException
+    if (err.code !== 'ENOENT') throw error
+  }
+}
 
 function getSettingsFilePath() {
   return path.join(app.getPath('userData'), 'settings.json')
@@ -464,6 +535,26 @@ ipcMain.handle('settings:testOpenRouter', async (_, input?: Partial<OpenRouterSe
     const data = normalizeOpenRouterSettings(input)
     const result = await testOpenRouterConnection(data)
     return { data: result }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+// ─── IPC: Characters Assets ──────────────────────────────────────────────────
+
+ipcMain.handle('characters:saveImage', async (_, input: { dataUrl: string; fileName?: string }) => {
+  try {
+    const fileUrl = await saveCharacterImageDataUrl(input.dataUrl, input.fileName)
+    return { data: { fileUrl } }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('characters:deleteImage', async (_, input: { fileUrl: string }) => {
+  try {
+    await deleteCharacterImageFile(input.fileUrl)
+    return { data: { ok: true } }
   } catch (error) {
     return { error: String(error) }
   }
