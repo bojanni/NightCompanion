@@ -1,19 +1,46 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import PromptBuilder from './PromptBuilder'
+
+type PresetOption = {
+  presetName: string
+  category: string
+}
 
 export default function Generator() {
   const [tab, setTab] = useState<'generator' | 'builder'>('generator')
   const [theme, setTheme] = useState('')
+  const [presetOptions, setPresetOptions] = useState<PresetOption[]>([])
+  const [selectedPreset, setSelectedPreset] = useState('')
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [savedTitle, setSavedTitle] = useState('')
 
+  useEffect(() => {
+    let ignore = false
+
+    async function loadPresets() {
+      const result = await window.electronAPI.nightcafePresets.list()
+      if (ignore || result.error || !result.data) return
+
+      setPresetOptions(result.data)
+    }
+
+    loadPresets()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
   const handleGenerate = async () => {
     setStatus(null)
     setLoading(true)
 
-    const result = await window.electronAPI.generator.magicRandom({ theme: theme.trim() || undefined })
+    const result = await window.electronAPI.generator.magicRandom({
+      theme: theme.trim() || undefined,
+      presetName: selectedPreset || undefined,
+    })
     setLoading(false)
 
     if (result.error) {
@@ -91,6 +118,22 @@ export default function Generator() {
                 className="input"
                 placeholder="e.g. cyberpunk city at dawn, mythic forest creatures, surreal architecture"
               />
+
+              <div className="mt-4">
+                <label className="label">NightCafe Preset</label>
+                <select
+                  value={selectedPreset}
+                  onChange={(e) => setSelectedPreset(e.target.value)}
+                  className="input"
+                >
+                  <option value="">Geen preset</option>
+                  {presetOptions.map((preset) => (
+                    <option key={preset.presetName} value={preset.presetName}>
+                      {preset.presetName}{preset.category ? ` (${preset.category})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <button onClick={handleGenerate} disabled={loading} className="btn-primary">

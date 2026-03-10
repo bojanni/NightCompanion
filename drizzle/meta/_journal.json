@@ -29,6 +29,13 @@
       "when": 1773113400000,
       "tag": "0003_nightcafe_models_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773193200000,
+      "tag": "0004_nightcafe_presets_cache",
+      "breakpoints": true
     }
   ]
 }

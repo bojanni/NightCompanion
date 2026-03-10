@@ -10,7 +10,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import { eq, desc, and, or, ilike, sql, notInArray } from 'drizzle-orm'
 import * as schema from '../src/lib/schema'
-import { prompts, styleProfiles, generationLog, openRouterModels, nightcafeModels } from '../src/lib/schema'
+import { prompts, styleProfiles, generationLog, openRouterModels, nightcafeModels, nightcafePresets } from '../src/lib/schema'
 import type { NewPrompt, NewStyleProfile, NewGenerationEntry } from '../src/lib/schema'
 
 // Keep Chromium disk caches in a writable temp location to avoid Windows access-denied startup errors.
@@ -99,8 +99,14 @@ type NightcafeModelFilters = {
   mediaType?: 'image' | 'video'
 }
 
+type NightcafePresetOption = {
+  presetName: string
+  category: string
+}
+
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
 const NIGHTCAFE_MODELS_FILE = 'nightcafe_models_compleet.csv'
+const NIGHTCAFE_PRESETS_FILE = 'nightcafe_presets.csv'
 
 function getCharactersImageDir() {
   const localAppData = process.env.LOCALAPPDATA
@@ -317,6 +323,16 @@ function getNightCafeModelsCandidates() {
   return [...new Set(candidates)]
 }
 
+function getNightCafePresetsCandidates() {
+  const candidates = [
+    path.join(app.getAppPath(), 'resources', 'presets', NIGHTCAFE_PRESETS_FILE),
+    path.join(process.resourcesPath, 'presets', NIGHTCAFE_PRESETS_FILE),
+    path.join(process.resourcesPath, 'resources', 'presets', NIGHTCAFE_PRESETS_FILE),
+  ]
+
+  return [...new Set(candidates)]
+}
+
 async function readNightCafeModelsCsv() {
   const candidates = getNightCafeModelsCandidates()
 
@@ -331,6 +347,22 @@ async function readNightCafeModelsCsv() {
   }
 
   throw new Error(`NightCafe model file not found. Looked in: ${candidates.join(', ')}`)
+}
+
+async function readNightCafePresetsCsv() {
+  const candidates = getNightCafePresetsCandidates()
+
+  for (const candidate of candidates) {
+    try {
+      return await readFile(candidate, 'utf-8')
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException
+      if (err.code === 'ENOENT') continue
+      throw error
+    }
+  }
+
+  throw new Error(`NightCafe presets file not found. Looked in: ${candidates.join(', ')}`)
 }
 
 function parseCsvLine(line: string) {
@@ -476,6 +508,90 @@ async function syncNightCafeModelsFromCsv() {
   const imageCount = rows.filter((row) => row.mediaType === 'image').length
   const videoCount = rows.filter((row) => row.mediaType === 'video').length
   console.log(`NightCafe models synced: ${rows.length} total (${imageCount} image, ${videoCount} video)`)
+}
+
+function parseNightCafePresetsCsv(csv: string) {
+  const lines = csv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (lines.length < 2) {
+    throw new Error('NightCafe presets CSV has no data rows.')
+  }
+
+  const headers = parseCsvLine(lines[0]).map((header) => header.replace(/^\uFEFF/, ''))
+  const rows = lines.slice(1)
+
+  const byKey = new Map<string, {
+    presetKey: string
+    presetName: string
+    category: string
+    gridRow: number | null
+    gridColumn: number | null
+    updatedAt: Date
+  }>()
+
+  for (const row of rows) {
+    const cells = parseCsvLine(row)
+    if (cells.length === 0) continue
+
+    const record: Record<string, string> = {}
+    headers.forEach((header, index) => {
+      record[header] = cells[index] ?? ''
+    })
+
+    const presetName = (record['Preset Name'] || '').trim()
+    if (!presetName) continue
+
+    const category = (record.Category || '').trim()
+    const gridRow = Number.parseInt(record.Row || '', 10)
+    const gridColumn = Number.parseInt(record.Column || '', 10)
+    const presetKey = presetName.toLowerCase()
+
+    byKey.set(presetKey, {
+      presetKey,
+      presetName,
+      category,
+      gridRow: Number.isNaN(gridRow) ? null : gridRow,
+      gridColumn: Number.isNaN(gridColumn) ? null : gridColumn,
+      updatedAt: new Date(),
+    })
+  }
+
+  return [...byKey.values()]
+}
+
+async function syncNightCafePresetsFromCsv() {
+  const csv = await readNightCafePresetsCsv()
+  const rows = parseNightCafePresetsCsv(csv)
+
+  if (rows.length === 0) {
+    throw new Error('NightCafe presets CSV parsed but produced zero presets.')
+  }
+
+  for (const row of rows) {
+    await db
+      .insert(nightcafePresets)
+      .values(row)
+      .onConflictDoUpdate({
+        target: nightcafePresets.presetKey,
+        set: {
+          presetName: row.presetName,
+          category: row.category,
+          gridRow: row.gridRow,
+          gridColumn: row.gridColumn,
+          updatedAt: new Date(),
+        },
+      })
+  }
+
+  const validKeys = rows.map((row) => row.presetKey)
+  if (validKeys.length > 0) {
+    await db.delete(nightcafePresets).where(notInArray(nightcafePresets.presetKey, validKeys))
+  }
+
+  console.log(`NightCafe presets synced: ${rows.length} total`)
 }
 
 ipcMain.handle('prompts:list', async (_, filters: PromptFilters = {}) => {
@@ -737,6 +853,22 @@ ipcMain.handle('nightcafeModels:list', async (_, filters: NightcafeModelFilters 
   }
 })
 
+ipcMain.handle('nightcafePresets:list', async () => {
+  try {
+    const data = await db
+      .select({
+        presetName: nightcafePresets.presetName,
+        category: nightcafePresets.category,
+      })
+      .from(nightcafePresets)
+      .orderBy(nightcafePresets.presetName)
+
+    return { data: data as NightcafePresetOption[] }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
 // ─── IPC: Characters Assets ──────────────────────────────────────────────────
 
 ipcMain.handle('characters:saveImage', async (_, input: { dataUrl: string; fileName?: string }) => {
@@ -757,7 +889,7 @@ ipcMain.handle('characters:deleteImage', async (_, input: { fileUrl: string }) =
   }
 })
 
-ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string }) => {
+ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string; presetName?: string }) => {
   try {
     const settings = await getOpenRouterSettings()
     if (!settings.apiKey) {
@@ -765,9 +897,16 @@ ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string }) =>
     }
 
     const theme = input?.theme?.trim()
-    const userPrompt = theme
-      ? `Create one random, vivid text-to-image prompt themed around: ${theme}`
-      : 'Create one random, vivid text-to-image prompt on any surprising subject.'
+    const presetName = input?.presetName?.trim()
+
+    const promptParts = [
+      'Create one random, vivid text-to-image prompt.',
+      presetName ? `Use this NightCafe preset as style guidance: ${presetName}.` : '',
+      theme ? `Theme to include: ${theme}.` : 'Pick any surprising subject.',
+      'Return only the final prompt text.',
+    ].filter(Boolean)
+
+    const userPrompt = promptParts.join(' ')
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -830,6 +969,12 @@ app.whenReady().then(async () => {
     await syncNightCafeModelsFromCsv()
   } catch (err) {
     console.error('Failed to sync NightCafe models:', err)
+  }
+
+  try {
+    await syncNightCafePresetsFromCsv()
+  } catch (err) {
+    console.error('Failed to sync NightCafe presets:', err)
   }
 
   createWindow()

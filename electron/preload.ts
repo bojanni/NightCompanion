@@ -26,6 +26,11 @@ export type NightcafeModelOption = {
   mediaType: string
 }
 
+export type NightcafePresetOption = {
+  presetName: string
+  category: string
+}
+
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -76,12 +81,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('settings:testOpenRouter', input),
   },
   generator: {
-    magicRandom: (input?: { theme?: string }): Promise<IpcResult<{ prompt: string }>> =>
+    magicRandom: (input?: { theme?: string; presetName?: string }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:magicRandom', input),
   },
   nightcafeModels: {
     list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>
       ipcRenderer.invoke('nightcafeModels:list', filters),
+  },
+  nightcafePresets: {
+    list: (): Promise<IpcResult<NightcafePresetOption[]>> =>
+      ipcRenderer.invoke('nightcafePresets:list'),
   },
   characters: {
     saveImage: (input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>> =>

@@ -117,6 +117,25 @@ export const nightcafeModels = pgTable(
   ]
 )
 
+// ─── NightCafe Presets Cache ────────────────────────────────────────────────
+
+export const nightcafePresets = pgTable(
+  'nightcafe_presets',
+  {
+    id: serial('id').primaryKey(),
+    presetKey: varchar('preset_key', { length: 300 }).notNull().unique(),
+    presetName: varchar('preset_name', { length: 255 }).notNull(),
+    category: varchar('category', { length: 120 }).default('').notNull(),
+    gridRow: integer('grid_row'),
+    gridColumn: integer('grid_column'),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('nightcafe_presets_name_idx').on(table.presetName),
+    index('nightcafe_presets_category_idx').on(table.category),
+  ]
+)
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Prompt = typeof prompts.$inferSelect
@@ -133,3 +152,6 @@ export type NewOpenRouterModel = typeof openRouterModels.$inferInsert
 
 export type NightcafeModel = typeof nightcafeModels.$inferSelect
 export type NewNightcafeModel = typeof nightcafeModels.$inferInsert
+
+export type NightcafePreset = typeof nightcafePresets.$inferSelect
+export type NewNightcafePreset = typeof nightcafePresets.$inferInsert
