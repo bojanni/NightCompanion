@@ -8,9 +8,9 @@ import { fileURLToPath, pathToFileURL } from 'url'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
-import { eq, desc, and, or, ilike, sql } from 'drizzle-orm'
+import { eq, desc, and, or, ilike, sql, notInArray } from 'drizzle-orm'
 import * as schema from '../src/lib/schema'
-import { prompts, styleProfiles, generationLog, openRouterModels } from '../src/lib/schema'
+import { prompts, styleProfiles, generationLog, openRouterModels, nightcafeModels } from '../src/lib/schema'
 import type { NewPrompt, NewStyleProfile, NewGenerationEntry } from '../src/lib/schema'
 
 // Keep Chromium disk caches in a writable temp location to avoid Windows access-denied startup errors.
@@ -96,6 +96,7 @@ type OpenRouterModel = {
 }
 
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
+const NIGHTCAFE_MODELS_FILE = 'nightcafe_models_compleet.csv'
 
 function getCharactersImageDir() {
   const localAppData = process.env.LOCALAPPDATA
@@ -300,6 +301,177 @@ async function testOpenRouterConnection(settings: OpenRouterSettings) {
     ok: true,
     modelCount: payload.data?.length ?? 0,
   }
+}
+
+function getNightCafeModelsCandidates() {
+  const candidates = [
+    path.join(app.getAppPath(), 'resources', 'models', NIGHTCAFE_MODELS_FILE),
+    path.join(process.resourcesPath, 'models', NIGHTCAFE_MODELS_FILE),
+    path.join(process.resourcesPath, 'resources', 'models', NIGHTCAFE_MODELS_FILE),
+  ]
+
+  return [...new Set(candidates)]
+}
+
+async function readNightCafeModelsCsv() {
+  const candidates = getNightCafeModelsCandidates()
+
+  for (const candidate of candidates) {
+    try {
+      return await readFile(candidate, 'utf-8')
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException
+      if (err.code === 'ENOENT') continue
+      throw error
+    }
+  }
+
+  throw new Error(`NightCafe model file not found. Looked in: ${candidates.join(', ')}`)
+}
+
+function parseCsvLine(line: string) {
+  const values: string[] = []
+  let current = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i]
+    const next = line[i + 1]
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"'
+      i += 1
+      continue
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes
+      continue
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current.trim())
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  values.push(current.trim())
+  return values
+}
+
+function normalizeNightCafeModelType(raw: string) {
+  const value = raw.trim().toLowerCase()
+  if (value.includes('video')) return 'video' as const
+  if (value.includes('edit')) return 'edit' as const
+  if (value.includes('image')) return 'image' as const
+  return 'unknown' as const
+}
+
+function makeModelKey(name: string, modelType: string) {
+  return `${name.trim().toLowerCase()}::${modelType}`
+}
+
+function parseNightCafeModelsCsv(csv: string) {
+  const lines = csv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (lines.length < 2) {
+    throw new Error('NightCafe model CSV has no data rows.')
+  }
+
+  const headers = parseCsvLine(lines[0]).map((header) => header.replace(/^\uFEFF/, ''))
+  const rows = lines.slice(1)
+
+  const byKey = new Map<string, {
+    modelKey: string
+    modelName: string
+    description: string
+    modelType: string
+    mediaType: string
+    artScore: string
+    promptingScore: string
+    realismScore: string
+    typographyScore: string
+    costTier: string
+    updatedAt: Date
+  }>()
+
+  for (const row of rows) {
+    const cells = parseCsvLine(row)
+    if (cells.length === 0) continue
+
+    const record: Record<string, string> = {}
+    headers.forEach((header, index) => {
+      record[header] = cells[index] ?? ''
+    })
+
+    const modelName = (record.Model || '').trim()
+    if (!modelName) continue
+
+    const modelType = normalizeNightCafeModelType(record.Type || '')
+    const mediaType = modelType === 'video' ? 'video' : 'image'
+    const modelKey = makeModelKey(modelName, modelType)
+
+    byKey.set(modelKey, {
+      modelKey,
+      modelName,
+      description: (record.Beschrijving || '').trim(),
+      modelType,
+      mediaType,
+      artScore: (record['Art (★)'] || '').trim(),
+      promptingScore: (record['Prompting (★)'] || '').trim(),
+      realismScore: (record['Realism (★)'] || '').trim(),
+      typographyScore: (record['Typography (★)'] || '').trim(),
+      costTier: (record['Kosten ($)'] || '').trim(),
+      updatedAt: new Date(),
+    })
+  }
+
+  return [...byKey.values()]
+}
+
+async function syncNightCafeModelsFromCsv() {
+  const csv = await readNightCafeModelsCsv()
+  const rows = parseNightCafeModelsCsv(csv)
+
+  if (rows.length === 0) {
+    throw new Error('NightCafe model CSV parsed but produced zero models.')
+  }
+
+  for (const row of rows) {
+    await db
+      .insert(nightcafeModels)
+      .values(row)
+      .onConflictDoUpdate({
+        target: nightcafeModels.modelKey,
+        set: {
+          modelName: row.modelName,
+          description: row.description,
+          modelType: row.modelType,
+          mediaType: row.mediaType,
+          artScore: row.artScore,
+          promptingScore: row.promptingScore,
+          realismScore: row.realismScore,
+          typographyScore: row.typographyScore,
+          costTier: row.costTier,
+          updatedAt: new Date(),
+        },
+      })
+  }
+
+  const validKeys = rows.map((row) => row.modelKey)
+  if (validKeys.length > 0) {
+    await db.delete(nightcafeModels).where(notInArray(nightcafeModels.modelKey, validKeys))
+  }
+
+  const imageCount = rows.filter((row) => row.mediaType === 'image').length
+  const videoCount = rows.filter((row) => row.mediaType === 'video').length
+  console.log(`NightCafe models synced: ${rows.length} total (${imageCount} image, ${videoCount} video)`)
 }
 
 ipcMain.handle('prompts:list', async (_, filters: PromptFilters = {}) => {
@@ -628,6 +800,13 @@ app.whenReady().then(async () => {
     console.error('Failed to run migrations:', err)
     // Continue anyway — DB may already be migrated
   }
+
+  try {
+    await syncNightCafeModelsFromCsv()
+  } catch (err) {
+    console.error('Failed to sync NightCafe models:', err)
+  }
+
   createWindow()
 
   app.on('activate', () => {

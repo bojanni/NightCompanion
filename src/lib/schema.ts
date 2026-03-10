@@ -92,6 +92,31 @@ export const openRouterModels = pgTable(
   ]
 )
 
+// ─── NightCafe Models Cache ─────────────────────────────────────────────────
+
+export const nightcafeModels = pgTable(
+  'nightcafe_models',
+  {
+    id: serial('id').primaryKey(),
+    modelKey: varchar('model_key', { length: 300 }).notNull().unique(),
+    modelName: varchar('model_name', { length: 255 }).notNull(),
+    description: text('description').default('').notNull(),
+    modelType: varchar('model_type', { length: 20 }).notNull(),
+    mediaType: varchar('media_type', { length: 20 }).notNull(),
+    artScore: varchar('art_score', { length: 16 }).default('').notNull(),
+    promptingScore: varchar('prompting_score', { length: 16 }).default('').notNull(),
+    realismScore: varchar('realism_score', { length: 16 }).default('').notNull(),
+    typographyScore: varchar('typography_score', { length: 16 }).default('').notNull(),
+    costTier: varchar('cost_tier', { length: 16 }).default('').notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('nightcafe_models_model_type_idx').on(table.modelType),
+    index('nightcafe_models_media_type_idx').on(table.mediaType),
+    index('nightcafe_models_model_name_idx').on(table.modelName),
+  ]
+)
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Prompt = typeof prompts.$inferSelect
@@ -105,3 +130,6 @@ export type NewGenerationEntry = typeof generationLog.$inferInsert
 
 export type OpenRouterModel = typeof openRouterModels.$inferSelect
 export type NewOpenRouterModel = typeof openRouterModels.$inferInsert
+
+export type NightcafeModel = typeof nightcafeModels.$inferSelect
+export type NewNightcafeModel = typeof nightcafeModels.$inferInsert

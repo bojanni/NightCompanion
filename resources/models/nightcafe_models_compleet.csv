@@ -1,0 +1,128 @@
+Model,Beschrijving,Art (★),Prompting (★),Realism (★),Typography (★),Kosten ($),Type
+Nano Banana 2,AKA Gemini Flash 3.1 - Google's nieuwste model met first-class startafbeelding ondersteuning.,★★★★☆,★★★★★,★★★★★,★★★★★,$$$$$,Image
+Seedream 5.0 Lite (Preview),Responsive text-to-image generation and precise prompt adherence,★★☆☆☆,★★★★★,★★★★★,★★★★☆,$$$,Image
+HiDream I1 Dev,Maakt verbluffende artistieke afbeeldingen met uitzonderlijke helderheid en detail.,★★★★★,★★★☆☆,★★★★☆,★★☆☆☆,$$$$$,Image
+Flux,Een geweldig algemeen model voor lage kosten.,★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$,Image
+Clarity Upscaler,Een creatieve upscaler die detail toevoegt en opschaalt tot 4x.,★★★☆☆,★★★☆☆,★★★★☆,★★☆☆☆,$$$$,Image
+Flux 2 Klein 9B Fast,Flux 2 Klein 9B is een 4-stap gedistilleerd beeldgeneratie en bewerkingsmodel.,★★☆☆☆,★★☆☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Nano Banana Pro,De volgende versie van Nano Banana met verbeterde mogelijkheden en prestaties.,★★★☆☆,★★★★☆,★★☆☆☆,★★☆☆☆,$$$$$,Image
+Seedream 4.0,Next-gen multimodaal AI model voor ultra-snelle hoge resolutie generatie (2K-4K).,★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$$,Image
+Z-Image Turbo,Een betaalbaar model met geweldige kwaliteit voor lage kosten.,★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$,Image
+Nano Banana,AKA Gemini Flash 2.5 - Google's nieuwste model met first-class startafbeelding ondersteuning.,★★★☆☆,★★★★☆,★★★☆☆,★★☆☆☆,$$$$$,Image
+Seedream 4.5,Een verbeterde versie van Seedream 4.0.,★★★★☆,★★★★☆,★★★★★,★★★☆☆,$$$$,Image
+HiDream I1 Fast,"Snellere en goedkopere versie van HiDream, geweldig voor artistieke afbeeldingen.",★★★★☆,★★★☆☆,★★★★☆,★★☆☆☆,$$$$$,Image
+Seedream 3.0,Een model van ByteDance met focus op realisme en detail.,★★★★☆,★★★★☆,★★★★★,★★★☆☆,$$$$$,Image
+Qwen Image 2512,Qwen's nieuwste update met grote verbeteringen in realisme. Fotorealistische mensen.,★★★★☆,★★★★☆,★★★★★,★★★★☆,$$$$,Image
+Qwen Image Edit 2511,"Behoudt mensen en texturen goed, ongeacht aanpassingen.",★★★★☆,★★★★☆,★★★★★,★★★☆☆,$$$$,Edit
+Flux 2 Klein 4B Fast,De snelste variant in de Klein familie. Gebouwd voor interactieve toepassingen en realtime gebruik.,★★★☆☆,★★★★☆,★★★☆☆,★★☆☆☆,$$$$$,Image
+Flux 2 Klein 4B,Een kleiner basismodel met uitzonderlijke kwaliteit-grootte verhouding. Ideaal voor efficiënt gebruik.,★★★☆☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+Flux 2 Klein 9B,Uitstekende kwaliteit bij sub-seconde snelheid. Geweldig voor realtime generatie.,★★★☆☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+Qwen Image,Een model van Alibaba dat uitblinkt in typografie.,★★★★☆,★★★★☆,★★★☆☆,★★★★★,$$$$,Image
+Qwen Image SD,Een goedkopere lagere resolutie versie van Qwen Image.,★★★☆☆,★★★★☆,★★★☆☆,★★★★☆,$$$$,Image
+Flux 2 Dev,"Baseline Flux 2, goed in alles en voor redelijke kosten.",★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$,Image
+Flux 2 Pro,Flux 2 met verbeterde beeldkwaliteit en goed voor fotorealisme.,★★★★☆,★★★★★,★★★★★,★★★☆☆,$$$$,Image
+Flux 2 Flex,"Flux 2, beter voor typografie en designs.",★★★★☆,★★★★☆,★★★★☆,★★★★★,$$$$,Image
+Flux 2 Max,Gegronding generatie met echte context. Maximum kwaliteit voor complexe workflows.,★★★★★,★★★★★,★★★★★,★★★★★,$$$$$,Image
+Flux Krea,Maakt realistische afbeeldingen met focus op correcte menselijke anatomie.,★★★★☆,★★★★☆,★★★★★,★★★☆☆,$$$$,Image
+Flux Schnell,"Een goedkopere, snellere maar iets minder krachtige versie van Flux.",★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$,Image
+Google Imagen 4.0 Fast,"Een snellere goedkopere versie van Imagen v4, Google's beeldmodel.",★★★★☆,★★★★☆,★★★★☆,★★★★☆,$$$$,Image
+Google Imagen 4.0,Google's beeldmodel. Geweldig voor prompt-naleving en typografie.,★★★★☆,★★★★★,★★★★★,★★★★★,$$$$,Image
+Qwen Image Edit Plus,AKA Qwen Image Edit 2509 - Verbeterde versie van Qwen-Image-Edit met multi-image ondersteuning.,★★★★☆,★★★★☆,★★★★★,★★★☆☆,$$$$,Edit
+Qwen Image Edit,Geavanceerde beeldbewerkingsmogelijkheden met Qwen AI.,★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$,Edit
+Flux Kontext Dev,"Goedkopere en snellere versie van Kontext, goed in het bewerken via prompts.",★★★☆☆,★★★★★,★★★★☆,★★★☆☆,$$$$$,Edit
+Flux PRO v1.1,De volledige krachtige versie van Flux door Black Forest Labs.,★★★★★,★★★★★,★★★★★,★★★☆☆,$$$$$,Image
+HiDream I1 Full,"De volledige kracht van HiDream I1, een geavanceerd beeldgeneratiemodel.",★★★★★,★★★★☆,★★★★☆,★★★☆☆,$$$$$,Image
+Ideogram V3 Turbo,Het nieuwste turbo model van Ideogram.,★★★★☆,★★★★★,★★★★☆,★★★★★,$$$$,Image
+Dreamshaper XL Lightning,Een snel goedkoop model dat goed is in kunst en realisme.,★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$$,Image
+Google Imagen 4.0 Ultra,"Een grotere versie van Imagen v4, Google's nieuwste beeldmodel.",★★★★★,★★★★★,★★★★★,★★★★★,$$$$$,Image
+Flux PRO v1.1 Ultra,Ultra hoge resolutie versie van Flux door Black Forest Labs.,★★★★★,★★★★★,★★★★★,★★★★☆,$$$$$,Image
+Flux Kontext Pro,Uitstekend in het bewerken van afbeeldingen via natuurlijke taal prompts.,★★★☆☆,★★★★★,★★★★☆,★★★☆☆,$$$$$,Edit
+Flux Kontext Max,Een krachtigere versie van Flux Kontext voor beeldbewerking via tekstprompts.,★★★☆☆,★★★★★,★★★★☆,★★★☆☆,$$$$,Edit
+Ideogram V3 Quality,Het nieuwste en beste model van Ideogram.,★★★★★,★★★★★,★★★★☆,★★★★★,$$$$$,Image
+DALL-E 3,Beeldmodel van OpenAI. Geweldig voor creatieve artistieke prompts.,★★★★★,★★★★★,★★★★☆,★★★☆☆,$$$$$,Image
+GPT1.5 Medium,Het nieuwste model van OpenAI op gemiddelde kwaliteitsinstelling. Ondersteunt prompt-to-edit.,★★★★★,★★★★★,★★★★★,★★★★☆,$$$$$,Image
+GPT1.5 High,Het nieuwste model van OpenAI op hoge kwaliteitsinstelling. Ondersteunt prompt-to-edit.,★★★★★,★★★★★,★★★★★,★★★★★,$$$$,Image
+GPT1 Medium,Het nieuwste flagship beeldmodel van OpenAI op gemiddelde kwaliteitsinstelling.,★★★★★,★★★★★,★★★★★,★★★★☆,$$$$$,Image
+GPT1 High,Het nieuwste flagship beeldmodel van OpenAI op hoge kwaliteitsinstelling.,★★★★★,★★★★★,★★★★★,★★★★★,$$$$$,Image
+Ideogram V3,Het nieuwste model van Ideogram.,★★★★★,★★★★★,★★★★☆,★★★★★,$$$$,Image
+Google Imagen 3.0 Fast,"Een snellere goedkopere versie van Imagen v3, Google's beeldmodel.",★★★★☆,★★★★☆,★★★★☆,★★★★☆,$$$$,Image
+Google Imagen 3.0,Google's beeldmodel. Geweldig voor prompt-naleving en typografie.,★★★★☆,★★★★★,★★★★★,★★★★★,$$$$,Image
+Ideogram 2a,Gemaakt door ex-Googlers. Betaalbare prompt-naleving en typografie.,★★★★☆,★★★★★,★★★★☆,★★★★★,$$$,Image
+Ideogram 2a Turbo,Een snellere goedkopere versie van Ideogram 2a.,★★★★☆,★★★★☆,★★★★☆,★★★★★,$$$,Image
+GPT1.5 Low,GPT Image 1.5 van OpenAI op lage kwaliteitsinstelling. Snel en goedkoop voor prototypes.,★★★☆☆,★★★★☆,★★★☆☆,★★★☆☆,$$$$$,Image
+GPT1 Low,GPT Image 1 van OpenAI op lage kwaliteitsinstelling. Snel en goedkoop voor prototypes.,★★★☆☆,★★★★☆,★★★☆☆,★★★☆☆,$$$$,Image
+Recraft v3,Model door Recraft. Uitstekend voor spelling en typografie. Kan vectoren genereren.,★★★☆☆,★★★★★,★★★☆☆,★★★★★,$$$$$,Image
+Ideogram 2.0,Gemaakt door ex-Googlers. Geweldig voor prompt-naleving en tekst in afbeeldingen.,★★★★☆,★★★★★,★★★★☆,★★★★★,$$$$$,Image
+Ideogram 2.0 Turbo,Een snellere goedkopere versie van Ideogram 2.0. Geweldig voor typografie.,★★★★☆,★★★★★,★★★☆☆,★★★★★,$$$$$,Image
+Ideogram 1.0,Het eerste model van Ideogram. Goed voor typografie.,★★★★☆,★★★★☆,★★★☆☆,★★★★☆,$$$$$,Image
+Ideogram 1.0 Turbo,Een snellere en goedkopere versie van Ideogram 1.0.,★★★★☆,★★★★☆,★★★☆☆,★★★★☆,$$$$$,Image
+Seedance 1.5 Pro,De volgende generatie AI videogeneratie met gesynchroniseerde audio mogelijkheden.,★★★★★,★★★★★,★★★★★,★★☆☆☆,$$$$$,Video
+Seedance 1.0 Pro Fast,Snellere videogeneratie. Lagere prijs. Cinematografische resultaten.,★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Video
+PixVerse V5,PixVerse's v5 model met de nieuwste ontwikkelingen in AI videogeneratie.,★★★★★,★★★★★,★★★★★,★★☆☆☆,$$$$$,Video
+Kling 2.5 Turbo Standard,Ontworpen voor vloeiende cinematografische beeld-naar-video generatie door Kling A.I.,★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$$,Video
+Veo 3.1,Levensechte beweging met contextbewuste gesynchroniseerde audio. Ondersteunt eerste en laatste frame.,★★★★★,★★★★★,★★★★★,★★☆☆☆,$$$$$,Video
+Veo 3.1 Fast,Maakt dynamische cinematografische video's van één afbeelding met levensechte beweging en gesynchroniseerde audio.,★★★★☆,★★★★★,★★★★★,★★☆☆☆,$$$$,Video
+Google Veo 3.0 Fast,Een tekst-naar-video en beeld-naar-video model door Google.,★★★★☆,★★★★★,★★★★☆,★★☆☆☆,$$$$,Video
+Seedance 1.0 Pro,Een tekst-naar-video en beeld-naar-video model door ByteDance AI.,★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$$,Video
+Seedance 1.0 Lite,Een tekst-naar-video en beeld-naar-video model door ByteDance AI.,★★★☆☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Video
+Kling 2.5 Turbo Pro,Een tekst-naar-video en beeld-naar-video model door Kling A.I. met turbo beweging.,★★★★☆,★★★★★,★★★★★,★★☆☆☆,$$$$$,Video
+Kling 2.1 Standard,Een beeld-naar-video model door Kling A.I.,★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$$,Video
+Kling 1.6 Standard,Een tekst-naar-video en beeld-naar-video model door Kling A.I.,★★★☆☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Video
+Runway Gen-4 Turbo,Het nieuwste beeld-naar-video model door Runway.,★★★★☆,★★★★★,★★★★★,★★☆☆☆,$$$$$,Video
+Juggernaut Flux Base,Een versie van Flux getraind op hoogwaardige afbeeldingen. Door RunDiffusion.,★★★★★,★★★★☆,★★★★★,★★★☆☆,$$$,Image
+Juggernaut Flux Pro,Flux maar beter (vooral voor realisme). Door RunDiffusion.,★★★★★,★★★★★,★★★★★,★★★☆☆,$$$$,Image
+Juggernaut Flux Lightning,Een goedkopere snellere maar iets minder krachtige versie van Juggernaut Flux.,★★★★☆,★★★★☆,★★★★★,★★★☆☆,$$$,Image
+Juggernaut XI,Juggernaut opnieuw getraind voor betere prompt-naleving. Door RunDiffusion.,★★★★★,★★★★★,★★★★★,★★★☆☆,$$$$,Image
+Juggernaut XI Lightning,"Juggernaut opnieuw getraind voor betere prompt-naleving. Door RunDiffusion.",★★★★★,★★★★★,★★★★★,★★★☆☆,$$$$,Image
+RealVisXL v5,"Een SDXL model voor fotorealisme. Geweldig voor gezichten. Door SG_161222.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+RealVisXL v5 Lightning,"Een SDXL lightning model voor fotorealisme. Geweldig voor gezichten. Door SG_161222.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Crystal Clear XL,"Een SDXL model voor fotorealisme, 3D, semi-realistisch of cartoonachtig. Door Team Crystal.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Crystal Clear XL Lightning,"Een SDXL model voor fotorealisme, 3D, semi-realistisch of cartoonachtig. Door Team Crystal.",★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+Boltning XL v1 Lightning,"Een lightning model voor zeer gedetailleerde esthetische afbeeldingen. Door georgebanjog.",★★★★★,★★★★☆,★★★★☆,★★☆☆☆,$$$$$,Image
+Atomix XL v4 Lightning,"Een lightning model dat realisme en CG balanceert. Door AlexLai.",★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+Moxie Diffusion XL v1.6 Lightning,"Een mashup van populaire SDXL modellen. Door moxie1776.",★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+RealVisXL v4,"Een SDXL model voor fotorealisme. Geweldig voor gezichten. Door SG_161222.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Stable Core,"Mooie hoge resolutie afbeeldingen zonder complexe prompts.",★★★★☆,★★★★★,★★★★☆,★★★☆☆,$$$$$,Image
+SDXL 1.0,"Stabiel Diffusie XL. Een ouder model dat nog steeds goed presteert.",★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$,Image
+RealVisXL v4 Lightning,"Een SDXL model voor fotorealisme. Geweldig voor gezichten. Door SG_161222.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Fluently XL,"Een SDXL model voor het maken van realistische afbeeldingen. Door Fluently.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Fluently XL Lightning,"Een SDXL lightning model voor realistische afbeeldingen. Door Fluently.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$$,Image
+Real Cartoon XL v4,"Een SDXL model goed voor realistisch ogende cartoons. Door 7whitefire7.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Starlight XL,"Een SDXL model voor concept art en illustraties. Door chillpixel.",★★★★★,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Mysterious XL v4,"Een SDXL model voor fantasy kunst en Aziatische cultuur. Door LahInTheFutureland.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Juggernaut XL v8,"Een SDXL model voor perfecte realisme en cinematografische stijlen. Door KandooAI.",★★★★★,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+DreamShaper XL alpha2,"Een veelzijdig SDXL model getraind door Lykon.",★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$$,Image
+Juggernaut XL v5,"Een SDXL model voor perfecte realisme en cinematografische stijlen. Door KandooAI.",★★★★★,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Juggernaut XL v6,"Een SDXL model voor perfecte realisme en cinematografische stijlen. Door KandooAI.",★★★★★,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Juggernaut XL v7,"Een SDXL model voor perfecte realisme en cinematografische stijlen. Door KandooAI.",★★★★★,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Juggernaut v9 Lightning,"Een lightning model voor perfecte realisme en cinematografische stijlen. Door RunDiffusion.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Juggernaut v9,"Een SDXL model voor perfecte realisme en cinematografische stijlen. Door RunDiffusion.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+Blue Pencil XL,"Een SDXL Anime model door blue_pen5805.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Animagine XL v3,"Een model voor het genereren van hoogwaardige anime. Door CagliostroLab.",★★★★★,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+RealVisXL v3,"Een SDXL model voor fotorealisme. Geweldig voor gezichten. Door SG_161222.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+AAM XL Anime Mix v1,"Een model voor anime en gestileerde kunst. Door Lykon.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Virtual Utopia XL,"Geschikt voor zowel authentieke als anime afbeeldingen. Door CyberBlacat.",★★★★☆,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+Cherry Picker XL v2.7,"Een fotorealistisch model dat zorgvuldig geselecteerde modellen combineert. Door tkvier.",★★★★★,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+SDXL LCM,"SDXL versneld door LCM LoRA. Hoge kwaliteit snel en goedkoop.",★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$$,Image
+SDXL DPO,"Een Direct Preference Optimization (DPO) versie van SDXL 1.0.",★★★★☆,★★★★☆,★★★★☆,★★★☆☆,$$$$,Image
+DreamShaper v8,"Een doet-het-allemaal model door Lykon. Bijzonder goed in kunst.",★★★★★,★★★★☆,★★★★☆,★★★☆☆,$$$$,Image
+Realistic Vision V5.1,"Een model voor fotorealisme. Geweldig voor gezichten. Door SG_161222.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+AbsoluteReality v1.8.1,"Een model gericht op realisme door Lykon.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$,Image
+NeverEnding Dream v1.2.2,"Een DreamShaper alternatief dat beter is in anime. Door Lykon.",★★★★☆,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+3D Animation Diffusion v10,"Geweldig voor het maken van 3D cartoon karakters. Door Lykon.",★★★★★,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+RPG v5,"Gericht op het maken van RPG karakter portretten. Door Anashel.",★★★★★,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Blue Pencil v10,"Gericht op anime en fantasy kunst. Door blue_pen5805.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$$,Image
+Arthemy Comics v5.0,"Gericht op het maken van stripverhaal stijl karakters. Door Arthemy.",★★★★★,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Rabbit v7,"Dit model is geboren om schattige kleine dingen te tekenen. Door Rabbit_YourMajesty.",★★★★★,★★★☆☆,★★☆☆☆,★★☆☆☆,$$$$,Image
+Nightmare Shaper v3,"Ontworpen om de donkerste verbeeldingen los te laten. Door Yamer.",★★★★★,★★★★☆,★★★☆☆,★★☆☆☆,$$$$,Image
+WildlifeX Animals,"Model gericht op dieren, huisdieren en verschillende rassen. Door Mr_fries1111.",★★★★★,★★★★☆,★★★★☆,★★☆☆☆,$$$$,Image
+RealCartoon Pixar v8,"Een SD1.5 model goed voor Pixar stijl cartoons. Door 7whitefire7.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Ghost Mix v2,"Een SD1.5 model goed voor 2.5D kunst. Door _GhostInShell_.",★★★★★,★★★☆☆,★★★☆☆,★★☆☆☆,$$$$$,Image
+Juggernaut Reborn,"Een SD 1.5 model voor perfecte realisme en cinematografische stijlen. Door KandooAI.",★★★★☆,★★★★☆,★★★★★,★★☆☆☆,$$$$$,Image
+SD1.5 DPO,"Een Direct Preference Optimization (DPO) versie van SD1.5.",★★★☆☆,★★★☆☆,★★★★☆,★★☆☆☆,$$$$$,Image
+DALL-E 2,"De originele beeldgenerator van OpenAI.",★★★★☆,★★★★☆,★★★☆☆,★★☆☆☆,$$$,Image
+Stable Diffusion 1.5,"Het meest populaire eerste generatie Stabiel Diffusie model.",★★☆☆☆,★★☆☆☆,★★★☆☆,★★☆☆☆,$$$$$,Image
+Stable Diffusion 1.4,"Het originele Stabiel Diffusie model.",★★☆☆☆,★★☆☆☆,★★★☆☆,★★☆☆☆,$$$$,Image
+Coherent,"CLIP-Guided Diffusion.",★★☆☆☆,★★☆☆☆,★★☆☆☆,★☆☆☆☆,$$$$,Image
+Artistic,"VQGAN+CLIP - het originele tekst-naar-afbeelding algoritme.",★★☆☆☆,★☆☆☆☆,★☆☆☆☆,★☆☆☆☆,$$$$,Image
+Style Transfer,"Het originele AI Art algoritme.",★★☆☆☆,★☆☆☆☆,★☆☆☆☆,★☆☆☆☆,$$$$,Image
