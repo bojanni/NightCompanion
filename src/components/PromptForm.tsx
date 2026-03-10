@@ -24,6 +24,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [promptText, setPromptText] = useState(initial?.promptText ?? '')
   const [negativePrompt, setNegativePrompt] = useState(initial?.negativePrompt ?? '')
   const [model, setModel] = useState(initial?.model ?? '')
+  const [isTemplate, setIsTemplate] = useState(initial?.isTemplate ?? false)
+  const [isFavorite, setIsFavorite] = useState(initial?.isFavorite ?? false)
+  const [rating, setRating] = useState<number>(initial?.rating ?? 0)
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
@@ -68,6 +71,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
       promptText: promptText.trim(),
       negativePrompt: negativePrompt.trim(),
       model: model.trim(),
+      isTemplate,
+      isFavorite,
+      rating: rating || null,
       notes: notes.trim(),
       tags,
     })
@@ -171,6 +177,42 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                   className="input w-1/2"
                   placeholder="or type a model name"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Status</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsTemplate((prev) => !prev)}
+                  className={`px-3 py-2 rounded-lg border text-xs transition-colors ${isTemplate ? 'bg-teal-500/15 border-teal-500/40 text-teal-300' : 'bg-night-800 border-night-700 text-night-300 hover:text-white'}`}
+                >
+                  Template
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFavorite((prev) => !prev)}
+                  className={`px-3 py-2 rounded-lg border text-xs transition-colors ${isFavorite ? 'bg-rose-500/15 border-rose-500/40 text-rose-300' : 'bg-night-800 border-night-700 text-night-300 hover:text-white'}`}
+                >
+                  Favorite
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Rating</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRating((prev) => (prev === value ? 0 : value))}
+                    className={`w-9 h-9 rounded-lg border text-base transition-colors ${rating >= value ? 'text-yellow-400 border-yellow-600/50 bg-yellow-900/20' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}
+                  >
+                    ★
+                  </button>
+                ))}
               </div>
             </div>
 

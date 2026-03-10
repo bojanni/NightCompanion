@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Prompt } from '../types'
 import PromptForm from '../components/PromptForm'
-import { Check, Copy, Edit3, Filter, Plus, Search, SlidersHorizontal, Trash2, Zap } from 'lucide-react'
+import { BookTemplate, Check, Copy, Edit3, Filter, Heart, Plus, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const PAGE_SIZE = 20
@@ -11,7 +11,7 @@ type FormState =
   | { mode: 'create' }
   | { mode: 'edit'; prompt: Prompt }
 
-type FilterType = 'all' | 'with-model' | 'with-tags'
+type FilterType = 'all' | 'templates' | 'favorites'
 
 export default function Library() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -88,13 +88,40 @@ export default function Library() {
     setTimeout(() => setCopiedId(null), 1500)
   }
 
+  const handleToggleFavorite = async (prompt: Prompt) => {
+    const result = await window.electronAPI.prompts.update(prompt.id, {
+      isFavorite: !prompt.isFavorite,
+    })
+
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+
+    setPrompts((prev) =>
+      prev.map((item) => (item.id === prompt.id ? { ...item, isFavorite: !item.isFavorite } : item))
+    )
+  }
+
+  const handleSetRating = async (prompt: Prompt, rating: number) => {
+    const nextRating = prompt.rating === rating ? null : rating
+    const result = await window.electronAPI.prompts.update(prompt.id, { rating: nextRating })
+
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+
+    setPrompts((prev) => prev.map((item) => (item.id === prompt.id ? { ...item, rating: nextRating } : item)))
+  }
+
   const allModels = [...new Set(prompts.map((p) => p.model).filter(Boolean))].sort()
   const allTags = [...new Set(prompts.flatMap((p) => p.tags || []))].sort()
 
   const filteredPrompts = useMemo(() => {
     return prompts.filter((prompt) => {
-      if (filterType === 'with-model' && !prompt.model) return false
-      if (filterType === 'with-tags' && (!prompt.tags || prompt.tags.length === 0)) return false
+      if (filterType === 'templates' && !prompt.isTemplate) return false
+      if (filterType === 'favorites' && !prompt.isFavorite) return false
       if (selectedTag && !prompt.tags.includes(selectedTag)) return false
       return true
     })
@@ -157,8 +184,8 @@ export default function Library() {
         <div className="flex gap-2">
           {([
             { id: 'all', label: 'All', icon: <SlidersHorizontal size={13} /> },
-            { id: 'with-model', label: 'Model', icon: <Zap size={13} /> },
-            { id: 'with-tags', label: 'Tags', icon: <Filter size={13} /> },
+            { id: 'templates', label: 'Templates', icon: <BookTemplate size={13} /> },
+            { id: 'favorites', label: 'Favorites', icon: <Heart size={13} /> },
           ] as const).map((entry) => (
             <button
               key={entry.id}
@@ -222,9 +249,9 @@ export default function Library() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
-                          {prompt.model && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded-md flex-shrink-0">
-                              Model
+                          {prompt.isTemplate && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
+                              Template
                             </span>
                           )}
                         </div>
@@ -235,6 +262,13 @@ export default function Library() {
                             title="Copy"
                           >
                             {copiedId === prompt.id ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                          <button
+                            onClick={() => handleToggleFavorite(prompt)}
+                            className="p-1.5 hover:bg-night-800 text-night-500 hover:text-rose-400 rounded-lg transition-colors"
+                            title={prompt.isFavorite ? 'Unfavorite' : 'Favorite'}
+                          >
+                            <Heart size={14} className={prompt.isFavorite ? 'fill-rose-400 text-rose-400' : ''} />
                           </button>
                           <button
                             onClick={() => setForm({ mode: 'edit', prompt })}
@@ -282,6 +316,19 @@ export default function Library() {
 
                     <div className="px-5 pb-5 mt-auto">
                       <div className="rounded-xl border border-night-700 bg-night-950/40 p-3">
+                        <div className="flex items-center gap-1 mb-2">
+                          {[1, 2, 3, 4, 5].map((value) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => handleSetRating(prompt, value)}
+                              className={`text-xs ${((prompt.rating || 0) >= value) ? 'text-yellow-400' : 'text-night-600 hover:text-night-300'}`}
+                              title={`Set rating ${value}`}
+                            >
+                              ★
+                            </button>
+                          ))}
+                        </div>
                         <p className="text-[11px] text-night-400 line-clamp-2">
                           {prompt.negativePrompt || 'No negative prompt set.'}
                         </p>

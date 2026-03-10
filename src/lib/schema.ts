@@ -4,6 +4,7 @@ import {
   text,
   varchar,
   integer,
+  boolean,
   timestamp,
   index,
 } from 'drizzle-orm/pg-core'
@@ -19,6 +20,9 @@ export const prompts = pgTable(
     negativePrompt: text('negative_prompt').default(''),
     tags: text('tags').array().default([]).notNull(),
     model: varchar('model', { length: 100 }).default('').notNull(),
+    isTemplate: boolean('is_template').default(false).notNull(),
+    isFavorite: boolean('is_favorite').default(false).notNull(),
+    rating: integer('rating'),
     notes: text('notes').default(''),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

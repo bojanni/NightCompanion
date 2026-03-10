@@ -107,3 +107,9 @@
 - Findings: User requested the Prompt Library to more closely match the attached `Prompts.tsx` style and interaction model.
 - Conclusions: The existing schema does not include some attached features (favorites/templates/ratings/linked-gallery), so the implementation should mirror the visual structure and core interactions using supported fields.
 - Actions: Refactored `src/screens/Library.tsx` to a richer layout with card-based prompt grid, search bar with icon, model + type/tag filters, tag pill filtering, hover action buttons (copy/edit/delete), compact metadata, and pagination; kept current create/edit flow via `PromptForm`; validated with `npm run build`.
+
+## 2026-03-10 (Favorites/Templates/Rating Voor Prompt Library)
+
+- Findings: User approved adding true favorites/templates support (and rating) so Prompt Library behavior matches the provided example more closely.
+- Conclusions: This required schema + migration changes first, then UI updates in both form and library card interactions.
+- Actions: Added `is_template`, `is_favorite`, and `rating` columns to prompts in `src/lib/schema.ts`; created migration `drizzle/0002_prompt_flags_and_rating.sql` and registered it in `drizzle/meta/_journal.json`; updated `src/components/PromptForm.tsx` with template/favorite toggles and star rating input; updated `src/screens/Library.tsx` with `All/Templates/Favorites` filters, favorite toggle action, and star rating controls on cards; validated with `npm run build` and applied DB migration via `npm run db:migrate`.

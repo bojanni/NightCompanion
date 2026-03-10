@@ -15,6 +15,13 @@
       "when": 1773032200000,
       "tag": "0001_openrouter_models",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773109800000,
+      "tag": "0002_prompt_flags_and_rating",
+      "breakpoints": true
     }
   ]
 }
