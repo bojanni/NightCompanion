@@ -81,7 +81,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('settings:testOpenRouter', input),
   },
   generator: {
-    magicRandom: (input?: { theme?: string; presetName?: string }): Promise<IpcResult<{ prompt: string }>> =>
+    magicRandom: (input?: { theme?: string; presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:magicRandom', input),
   },
   nightcafeModels: {

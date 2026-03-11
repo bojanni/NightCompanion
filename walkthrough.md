@@ -137,3 +137,9 @@
 - Findings: User requested startup sync for `resources/presets/nightcafe_presets.csv`, DB insert/update behavior, alphabetical preset dropdown in Generator tab 1, and including selected preset in AI prompt generation.
 - Conclusions: Implemented a dedicated presets cache table + startup sync (upsert + prune) and connected Generator UI/IPC so preset context is included in `magicRandom` requests.
 - Actions: Added `nightcafe_presets` schema in `src/lib/schema.ts`; created migration `drizzle/0004_nightcafe_presets_cache.sql` and updated `drizzle/meta/_journal.json`; implemented CSV parsing/sync in `electron/main.ts` (`syncNightCafePresetsFromCsv`) and startup invocation; added IPC endpoint `nightcafePresets:list` in `electron/main.ts` and exposed/typed it in `electron/preload.ts` and `src/types/electron.d.ts`; updated `src/screens/Generator.tsx` to load presets, show alphabetical dropdown in first tab, and pass `presetName` into `generator:magicRandom`; validated with `npm run build` and `npm run db:migrate`.
+
+## 2026-03-11 (Generator Greylist + Toggle + Autocomplete)
+
+- Findings: User requested a Generator greylist with default words (`jellyfish`, `neon`, `cyber`), an on/off switch, and an autocomplete add field.
+- Conclusions: Greylist needed to exist in both UI state and `generator:magicRandom` IPC payload so the model receives explicit avoidance guidance.
+- Actions: Updated `src/screens/Generator.tsx` with greylist state, localStorage persistence, add/remove UX, datalist autocomplete input, default list seed, and on/off control; updated `electron/preload.ts` and `src/types/electron.d.ts` to include `greylistEnabled`/`greylistWords`; updated `electron/main.ts` `generator:magicRandom` handler to normalize/dedupe greylist terms and inject "avoid/low probability" instructions into AI prompt generation; validated with `npm run build`.

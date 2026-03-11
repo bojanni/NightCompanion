@@ -889,7 +889,7 @@ ipcMain.handle('characters:deleteImage', async (_, input: { fileUrl: string }) =
   }
 })
 
-ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string; presetName?: string }) => {
+ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string; presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }) => {
   try {
     const settings = await getOpenRouterSettings()
     if (!settings.apiKey) {
@@ -898,11 +898,20 @@ ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string; pres
 
     const theme = input?.theme?.trim()
     const presetName = input?.presetName?.trim()
+    const greylistEnabled = input?.greylistEnabled !== false
+    const greylistWords = (input?.greylistWords ?? [])
+      .map((word) => word.trim().toLowerCase())
+      .filter((word) => word.length > 0)
+    const uniqueGreylistWords = Array.from(new Set(greylistWords)).slice(0, 30)
+    const hasGreylist = greylistEnabled && uniqueGreylistWords.length > 0
 
     const promptParts = [
       'Create one random, vivid text-to-image prompt.',
       presetName ? `Use this NightCafe preset as style guidance: ${presetName}.` : '',
       theme ? `Theme to include: ${theme}.` : 'Pick any surprising subject.',
+      hasGreylist
+        ? `Avoid these words when writing the prompt (or keep their probability very low): ${uniqueGreylistWords.join(', ')}.`
+        : '',
       'Return only the final prompt text.',
     ].filter(Boolean)
 

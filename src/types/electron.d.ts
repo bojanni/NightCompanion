@@ -38,7 +38,7 @@ declare global {
         testOpenRouter(input?: Partial<OpenRouterSettings>): Promise<IpcResult<{ ok: boolean; modelCount: number }>>
       }
       generator: {
-        magicRandom(input?: { theme?: string; presetName?: string }): Promise<IpcResult<{ prompt: string }>>
+        magicRandom(input?: { theme?: string; presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>>
       }
       nightcafeModels: {
         list(filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>>
