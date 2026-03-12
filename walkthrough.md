@@ -203,3 +203,9 @@
 - Findings: The renderer had no React Error Boundary, so a render-time crash in a subtree could tear down the full UI.
 - Conclusions: A root-level Error Boundary around `App` is the minimal protection to keep a controlled fallback UI when runtime render errors occur.
 - Actions: Added `src/components/ErrorBoundary.tsx` as a class-based boundary (`getDerivedStateFromError` + `componentDidCatch`) and wrapped `<App />` with `<ErrorBoundary>` in `src/main.tsx`.
+
+## 2026-03-13 (Dashboard Stale Cache On Navigation)
+
+- Findings: `Dashboard` remounts on each screen navigation from `App`, causing a full `Promise.all` refetch for prompts, style profiles, generation log, and characters every time user returns.
+- Conclusions: A lightweight module-level stale cache with short TTL prevents unnecessary repeat fetches while keeping data reasonably fresh.
+- Actions: Updated `src/screens/Dashboard.tsx` with a `DashboardCache` object, `DASHBOARD_CACHE_STALE_MS = 60_000`, cache hit path before fetch, and shared `applyDashboardData` state updater; kept existing loading/fallback behavior intact.

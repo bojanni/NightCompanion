@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { GenerationEntry, Prompt, Screen, StyleProfile } from '../types'
+import type { GenerationEntry, Prompt, Screen } from '../types'
 
 interface CharacterDashboardItem {
   id: string
@@ -20,6 +20,17 @@ interface DashboardProps {
   onNavigate: (screen: Screen) => void
 }
 
+interface DashboardCache {
+  cachedAt: number
+  stats: DashboardStats
+  recentPrompts: Prompt[]
+  recentGenerations: GenerationEntry[]
+  topCharacters: CharacterDashboardItem[]
+}
+
+const DASHBOARD_CACHE_STALE_MS = 60_000
+let dashboardCache: DashboardCache | null = null
+
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats>({
@@ -32,10 +43,30 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   const [recentGenerations, setRecentGenerations] = useState<GenerationEntry[]>([])
   const [topCharacters, setTopCharacters] = useState<CharacterDashboardItem[]>([])
 
+  function applyDashboardData(data: Omit<DashboardCache, 'cachedAt'>) {
+    setStats(data.stats)
+    setRecentPrompts(data.recentPrompts)
+    setRecentGenerations(data.recentGenerations)
+    setTopCharacters(data.topCharacters)
+  }
+
   useEffect(() => {
     let ignore = false
 
     async function loadDashboard() {
+      const cache = dashboardCache
+      const hasFreshCache = cache && Date.now() - cache.cachedAt < DASHBOARD_CACHE_STALE_MS
+      if (hasFreshCache) {
+        applyDashboardData({
+          stats: cache.stats,
+          recentPrompts: cache.recentPrompts,
+          recentGenerations: cache.recentGenerations,
+          topCharacters: cache.topCharacters,
+        })
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
 
       const [promptsResult, styleProfilesResult, generationResult, charactersResult] = await Promise.all([
@@ -52,15 +83,24 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       const generations = generationResult.error ? [] : generationResult.data || []
       const characters = charactersResult.error ? [] : charactersResult.data || []
 
-      setStats({
-        promptCount: prompts.length,
-        styleProfileCount: styleProfiles.length,
-        characterCount: characters.length,
-        generationCount: generations.length,
-      })
-      setRecentPrompts(prompts.slice(0, 5))
-      setRecentGenerations(generations.slice(0, 6))
-      setTopCharacters(characters.slice(0, 3))
+      const data = {
+        stats: {
+          promptCount: prompts.length,
+          styleProfileCount: styleProfiles.length,
+          characterCount: characters.length,
+          generationCount: generations.length,
+        },
+        recentPrompts: prompts.slice(0, 5),
+        recentGenerations: generations.slice(0, 6),
+        topCharacters: characters.slice(0, 3),
+      }
+
+      dashboardCache = {
+        ...data,
+        cachedAt: Date.now(),
+      }
+
+      applyDashboardData(data)
       setLoading(false)
     }
 
