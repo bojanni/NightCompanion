@@ -197,3 +197,9 @@
 - Findings: `electron/main.ts` still contained extensive NightCafe CSV discovery/parsing/upsert logic after IPC modularization.
 - Conclusions: Startup data-sync belongs in a dedicated service module so `main.ts` remains an orchestration entrypoint.
 - Actions: Added `electron/services/nightcafeSync.ts` with CSV read/parse/upsert+prune logic for models and presets; updated `electron/main.ts` to call `syncNightCafeData({ db })`; removed duplicated NightCafe helper functions/constants from `main.ts`; validated with `npm run build`.
+
+## 2026-03-12 (Root React Error Boundary)
+
+- Findings: The renderer had no React Error Boundary, so a render-time crash in a subtree could tear down the full UI.
+- Conclusions: A root-level Error Boundary around `App` is the minimal protection to keep a controlled fallback UI when runtime render errors occur.
+- Actions: Added `src/components/ErrorBoundary.tsx` as a class-based boundary (`getDerivedStateFromError` + `componentDidCatch`) and wrapped `<App />` with `<ErrorBoundary>` in `src/main.tsx`.
