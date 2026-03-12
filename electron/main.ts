@@ -881,7 +881,11 @@ ipcMain.handle('settings:listOpenRouterModels', async () => {
 
 ipcMain.handle('settings:refreshOpenRouterModels', async (_, input?: Partial<OpenRouterSettings>) => {
   try {
-    const data = normalizeOpenRouterSettings(input)
+    const stored = await getOpenRouterSettings()
+    const data = normalizeOpenRouterSettings({
+      ...stored,
+      ...input,
+    })
     const models = await syncOpenRouterModels(data)
     return { data: models }
   } catch (error) {

@@ -132,6 +132,21 @@ export function ProviderConfigForm({
       }
 
       writeProviderMeta(provider.id, nextMeta)
+      const modelsResult = await window.electronAPI.settings.listOpenRouterModels()
+      if (!modelsResult.error && modelsResult.data) {
+        const models = modelsResult.data.map((item) => ({
+          id: item.modelId,
+          label: item.displayName,
+          provider: provider.id,
+          capabilities: item.modelId.toLowerCase().includes('vision') ? ['vision'] : undefined,
+        }))
+
+        setDynamicModels((prev) => ({
+          ...prev,
+          [provider.id]: models,
+        }))
+      }
+
       await loadKeys()
       toast.success(`${provider.name} key saved successfully`)
       setIsEditing(false)

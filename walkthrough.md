@@ -155,3 +155,9 @@
 - Findings: User requested a visible startup error notification instead of console-only failure output.
 - Conclusions: A native Electron dialog shown in the main process before quitting makes startup failures explicit for non-dev users.
 - Actions: Updated `electron/main.ts` startup catch block to display `dialog.showErrorBox(...)` with database failure details and recovery hint before `app.quit()`/`process.exit(1)`.
+
+## 2026-03-12 (OpenRouter Model List Not Updating After Save/Refresh)
+
+- Findings: Model list did not refresh reliably after saving OpenRouter key or clicking refresh in settings.
+- Conclusions: `settings:refreshOpenRouterModels` incorrectly normalized `undefined` input to an empty API key path; additionally, saving a key did not immediately repopulate `dynamicModels` in UI state.
+- Actions: Updated `electron/main.ts` `settings:refreshOpenRouterModels` to merge input over stored OpenRouter settings before syncing; updated `src/screens/Settings/ProviderConfigForm.tsx` `handleSave` to read `settings:listOpenRouterModels` right after save and push models into `setDynamicModels`, so dropdown options update instantly.
