@@ -173,3 +173,9 @@
 - Findings: `providerMeta` in `AIConfig` / `ProviderConfigForm` was still stored in renderer `localStorage`, causing the same persistence consistency issue.
 - Conclusions: Provider settings belong in main-process persistent storage; existing `settings.json` store is sufficient and avoids renderer-local state persistence.
 - Actions: Added `settings:getProviderMeta` and `settings:saveProviderMeta` IPC in `electron/main.ts` with typed normalization defaults and persistence in `settings.json`; updated `electron/preload.ts` and `src/types/electron.d.ts` with the new settings API; refactored `src/screens/AIConfig.tsx` and `src/screens/Settings/ProviderConfigForm.tsx` to load/save provider meta through Electron settings store instead of localStorage; added one-time legacy migration from `localStorage.providerMeta` to the Electron store in `AIConfig`; ensured `settings:saveOpenRouter` preserves `providerMeta` when writing settings.
+
+## 2026-03-12 (AIConfig Role Routing + Cached Models Moved From localStorage)
+
+- Findings: `dashboardRoleRouting`, `cachedModels`, and derived `advisorModelRoute` were still persisted in renderer localStorage.
+- Conclusions: These are settings and should live in the main-process settings store to align with architecture and avoid renderer storage coupling.
+- Actions: Added `settings:getAiConfigState` and `settings:saveAiConfigState` IPC in `electron/main.ts` with persistence under `settings.json` (`aiConfig` section), updated `electron/preload.ts` + `src/types/electron.d.ts` with new methods/types, and refactored `src/screens/AIConfig.tsx` to hydrate/persist via settings IPC; implemented one-time migration of legacy localStorage keys (`dashboardRoleRouting`, `cachedModels`, `advisorModelRoute`) into the Electron settings store, then cleanup localStorage keys.

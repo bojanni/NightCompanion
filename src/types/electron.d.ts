@@ -12,6 +12,11 @@ type ProviderMetaStore = {
   is_active_improve: boolean
   is_active_vision: boolean
 }
+type AiConfigStateStore = {
+  dashboardRoleRouting?: unknown
+  cachedModels?: unknown
+  advisorModelRoute?: unknown
+}
 type OpenRouterModel = { modelId: string; displayName: string; contextLength: number | null }
 type NightcafeModelOption = { modelName: string; modelType: string; mediaType: string }
 type NightcafePresetOption = { presetName: string; category: string }
@@ -54,6 +59,8 @@ declare global {
         getOpenRouter(): Promise<IpcResult<OpenRouterSettings>>
         getProviderMeta(providerId: string, fallbackModel: string): Promise<IpcResult<ProviderMetaStore>>
         saveProviderMeta(providerId: string, input: Partial<ProviderMetaStore>): Promise<IpcResult<ProviderMetaStore>>
+        getAiConfigState(): Promise<IpcResult<AiConfigStateStore>>
+        saveAiConfigState(input: AiConfigStateStore): Promise<IpcResult<AiConfigStateStore>>
         saveOpenRouter(input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>>
         listOpenRouterModels(): Promise<IpcResult<OpenRouterModel[]>>
         refreshOpenRouterModels(input?: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterModel[]>>

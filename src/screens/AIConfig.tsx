@@ -131,40 +131,81 @@ export function AIConfig() {
   const [keys, setKeys] = useState<ApiKeyInfo[]>([])
   const [localEndpoints, setLocalEndpoints] = useState<LocalEndpoint[]>([])
   const [loading, setLoading] = useState(true)
-  const [roleRouting, setRoleRouting] = useState<RoleRouteState>(() => {
-    try {
-      const saved = localStorage.getItem('dashboardRoleRouting')
-      if (!saved) return buildRoleDefaults()
-      return { ...buildRoleDefaults(), ...(JSON.parse(saved) as Partial<RoleRouteState>) }
-    } catch {
-      return buildRoleDefaults()
-    }
-  })
-
-  const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>(() => {
-    try {
-      const saved = localStorage.getItem('cachedModels')
-      return saved ? (JSON.parse(saved) as Record<string, ModelOption[]>) : {}
-    } catch (error) {
-      console.error('Failed to load cached models', error)
-      return {}
-    }
-  })
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('cachedModels', JSON.stringify(dynamicModels))
-    } catch (error) {
-      console.error('Failed to save cached models', error)
-    }
-  }, [dynamicModels])
-
-  useEffect(() => {
-    localStorage.setItem('dashboardRoleRouting', JSON.stringify(roleRouting))
-    localStorage.setItem('advisorModelRoute', JSON.stringify(roleRouting.general))
-  }, [roleRouting])
+  const [roleRouting, setRoleRouting] = useState<RoleRouteState>(buildRoleDefaults)
+  const [dynamicModels, setDynamicModels] = useState<Record<string, ModelOption[]>>({})
+  const [aiConfigHydrated, setAiConfigHydrated] = useState(false)
 
   const getToken = useCallback(async () => 'local-desktop-token', [])
+
+  const hydrateAiConfigState = useCallback(async () => {
+    let nextRoleRouting = buildRoleDefaults()
+    let nextDynamicModels: Record<string, ModelOption[]> = {}
+
+    const storedResult = await window.electronAPI.settings.getAiConfigState()
+    if (!storedResult.error && storedResult.data) {
+      const storedRoleRouting = storedResult.data.dashboardRoleRouting as Partial<RoleRouteState> | undefined
+      const storedDynamicModels = storedResult.data.cachedModels as Record<string, ModelOption[]> | undefined
+
+      if (storedRoleRouting) {
+        nextRoleRouting = { ...buildRoleDefaults(), ...storedRoleRouting }
+      }
+
+      if (storedDynamicModels && typeof storedDynamicModels === 'object') {
+        nextDynamicModels = storedDynamicModels
+      }
+    }
+
+    try {
+      const legacyRoleRoutingRaw = localStorage.getItem('dashboardRoleRouting')
+      const legacyCachedModelsRaw = localStorage.getItem('cachedModels')
+
+      const hasStoredRoleRouting = Boolean((storedResult.data?.dashboardRoleRouting))
+      const hasStoredCachedModels = Boolean((storedResult.data?.cachedModels))
+
+      if (!hasStoredRoleRouting && legacyRoleRoutingRaw) {
+        const legacyRoleRouting = JSON.parse(legacyRoleRoutingRaw) as Partial<RoleRouteState>
+        nextRoleRouting = { ...buildRoleDefaults(), ...legacyRoleRouting }
+      }
+
+      if (!hasStoredCachedModels && legacyCachedModelsRaw) {
+        const legacyCachedModels = JSON.parse(legacyCachedModelsRaw) as Record<string, ModelOption[]>
+        nextDynamicModels = legacyCachedModels
+      }
+
+      if (legacyRoleRoutingRaw || legacyCachedModelsRaw || localStorage.getItem('advisorModelRoute')) {
+        await window.electronAPI.settings.saveAiConfigState({
+          dashboardRoleRouting: nextRoleRouting,
+          cachedModels: nextDynamicModels,
+          advisorModelRoute: nextRoleRouting.general,
+        })
+
+        localStorage.removeItem('dashboardRoleRouting')
+        localStorage.removeItem('cachedModels')
+        localStorage.removeItem('advisorModelRoute')
+      }
+    } catch (error) {
+      console.error('Failed to migrate legacy AI config localStorage settings', error)
+    }
+
+    setRoleRouting(nextRoleRouting)
+    setDynamicModels(nextDynamicModels)
+    setAiConfigHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!aiConfigHydrated)
+      return
+
+    const persist = async () => {
+      await window.electronAPI.settings.saveAiConfigState({
+        dashboardRoleRouting: roleRouting,
+        cachedModels: dynamicModels,
+        advisorModelRoute: roleRouting.general,
+      })
+    }
+
+    void persist()
+  }, [roleRouting, dynamicModels, aiConfigHydrated])
 
   const migrateLegacyProviderMeta = useCallback(async () => {
     try {
@@ -264,6 +305,7 @@ export function AIConfig() {
 
     const init = async () => {
       setLoading(true)
+      await hydrateAiConfigState()
       await refreshData()
       if (active) setLoading(false)
     }
@@ -273,7 +315,7 @@ export function AIConfig() {
     return () => {
       active = false
     }
-  }, [refreshData])
+  }, [refreshData, hydrateAiConfigState])
 
   const activeGen = useMemo(
     () => keys.find((key) => key.is_active_gen) || localEndpoints.find((endpoint) => endpoint.is_active_gen),

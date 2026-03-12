@@ -166,6 +166,12 @@ type ProviderMetaStore = {
   is_active_vision: boolean
 }
 
+type AiConfigStateStore = {
+  dashboardRoleRouting?: unknown
+  cachedModels?: unknown
+  advisorModelRoute?: unknown
+}
+
 type OpenRouterModel = {
   modelId: string
   displayName: string
@@ -335,12 +341,14 @@ function normalizeProviderMeta(input: Partial<ProviderMetaStore> | undefined, fa
 async function readStoredSettings(): Promise<{
   openRouter?: Partial<OpenRouterSettings>
   providerMeta?: Record<string, Partial<ProviderMetaStore>>
+  aiConfig?: AiConfigStateStore
 }> {
   try {
     const raw = await readFile(getSettingsFilePath(), 'utf-8')
     return JSON.parse(raw) as {
       openRouter?: Partial<OpenRouterSettings>
       providerMeta?: Record<string, Partial<ProviderMetaStore>>
+      aiConfig?: AiConfigStateStore
     }
   } catch (error) {
     const err = error as NodeJS.ErrnoException
@@ -354,6 +362,7 @@ async function readStoredSettings(): Promise<{
 async function writeStoredSettings(settings: {
   openRouter: OpenRouterSettings
   providerMeta?: Record<string, Partial<ProviderMetaStore>>
+  aiConfig?: AiConfigStateStore
 }) {
   const settingsPath = getSettingsFilePath()
   await mkdir(path.dirname(settingsPath), { recursive: true })
@@ -961,9 +970,39 @@ ipcMain.handle('settings:saveProviderMeta', async (_, providerId: string, input:
     await writeStoredSettings({
       openRouter: normalizeOpenRouterSettings(stored.openRouter),
       providerMeta: providerMap,
+      aiConfig: stored.aiConfig,
     })
 
     return { data: next }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('settings:getAiConfigState', async () => {
+  try {
+    const stored = await readStoredSettings()
+    return { data: stored.aiConfig || {} }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('settings:saveAiConfigState', async (_, input: AiConfigStateStore) => {
+  try {
+    const stored = await readStoredSettings()
+    const nextAiConfig: AiConfigStateStore = {
+      ...(stored.aiConfig || {}),
+      ...(input || {}),
+    }
+
+    await writeStoredSettings({
+      openRouter: normalizeOpenRouterSettings(stored.openRouter),
+      providerMeta: stored.providerMeta,
+      aiConfig: nextAiConfig,
+    })
+
+    return { data: nextAiConfig }
   } catch (error) {
     return { error: String(error) }
   }
@@ -983,6 +1022,7 @@ ipcMain.handle('settings:saveOpenRouter', async (_, input: Partial<OpenRouterSet
     await writeStoredSettings({
       openRouter: data,
       providerMeta: stored.providerMeta,
+      aiConfig: stored.aiConfig,
     })
     return { data }
   } catch (error) {

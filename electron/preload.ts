@@ -24,6 +24,12 @@ export type ProviderMetaStore = {
   is_active_vision: boolean
 }
 
+export type AiConfigStateStore = {
+  dashboardRoleRouting?: unknown
+  cachedModels?: unknown
+  advisorModelRoute?: unknown
+}
+
 export type OpenRouterModel = {
   modelId: string
   displayName: string
@@ -109,6 +115,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('settings:getProviderMeta', providerId, fallbackModel),
     saveProviderMeta: (providerId: string, input: Partial<ProviderMetaStore>): Promise<IpcResult<ProviderMetaStore>> =>
       ipcRenderer.invoke('settings:saveProviderMeta', providerId, input),
+    getAiConfigState: (): Promise<IpcResult<AiConfigStateStore>> =>
+      ipcRenderer.invoke('settings:getAiConfigState'),
+    saveAiConfigState: (input: AiConfigStateStore): Promise<IpcResult<AiConfigStateStore>> =>
+      ipcRenderer.invoke('settings:saveAiConfigState', input),
     saveOpenRouter: (input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>> =>
       ipcRenderer.invoke('settings:saveOpenRouter', input),
     listOpenRouterModels: (): Promise<IpcResult<OpenRouterModel[]>> =>
