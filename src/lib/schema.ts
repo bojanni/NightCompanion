@@ -136,6 +136,25 @@ export const nightcafePresets = pgTable(
   ]
 )
 
+// ─── Characters ───────────────────────────────────────────────────────────────
+
+export const characters = pgTable(
+  'characters',
+  {
+    id: varchar('id', { length: 64 }).primaryKey(),
+    name: varchar('name', { length: 255 }).notNull(),
+    description: text('description').default('').notNull(),
+    imagesJson: text('images_json').default('[]').notNull(),
+    detailsJson: text('details_json').default('[]').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('characters_name_idx').on(table.name),
+    index('characters_created_at_idx').on(table.createdAt),
+  ]
+)
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Prompt = typeof prompts.$inferSelect
@@ -155,3 +174,6 @@ export type NewNightcafeModel = typeof nightcafeModels.$inferInsert
 
 export type NightcafePreset = typeof nightcafePresets.$inferSelect
 export type NewNightcafePreset = typeof nightcafePresets.$inferInsert
+
+export type Character = typeof characters.$inferSelect
+export type NewCharacter = typeof characters.$inferInsert

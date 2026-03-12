@@ -67,26 +67,50 @@ export default function Characters() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (!raw) {
+    const init = async () => {
+      setLoading(true)
+
+      const listResult = await window.electronAPI.characters.list()
+      if (listResult.error) {
+        toast.error('Failed to load characters from database')
         setCharacters([])
+        setLoading(false)
         return
       }
 
-      const parsed = JSON.parse(raw) as CharacterRecord[]
-      setCharacters(Array.isArray(parsed) ? parsed : [])
-    } catch {
-      setCharacters([])
-    } finally {
+      const dbCharacters = listResult.data || []
+      if (dbCharacters.length > 0) {
+        setCharacters(dbCharacters)
+        setLoading(false)
+        return
+      }
+
+      const legacyCharacters = readCharactersFromStorage()
+      if (legacyCharacters.length === 0) {
+        setCharacters([])
+        setLoading(false)
+        return
+      }
+
+      for (const item of legacyCharacters) {
+        const createResult = await window.electronAPI.characters.create(item)
+        if (createResult.error) {
+          toast.error('Failed to migrate one or more legacy characters')
+          setCharacters(legacyCharacters)
+          setLoading(false)
+          return
+        }
+      }
+
+      localStorage.removeItem(STORAGE_KEY)
+      const migrated = await window.electronAPI.characters.list()
+      setCharacters(migrated.error || !migrated.data ? legacyCharacters : migrated.data)
+      toast.success(`Migrated ${legacyCharacters.length} character${legacyCharacters.length === 1 ? '' : 's'} to database`)
       setLoading(false)
     }
-  }, [])
 
-  useEffect(() => {
-    if (loading) return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(characters))
-  }, [characters, loading])
+    void init()
+  }, [])
 
   const filteredCharacters = useMemo(() => {
     const value = search.trim().toLowerCase()
@@ -152,20 +176,19 @@ export default function Characters() {
 
       if (editor.mode === 'edit') {
         const existingCharacter = characters.find((char) => char.id === editor.characterId)
-        setCharacters((prev) =>
-          prev.map((char) => {
-            if (char.id !== editor.characterId) return char
+        const updateResult = await window.electronAPI.characters.update(editor.characterId, {
+          name,
+          description: formDesc,
+          images: normalizedImages,
+          details: formDetails,
+          updatedAt: now,
+        })
 
-            return {
-              ...char,
-              name,
-              description: formDesc,
-              images: normalizedImages,
-              details: formDetails,
-              updatedAt: now,
-            }
-          })
-        )
+        if (updateResult.error || !updateResult.data) {
+          throw new Error(updateResult.error || 'Failed to update character')
+        }
+
+        setCharacters((prev) => prev.map((char) => (char.id === editor.characterId ? updateResult.data! : char)))
 
         if (existingCharacter) {
           const nextUrls = new Set(normalizedImages.map((image) => image.url))
@@ -180,7 +203,7 @@ export default function Characters() {
 
         toast.success('Character updated')
       } else {
-        const created: CharacterRecord = {
+        const createResult = await window.electronAPI.characters.create({
           id: crypto.randomUUID(),
           name,
           description: formDesc,
@@ -188,9 +211,13 @@ export default function Characters() {
           details: formDetails,
           createdAt: now,
           updatedAt: now,
+        })
+
+        if (createResult.error || !createResult.data) {
+          throw new Error(createResult.error || 'Failed to create character')
         }
 
-        setCharacters((prev) => [created, ...prev])
+        setCharacters((prev) => [createResult.data!, ...prev])
         toast.success('Character created')
       }
 
@@ -213,6 +240,12 @@ export default function Characters() {
 
     if (localImageUrls.length > 0) {
       await Promise.all(localImageUrls.map(deleteLocalImage))
+    }
+
+    const deleteResult = await window.electronAPI.characters.delete(id)
+    if (deleteResult.error) {
+      toast.error(deleteResult.error)
+      return
     }
 
     setCharacters((prev) => prev.filter((char) => char.id !== id))
@@ -740,4 +773,16 @@ function readFileAsDataUrl(file: File): Promise<string> {
 
 function isLocalFileUrl(value: string) {
   return value.startsWith('file://')
+}
+
+function readCharactersFromStorage(): CharacterRecord[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+
+    const parsed = JSON.parse(raw) as CharacterRecord[]
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
 }

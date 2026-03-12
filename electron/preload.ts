@@ -31,6 +31,30 @@ export type NightcafePresetOption = {
   category: string
 }
 
+export type CharacterImage = {
+  id: string
+  url: string
+  isMain: boolean
+  createdAt: string
+}
+
+export type CharacterDetail = {
+  id: string
+  detail: string
+  category: string
+  worksWell: boolean
+}
+
+export type CharacterRecord = {
+  id: string
+  name: string
+  description: string
+  images: CharacterImage[]
+  details: CharacterDetail[]
+  createdAt: string
+  updatedAt: string
+}
+
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -93,6 +117,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('nightcafePresets:list'),
   },
   characters: {
+    list: (): Promise<IpcResult<CharacterRecord[]>> =>
+      ipcRenderer.invoke('characters:list'),
+    create: (input: Partial<CharacterRecord>): Promise<IpcResult<CharacterRecord>> =>
+      ipcRenderer.invoke('characters:create', input),
+    update: (id: string, input: Partial<CharacterRecord>): Promise<IpcResult<CharacterRecord | undefined>> =>
+      ipcRenderer.invoke('characters:update', id, input),
+    delete: (id: string): Promise<IpcResult<{ ok: boolean }>> =>
+      ipcRenderer.invoke('characters:delete', id),
     saveImage: (input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>> =>
       ipcRenderer.invoke('characters:saveImage', input),
     deleteImage: (input: { fileUrl: string }): Promise<IpcResult<{ ok: boolean }>> =>

@@ -10,7 +10,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
 import { eq, desc, and, or, ilike, sql, notInArray } from 'drizzle-orm'
 import * as schema from '../src/lib/schema'
-import { prompts, styleProfiles, generationLog, openRouterModels, nightcafeModels, nightcafePresets } from '../src/lib/schema'
+import { prompts, styleProfiles, generationLog, openRouterModels, nightcafeModels, nightcafePresets, characters } from '../src/lib/schema'
 import type { NewPrompt, NewStyleProfile, NewGenerationEntry } from '../src/lib/schema'
 
 // Keep Chromium disk caches in a writable temp location to avoid Windows access-denied startup errors.
@@ -171,6 +171,30 @@ type NightcafePresetOption = {
   category: string
 }
 
+type CharacterImagePayload = {
+  id: string
+  url: string
+  isMain: boolean
+  createdAt: string
+}
+
+type CharacterDetailPayload = {
+  id: string
+  detail: string
+  category: string
+  worksWell: boolean
+}
+
+type CharacterPayload = {
+  id: string
+  name: string
+  description: string
+  images: CharacterImagePayload[]
+  details: CharacterDetailPayload[]
+  createdAt: string
+  updatedAt: string
+}
+
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
 const NIGHTCAFE_MODELS_FILE = 'nightcafe_models_compleet.csv'
 const NIGHTCAFE_PRESETS_FILE = 'nightcafe_presets.csv'
@@ -246,6 +270,35 @@ async function deleteCharacterImageFile(fileUrl: string) {
 
 function getSettingsFilePath() {
   return path.join(app.getPath('userData'), 'settings.json')
+}
+
+function parseJsonArray<T>(input: string, fallback: T[]) {
+  try {
+    const parsed = JSON.parse(input) as unknown
+    return Array.isArray(parsed) ? (parsed as T[]) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function mapCharacterRowToPayload(row: {
+  id: string
+  name: string
+  description: string
+  imagesJson: string
+  detailsJson: string
+  createdAt: Date
+  updatedAt: Date
+}): CharacterPayload {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    images: parseJsonArray<CharacterImagePayload>(row.imagesJson, []),
+    details: parseJsonArray<CharacterDetailPayload>(row.detailsJson, []),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  }
 }
 
 function normalizeOpenRouterSettings(input?: Partial<OpenRouterSettings>): OpenRouterSettings {
@@ -954,6 +1007,110 @@ ipcMain.handle('characters:saveImage', async (_, input: { dataUrl: string; fileN
 ipcMain.handle('characters:deleteImage', async (_, input: { fileUrl: string }) => {
   try {
     await deleteCharacterImageFile(input.fileUrl)
+    return { data: { ok: true } }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('characters:list', async () => {
+  try {
+    const data = await db
+      .select({
+        id: characters.id,
+        name: characters.name,
+        description: characters.description,
+        imagesJson: characters.imagesJson,
+        detailsJson: characters.detailsJson,
+        createdAt: characters.createdAt,
+        updatedAt: characters.updatedAt,
+      })
+      .from(characters)
+      .orderBy(desc(characters.createdAt))
+
+    return { data: data.map(mapCharacterRowToPayload) }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('characters:create', async (_, input: Partial<CharacterPayload>) => {
+  try {
+    const now = new Date()
+    const id = input.id?.trim() || randomUUID()
+    const createdAt = input.createdAt ? new Date(input.createdAt) : now
+    const updatedAt = input.updatedAt ? new Date(input.updatedAt) : now
+
+    const [created] = await db
+      .insert(characters)
+      .values({
+        id,
+        name: input.name?.trim() || 'Untitled Character',
+        description: input.description || '',
+        imagesJson: JSON.stringify(input.images || []),
+        detailsJson: JSON.stringify(input.details || []),
+        createdAt,
+        updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: characters.id,
+        set: {
+          name: input.name?.trim() || 'Untitled Character',
+          description: input.description || '',
+          imagesJson: JSON.stringify(input.images || []),
+          detailsJson: JSON.stringify(input.details || []),
+          updatedAt,
+        },
+      })
+      .returning({
+        id: characters.id,
+        name: characters.name,
+        description: characters.description,
+        imagesJson: characters.imagesJson,
+        detailsJson: characters.detailsJson,
+        createdAt: characters.createdAt,
+        updatedAt: characters.updatedAt,
+      })
+
+    return { data: mapCharacterRowToPayload(created) }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('characters:update', async (_, id: string, input: Partial<CharacterPayload>) => {
+  try {
+    const now = new Date()
+
+    const [updated] = await db
+      .update(characters)
+      .set({
+        name: input.name?.trim() || 'Untitled Character',
+        description: input.description || '',
+        imagesJson: JSON.stringify(input.images || []),
+        detailsJson: JSON.stringify(input.details || []),
+        updatedAt: input.updatedAt ? new Date(input.updatedAt) : now,
+      })
+      .where(eq(characters.id, id))
+      .returning({
+        id: characters.id,
+        name: characters.name,
+        description: characters.description,
+        imagesJson: characters.imagesJson,
+        detailsJson: characters.detailsJson,
+        createdAt: characters.createdAt,
+        updatedAt: characters.updatedAt,
+      })
+
+    return { data: updated ? mapCharacterRowToPayload(updated) : undefined }
+  } catch (error) {
+    return { error: String(error) }
+  }
+})
+
+ipcMain.handle('characters:delete', async (_, id: string) => {
+  try {
+    await db.delete(characters).where(eq(characters.id, id))
     return { data: { ok: true } }
   } catch (error) {
     return { error: String(error) }

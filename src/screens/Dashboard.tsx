@@ -20,8 +20,6 @@ interface DashboardProps {
   onNavigate: (screen: Screen) => void
 }
 
-const CHARACTER_STORAGE_KEY = 'nightcompanion.characters'
-
 export default function Dashboard({ onNavigate }: DashboardProps) {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats>({
@@ -40,10 +38,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     async function loadDashboard() {
       setLoading(true)
 
-      const [promptsResult, styleProfilesResult, generationResult] = await Promise.all([
+      const [promptsResult, styleProfilesResult, generationResult, charactersResult] = await Promise.all([
         window.electronAPI.prompts.list(),
         window.electronAPI.styleProfiles.list(),
         window.electronAPI.generationLog.list(),
+        window.electronAPI.characters.list(),
       ])
 
       if (ignore) return
@@ -51,7 +50,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       const prompts = promptsResult.error ? [] : promptsResult.data || []
       const styleProfiles = styleProfilesResult.error ? [] : styleProfilesResult.data || []
       const generations = generationResult.error ? [] : generationResult.data || []
-      const characters = readCharactersFromStorage()
+      const characters = charactersResult.error ? [] : charactersResult.data || []
 
       setStats({
         promptCount: prompts.length,
@@ -250,24 +249,4 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       </div>
     </div>
   )
-}
-
-function readCharactersFromStorage(): CharacterDashboardItem[] {
-  try {
-    const raw = localStorage.getItem(CHARACTER_STORAGE_KEY)
-    if (!raw) return []
-
-    const parsed = JSON.parse(raw) as CharacterDashboardItem[]
-    if (!Array.isArray(parsed)) return []
-
-    return parsed
-      .slice()
-      .sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0
-        return bTime - aTime
-      })
-  } catch {
-    return []
-  }
 }

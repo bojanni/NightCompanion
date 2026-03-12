@@ -6,6 +6,17 @@ type OpenRouterSettings = { apiKey: string; model: string; siteUrl: string; appN
 type OpenRouterModel = { modelId: string; displayName: string; contextLength: number | null }
 type NightcafeModelOption = { modelName: string; modelType: string; mediaType: string }
 type NightcafePresetOption = { presetName: string; category: string }
+type CharacterImage = { id: string; url: string; isMain: boolean; createdAt: string }
+type CharacterDetail = { id: string; detail: string; category: string; worksWell: boolean }
+type CharacterRecord = {
+  id: string
+  name: string
+  description: string
+  images: CharacterImage[]
+  details: CharacterDetail[]
+  createdAt: string
+  updatedAt: string
+}
 
 declare global {
   interface Window {
@@ -47,6 +58,10 @@ declare global {
         list(): Promise<IpcResult<NightcafePresetOption[]>>
       }
       characters: {
+        list(): Promise<IpcResult<CharacterRecord[]>>
+        create(input: Partial<CharacterRecord>): Promise<IpcResult<CharacterRecord>>
+        update(id: string, input: Partial<CharacterRecord>): Promise<IpcResult<CharacterRecord | undefined>>
+        delete(id: string): Promise<IpcResult<{ ok: boolean }>>
         saveImage(input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>>
         deleteImage(input: { fileUrl: string }): Promise<IpcResult<{ ok: boolean }>>
       }

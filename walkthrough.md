@@ -161,3 +161,9 @@
 - Findings: Model list did not refresh reliably after saving OpenRouter key or clicking refresh in settings.
 - Conclusions: `settings:refreshOpenRouterModels` incorrectly normalized `undefined` input to an empty API key path; additionally, saving a key did not immediately repopulate `dynamicModels` in UI state.
 - Actions: Updated `electron/main.ts` `settings:refreshOpenRouterModels` to merge input over stored OpenRouter settings before syncing; updated `src/screens/Settings/ProviderConfigForm.tsx` `handleSave` to read `settings:listOpenRouterModels` right after save and push models into `setDynamicModels`, so dropdown options update instantly.
+
+## 2026-03-12 (Characters Migrated From localStorage To PostgreSQL)
+
+- Findings: Character entities were persisted in renderer `localStorage`, while the rest of app entities already used PostgreSQL.
+- Conclusions: This split persistence model risks data loss/size limits and breaks backup/export consistency; characters should use DB-backed storage with existing image file persistence unchanged.
+- Actions: Added `characters` table to `src/lib/schema.ts` and migration `drizzle/0005_characters.sql` (+ journal update); added Electron IPC CRUD handlers in `electron/main.ts` (`characters:list/create/update/delete`) and exposed typings/bridge in `electron/preload.ts` + `src/types/electron.d.ts`; refactored `src/screens/Characters.tsx` to load/save/update/delete via DB and perform one-time migration from legacy `localStorage` key (`nightcompanion.characters`) when DB is empty; updated `src/screens/Dashboard.tsx` to source character counts/cards from DB IPC instead of localStorage.
