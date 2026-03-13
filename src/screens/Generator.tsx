@@ -69,6 +69,7 @@ export default function Generator() {
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [improving, setImproving] = useState(false)
+  const [generatingNegative, setGeneratingNegative] = useState(false)
   const [improvingNegative, setImprovingNegative] = useState(false)
   const [generatingTitle, setGeneratingTitle] = useState(false)
   const [savedTitle, setSavedTitle] = useState('')
@@ -395,13 +396,57 @@ export default function Generator() {
     }
   }
 
+  const handleGenerateNegative = async () => {
+    if (!generatedPrompt.trim()) {
+      setStatus('Generate or enter a positive prompt first.')
+      return
+    }
+
+    setStatus(null)
+    setGeneratingNegative(true)
+
+    try {
+      const result = await window.electronAPI.generator.generateNegativePrompt({
+        prompt: generatedPrompt,
+      })
+
+      if (!result) {
+        setStatus('Error: Negative generator returned an empty response.')
+        return
+      }
+
+      if (result.error) {
+        setStatus(result.error)
+        return
+      }
+
+      if (!result.data?.negativePrompt) {
+        setStatus('Error: Negative generator returned no data.')
+        return
+      }
+
+      setNegativePrompt(result.data.negativePrompt)
+      setNegativeImprovementDiff(null)
+      setNegativePromptViewTab('final')
+      setStatus('Negative prompt generated.')
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Error: Failed to generate negative prompt.')
+    } finally {
+      setGeneratingNegative(false)
+    }
+  }
+
   const handleSaveToLibrary = async () => {
     if (!generatedPrompt || !savedTitle.trim()) return
+    if (generatingNegative || improvingNegative) {
+      setStatus('Wait for negative prompt generation/improvement to finish before saving.')
+      return
+    }
 
     const result = await window.electronAPI.prompts.create({
       title: savedTitle.trim(),
       promptText: generatedPrompt,
-      negativePrompt,
+      negativePrompt: negativePrompt.trim(),
       model: '',
       notes: 'Generated with Magic Random (AI)',
       tags: ['ai-random'],
@@ -593,11 +638,19 @@ export default function Generator() {
                   onChange={(e) => setNegativePrompt(e.target.value)}
                   placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)…"
                 />
-                <div className="mt-2 flex justify-end">
+                <div className="mt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleGenerateNegative}
+                    disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative}
+                    className="btn-ghost border border-night-600/50"
+                  >
+                    {generatingNegative ? 'Generating negative...' : 'Generate Negative Prompt'}
+                  </button>
                   <button
                     type="button"
                     onClick={handleImproveNegative}
-                    disabled={!negativePrompt.trim() || loading || improving || improvingNegative}
+                    disabled={!negativePrompt.trim() || loading || improving || generatingNegative || improvingNegative}
                     className="btn-ghost border border-night-600/50"
                   >
                     {improvingNegative ? 'Improving negative...' : 'Improve Negative Prompt'}
@@ -687,14 +740,14 @@ export default function Generator() {
                   <button
                     type="button"
                     onClick={handleGenerateTitle}
-                    disabled={!generatedPrompt.trim() || loading || improving || improvingNegative || generatingTitle}
+                    disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative || generatingTitle}
                     className="btn-ghost border border-night-600/50"
                   >
                     {generatingTitle ? 'Generating title...' : 'Generate Title (AI)'}
                   </button>
                   <button
                     onClick={handleSaveToLibrary}
-                    disabled={!generatedPrompt || !savedTitle.trim()}
+                    disabled={!generatedPrompt || !savedTitle.trim() || generatingNegative || improvingNegative}
                     className="btn-ghost border border-night-600/50"
                   >
                     Save to Library
@@ -712,7 +765,7 @@ export default function Generator() {
                 <button
                   type="button"
                   onClick={handleImprove}
-                  disabled={!generatedPrompt.trim() || loading || improving || improvingNegative}
+                  disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative}
                   className="btn-ghost border border-night-600/50"
                 >
                   {improving ? 'Improving...' : 'Improve Prompt'}

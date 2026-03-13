@@ -479,3 +479,15 @@
 - Findings: User requested a live, composed preview of the final prompt payload (prompt + style snippet, negative + style negative), including model display, word/character counters, greylist highlighting, and quick copy/save actions.
 - Conclusions: A shared display-only component is the cleanest implementation; no new IPC is required when composition happens in renderer state.
 - Actions: Added `src/components/PromptPreview.tsx` with live composition, style-snippet highlighting, greylist highlighting, model display, and color-coded word counting (`green` under limit, `yellow` near limit, `red` over limit); integrated preview panel in `src/components/PromptForm.tsx` as a responsive side panel (stacked on smaller screens) with style profile selection for preview context and quick save trigger; integrated preview in `src/screens/PromptBuilder.tsx` with style profile selection, responsive side panel behavior, and combined save payload (`prompt + style snippet`, `negative + style negative`); passed Generator `maxWords` through to embedded `PromptBuilder` preview via `src/screens/Generator.tsx`; validated with `npm run build`.
+
+## 2026-03-13 (Generate Negative Prompt From Positive Prompt)
+
+- Findings: User requested a dedicated `Generate Negative Prompt` action that derives a concise NightCafe negative prompt directly from the current positive prompt, using a strict comma-separated output format.
+- Conclusions: A separate IPC endpoint is preferable to keep generation and improvement flows distinct (`generate` from positive prompt vs `improve` existing negative prompt).
+- Actions: Added `NEGATIVE_PROMPT_INSTRUCTION` in `electron/ipc/ai.ts` exactly as specified and implemented new IPC handler `generator:generateNegativePrompt` (OpenRouter + local provider support via existing Improvement route/model settings, with request logging); exposed method through `electron/preload.ts` and `src/types/electron.d.ts`; updated `src/screens/Generator.tsx` with a new `Generate Negative Prompt` button next to `Improve Negative Prompt`, including loading/disabled guards and status feedback; validated with `npm run build`.
+
+## 2026-03-13 (Generator Save Flow: Ensure Negative Prompt Persistence)
+
+- Findings: User requested certainty that generated negative prompts are saved into Prompt Library entries when saving from Generator.
+- Conclusions: Save should explicitly persist a trimmed negative prompt value and block save while negative generation/improvement is still in-flight.
+- Actions: Updated `src/screens/Generator.tsx` `handleSaveToLibrary` to save `negativePrompt.trim()` and added guard/disabled state to prevent saving during `generatingNegative`/`improvingNegative`; validated with `npm run build`.

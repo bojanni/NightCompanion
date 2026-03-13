@@ -161,6 +161,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('generator:magicRandom', input),
     improvePrompt: (input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:improvePrompt', input),
+    generateNegativePrompt: (input?: { prompt?: string }): Promise<IpcResult<{ negativePrompt: string }>> =>
+      ipcRenderer.invoke('generator:generateNegativePrompt', input),
     improveNegativePrompt: (input?: { negativePrompt?: string }): Promise<IpcResult<{ negativePrompt: string }>> =>
       ipcRenderer.invoke('generator:improveNegativePrompt', input),
     generateTitle: (input?: { prompt?: string }): Promise<IpcResult<{ title: string }>> =>
