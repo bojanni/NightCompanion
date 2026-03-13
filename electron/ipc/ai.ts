@@ -6,6 +6,8 @@ import type { OpenRouterSettings } from './settings'
 
 const AI_REQUEST_LOG_FILE = 'ai-api-requests.jsonl'
 const TITLE_MAX_LENGTH = 140
+const DEFAULT_MAX_WORDS = 70
+const MAX_ALLOWED_WORDS = 100
 
 const LANGUAGE_INSTRUCTION = "CRITICAL: All output, including descriptions, reasoning, and analysis, MUST use English (UK) spelling and terminology (e.g., 'colour', 'centre', 'maximise')."
 
@@ -69,10 +71,11 @@ export function registerAiIpc({
   getOpenRouterSettings: () => Promise<OpenRouterSettings>
   getAiApiRequestLoggingEnabled: () => Promise<boolean>
 }) {
-  ipcMain.handle('generator:magicRandom', async (_, input?: { presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }) => {
+  ipcMain.handle('generator:magicRandom', async (_, input?: { presetName?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }) => {
     const requestId = crypto.randomUUID()
     const startedAt = Date.now()
     let requestModel = ''
+    let appliedMaxWords = DEFAULT_MAX_WORDS
     let requestPayload: Record<string, unknown> | null = null
     let responseStatus: number | null = null
     let resultPrompt = ''
@@ -87,6 +90,10 @@ export function registerAiIpc({
       }
 
       const presetName = input?.presetName?.trim()
+      const maxWords = Number.isFinite(input?.maxWords)
+        ? Math.max(1, Math.min(MAX_ALLOWED_WORDS, Math.floor(input?.maxWords as number)))
+        : DEFAULT_MAX_WORDS
+      appliedMaxWords = maxWords
       const greylistEnabled = input?.greylistEnabled !== false
       const greylistWords = (input?.greylistWords ?? [])
         .map((word) => word.trim().toLowerCase())
@@ -96,6 +103,7 @@ export function registerAiIpc({
 
       const promptParts = [
         'Create one random, vivid text-to-image prompt.',
+        `Limit the final prompt to a maximum of ${maxWords} words.`,
         presetName ? `Use this NightCafe preset as mandatory style guidance: ${presetName}.` : '',
         'Pick any surprising subject.',
         hasGreylist
@@ -168,6 +176,7 @@ export function registerAiIpc({
           status: responseStatus,
           input: {
             presetName: input?.presetName?.trim() || null,
+            maxWords: appliedMaxWords,
             greylistEnabled: input?.greylistEnabled !== false,
             greylistWordCount: (input?.greylistWords ?? []).filter((word) => word.trim().length > 0).length,
           },

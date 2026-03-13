@@ -94,7 +94,7 @@ declare global {
         testOpenRouter(input?: Partial<OpenRouterSettings>): Promise<IpcResult<{ ok: boolean; modelCount: number }>>
       }
       generator: {
-        magicRandom(input?: { presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>>
+        magicRandom(input?: { presetName?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>>
         improvePrompt(input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>>
         generateTitle(input?: { prompt?: string }): Promise<IpcResult<{ title: string }>>
       }

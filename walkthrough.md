@@ -282,6 +282,12 @@
 - Findings: Switching to another app page unmounted `Generator`, causing prompt content and UI selections to reset.
 - Conclusions: Persisting core Generator UI state in localStorage and hydrating on mount prevents accidental data loss during navigation.
 - Actions: Updated `src/screens/Generator.tsx` with `generatorUiState` persistence for tab, selected preset, generated prompt, saved title, improvement diff data, and improvement-view tab; added safe hydration with fallback defaults and guarded `Diff View` restore only when diff data exists.
+
+## 2026-03-13 (Generator Max Words Slider)
+
+- Findings: User requested control over prompt length for Magic Random output.
+- Conclusions: Add a Generator slider with default 70 and hard cap 100, persist selection, and inject a max-word instruction in the AI request so output length is constrained.
+- Actions: Updated `src/screens/Generator.tsx` with `Max words` range slider (`default 70`, `max 100`) and persisted it in `generatorUiState`; extended IPC types in `electron/preload.ts` and `src/types/electron.d.ts`; updated `electron/ipc/ai.ts` `generator:magicRandom` to accept/validate `maxWords`, include `Limit the final prompt to a maximum of X words.` in the instruction, and log the applied value.
 - Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
 
 ## 2026-03-13 (Generator Layout Breakpoint to LG)

@@ -155,7 +155,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('settings:testOpenRouter', input),
   },
   generator: {
-    magicRandom: (input?: { presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>> =>
+    magicRandom: (input?: { presetName?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:magicRandom', input),
     improvePrompt: (input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:improvePrompt', input),

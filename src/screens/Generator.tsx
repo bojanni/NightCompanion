@@ -4,6 +4,8 @@ import PromptDiffView from '../components/PromptDiffView'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
 const DEFAULT_TITLE_MAX_LENGTH = 140
+const DEFAULT_MAX_WORDS = 70
+const MAX_ALLOWED_WORDS = 100
 const GENERATOR_UI_STATE_KEY = 'generatorUiState'
 const GREYLIST_SUGGESTIONS = [
   'jellyfish',
@@ -28,6 +30,7 @@ type PromptViewTab = 'final' | 'diff'
 type GeneratorPersistedState = {
   tab?: 'generator' | 'builder'
   selectedPreset?: string
+  maxWords?: number
   generatedPrompt?: string
   savedTitle?: string
   promptViewTab?: PromptViewTab
@@ -49,6 +52,7 @@ export default function Generator() {
   const [tab, setTab] = useState<'generator' | 'builder'>('generator')
   const [presetOptions, setPresetOptions] = useState<PresetOption[]>([])
   const [selectedPreset, setSelectedPreset] = useState('')
+  const [maxWords, setMaxWords] = useState(DEFAULT_MAX_WORDS)
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [improvementDiff, setImprovementDiff] = useState<{ originalPrompt: string; improvedPrompt: string } | null>(null)
   const [promptViewTab, setPromptViewTab] = useState<PromptViewTab>('final')
@@ -81,6 +85,7 @@ export default function Generator() {
 
   const handleClearAll = () => {
     setSelectedPreset('')
+    setMaxWords(DEFAULT_MAX_WORDS)
     setGeneratedPrompt('')
     setImprovementDiff(null)
     setPromptViewTab('final')
@@ -114,6 +119,10 @@ export default function Generator() {
 
       setTab(parsed.tab ?? 'generator')
       setSelectedPreset(parsed.selectedPreset ?? '')
+      const persistedMaxWords = Number.isFinite(parsed.maxWords)
+        ? Math.max(1, Math.min(MAX_ALLOWED_WORDS, Math.floor(parsed.maxWords as number)))
+        : DEFAULT_MAX_WORDS
+      setMaxWords(persistedMaxWords)
       setGeneratedPrompt(parsed.generatedPrompt ?? '')
       setSavedTitle(parsed.savedTitle ?? '')
       setImprovementDiff(parsed.improvementDiff ?? null)
@@ -123,6 +132,7 @@ export default function Generator() {
     } catch {
       setTab('generator')
       setSelectedPreset('')
+      setMaxWords(DEFAULT_MAX_WORDS)
       setGeneratedPrompt('')
       setSavedTitle('')
       setImprovementDiff(null)
@@ -135,6 +145,7 @@ export default function Generator() {
       localStorage.setItem(GENERATOR_UI_STATE_KEY, JSON.stringify({
         tab,
         selectedPreset,
+        maxWords,
         generatedPrompt,
         savedTitle,
         promptViewTab,
@@ -143,7 +154,7 @@ export default function Generator() {
     } catch (e) {
       console.error('Failed to save generator state to localStorage:', e)
     }
-  }, [tab, selectedPreset, generatedPrompt, savedTitle, promptViewTab, improvementDiff])
+  }, [tab, selectedPreset, maxWords, generatedPrompt, savedTitle, promptViewTab, improvementDiff])
 
   useEffect(() => {
     const stored = localStorage.getItem('generatorGreylist')
@@ -181,6 +192,7 @@ export default function Generator() {
     try {
       const result = await window.electronAPI.generator.magicRandom({
         presetName: selectedPreset || undefined,
+        maxWords,
         greylistEnabled,
         greylistWords,
       })
@@ -447,6 +459,23 @@ export default function Generator() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="mt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="generator-max-words" className="label !mb-0">Max words</label>
+                    <span className="text-xs text-night-300">{maxWords}</span>
+                  </div>
+                  <input
+                    id="generator-max-words"
+                    type="range"
+                    min={1}
+                    max={MAX_ALLOWED_WORDS}
+                    value={maxWords}
+                    onChange={(event) => setMaxWords(Number(event.target.value))}
+                    className="mt-2 w-full accent-glow-purple"
+                  />
+                  <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">
