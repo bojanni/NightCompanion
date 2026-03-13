@@ -233,3 +233,9 @@
 - Findings: Model options were shown in static order and native select UX had no inline search/autocomplete, making long model lists harder to navigate.
 - Conclusions: OpenRouter models should be sorted by lowest combined prompt+completion price and selectable via a searchable autocomplete dropdown.
 - Actions: Updated `src/screens/Settings/types.ts` `ModelOption` with optional pricing metadata; updated OpenRouter model mapping in `src/screens/Settings/ProviderConfigForm.tsx` and `src/screens/AIConfig.tsx` to retain pricing metadata and sort options cheapest-first; replaced native select in `src/components/ModelSelector.tsx` with a searchable autocomplete combobox/listbox UI (filter-as-you-type, keyboard navigation, enter-to-select, outside-click close).
+
+## 2026-03-13 (OpenRouter Sort Toggle in Dropdown)
+
+- Findings: User requested explicit control over model sorting (cheap-first vs alphabetical) in addition to autocomplete search.
+- Conclusions: A compact toggle in the model-selection header is the simplest UX and should drive sorting consistently for all three role selectors.
+- Actions: Updated `src/screens/Settings/ProviderConfigForm.tsx` with `Cheapest` / `Alphabetical` toggle state and UI, and passed `sortMode` into each `ModelSelector`; updated `src/components/ModelSelector.tsx` to support `sortMode` and sort filtered options accordingly before rendering.
