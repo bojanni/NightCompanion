@@ -248,6 +248,18 @@
 
 ## 2026-03-13 (OpenRouter Dropdown With Model Descriptions + Lees Meer)
 
+## 2026-03-13 (Generator Default Title + AI Title Button)
+
+- Findings: Generator still defaulted saved titles to timestamp placeholders (`Magic Prompt ...` / `Improved Prompt ...`) rather than using prompt content, and there was no dedicated AI action to propose a concise library title.
+- Conclusions: The save-title field should auto-seed from the first 140 characters of the latest generated prompt while preserving user-edited titles, and a separate AI title action can reuse the configured Improvement route for concise naming.
+- Actions: Updated `src/screens/Generator.tsx` to auto-fill titles from prompt text, preserve manual edits on re-generation/improvement, and add a `Generate Title (AI)` button with loading/error handling; added `generator:generateTitle` IPC wiring in `electron/ipc/ai.ts`, `electron/preload.ts`, and `src/types/electron.d.ts` with a dedicated concise-title prompt and 140-character normalization.
+
+## 2026-03-13 (Generator Layout: Preset + Greylist Side-by-Side)
+
+- Findings: On the Generator page, NightCafe preset and greylist were stacked vertically, which made the Magic Random setup flow longer than needed.
+- Conclusions: Preset and greylist should share the same row in the Magic Random tab while preserving greylist controls for the Prompt Builder tab.
+- Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
+
 - Findings: OpenRouter models were shown without description context, making selection harder when model names are similar.
 - Conclusions: Model descriptions should be fetched and displayed directly in the dropdown with compact preview and expandable full text.
 - Actions: Added `description` to `openrouter_models` schema (`src/lib/schema.ts`) and migration `drizzle/0007_openrouter_model_description.sql` (+ journal update); updated `electron/ipc/settings.ts`, `electron/preload.ts`, and `src/types/electron.d.ts` to parse/persist/expose model descriptions from OpenRouter `/models`; updated model mapping in `src/screens/Settings/ProviderConfigForm.tsx` and `src/screens/AIConfig.tsx` to carry `description` + `priceLabel`; updated `src/components/ModelSelector.tsx` to render `prijs | model` on first line, 2-line clamped description on second line, and `Lees meer`/`Lees minder` toggle per model.
