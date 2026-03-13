@@ -55,6 +55,58 @@ function normalizeModelOption(modelId: string): ModelOption {
   }
 }
 
+function formatPricePerMillion(priceText: string | null | undefined): string | null {
+  if (!priceText)
+    return null
+
+  const parsed = Number(priceText)
+  if (!Number.isFinite(parsed))
+    return null
+
+  const perMillion = parsed * 1_000_000
+  if (perMillion >= 1)
+    return `$${perMillion.toFixed(2)}`
+
+  return `$${perMillion.toFixed(4)}`
+}
+
+function buildOpenRouterModelLabel(input: {
+  displayName: string
+  promptPrice: string | null
+  completionPrice: string | null
+}): string {
+  const prompt = formatPricePerMillion(input.promptPrice)
+  const completion = formatPricePerMillion(input.completionPrice)
+  if (!prompt || !completion)
+    return input.displayName
+
+  return `${input.displayName} (${prompt}/${completion} per 1M tok in/out)`
+}
+
+function getOpenRouterCombinedPrice(model: Pick<ModelOption, 'promptPrice' | 'completionPrice'>): number {
+  const prompt = Number(model.promptPrice || '')
+  const completion = Number(model.completionPrice || '')
+
+  if (!Number.isFinite(prompt) || !Number.isFinite(completion))
+    return Number.POSITIVE_INFINITY
+
+  return prompt + completion
+}
+
+function sortModelOptionsByPrice(models: ModelOption[]): ModelOption[] {
+  return [...models].sort((first, second) => {
+    const firstPrice = getOpenRouterCombinedPrice(first)
+    const secondPrice = getOpenRouterCombinedPrice(second)
+
+    if (firstPrice !== secondPrice)
+      return firstPrice - secondPrice
+
+    const firstLabel = first.label || first.name || first.id
+    const secondLabel = second.label || second.name || second.id
+    return firstLabel.localeCompare(secondLabel)
+  })
+}
+
 export function ProviderConfigForm({
   provider,
   keyInfo,
@@ -147,12 +199,20 @@ export function ProviderConfigForm({
       await persistProviderMeta(nextMeta)
       const modelsResult = await window.electronAPI.settings.refreshOpenRouterModels()
       if (!modelsResult.error && modelsResult.data) {
-        const models = modelsResult.data.map((item) => ({
+        const models = sortModelOptionsByPrice(modelsResult.data.map((item) => ({
           id: item.modelId,
-          label: item.displayName,
+          label: buildOpenRouterModelLabel({
+            displayName: item.displayName,
+            promptPrice: item.promptPrice,
+            completionPrice: item.completionPrice,
+          }),
           provider: provider.id,
           capabilities: item.modelId.toLowerCase().includes('vision') ? ['vision'] : undefined,
-        }))
+          promptPrice: item.promptPrice,
+          completionPrice: item.completionPrice,
+          requestPrice: item.requestPrice,
+          imagePrice: item.imagePrice,
+        })))
 
         setDynamicModels((prev) => ({
           ...prev,
@@ -250,12 +310,20 @@ export function ProviderConfigForm({
       if (result.error || !result.data)
         throw new Error(result.error)
 
-      const models = result.data.map((item) => ({
+      const models = sortModelOptionsByPrice(result.data.map((item) => ({
         id: item.modelId,
-        label: item.displayName,
+        label: buildOpenRouterModelLabel({
+          displayName: item.displayName,
+          promptPrice: item.promptPrice,
+          completionPrice: item.completionPrice,
+        }),
         provider: provider.id,
         capabilities: item.modelId.toLowerCase().includes('vision') ? ['vision'] : undefined,
-      }))
+        promptPrice: item.promptPrice,
+        completionPrice: item.completionPrice,
+        requestPrice: item.requestPrice,
+        imagePrice: item.imagePrice,
+      })))
 
       setDynamicModels((prev) => ({
         ...prev,

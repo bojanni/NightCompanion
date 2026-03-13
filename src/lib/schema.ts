@@ -84,6 +84,10 @@ export const openRouterModels = pgTable(
     modelId: varchar('model_id', { length: 255 }).notNull().unique(),
     displayName: varchar('display_name', { length: 255 }).notNull(),
     contextLength: integer('context_length'),
+    promptPrice: varchar('prompt_price', { length: 32 }),
+    completionPrice: varchar('completion_price', { length: 32 }),
+    requestPrice: varchar('request_price', { length: 32 }),
+    imagePrice: varchar('image_price', { length: 32 }),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [

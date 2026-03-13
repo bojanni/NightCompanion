@@ -126,6 +126,58 @@ function getSourceProviderId(source?: ApiKeyInfo | LocalEndpoint): string {
   return getLocalProviderId(source)
 }
 
+function formatPricePerMillion(priceText: string | null | undefined): string | null {
+  if (!priceText)
+    return null
+
+  const parsed = Number(priceText)
+  if (!Number.isFinite(parsed))
+    return null
+
+  const perMillion = parsed * 1_000_000
+  if (perMillion >= 1)
+    return `$${perMillion.toFixed(2)}`
+
+  return `$${perMillion.toFixed(4)}`
+}
+
+function buildOpenRouterModelLabel(input: {
+  displayName: string
+  promptPrice: string | null
+  completionPrice: string | null
+}): string {
+  const prompt = formatPricePerMillion(input.promptPrice)
+  const completion = formatPricePerMillion(input.completionPrice)
+  if (!prompt || !completion)
+    return input.displayName
+
+  return `${input.displayName} (${prompt}/${completion} per 1M tok in/out)`
+}
+
+function getOpenRouterCombinedPrice(model: Pick<ModelOption, 'promptPrice' | 'completionPrice'>): number {
+  const prompt = Number(model.promptPrice || '')
+  const completion = Number(model.completionPrice || '')
+
+  if (!Number.isFinite(prompt) || !Number.isFinite(completion))
+    return Number.POSITIVE_INFINITY
+
+  return prompt + completion
+}
+
+function sortModelOptionsByPrice(models: ModelOption[]): ModelOption[] {
+  return [...models].sort((first, second) => {
+    const firstPrice = getOpenRouterCombinedPrice(first)
+    const secondPrice = getOpenRouterCombinedPrice(second)
+
+    if (firstPrice !== secondPrice)
+      return firstPrice - secondPrice
+
+    const firstLabel = first.label || first.name || first.id
+    const secondLabel = second.label || second.name || second.id
+    return firstLabel.localeCompare(secondLabel)
+  })
+}
+
 export function AIConfig() {
   const [view, setView] = useState<'dashboard' | 'wizard'>('dashboard')
   const [keys, setKeys] = useState<ApiKeyInfo[]>([])
@@ -309,12 +361,20 @@ export function AIConfig() {
 
     setDynamicModels((prev) => ({
       ...prev,
-      openrouter: modelsResult.data.map((item) => ({
+      openrouter: sortModelOptionsByPrice(modelsResult.data.map((item) => ({
         id: item.modelId,
-        label: item.displayName,
+        label: buildOpenRouterModelLabel({
+          displayName: item.displayName,
+          promptPrice: item.promptPrice,
+          completionPrice: item.completionPrice,
+        }),
         provider: 'openrouter',
         capabilities: item.modelId.toLowerCase().includes('vision') ? ['vision'] : undefined,
-      })),
+        promptPrice: item.promptPrice,
+        completionPrice: item.completionPrice,
+        requestPrice: item.requestPrice,
+        imagePrice: item.imagePrice,
+      }))),
     }))
   }, [loadKeys, loadLocalEndpoints, migrateLegacyProviderMeta])
 

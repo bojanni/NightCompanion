@@ -50,6 +50,10 @@ export type OpenRouterModel = {
   modelId: string
   displayName: string
   contextLength: number | null
+  promptPrice: string | null
+  completionPrice: string | null
+  requestPrice: string | null
+  imagePrice: string | null
 }
 
 export type NightcafeModelOption = {

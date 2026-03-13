@@ -221,3 +221,15 @@
 - Findings: After decoupling save from model sync, the UI could still show a generic success toast without clearly signaling model sync failure.
 - Conclusions: Save feedback should distinguish between key persistence success and model refresh outcome to avoid confusion.
 - Actions: Updated `src/screens/Settings/ProviderConfigForm.tsx` `handleSave` to refresh models via `settings:refreshOpenRouterModels` after key save and show `toast.warning` with description when model sync fails, while still keeping the API key save as successful.
+
+## 2026-03-13 (OpenRouter Model Pricing In Dropdown)
+
+- Findings: OpenRouter model fetch flow cached model IDs and names but did not persist or surface pricing details.
+- Conclusions: Pricing should be stored with cached models and included in dropdown labels to support cost-aware model selection.
+- Actions: Added pricing columns (`prompt_price`, `completion_price`, `request_price`, `image_price`) to `openrouter_models` in `src/lib/schema.ts` and migration `drizzle/0006_openrouter_model_pricing.sql` (+ journal update); updated `electron/ipc/settings.ts` to parse `pricing.*` from OpenRouter `/models` response and persist/return these fields; updated `electron/preload.ts` and `src/types/electron.d.ts` OpenRouter model types; updated `src/screens/Settings/ProviderConfigForm.tsx` and `src/screens/AIConfig.tsx` to render dropdown labels with prompt/completion pricing per 1M tokens.
+
+## 2026-03-13 (OpenRouter Dropdown: Cheapest First + Search Autocomplete)
+
+- Findings: Model options were shown in static order and native select UX had no inline search/autocomplete, making long model lists harder to navigate.
+- Conclusions: OpenRouter models should be sorted by lowest combined prompt+completion price and selectable via a searchable autocomplete dropdown.
+- Actions: Updated `src/screens/Settings/types.ts` `ModelOption` with optional pricing metadata; updated OpenRouter model mapping in `src/screens/Settings/ProviderConfigForm.tsx` and `src/screens/AIConfig.tsx` to retain pricing metadata and sort options cheapest-first; replaced native select in `src/components/ModelSelector.tsx` with a searchable autocomplete combobox/listbox UI (filter-as-you-type, keyboard navigation, enter-to-select, outside-click close).

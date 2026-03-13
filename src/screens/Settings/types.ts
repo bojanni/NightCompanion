@@ -35,4 +35,8 @@ export interface ModelOption {
   label?: string
   provider?: string
   capabilities?: string[]
+  promptPrice?: string | null
+  completionPrice?: string | null
+  requestPrice?: string | null
+  imagePrice?: string | null
 }

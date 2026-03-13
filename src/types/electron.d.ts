@@ -32,7 +32,15 @@ type LocalEndpointStore = {
   is_active_vision?: boolean
   updated_at?: string
 }
-type OpenRouterModel = { modelId: string; displayName: string; contextLength: number | null }
+type OpenRouterModel = {
+  modelId: string
+  displayName: string
+  contextLength: number | null
+  promptPrice: string | null
+  completionPrice: string | null
+  requestPrice: string | null
+  imagePrice: string | null
+}
 type NightcafeModelOption = { modelName: string; modelType: string; mediaType: string }
 type NightcafePresetOption = { presetName: string; category: string }
 type CharacterImage = { id: string; url: string; isMain: boolean; createdAt: string }

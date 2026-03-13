@@ -50,6 +50,10 @@ type OpenRouterModel = {
   modelId: string
   displayName: string
   contextLength: number | null
+  promptPrice: string | null
+  completionPrice: string | null
+  requestPrice: string | null
+  imagePrice: string | null
 }
 
 type StoredSettings = {
@@ -119,6 +123,10 @@ async function listOpenRouterModelsFromDb(db: Database) {
       modelId: openRouterModels.modelId,
       displayName: openRouterModels.displayName,
       contextLength: openRouterModels.contextLength,
+      promptPrice: openRouterModels.promptPrice,
+      completionPrice: openRouterModels.completionPrice,
+      requestPrice: openRouterModels.requestPrice,
+      imagePrice: openRouterModels.imagePrice,
     })
     .from(openRouterModels)
     .orderBy(openRouterModels.displayName)
@@ -151,6 +159,12 @@ async function syncOpenRouterModels(db: Database, settings: OpenRouterSettings) 
       id?: string
       name?: string
       context_length?: number
+      pricing?: {
+        prompt?: string
+        completion?: string
+        request?: string
+        image?: string
+      }
     }>
   }
 
@@ -163,6 +177,10 @@ async function syncOpenRouterModels(db: Database, settings: OpenRouterSettings) 
         modelId,
         displayName: item.name?.trim() || modelId,
         contextLength: typeof item.context_length === 'number' ? item.context_length : null,
+        promptPrice: item.pricing?.prompt?.trim() || null,
+        completionPrice: item.pricing?.completion?.trim() || null,
+        requestPrice: item.pricing?.request?.trim() || null,
+        imagePrice: item.pricing?.image?.trim() || null,
       }
     })
     .filter((item): item is OpenRouterModel => item !== null)
@@ -175,6 +193,10 @@ async function syncOpenRouterModels(db: Database, settings: OpenRouterSettings) 
         modelId: item.modelId,
         displayName: item.displayName,
         contextLength: item.contextLength,
+        promptPrice: item.promptPrice,
+        completionPrice: item.completionPrice,
+        requestPrice: item.requestPrice,
+        imagePrice: item.imagePrice,
         updatedAt: new Date(),
       }))
     )

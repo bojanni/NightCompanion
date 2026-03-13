@@ -43,6 +43,13 @@
       "when": 1773280800000,
       "tag": "0005_characters",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773363600000,
+      "tag": "0006_openrouter_model_pricing",
+      "breakpoints": true
     }
   ]
 }
