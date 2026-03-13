@@ -251,3 +251,9 @@
 - Findings: OpenRouter models were shown without description context, making selection harder when model names are similar.
 - Conclusions: Model descriptions should be fetched and displayed directly in the dropdown with compact preview and expandable full text.
 - Actions: Added `description` to `openrouter_models` schema (`src/lib/schema.ts`) and migration `drizzle/0007_openrouter_model_description.sql` (+ journal update); updated `electron/ipc/settings.ts`, `electron/preload.ts`, and `src/types/electron.d.ts` to parse/persist/expose model descriptions from OpenRouter `/models`; updated model mapping in `src/screens/Settings/ProviderConfigForm.tsx` and `src/screens/AIConfig.tsx` to carry `description` + `priceLabel`; updated `src/components/ModelSelector.tsx` to render `prijs | model` on first line, 2-line clamped description on second line, and `Lees meer`/`Lees minder` toggle per model.
+
+## 2026-03-13 (Migration Verification Run)
+
+- Findings: Follow-up verification requested after description-column rollout for OpenRouter models.
+- Conclusions: Running migrations again is safe and confirms pending migrations are applied in sequence by Drizzle.
+- Actions: Executed `npm run db:migrate`; migration runner completed successfully with no blocking errors.
