@@ -323,3 +323,15 @@
 - Findings: Extremely small but non-zero model prices still rendered as `0.00` after two-decimal rounding, which looked like free pricing.
 - Conclusions: Tiny non-zero values should use a compact fallback label to distinguish them from true zero values.
 - Actions: Updated per-million price formatters in `src/components/ModelSelector.tsx`, `src/screens/AIConfig.tsx`, and `src/screens/Settings/ProviderConfigForm.tsx` to render `<$0.01` when `0 < perMillion < 0.01`, otherwise keep two-decimal formatting; verified with `npm run build`.
+
+## 2026-03-13 (Magic Random Prompt Persona + UK English Enforcement)
+
+- Findings: User requested a strict prompt-generation instruction set for `generator:magicRandom`, including enforced English (UK) spelling/terminology and single-paragraph output formatting.
+- Conclusions: The most reliable implementation is to define shared `LANGUAGE_INSTRUCTION` and `BASE_PERSONA` constants in Electron AI IPC and pass `BASE_PERSONA` as the system message for Magic Random generation.
+- Actions: Updated `electron/ipc/ai.ts` by adding the provided instruction constants and wiring `messages[0].content` to `BASE_PERSONA` for `generator:magicRandom`; validated with `npm run build`.
+
+## 2026-03-13 (Improve Prompt Instruction + Persona Rules)
+
+- Findings: User requested a dedicated improvement instruction for the Improve button flow to upgrade a basic concept while preserving original intent.
+- Conclusions: Improvement requests should reuse the same persona constraints (`BASE_PERSONA`) and prepend a dedicated `IMPROVE_INSTRUCTION` in the user message for both OpenRouter and local provider routes.
+- Actions: Updated `electron/ipc/ai.ts` with `IMPROVE_INSTRUCTION` and changed `generator:improvePrompt` request payloads (OpenRouter + local) to use `BASE_PERSONA` as system content and `${IMPROVE_INSTRUCTION}\n\n${prompt}` as user content; validated with `npm run build`.

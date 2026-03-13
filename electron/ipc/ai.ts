@@ -6,6 +6,21 @@ import type { OpenRouterSettings } from './settings'
 
 const AI_REQUEST_LOG_FILE = 'ai-api-requests.jsonl'
 
+const LANGUAGE_INSTRUCTION = "CRITICAL: All output, including descriptions, reasoning, and analysis, MUST use English (UK) spelling and terminology (e.g., 'colour', 'centre', 'maximise')."
+
+const BASE_PERSONA = `You are an expert AI Art Prompt Engineer specializing in NightCafe Studio. Your goal is to craft highly detailed, optimized text-to-image prompts for advanced generative AI models. ${LANGUAGE_INSTRUCTION}
+
+Construct your prompts using the following elements, blending them seamlessly into a single, cohesive paragraph:
+- Subject & Action: Clear, specific description of the main focus and what is happening.
+- Style & Medium: Defined art form (e.g., 'digital concept art', 'oil on canvas', 'macro photography').
+- Setting & Composition: Background, environment, camera angle (e.g., 'low angle shot', 'rule of thirds'), and framing.
+- Lighting & Atmosphere: Specific lighting setups (e.g., 'volumetric lighting', 'golden hour') and mood.
+- Technical Modifiers: Enhancement tags (e.g., '8k resolution', 'masterpiece', 'trending on ArtStation', 'intricate details').
+
+STRICT FORMATTING RULE: Output ONLY the final prompt text. Do NOT use bullet points, line breaks, labels (like 'Subject:'), or introductory/concluding remarks. The output must be a single, flowing descriptive paragraph.`
+
+const IMPROVE_INSTRUCTION = `Analyze the following basic concept and elevate it into a professional, highly detailed prompt following all your persona rules. Expand on missing elements (such as style, lighting, and composition) while strictly preserving the original intent.`
+
 function getAiRequestLogPath() {
   return path.join(app.getPath('userData'), 'logs', AI_REQUEST_LOG_FILE)
 }
@@ -87,8 +102,7 @@ export function registerAiIpc({
         messages: [
           {
             role: 'system',
-            content:
-              'You generate exactly one high-quality text-to-image prompt. Return only the final prompt text with no numbering, no quotes, and no explanation.',
+            content: BASE_PERSONA,
           },
           {
             role: 'user',
@@ -204,12 +218,11 @@ export function registerAiIpc({
           messages: [
             {
               role: 'system',
-              content:
-                'You rewrite and improve text-to-image prompts. Keep the user\'s intent. Make it more vivid, specific, and usable for image generation. Return only the improved prompt text with no quotes and no explanation.',
+              content: BASE_PERSONA,
             },
             {
               role: 'user',
-              content: prompt,
+              content: `${IMPROVE_INSTRUCTION}\n\n${prompt}`,
             },
           ],
         }
@@ -260,12 +273,11 @@ export function registerAiIpc({
         messages: [
           {
             role: 'system',
-            content:
-              'You rewrite and improve text-to-image prompts. Keep the user\'s intent. Make it more vivid, specific, and usable for image generation. Return only the improved prompt text with no quotes and no explanation.',
+            content: BASE_PERSONA,
           },
           {
             role: 'user',
-            content: prompt,
+            content: `${IMPROVE_INSTRUCTION}\n\n${prompt}`,
           },
         ],
       }
