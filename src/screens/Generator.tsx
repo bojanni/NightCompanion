@@ -4,6 +4,7 @@ import PromptDiffView from '../components/PromptDiffView'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
 const DEFAULT_TITLE_MAX_LENGTH = 140
+const GENERATOR_UI_STATE_KEY = 'generatorUiState'
 const GREYLIST_SUGGESTIONS = [
   'jellyfish',
   'neon',
@@ -23,6 +24,18 @@ type PresetOption = {
 }
 
 type PromptViewTab = 'final' | 'diff'
+
+type GeneratorPersistedState = {
+  tab?: 'generator' | 'builder'
+  selectedPreset?: string
+  generatedPrompt?: string
+  savedTitle?: string
+  promptViewTab?: PromptViewTab
+  improvementDiff?: {
+    originalPrompt: string
+    improvedPrompt: string
+  } | null
+}
 
 function buildDefaultTitle(value: string) {
   return value
@@ -91,6 +104,46 @@ export default function Generator() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    const stored = localStorage.getItem(GENERATOR_UI_STATE_KEY)
+    if (!stored) return
+
+    try {
+      const parsed = JSON.parse(stored) as GeneratorPersistedState
+
+      setTab(parsed.tab ?? 'generator')
+      setSelectedPreset(parsed.selectedPreset ?? '')
+      setGeneratedPrompt(parsed.generatedPrompt ?? '')
+      setSavedTitle(parsed.savedTitle ?? '')
+      setImprovementDiff(parsed.improvementDiff ?? null)
+
+      const nextPromptViewTab = parsed.promptViewTab === 'diff' && parsed.improvementDiff ? 'diff' : 'final'
+      setPromptViewTab(nextPromptViewTab)
+    } catch {
+      setTab('generator')
+      setSelectedPreset('')
+      setGeneratedPrompt('')
+      setSavedTitle('')
+      setImprovementDiff(null)
+      setPromptViewTab('final')
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(GENERATOR_UI_STATE_KEY, JSON.stringify({
+        tab,
+        selectedPreset,
+        generatedPrompt,
+        savedTitle,
+        promptViewTab,
+        improvementDiff,
+      } satisfies GeneratorPersistedState))
+    } catch (e) {
+      console.error('Failed to save generator state to localStorage:', e)
+    }
+  }, [tab, selectedPreset, generatedPrompt, savedTitle, promptViewTab, improvementDiff])
 
   useEffect(() => {
     const stored = localStorage.getItem('generatorGreylist')

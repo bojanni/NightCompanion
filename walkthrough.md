@@ -276,6 +276,12 @@
 - Findings: User clarified tabs must be above the newly added improvement field, not above the original editable prompt textarea.
 - Conclusions: Original prompt editing should stay standalone; tabs should only appear inside the improvement comparison block shown after `Improve Prompt`.
 - Actions: Updated `src/screens/Generator.tsx` to always render the original prompt textarea first, then render an improvement-only panel (when diff data exists) containing `Diff View`/`Final Result` tabs and the corresponding comparison output; adjusted `src/components/PromptDiffView.tsx` spacing for nested panel layout.
+
+## 2026-03-13 (Generator Page State Persistence)
+
+- Findings: Switching to another app page unmounted `Generator`, causing prompt content and UI selections to reset.
+- Conclusions: Persisting core Generator UI state in localStorage and hydrating on mount prevents accidental data loss during navigation.
+- Actions: Updated `src/screens/Generator.tsx` with `generatorUiState` persistence for tab, selected preset, generated prompt, saved title, improvement diff data, and improvement-view tab; added safe hydration with fallback defaults and guarded `Diff View` restore only when diff data exists.
 - Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
 
 ## 2026-03-13 (Generator Layout Breakpoint to LG)
