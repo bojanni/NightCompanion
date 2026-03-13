@@ -473,3 +473,9 @@
 - Findings: User requested that Magic Random always passes the selected preset as instruction context and that the theme field is removed.
 - Conclusions: The Magic Random request contract should only include `presetName` + greylist settings, and the renderer must remove theme input/state entirely.
 - Actions: Updated `electron/ipc/ai.ts` to remove `theme` handling from `generator:magicRandom`, make preset instruction explicit (`mandatory style guidance`), and remove theme logging field; updated `src/screens/Generator.tsx` to delete theme state/input and stop sending `theme`; updated `electron/preload.ts` and `src/types/electron.d.ts` generator `magicRandom` signature to remove `theme`; validated with `npm run build`.
+
+## 2026-03-13 (Live Prompt Preview in PromptForm + PromptBuilder)
+
+- Findings: User requested a live, composed preview of the final prompt payload (prompt + style snippet, negative + style negative), including model display, word/character counters, greylist highlighting, and quick copy/save actions.
+- Conclusions: A shared display-only component is the cleanest implementation; no new IPC is required when composition happens in renderer state.
+- Actions: Added `src/components/PromptPreview.tsx` with live composition, style-snippet highlighting, greylist highlighting, model display, and color-coded word counting (`green` under limit, `yellow` near limit, `red` over limit); integrated preview panel in `src/components/PromptForm.tsx` as a responsive side panel (stacked on smaller screens) with style profile selection for preview context and quick save trigger; integrated preview in `src/screens/PromptBuilder.tsx` with style profile selection, responsive side panel behavior, and combined save payload (`prompt + style snippet`, `negative + style negative`); passed Generator `maxWords` through to embedded `PromptBuilder` preview via `src/screens/Generator.tsx`; validated with `npm run build`.

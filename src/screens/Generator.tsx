@@ -726,7 +726,7 @@ export default function Generator() {
               {greylistCard}
             </div>
             <div className="mt-1 card border-night-700/50">
-              <PromptBuilder embedded greylistEnabled={greylistEnabled} greylistWords={greylistWords} />
+              <PromptBuilder embedded greylistEnabled={greylistEnabled} greylistWords={greylistWords} maxWords={maxWords} />
             </div>
           </>
         )}

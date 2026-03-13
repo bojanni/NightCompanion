@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { StyleProfile } from '../types'
+import PromptPreview from '../components/PromptPreview'
 
 type Part = {
   id: string
@@ -20,14 +22,16 @@ type PromptBuilderProps = {
   embedded?: boolean
   greylistEnabled?: boolean
   greylistWords?: string[]
+  maxWords?: number
 }
 
-export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [] }: PromptBuilderProps) {
+export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [], maxWords = 70 }: PromptBuilderProps) {
   const [parts, setParts] = useState<Part[]>(DEFAULT_PARTS)
   const [separator, setSeparator] = useState<', ' | '. ' | ' | '>( ', ')
-  const [copied, setCopied] = useState(false)
   const [savedTitle, setSavedTitle] = useState('')
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [styleProfiles, setStyleProfiles] = useState<StyleProfile[]>([])
+  const [selectedStyleProfileId, setSelectedStyleProfileId] = useState<number | ''>('')
 
   const updatePart = (id: string, value: string) => {
     setParts((prev) => prev.map((p) => (p.id === id ? { ...p, value } : p)))
@@ -38,29 +42,53 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
     .filter(Boolean)
     .join(separator)
 
-  // Detect greylist words in the built prompt
-  const detectedGreylistWords = useMemo(() => 
-    greylistEnabled && greylistWords.length > 0
-      ? greylistWords.filter(word => 
-          builtPrompt.toLowerCase().includes(word.toLowerCase())
-        )
-      : [],
-    [greylistEnabled, greylistWords, builtPrompt]
+  useEffect(() => {
+    let ignore = false
+
+    async function loadStyleProfiles() {
+      const result = await window.electronAPI.styleProfiles.list()
+      if (ignore || result.error || !result.data) return
+      setStyleProfiles(result.data)
+    }
+
+    loadStyleProfiles()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const selectedStyleProfile = useMemo(
+    () => styleProfiles.find((profile) => profile.id === selectedStyleProfileId),
+    [styleProfiles, selectedStyleProfileId]
   )
 
-  const handleCopy = async () => {
-    if (!builtPrompt) return
-    await navigator.clipboard.writeText(builtPrompt)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1800)
-  }
+  const composedPrompt = useMemo(
+    () => [builtPrompt.trim(), selectedStyleProfile?.basePromptSnippet?.trim() ?? ''].filter(Boolean).join(', '),
+    [builtPrompt, selectedStyleProfile?.basePromptSnippet]
+  )
+
+  const composedNegative = useMemo(
+    () => (selectedStyleProfile?.commonNegativePrompts ?? '').trim(),
+    [selectedStyleProfile?.commonNegativePrompts]
+  )
+
+  // Detect greylist words in the built prompt
+  const detectedGreylistWords = useMemo(() =>
+    greylistEnabled && greylistWords.length > 0
+      ? greylistWords.filter(word => 
+          composedPrompt.toLowerCase().includes(word.toLowerCase())
+        )
+      : [],
+    [greylistEnabled, greylistWords, composedPrompt]
+  )
 
   const handleSaveToLibrary = async () => {
-    if (!builtPrompt || !savedTitle.trim()) return
+    if (!composedPrompt || !savedTitle.trim()) return
     const result = await window.electronAPI.prompts.create({
       title: savedTitle.trim(),
-      promptText: builtPrompt,
-      negativePrompt: '',
+      promptText: composedPrompt,
+      negativePrompt: composedNegative,
       model: '',
       notes: 'Created with Prompt Builder',
       tags: [],
@@ -80,7 +108,7 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
   }
 
   return (
-    <div className={`${embedded ? 'flex min-h-[560px]' : 'no-drag-region flex h-full'}`}>
+    <div className={`${embedded ? 'flex min-h-[560px] flex-col lg:flex-row' : 'no-drag-region flex h-full flex-col lg:flex-row'}`}>
       {/* Left: part inputs */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className={`flex items-center justify-between px-8 pb-5 ${embedded ? 'pt-5' : 'pt-8'}`}>
@@ -101,6 +129,22 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
                 <option value=", ">comma</option>
                 <option value=". ">period</option>
                 <option value=" | ">pipe</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-night-400">Style profile</span>
+              <select
+                value={selectedStyleProfileId}
+                onChange={(e) => setSelectedStyleProfileId(e.target.value ? Number(e.target.value) : '')}
+                className="input w-44 text-xs"
+                aria-label="Style profile"
+              >
+                <option value="">none</option>
+                {styleProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </option>
+                ))}
               </select>
             </div>
             <button onClick={handleClear} className="btn-ghost text-xs">Clear all</button>
@@ -124,10 +168,10 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
       </div>
 
       {/* Right: output panel */}
-      <div className="w-80 flex-shrink-0 border-l border-night-700/50 flex flex-col bg-night-900/30">
+      <div className="w-full lg:w-80 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-night-700/50 flex flex-col bg-night-900/30">
         <div className="px-5 pt-8 pb-4 border-b border-night-700/50">
           <h2 className="text-sm font-semibold text-white mb-0.5">Built Prompt</h2>
-          <p className="text-[10px] text-night-500">{builtPrompt.length} characters</p>
+          <p className="text-[10px] text-night-500">{composedPrompt.length} characters</p>
         </div>
 
         {/* Greylist warning */}
@@ -140,28 +184,20 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
         )}
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
-          {builtPrompt ? (
-            <p className="text-xs text-night-200 leading-relaxed font-mono whitespace-pre-wrap bg-night-800/50 rounded-xl p-4 border border-night-700/50">
-              {builtPrompt}
-            </p>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <span className="text-4xl text-night-700 mb-3">⊕</span>
-              <p className="text-xs text-night-600">Fill in the parts on the left to build your prompt.</p>
-            </div>
-          )}
+          <PromptPreview
+            promptText={builtPrompt}
+            styleSnippet={selectedStyleProfile?.basePromptSnippet ?? ''}
+            styleNegative={selectedStyleProfile?.commonNegativePrompts ?? ''}
+            maxWords={maxWords}
+            greylistWords={greylistEnabled ? greylistWords : []}
+            onSave={handleSaveToLibrary}
+            saveLabel="Save"
+            saveDisabled={!composedPrompt || !savedTitle.trim()}
+          />
         </div>
 
         {/* Actions */}
         <div className="px-5 py-4 border-t border-night-700/50 space-y-3">
-          <button
-            onClick={handleCopy}
-            disabled={!builtPrompt}
-            className={`w-full btn transition-all ${copied ? 'bg-green-900/50 text-green-300 border border-green-700/50' : 'btn-primary'}`}
-          >
-            {copied ? '✓ Copied!' : '⎘ Copy to clipboard'}
-          </button>
-
           <div className="space-y-2">
             <input
               type="text"
@@ -172,7 +208,7 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
             />
             <button
               onClick={handleSaveToLibrary}
-              disabled={!builtPrompt || !savedTitle.trim()}
+              disabled={!composedPrompt || !savedTitle.trim()}
               className="w-full btn-ghost text-xs border border-night-600/50"
             >
               Save to Library

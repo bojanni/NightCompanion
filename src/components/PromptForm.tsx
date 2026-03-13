@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import type { Prompt, PromptVersion, NewPrompt } from '../types'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import type { Prompt, PromptVersion, NewPrompt, StyleProfile } from '../types'
+import PromptPreview from './PromptPreview'
 
 type FormData = Omit<NewPrompt, 'createdAt' | 'updatedAt'>
 
@@ -25,8 +26,11 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [modelOptions, setModelOptions] = useState<string[]>([])
   const [versions, setVersions] = useState<PromptVersion[]>([])
   const [loadingVersions, setLoadingVersions] = useState(false)
+  const [styleProfiles, setStyleProfiles] = useState<StyleProfile[]>([])
+  const [selectedStyleProfileId, setSelectedStyleProfileId] = useState<number | ''>('')
 
   const titleRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   const isEdit = !!initial
 
   useEffect(() => {
@@ -73,6 +77,27 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
       ignore = true
     }
   }, [isEdit, initial?.id])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadStyleProfiles() {
+      const result = await window.electronAPI.styleProfiles.list()
+      if (ignore || result.error || !result.data) return
+      setStyleProfiles(result.data)
+    }
+
+    loadStyleProfiles()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const selectedStyleProfile = useMemo(
+    () => styleProfiles.find((profile) => profile.id === selectedStyleProfileId),
+    [styleProfiles, selectedStyleProfileId]
+  )
 
   const restoreFromVersion = (version: PromptVersion) => {
     setTitle(version.title)
@@ -137,7 +162,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] flex flex-col card border-night-600 shadow-2xl animate-slide-up"
+        className="w-full max-w-6xl max-h-[90vh] flex flex-col card border-night-600 shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal header */}
@@ -155,8 +180,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="px-6 py-5 space-y-5">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="overflow-y-auto px-6 py-5 space-y-5">
             {/* Title */}
             <div>
               <label className="label">Title *</label>
@@ -226,6 +252,22 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                   placeholder="of typ een modelnaam"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="label">Style Profile (preview only)</label>
+              <select
+                value={selectedStyleProfileId}
+                onChange={(e) => setSelectedStyleProfileId(e.target.value ? Number(e.target.value) : '')}
+                className="input"
+              >
+                <option value="">none</option>
+                {styleProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -349,6 +391,23 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                 {error}
               </div>
             )}
+            </div>
+
+            <div className="border-t border-night-700/50 lg:border-t-0 lg:border-l border-night-700/50 overflow-y-auto p-4 md:p-5">
+              <div className="lg:sticky lg:top-0">
+                <PromptPreview
+                  promptText={promptText}
+                  negativePrompt={negativePrompt}
+                  styleSnippet={selectedStyleProfile?.basePromptSnippet ?? ''}
+                  styleNegative={selectedStyleProfile?.commonNegativePrompts ?? ''}
+                  model={model}
+                  maxWords={70}
+                  onSave={() => formRef.current?.requestSubmit()}
+                  saveLabel={isEdit ? 'Save changes' : 'Create prompt'}
+                  saveDisabled={submitting || !title.trim() || !promptText.trim()}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
