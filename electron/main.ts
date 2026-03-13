@@ -4,17 +4,12 @@ import path from 'path'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from '../src/lib/schema'
-import { registerPromptsIpc } from './ipc/prompts'
-import { registerStyleProfilesIpc } from './ipc/styleProfiles'
-import { registerGenerationLogIpc } from './ipc/generationLog'
-import { registerNightCafeIpc } from './ipc/nightcafe'
-import { registerCharactersIpc } from './ipc/characters'
 import { getAiApiRequestLoggingEnabled, getOpenRouterSettings, registerSettingsIpc } from './ipc/settings'
-import { registerAiIpc } from './ipc/ai'
 import { syncNightCafeData } from './services/nightcafeSync'
 import { ensurePostgresAndDatabase, formatErrorMessage, runMigrations } from './services/databaseBootstrap'
 import { createMainWindow } from './services/windowManager'
 import { configureAppEnvironment } from './services/appEnvironment'
+import { registerIpcHandlers } from './services/ipcRegistry'
 
 configureAppEnvironment()
 
@@ -27,16 +22,6 @@ if (!connectionString) {
 
 const queryClient = postgres(connectionString)
 const db = drizzle(queryClient, { schema })
-
-function registerIpcHandlers() {
-  registerPromptsIpc({ db })
-  registerStyleProfilesIpc({ db })
-  registerGenerationLogIpc({ db })
-  registerNightCafeIpc({ db })
-  registerCharactersIpc({ db })
-  registerSettingsIpc({ db })
-  registerAiIpc({ getOpenRouterSettings, getAiApiRequestLoggingEnabled })
-}
 
 app.whenReady().then(async () => {
   try {
@@ -64,7 +49,11 @@ app.whenReady().then(async () => {
     console.error('Failed to sync NightCafe data:', err)
   }
 
-  registerIpcHandlers()
+  registerIpcHandlers({
+    db,
+    getOpenRouterSettings,
+    getAiApiRequestLoggingEnabled,
+  })
   createMainWindow({
     isPackaged: app.isPackaged,
     preloadPath: path.join(__dirname, 'preload.js'),

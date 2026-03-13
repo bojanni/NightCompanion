@@ -336,6 +336,12 @@
 - Findings: `main.ts` still contained inline app environment setup (`sessionData` path and GPU shader disk cache switch).
 - Conclusions: Extracting this into a dedicated service keeps `main.ts` slimmer and startup concerns better separated.
 - Actions: Added `electron/services/appEnvironment.ts` with `configureAppEnvironment()` and replaced inline setup in `electron/main.ts` with a single service call.
+
+## 2026-03-13 (IPC Registry Extracted)
+
+- Findings: `main.ts` still had IPC registration wiring logic mixed into startup orchestration.
+- Conclusions: Centralizing handler registration in a dedicated registry service further reduces `main.ts` complexity and keeps startup responsibilities focused.
+- Actions: Added `electron/services/ipcRegistry.ts` with `registerIpcHandlers({ db, getOpenRouterSettings, getAiApiRequestLoggingEnabled })`; updated `electron/main.ts` to remove inline registration function and call the registry service.
 - Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
 
 ## 2026-03-13 (Generator Layout Breakpoint to LG)
