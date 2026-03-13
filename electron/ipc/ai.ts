@@ -114,10 +114,7 @@ export function registerAiIpc({
     } finally {
       try {
         const loggingEnabled = await getAiApiRequestLoggingEnabled()
-        if (!loggingEnabled)
-          return
-
-        await appendAiRequestLog({
+        if (loggingEnabled) await appendAiRequestLog({
           timestamp: new Date().toISOString(),
           requestId,
           endpoint: 'generator:magicRandom',
