@@ -19,6 +19,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "diff": "^8.0.3",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.38.4",
     "lucide-react": "^0.577.0",

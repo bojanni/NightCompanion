@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import PromptBuilder from './PromptBuilder'
+import PromptDiffView from '../components/PromptDiffView'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
 const DEFAULT_TITLE_MAX_LENGTH = 140
@@ -21,6 +22,8 @@ type PresetOption = {
   category: string
 }
 
+type PromptViewTab = 'final' | 'diff'
+
 function buildDefaultTitle(value: string) {
   return value
     .replace(/\s+/g, ' ')
@@ -34,6 +37,8 @@ export default function Generator() {
   const [presetOptions, setPresetOptions] = useState<PresetOption[]>([])
   const [selectedPreset, setSelectedPreset] = useState('')
   const [generatedPrompt, setGeneratedPrompt] = useState('')
+  const [improvementDiff, setImprovementDiff] = useState<{ originalPrompt: string; improvedPrompt: string } | null>(null)
+  const [promptViewTab, setPromptViewTab] = useState<PromptViewTab>('final')
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [improving, setImproving] = useState(false)
@@ -64,6 +69,8 @@ export default function Generator() {
   const handleClearAll = () => {
     setSelectedPreset('')
     setGeneratedPrompt('')
+    setImprovementDiff(null)
+    setPromptViewTab('final')
     setStatus(null)
     setSavedTitle('')
   }
@@ -144,6 +151,8 @@ export default function Generator() {
       const previousPrompt = generatedPrompt
 
       setGeneratedPrompt(nextPrompt)
+      setImprovementDiff(null)
+      setPromptViewTab('final')
       setSavedTitle((currentTitle) => {
         const trimmedTitle = currentTitle.trim()
         if (trimmedTitle && trimmedTitle !== buildDefaultTitle(previousPrompt)) return currentTitle
@@ -195,6 +204,11 @@ export default function Generator() {
       const previousPrompt = generatedPrompt
 
       setGeneratedPrompt(nextPrompt)
+      setImprovementDiff({
+        originalPrompt: previousPrompt,
+        improvedPrompt: nextPrompt,
+      })
+      setPromptViewTab('diff')
       setSavedTitle((currentTitle) => {
         const trimmedTitle = currentTitle.trim()
         if (trimmedTitle && trimmedTitle !== buildDefaultTitle(previousPrompt)) return currentTitle
@@ -362,7 +376,7 @@ export default function Generator() {
 
         {tab === 'generator' ? (
           <>
-            <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-4 lg:gap-5">
               <div className="card p-5">
                 <div>
                   <label htmlFor="generator-preset" className="label">NightCafe Preset</label>
@@ -415,6 +429,41 @@ export default function Generator() {
                 onChange={(e) => setGeneratedPrompt(e.target.value)}
                 placeholder="Your generated prompt will appear here."
               />
+
+              {improvementDiff && (
+                <div className="mt-4 rounded-xl border border-night-600/50 bg-night-900/30 p-3">
+                  <div className="inline-flex rounded-lg border border-night-600/50 bg-night-900/40 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setPromptViewTab('diff')}
+                      className={`px-3 py-1.5 rounded-md text-xs transition-colors ${promptViewTab === 'diff' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
+                    >
+                      Diff View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPromptViewTab('final')}
+                      className={`px-3 py-1.5 rounded-md text-xs transition-colors ${promptViewTab === 'final' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
+                    >
+                      Final Result
+                    </button>
+                  </div>
+
+                  {promptViewTab === 'diff' ? (
+                    <PromptDiffView
+                      originalPrompt={improvementDiff.originalPrompt}
+                      improvedPrompt={improvementDiff.improvedPrompt}
+                    />
+                  ) : (
+                    <textarea
+                      className="textarea mt-3 min-h-40"
+                      value={improvementDiff.improvedPrompt}
+                      readOnly
+                      placeholder="Improved prompt result"
+                    />
+                  )}
+                </div>
+              )}
 
               <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
                 <input

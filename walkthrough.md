@@ -258,6 +258,24 @@
 
 - Findings: On the Generator page, NightCafe preset and greylist were stacked vertically, which made the Magic Random setup flow longer than needed.
 - Conclusions: Preset and greylist should share the same row in the Magic Random tab while preserving greylist controls for the Prompt Builder tab.
+
+## 2026-03-13 (Improve Prompt Diff View)
+
+- Findings: After using `Improve Prompt`, users had no visual comparison between original and improved prompt text.
+- Conclusions: A dedicated read-only diff field under Generated Prompt is needed to make additions/removals explicit, similar to highlighted diff views.
+- Actions: Installed `diff` package; added `src/components/PromptDiffView.tsx` with word-level inline highlighting (green added, red removed); updated `src/screens/Generator.tsx` to store original/improved prompt pair on improve, clear diff on new generation/clear-all, and render the new diff panel only when an improvement result exists.
+
+## 2026-03-13 (Generated Prompt Tabs: Final Result + Diff View)
+
+- Findings: User requested explicit tabs above the improved prompt field to switch between normal prompt editing and diff comparison.
+- Conclusions: A lightweight two-tab toggle in the Generated Prompt card provides clear mode switching without changing underlying save/generate actions.
+- Actions: Updated `src/screens/Generator.tsx` to add `Final Result` and `Diff View` tabs above the prompt field, including disabled Diff state when no comparison exists, auto-switch to Diff after Improve Prompt, and reset to Final Result on new generation/clear-all.
+
+## 2026-03-13 (Tabs Moved To Improvement Field)
+
+- Findings: User clarified tabs must be above the newly added improvement field, not above the original editable prompt textarea.
+- Conclusions: Original prompt editing should stay standalone; tabs should only appear inside the improvement comparison block shown after `Improve Prompt`.
+- Actions: Updated `src/screens/Generator.tsx` to always render the original prompt textarea first, then render an improvement-only panel (when diff data exists) containing `Diff View`/`Final Result` tabs and the corresponding comparison output; adjusted `src/components/PromptDiffView.tsx` spacing for nested panel layout.
 - Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
 
 ## 2026-03-13 (Generator Layout Breakpoint to LG)
@@ -271,6 +289,12 @@
 - Findings: User requested the side-by-side preset + greylist layout to activate even earlier.
 - Conclusions: Switching from `lg` to `md` makes the 2-column controls available on medium widths while preserving stacked behavior on small screens.
 - Actions: Updated `src/screens/Generator.tsx` generator controls grid class from `lg:grid-cols-2` to `md:grid-cols-2`.
+
+## 2026-03-13 (Generator MD Gap Compacting)
+
+- Findings: User requested the side-by-side layout to feel slightly denser on `md` widths.
+- Conclusions: A breakpoint-specific gap override keeps mobile/large spacing intact while tightening medium screens.
+- Actions: Updated generator controls grid class in `src/screens/Generator.tsx` to `gap-5 md:gap-4 lg:gap-5`.
 
 - Findings: OpenRouter models were shown without description context, making selection harder when model names are similar.
 - Conclusions: Model descriptions should be fetched and displayed directly in the dropdown with compact preview and expandable full text.
