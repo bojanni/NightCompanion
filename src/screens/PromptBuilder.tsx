@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 type Part = {
   id: string
@@ -16,7 +16,13 @@ const DEFAULT_PARTS: Part[] = [
   { id: 'technical', label: 'Technical Details', placeholder: 'e.g. 8k, highly detailed, cinematic, trending on ArtStation', value: '' },
 ]
 
-export default function PromptBuilder({ embedded = false }: { embedded?: boolean }) {
+type PromptBuilderProps = {
+  embedded?: boolean
+  greylistEnabled?: boolean
+  greylistWords?: string[]
+}
+
+export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [] }: PromptBuilderProps) {
   const [parts, setParts] = useState<Part[]>(DEFAULT_PARTS)
   const [separator, setSeparator] = useState<', ' | '. ' | ' | '>( ', ')
   const [copied, setCopied] = useState(false)
@@ -31,6 +37,16 @@ export default function PromptBuilder({ embedded = false }: { embedded?: boolean
     .map((p) => p.value.trim())
     .filter(Boolean)
     .join(separator)
+
+  // Detect greylist words in the built prompt
+  const detectedGreylistWords = useMemo(() => 
+    greylistEnabled && greylistWords.length > 0
+      ? greylistWords.filter(word => 
+          builtPrompt.toLowerCase().includes(word.toLowerCase())
+        )
+      : [],
+    [greylistEnabled, greylistWords, builtPrompt]
+  )
 
   const handleCopy = async () => {
     if (!builtPrompt) return
@@ -113,6 +129,15 @@ export default function PromptBuilder({ embedded = false }: { embedded?: boolean
           <h2 className="text-sm font-semibold text-white mb-0.5">Built Prompt</h2>
           <p className="text-[10px] text-night-500">{builtPrompt.length} characters</p>
         </div>
+
+        {/* Greylist warning */}
+        {detectedGreylistWords.length > 0 && (
+          <div className="px-5 py-2 bg-yellow-900/30 border-b border-yellow-700/50">
+            <p className="text-[10px] text-yellow-400">
+              ⚠️ Greylist words detected: {detectedGreylistWords.join(', ')}
+            </p>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {builtPrompt ? (
