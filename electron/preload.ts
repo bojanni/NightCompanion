@@ -157,6 +157,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generator: {
     magicRandom: (input?: { theme?: string; presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>> =>
       ipcRenderer.invoke('generator:magicRandom', input),
+    improvePrompt: (input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>> =>
+      ipcRenderer.invoke('generator:improvePrompt', input),
   },
   nightcafeModels: {
     list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>

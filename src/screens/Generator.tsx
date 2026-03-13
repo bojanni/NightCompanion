@@ -28,6 +28,7 @@ export default function Generator() {
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [improving, setImproving] = useState(false)
   const [savedTitle, setSavedTitle] = useState('')
   const [greylistEnabled, setGreylistEnabled] = useState(true)
   const [greylistWords, setGreylistWords] = useState<string[]>(DEFAULT_GREYLIST)
@@ -146,6 +147,48 @@ export default function Generator() {
     setStatus('Prompt copied to clipboard.')
   }
 
+  const handleImprove = async () => {
+    if (!generatedPrompt.trim()) {
+      setStatus('Nothing to improve yet. Generate (or paste) a prompt first.')
+      return
+    }
+
+    setStatus(null)
+    setImproving(true)
+
+    try {
+      const result = await window.electronAPI.generator.improvePrompt({
+        prompt: generatedPrompt,
+      })
+
+      if (!result) {
+        setStatus('Error: Improver returned an empty response.')
+        return
+      }
+
+      if (result.error) {
+        setStatus(result.error)
+        return
+      }
+
+      if (!result.data?.prompt) {
+        setStatus('Error: Improver returned no data.')
+        return
+      }
+
+      setGeneratedPrompt(result.data.prompt)
+      if (!savedTitle.trim()) {
+        const stamp = new Date().toLocaleString()
+        setSavedTitle(`Improved Prompt ${stamp}`)
+      }
+      setStatus('Prompt improved.')
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Error: Failed to improve prompt.')
+    } finally {
+      setImproving(false)
+    }
+  }
+
   const handleSaveToLibrary = async () => {
     if (!generatedPrompt || !savedTitle.trim()) return
 
@@ -229,6 +272,14 @@ export default function Generator() {
                 </button>
                 <button onClick={handleCopy} disabled={!generatedPrompt} className="btn-ghost border border-night-600/50">
                   Copy Prompt
+                </button>
+                <button
+                  type="button"
+                  onClick={handleImprove}
+                  disabled={!generatedPrompt.trim() || loading || improving}
+                  className="btn-ghost border border-night-600/50"
+                >
+                  {improving ? 'Improving...' : 'Improve Prompt'}
                 </button>
                 <button
                   type="button"

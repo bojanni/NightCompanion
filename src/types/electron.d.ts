@@ -95,6 +95,7 @@ declare global {
       }
       generator: {
         magicRandom(input?: { theme?: string; presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>>
+        improvePrompt(input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>>
       }
       nightcafeModels: {
         list(filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>>
