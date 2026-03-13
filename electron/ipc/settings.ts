@@ -65,7 +65,106 @@ type StoredSettings = {
   localEndpoints?: LocalEndpointStore[]
 }
 
+type DashboardRole = 'generation' | 'improvement' | 'vision' | 'general'
+
+type RoleRouteSelection = {
+  enabled: boolean
+  providerId: string
+  modelId: string
+}
+
+type RoleRouteState = Record<DashboardRole, RoleRouteSelection>
+
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4o-mini'
+
+const DASHBOARD_ROLES: DashboardRole[] = ['generation', 'improvement', 'vision', 'general']
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeRoleRouteState(input: unknown): RoleRouteState | undefined {
+  if (!isRecord(input)) return undefined
+
+  const normalized = {} as RoleRouteState
+
+  for (const role of DASHBOARD_ROLES) {
+    const rawRole = input[role]
+    if (!isRecord(rawRole)) {
+      normalized[role] = { enabled: true, providerId: '', modelId: '' }
+      continue
+    }
+
+    normalized[role] = {
+      enabled: typeof rawRole.enabled === 'boolean' ? rawRole.enabled : true,
+      providerId: typeof rawRole.providerId === 'string' ? rawRole.providerId : '',
+      modelId: typeof rawRole.modelId === 'string' ? rawRole.modelId : '',
+    }
+  }
+
+  return normalized
+}
+
+function normalizeProviderMetaMap(input: unknown): Record<string, Partial<ProviderMetaStore>> | undefined {
+  if (!isRecord(input)) return undefined
+
+  const normalized: Record<string, Partial<ProviderMetaStore>> = {}
+
+  for (const [providerId, rawMeta] of Object.entries(input)) {
+    if (!isRecord(rawMeta)) continue
+
+    const nextMeta: Partial<ProviderMetaStore> = {}
+
+    if (typeof rawMeta.model_gen === 'string') nextMeta.model_gen = rawMeta.model_gen
+    if (typeof rawMeta.model_improve === 'string') nextMeta.model_improve = rawMeta.model_improve
+    if (typeof rawMeta.model_vision === 'string') nextMeta.model_vision = rawMeta.model_vision
+    if (typeof rawMeta.is_active === 'boolean') nextMeta.is_active = rawMeta.is_active
+    if (typeof rawMeta.is_active_gen === 'boolean') nextMeta.is_active_gen = rawMeta.is_active_gen
+    if (typeof rawMeta.is_active_improve === 'boolean') nextMeta.is_active_improve = rawMeta.is_active_improve
+    if (typeof rawMeta.is_active_vision === 'boolean') nextMeta.is_active_vision = rawMeta.is_active_vision
+
+    normalized[providerId] = nextMeta
+  }
+
+  return normalized
+}
+
+function normalizeAiConfigState(input: unknown): AiConfigStateStore | undefined {
+  if (!isRecord(input)) return undefined
+
+  const normalized: AiConfigStateStore = {}
+
+  const normalizedRoleRouting = normalizeRoleRouteState(input.dashboardRoleRouting)
+  if (normalizedRoleRouting) normalized.dashboardRoleRouting = normalizedRoleRouting
+
+  if ('cachedModels' in input) normalized.cachedModels = input.cachedModels
+  if ('advisorModelRoute' in input) normalized.advisorModelRoute = input.advisorModelRoute
+  if (typeof input.aiApiRequestLoggingEnabled === 'boolean') {
+    normalized.aiApiRequestLoggingEnabled = input.aiApiRequestLoggingEnabled
+  }
+
+  return normalized
+}
+
+function normalizeStoredSettings(input: unknown): StoredSettings {
+  if (!isRecord(input)) return {}
+
+  const normalized: StoredSettings = {}
+
+  if (isRecord(input.openRouter)) normalized.openRouter = input.openRouter
+
+  const providerMeta = normalizeProviderMetaMap(input.providerMeta)
+  if (providerMeta) normalized.providerMeta = providerMeta
+
+  const aiConfig = normalizeAiConfigState(input.aiConfig)
+  if (aiConfig) normalized.aiConfig = aiConfig
+
+  if (Array.isArray(input.localEndpoints)) {
+    normalized.localEndpoints = input.localEndpoints.filter((item): item is LocalEndpointStore => isRecord(item))
+  }
+
+  return normalized
+}
 
 function getSettingsFilePath() {
   return path.join(app.getPath('userData'), 'settings.json')
@@ -95,7 +194,16 @@ function normalizeProviderMeta(input: Partial<ProviderMetaStore> | undefined, fa
 async function readStoredSettings(): Promise<StoredSettings> {
   try {
     const raw = await readFile(getSettingsFilePath(), 'utf-8')
-    return JSON.parse(raw) as StoredSettings
+    const parsed = JSON.parse(raw) as unknown
+    const normalized = normalizeStoredSettings(parsed)
+
+    if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+      const settingsPath = getSettingsFilePath()
+      await mkdir(path.dirname(settingsPath), { recursive: true })
+      await writeFile(settingsPath, JSON.stringify(normalized, null, 2), 'utf-8')
+    }
+
+    return normalized
   } catch (error) {
     const err = error as NodeJS.ErrnoException
     if (err.code === 'ENOENT') return {}

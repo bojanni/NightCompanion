@@ -300,6 +300,24 @@
 - Findings: Applying `0008_characters_jsonb` failed with Postgres `42804` because existing text defaults on `images_json`/`details_json` could not be auto-cast during `ALTER COLUMN ... TYPE jsonb`.
 - Conclusions: For Postgres type conversion, text defaults must be dropped before `TYPE ... USING ...`, then reapplied as `jsonb` defaults.
 - Actions: Updated `drizzle/0008_characters_jsonb.sql` to first `DROP DEFAULT` for both columns, then run `TYPE jsonb USING ...`, then `SET DEFAULT '[]'::jsonb`; reran `npm run db:migrate` successfully.
+
+## 2026-03-13 (Characters PK: varchar -> uuid)
+
+- Findings: `characters.id` was modeled as `varchar(64)` while values are UUID-like and used as technical identifiers.
+- Conclusions: `uuid` with DB-generated defaults is more expressive and safer than free-form text IDs.
+- Actions: Updated `src/lib/schema.ts` to `id: uuid('id').defaultRandom().primaryKey()`; added migration `drizzle/0009_characters_uuid_pk.sql` (with `pgcrypto` extension, safe cast from existing IDs, and `gen_random_uuid()` default); updated `electron/ipc/characters.ts` create flow to rely on DB default UUID when no valid UUID is provided; validated with `npm run build` and `npm run db:migrate`.
+
+## 2026-03-13 (settings.json Schema-Check on Load)
+
+- Findings: `settings.json` was parsed as raw JSON without runtime shape validation, which could silently pass malformed structures for `providerMeta` and `aiConfig.dashboardRoleRouting`.
+- Conclusions: Load-time normalization is needed so invalid/legacy values are constrained to expected object shapes before use.
+- Actions: Updated `electron/ipc/settings.ts` to validate and normalize loaded settings via explicit runtime guards (`isRecord`, `normalizeProviderMetaMap`, `normalizeRoleRouteState`, `normalizeAiConfigState`, `normalizeStoredSettings`); `readStoredSettings()` now returns sanitized data instead of direct `JSON.parse` output.
+
+## 2026-03-13 (Self-Healing settings.json Write-Back)
+
+- Findings: Runtime normalization prevented malformed config usage in memory, but the underlying `settings.json` file could remain stale/corrupt in structure.
+- Conclusions: If parsed settings differ from normalized settings, the cleaned version should be persisted immediately to prevent repeated normalization and future drift.
+- Actions: Updated `readStoredSettings()` in `electron/ipc/settings.ts` to compare parsed vs normalized settings and automatically rewrite `settings.json` with normalized content when differences are detected.
 - Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
 
 ## 2026-03-13 (Generator Layout Breakpoint to LG)

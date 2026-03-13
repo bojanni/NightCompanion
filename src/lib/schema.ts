@@ -3,6 +3,7 @@ import {
   serial,
   text,
   jsonb,
+  uuid,
   varchar,
   integer,
   boolean,
@@ -147,7 +148,7 @@ export const nightcafePresets = pgTable(
 export const characters = pgTable(
   'characters',
   {
-    id: varchar('id', { length: 64 }).primaryKey(),
+    id: uuid('id').defaultRandom().primaryKey(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description').default('').notNull(),
     imagesJson: jsonb('images_json').$type<Array<{

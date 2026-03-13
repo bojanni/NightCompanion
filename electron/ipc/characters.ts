@@ -170,14 +170,15 @@ export function registerCharactersIpc({ db }: { db: Database }) {
   ipcMain.handle('characters:create', async (_, input: Partial<CharacterPayload>) => {
     try {
       const now = new Date()
-      const id = input.id?.trim() || randomUUID()
+      const id = input.id?.trim() || ''
+      const hasValidUuidId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
       const createdAt = input.createdAt ? new Date(input.createdAt) : now
       const updatedAt = input.updatedAt ? new Date(input.updatedAt) : now
 
       const [created] = await db
         .insert(characters)
         .values({
-          id,
+          ...(hasValidUuidId ? { id } : {}),
           name: input.name?.trim() || 'Untitled Character',
           description: input.description || '',
           imagesJson: asArray<CharacterImagePayload>(input.images, []),

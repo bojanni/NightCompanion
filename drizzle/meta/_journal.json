@@ -64,6 +64,13 @@
       "when": 1773370800000,
       "tag": "0008_characters_jsonb",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773372600000,
+      "tag": "0009_characters_uuid_pk",
+      "breakpoints": true
     }
   ]
 }
