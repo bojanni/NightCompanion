@@ -33,6 +33,8 @@ interface DashboardProps {
   modelsByProvider: Record<string, string[]>
   roleRouting: Record<DashboardRole, RoleRouteSelection>
   onChangeRoleRouting: (role: DashboardRole, patch: Partial<RoleRouteSelection>) => void
+  aiApiRequestLoggingEnabled: boolean
+  onToggleAiApiRequestLogging: (enabled: boolean) => void
 }
 
 const ROLE_META: Record<DashboardRole, {
@@ -89,6 +91,8 @@ export function Dashboard({
   modelsByProvider,
   roleRouting,
   onChangeRoleRouting,
+  aiApiRequestLoggingEnabled,
+  onToggleAiApiRequestLogging,
 }: DashboardProps) {
   void setDynamicModels
   void getToken
@@ -206,6 +210,30 @@ export function Dashboard({
               </div>
             )
           })}
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-night-700/50">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-white">AI API request logging</p>
+              <p className="text-xs text-night-400">Log AI request/response payloads to a local file for debugging</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={aiApiRequestLoggingEnabled}
+              onClick={() => onToggleAiApiRequestLogging(!aiApiRequestLoggingEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                aiApiRequestLoggingEnabled ? 'bg-teal-500' : 'bg-night-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  aiApiRequestLoggingEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 

@@ -28,6 +28,7 @@ export type AiConfigStateStore = {
   dashboardRoleRouting?: unknown
   cachedModels?: unknown
   advisorModelRoute?: unknown
+  aiApiRequestLoggingEnabled?: boolean
 }
 
 export type LocalEndpointStore = {

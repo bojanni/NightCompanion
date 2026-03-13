@@ -1,14 +1,41 @@
 import { ipcMain } from 'electron'
+import { app } from 'electron'
+import path from 'path'
+import { appendFile, mkdir } from 'fs/promises'
 import type { OpenRouterSettings } from './settings'
+
+const AI_REQUEST_LOG_FILE = 'ai-api-requests.jsonl'
+
+function getAiRequestLogPath() {
+  return path.join(app.getPath('userData'), 'logs', AI_REQUEST_LOG_FILE)
+}
+
+async function appendAiRequestLog(record: Record<string, unknown>) {
+  const logPath = getAiRequestLogPath()
+  await mkdir(path.dirname(logPath), { recursive: true })
+  await appendFile(logPath, `${JSON.stringify(record)}\n`, 'utf-8')
+}
 
 export function registerAiIpc({
   getOpenRouterSettings,
+  getAiApiRequestLoggingEnabled,
 }: {
   getOpenRouterSettings: () => Promise<OpenRouterSettings>
+  getAiApiRequestLoggingEnabled: () => Promise<boolean>
 }) {
   ipcMain.handle('generator:magicRandom', async (_, input?: { theme?: string; presetName?: string; greylistEnabled?: boolean; greylistWords?: string[] }) => {
+    const requestId = crypto.randomUUID()
+    const startedAt = Date.now()
+    let requestModel = ''
+    let requestPayload: Record<string, unknown> | null = null
+    let responseStatus: number | null = null
+    let resultPrompt = ''
+    let errorMessage: string | null = null
+
     try {
       const settings = await getOpenRouterSettings()
+      requestModel = settings.model
+
       if (!settings.apiKey) {
         return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
       }
@@ -34,6 +61,23 @@ export function registerAiIpc({
 
       const userPrompt = promptParts.join(' ')
 
+      requestPayload = {
+        model: settings.model,
+        temperature: 1.2,
+        max_tokens: 220,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You generate exactly one high-quality text-to-image prompt. Return only the final prompt text with no numbering, no quotes, and no explanation.',
+          },
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+      }
+
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -42,23 +86,10 @@ export function registerAiIpc({
           ...(settings.siteUrl ? { 'HTTP-Referer': settings.siteUrl } : {}),
           ...(settings.appName ? { 'X-Title': settings.appName } : {}),
         },
-        body: JSON.stringify({
-          model: settings.model,
-          temperature: 1.2,
-          max_tokens: 220,
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You generate exactly one high-quality text-to-image prompt. Return only the final prompt text with no numbering, no quotes, and no explanation.',
-            },
-            {
-              role: 'user',
-              content: userPrompt,
-            },
-          ],
-        }),
+        body: JSON.stringify(requestPayload),
       })
+
+      responseStatus = response.status
 
       if (!response.ok) {
         const errText = await response.text()
@@ -74,9 +105,39 @@ export function registerAiIpc({
         throw new Error('No prompt content returned from OpenRouter.')
       }
 
+      resultPrompt = prompt
+
       return { data: { prompt } }
     } catch (error) {
+      errorMessage = String(error)
       return { error: String(error) }
+    } finally {
+      try {
+        const loggingEnabled = await getAiApiRequestLoggingEnabled()
+        if (!loggingEnabled)
+          return
+
+        await appendAiRequestLog({
+          timestamp: new Date().toISOString(),
+          requestId,
+          endpoint: 'generator:magicRandom',
+          provider: 'openrouter',
+          model: requestModel,
+          durationMs: Date.now() - startedAt,
+          status: responseStatus,
+          input: {
+            theme: input?.theme?.trim() || null,
+            presetName: input?.presetName?.trim() || null,
+            greylistEnabled: input?.greylistEnabled !== false,
+            greylistWordCount: (input?.greylistWords ?? []).filter((word) => word.trim().length > 0).length,
+          },
+          requestPayload,
+          responsePrompt: resultPrompt || null,
+          error: errorMessage,
+        })
+      } catch (loggingError) {
+        console.error('Failed to write AI request log:', loggingError)
+      }
     }
   })
 }

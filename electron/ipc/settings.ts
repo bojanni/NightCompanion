@@ -28,6 +28,7 @@ type AiConfigStateStore = {
   dashboardRoleRouting?: unknown
   cachedModels?: unknown
   advisorModelRoute?: unknown
+  aiApiRequestLoggingEnabled?: boolean
 }
 
 type LocalEndpointStore = {
@@ -116,6 +117,11 @@ async function writeStoredSettings(settings: {
 export async function getOpenRouterSettings() {
   const stored = await readStoredSettings()
   return normalizeOpenRouterSettings(stored.openRouter)
+}
+
+export async function getAiApiRequestLoggingEnabled() {
+  const stored = await readStoredSettings()
+  return Boolean(stored.aiConfig?.aiApiRequestLoggingEnabled)
 }
 
 async function listOpenRouterModelsFromDb(db: Database) {

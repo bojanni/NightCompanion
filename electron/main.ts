@@ -11,7 +11,7 @@ import { registerStyleProfilesIpc } from './ipc/styleProfiles'
 import { registerGenerationLogIpc } from './ipc/generationLog'
 import { registerNightCafeIpc } from './ipc/nightcafe'
 import { registerCharactersIpc } from './ipc/characters'
-import { getOpenRouterSettings, registerSettingsIpc } from './ipc/settings'
+import { getAiApiRequestLoggingEnabled, getOpenRouterSettings, registerSettingsIpc } from './ipc/settings'
 import { registerAiIpc } from './ipc/ai'
 import { syncNightCafeData } from './services/nightcafeSync'
 
@@ -150,7 +150,7 @@ function registerIpcHandlers() {
   registerNightCafeIpc({ db })
   registerCharactersIpc({ db })
   registerSettingsIpc({ db })
-  registerAiIpc({ getOpenRouterSettings })
+  registerAiIpc({ getOpenRouterSettings, getAiApiRequestLoggingEnabled })
 }
 
 app.whenReady().then(async () => {

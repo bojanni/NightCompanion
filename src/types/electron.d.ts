@@ -16,6 +16,7 @@ type AiConfigStateStore = {
   dashboardRoleRouting?: unknown
   cachedModels?: unknown
   advisorModelRoute?: unknown
+  aiApiRequestLoggingEnabled?: boolean
 }
 type LocalEndpointStore = {
   id?: string
