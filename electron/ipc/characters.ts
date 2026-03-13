@@ -103,21 +103,16 @@ async function deleteCharacterImageFile(fileUrl: string) {
   }
 }
 
-function parseJsonArray<T>(input: string, fallback: T[]) {
-  try {
-    const parsed = JSON.parse(input) as unknown
-    return Array.isArray(parsed) ? (parsed as T[]) : fallback
-  } catch {
-    return fallback
-  }
+function asArray<T>(input: unknown, fallback: T[]) {
+  return Array.isArray(input) ? (input as T[]) : fallback
 }
 
 function mapCharacterRowToPayload(row: {
   id: string
   name: string
   description: string
-  imagesJson: string
-  detailsJson: string
+  imagesJson: CharacterImagePayload[]
+  detailsJson: CharacterDetailPayload[]
   createdAt: Date
   updatedAt: Date
 }): CharacterPayload {
@@ -125,8 +120,8 @@ function mapCharacterRowToPayload(row: {
     id: row.id,
     name: row.name,
     description: row.description,
-    images: parseJsonArray<CharacterImagePayload>(row.imagesJson, []),
-    details: parseJsonArray<CharacterDetailPayload>(row.detailsJson, []),
+    images: asArray<CharacterImagePayload>(row.imagesJson, []),
+    details: asArray<CharacterDetailPayload>(row.detailsJson, []),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }
@@ -185,8 +180,8 @@ export function registerCharactersIpc({ db }: { db: Database }) {
           id,
           name: input.name?.trim() || 'Untitled Character',
           description: input.description || '',
-          imagesJson: JSON.stringify(input.images || []),
-          detailsJson: JSON.stringify(input.details || []),
+          imagesJson: asArray<CharacterImagePayload>(input.images, []),
+          detailsJson: asArray<CharacterDetailPayload>(input.details, []),
           createdAt,
           updatedAt,
         })
@@ -195,8 +190,8 @@ export function registerCharactersIpc({ db }: { db: Database }) {
           set: {
             name: input.name?.trim() || 'Untitled Character',
             description: input.description || '',
-            imagesJson: JSON.stringify(input.images || []),
-            detailsJson: JSON.stringify(input.details || []),
+            imagesJson: asArray<CharacterImagePayload>(input.images, []),
+            detailsJson: asArray<CharacterDetailPayload>(input.details, []),
             updatedAt,
           },
         })
@@ -225,8 +220,8 @@ export function registerCharactersIpc({ db }: { db: Database }) {
         .set({
           name: input.name?.trim() || 'Untitled Character',
           description: input.description || '',
-          imagesJson: JSON.stringify(input.images || []),
-          detailsJson: JSON.stringify(input.details || []),
+          imagesJson: asArray<CharacterImagePayload>(input.images, []),
+          detailsJson: asArray<CharacterDetailPayload>(input.details, []),
           updatedAt: input.updatedAt ? new Date(input.updatedAt) : now,
         })
         .where(eq(characters.id, id))

@@ -2,6 +2,7 @@ import {
   pgTable,
   serial,
   text,
+  jsonb,
   varchar,
   integer,
   boolean,
@@ -149,8 +150,18 @@ export const characters = pgTable(
     id: varchar('id', { length: 64 }).primaryKey(),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description').default('').notNull(),
-    imagesJson: text('images_json').default('[]').notNull(),
-    detailsJson: text('details_json').default('[]').notNull(),
+    imagesJson: jsonb('images_json').$type<Array<{
+      id: string
+      url: string
+      isMain: boolean
+      createdAt: string
+    }>>().default([]).notNull(),
+    detailsJson: jsonb('details_json').$type<Array<{
+      id: string
+      detail: string
+      category: string
+      worksWell: boolean
+    }>>().default([]).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

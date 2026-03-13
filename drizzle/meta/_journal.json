@@ -57,6 +57,13 @@
       "when": 1773365400000,
       "tag": "0007_openrouter_model_description",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773370800000,
+      "tag": "0008_characters_jsonb",
+      "breakpoints": true
     }
   ]
 }

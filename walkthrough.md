@@ -288,6 +288,18 @@
 - Findings: User requested control over prompt length for Magic Random output.
 - Conclusions: Add a Generator slider with default 70 and hard cap 100, persist selection, and inject a max-word instruction in the AI request so output length is constrained.
 - Actions: Updated `src/screens/Generator.tsx` with `Max words` range slider (`default 70`, `max 100`) and persisted it in `generatorUiState`; extended IPC types in `electron/preload.ts` and `src/types/electron.d.ts`; updated `electron/ipc/ai.ts` `generator:magicRandom` to accept/validate `maxWords`, include `Limit the final prompt to a maximum of X words.` in the instruction, and log the applied value.
+
+## 2026-03-13 (Characters JSON Text -> JSONB)
+
+- Findings: `characters.images_json` and `characters.details_json` were stored as text-serialized JSON, requiring manual `JSON.parse/stringify` in IPC and limiting DB-level JSON querying.
+- Conclusions: Switching to native PostgreSQL `jsonb` improves type-safety in Drizzle and enables structured JSON operations directly in SQL.
+- Actions: Updated `src/lib/schema.ts` to use `jsonb(...).$type<...>().default([]).notNull()` for both character JSON columns; refactored `electron/ipc/characters.ts` to handle array values directly (removed string parse/stringify flow); added migration `drizzle/0008_characters_jsonb.sql` converting existing text values to `jsonb` with defaults, and registered it in `drizzle/meta/_journal.json`.
+
+## 2026-03-13 (Fix: JSONB Migration Default Cast Error)
+
+- Findings: Applying `0008_characters_jsonb` failed with Postgres `42804` because existing text defaults on `images_json`/`details_json` could not be auto-cast during `ALTER COLUMN ... TYPE jsonb`.
+- Conclusions: For Postgres type conversion, text defaults must be dropped before `TYPE ... USING ...`, then reapplied as `jsonb` defaults.
+- Actions: Updated `drizzle/0008_characters_jsonb.sql` to first `DROP DEFAULT` for both columns, then run `TYPE jsonb USING ...`, then `SET DEFAULT '[]'::jsonb`; reran `npm run db:migrate` successfully.
 - Actions: Refactored `src/screens/Generator.tsx` to extract a reusable `greylistCard`, render it next to the preset card in a responsive 2-column grid (`xl:grid-cols-2`) for the generator tab, and keep the same greylist card above Prompt Builder in builder mode.
 
 ## 2026-03-13 (Generator Layout Breakpoint to LG)
