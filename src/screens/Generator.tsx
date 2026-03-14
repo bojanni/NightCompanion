@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
+import PromptPreview from '../components/PromptPreview'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
 const DEFAULT_TITLE_MAX_LENGTH = 140
@@ -760,6 +761,16 @@ export default function Generator() {
                     {quickStartStatus}
                   </p>
                 )}
+
+                <div className="mt-4">
+                  <PromptPreview
+                    promptText={generatedPrompt || quickStartIdea}
+                    negativePrompt={negativePrompt}
+                    maxWords={maxWords}
+                    greylistWords={greylistEnabled ? greylistWords : []}
+                    model={selectedPreset ? `NightCafe preset: ${selectedPreset}` : 'Magic Random AI'}
+                  />
+                </div>
               </div>
 
               {/* RIGHT: Magic Random AI controls */}

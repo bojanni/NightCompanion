@@ -507,3 +507,10 @@
 - **Magic Quickstart** card (idea textarea, creativity slider, character picker) now renders as the LEFT column of a 2-column `lg:grid-cols-2` grid
 - **Magic Random AI controls** (NightCafe Preset, Max Words slider, action buttons, greylist) render as the RIGHT column in the same tab
 - Tab type narrowed from `'generator' | 'builder' | 'quickstart'` to `'generator' | 'builder'`; localStorage load maps legacy `'quickstart'` value ? `'generator'`
+
+
+## 2026-03-14 — Quickstart Prompt Preview
+
+- Added PromptPreview to the **Magic Quickstart** card in src/screens/Generator.tsx so the Quickstart flow now shows a live preview
+- Preview uses generatedPrompt || quickStartIdea as prompt source, includes current 
+egativePrompt, maxWords, and greylist highlighting when enabled
