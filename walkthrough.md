@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-14 (Magic Quick Start In Generator)
+
+- Findings: Generator page had only Magic Random and Prompt Builder tabs, with no guided entry point for users who want AI help from a plain idea description.
+- Conclusions: A Quick Start tab with a free-form idea textarea, creativity level slider (Focused/Balanced/Wild), optional character picker, and one-click AI expansion gives a simpler on-ramp that auto-generates a full prompt and switches to Magic Random view with the result.
+- Actions: Added generator:quickExpand IPC handler in electron/ipc/ai.ts with creativity-tuned temperatures (0.7/1.0/1.4) and optional character context injection; wired bridge in electron/preload.ts and types in src/types/electron.d.ts; added Quick Start tab in src/screens/Generator.tsx with all state persisted to localStorage via generatorUiState.
+
 ## 2026-03-09
 
 - Findings: Settings page for OpenRouter credentials is implemented and wired into sidebar/app navigation.
@@ -491,3 +497,13 @@
 - Findings: User requested certainty that generated negative prompts are saved into Prompt Library entries when saving from Generator.
 - Conclusions: Save should explicitly persist a trimmed negative prompt value and block save while negative generation/improvement is still in-flight.
 - Actions: Updated `src/screens/Generator.tsx` `handleSaveToLibrary` to save `negativePrompt.trim()` and added guard/disabled state to prevent saving during `generatingNegative`/`improvingNegative`; validated with `npm run build`.
+
+
+
+## 2026-03-14 — Magic Quickstart merged into Quickstart tab
+
+- Removed the separate **Quick Start** tab from Generator
+- Renamed **Magic Random** tab to **Quickstart**
+- **Magic Quickstart** card (idea textarea, creativity slider, character picker) now renders as the LEFT column of a 2-column `lg:grid-cols-2` grid
+- **Magic Random AI controls** (NightCafe Preset, Max Words slider, action buttons, greylist) render as the RIGHT column in the same tab
+- Tab type narrowed from `'generator' | 'builder' | 'quickstart'` to `'generator' | 'builder'`; localStorage load maps legacy `'quickstart'` value ? `'generator'`

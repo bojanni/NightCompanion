@@ -27,6 +27,7 @@ type PresetOption = {
 
 type PromptViewTab = 'final' | 'diff'
 type NegativePromptViewTab = 'final' | 'diff'
+type CreativityLevel = 'focused' | 'balanced' | 'wild'
 
 type GeneratorPersistedState = {
   tab?: 'generator' | 'builder'
@@ -45,6 +46,9 @@ type GeneratorPersistedState = {
     originalPrompt: string
     improvedPrompt: string
   } | null
+  quickStartIdea?: string
+  quickStartCreativity?: CreativityLevel
+  quickStartCharacterId?: string | null
 }
 
 function buildDefaultTitle(value: string) {
@@ -77,6 +81,81 @@ export default function Generator() {
   const [greylistWords, setGreylistWords] = useState<string[]>(DEFAULT_GREYLIST)
   const [greylistInput, setGreylistInput] = useState('')
 
+  const [quickStartIdea, setQuickStartIdea] = useState('')
+  const [quickStartCreativity, setQuickStartCreativity] = useState<CreativityLevel>('balanced')
+  const [quickStartCharacterId, setQuickStartCharacterId] = useState<string | null>(null)
+  const [quickStartCharacterList, setQuickStartCharacterList] = useState<Array<{ id: string; name: string; description: string }>>([]) 
+  const [showCharacterPicker, setShowCharacterPicker] = useState(false)
+  const [expandingIdea, setExpandingIdea] = useState(false)
+  const [quickStartStatus, setQuickStartStatus] = useState<string | null>(null)
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadCharacters() {
+      const result = await window.electronAPI.characters.list()
+      if (ignore || result.error || !result.data) return
+      setQuickStartCharacterList(
+        result.data.map((c) => ({ id: c.id, name: c.name, description: c.description }))
+      )
+    }
+
+    loadCharacters()
+
+    return () => { ignore = true }
+  }, [])
+
+  const handleQuickExpand = async () => {
+    const idea = quickStartIdea.trim()
+    if (!idea) return
+
+    setQuickStartStatus(null)
+    setExpandingIdea(true)
+
+    try {
+      const characterForContext = quickStartCharacterId
+        ? quickStartCharacterList.find((c) => c.id === quickStartCharacterId)
+        : null
+
+      const result = await window.electronAPI.generator.quickExpand({
+        idea,
+        creativity: quickStartCreativity,
+        character: characterForContext
+          ? { name: characterForContext.name, description: characterForContext.description }
+          : undefined,
+      })
+
+      if (!result) {
+        setQuickStartStatus('Error: Quick expand returned an empty response.')
+        return
+      }
+
+      if (result.error) {
+        setQuickStartStatus(result.error)
+        return
+      }
+
+      if (!result.data) {
+        setQuickStartStatus('Error: Quick expand returned no data.')
+        return
+      }
+
+      const nextPrompt = result.data.prompt
+      setGeneratedPrompt(nextPrompt)
+      setSavedTitle(buildDefaultTitle(nextPrompt))
+      setImprovementDiff(null)
+      setNegativeImprovementDiff(null)
+      setPromptViewTab('final')
+      setNegativePromptViewTab('final')
+      setQuickStartStatus(null)
+      setTab('generator')
+    } catch (error) {
+      setQuickStartStatus(error instanceof Error ? error.message : 'Error: Failed to expand idea.')
+    } finally {
+      setExpandingIdea(false)
+    }
+  }
+
   const normalizeGreylistWord = (value: string) => value.trim().toLowerCase()
 
   const addGreylistWord = () => {
@@ -106,6 +185,8 @@ export default function Generator() {
     setNegativePromptViewTab('final')
     setStatus(null)
     setSavedTitle('')
+    setQuickStartIdea('')
+    setQuickStartStatus(null)
   }
 
   useEffect(() => {
@@ -132,7 +213,7 @@ export default function Generator() {
     try {
       const parsed = JSON.parse(stored) as GeneratorPersistedState
 
-      setTab(parsed.tab ?? 'generator')
+      setTab(parsed.tab === 'builder' ? 'builder' : 'generator')
       setSelectedPreset(parsed.selectedPreset ?? '')
       const persistedMaxWords = Number.isFinite(parsed.maxWords)
         ? Math.max(1, Math.min(MAX_ALLOWED_WORDS, Math.floor(parsed.maxWords as number)))
@@ -143,6 +224,9 @@ export default function Generator() {
       setNegativeImprovementDiff(parsed.negativeImprovementDiff ?? null)
       setSavedTitle(parsed.savedTitle ?? '')
       setImprovementDiff(parsed.improvementDiff ?? null)
+      setQuickStartIdea(parsed.quickStartIdea ?? '')
+      setQuickStartCreativity(parsed.quickStartCreativity ?? 'balanced')
+      setQuickStartCharacterId(parsed.quickStartCharacterId ?? null)
 
       const nextPromptViewTab = parsed.promptViewTab === 'diff' && parsed.improvementDiff ? 'diff' : 'final'
       setPromptViewTab(nextPromptViewTab)
@@ -159,6 +243,9 @@ export default function Generator() {
       setNegativeImprovementDiff(null)
       setPromptViewTab('final')
       setNegativePromptViewTab('final')
+      setQuickStartIdea('')
+      setQuickStartCreativity('balanced')
+      setQuickStartCharacterId(null)
     }
   }, [])
 
@@ -175,11 +262,14 @@ export default function Generator() {
         savedTitle,
         promptViewTab,
         improvementDiff,
+        quickStartIdea,
+        quickStartCreativity,
+        quickStartCharacterId,
       } satisfies GeneratorPersistedState))
     } catch (e) {
       console.error('Failed to save generator state to localStorage:', e)
     }
-  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, promptViewTab, improvementDiff])
+  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, quickStartCharacterId])
 
   useEffect(() => {
     const stored = localStorage.getItem('generatorGreylist')
@@ -544,7 +634,7 @@ export default function Generator() {
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${tab === 'generator' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
             onClick={() => setTab('generator')}
           >
-            Magic Random
+            Quickstart
           </button>
           <button
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${tab === 'builder' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
@@ -556,62 +646,180 @@ export default function Generator() {
 
         {tab === 'generator' ? (
           <>
-            <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-4 lg:gap-5">
+            <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+              {/* LEFT: Magic Quickstart card */}
               <div className="card p-5">
-                <div>
-                  <label htmlFor="generator-preset" className="label">NightCafe Preset</label>
-                  <select
-                    id="generator-preset"
-                    aria-label="NightCafe Preset"
-                    value={selectedPreset}
-                    onChange={(e) => setSelectedPreset(e.target.value)}
-                    className="input"
-                  >
-                    <option value="">Geen preset</option>
-                    {presetOptions.map((preset) => (
-                      <option key={preset.presetName} value={preset.presetName}>
-                        {preset.presetName}{preset.category ? ` (${preset.category})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-teal-500/20">
+                      <span className="text-teal-400 text-sm">✦</span>
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold text-white">Magic Quickstart</h2>
+                      <p className="text-xs text-night-400 mt-0.5">Describe your idea and let AI do the heavy lifting</p>
+                    </div>
+                  </div>
+
+                  {/* Character picker */}
+                  <div className="relative flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowCharacterPicker((v) => !v)}
+                      className={`btn-ghost border text-xs flex items-center gap-1.5 ${quickStartCharacterId ? 'border-teal-500/60 text-teal-300' : 'border-night-600/50'}`}
+                    >
+                      ☺{' '}
+                      {quickStartCharacterId
+                        ? (quickStartCharacterList.find((c) => c.id === quickStartCharacterId)?.name ?? 'Character')
+                        : 'Add Character'}
+                    </button>
+                    {showCharacterPicker && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowCharacterPicker(false)} />
+                        <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] rounded-xl border border-night-600/50 bg-night-900 p-1 shadow-xl">
+                          <button
+                            type="button"
+                            onClick={() => { setQuickStartCharacterId(null); setShowCharacterPicker(false) }}
+                            className="w-full text-left px-3 py-2 text-xs text-night-300 hover:bg-night-800 rounded-lg"
+                          >
+                            No character
+                          </button>
+                          {quickStartCharacterList.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => { setQuickStartCharacterId(c.id); setShowCharacterPicker(false) }}
+                              className={`w-full text-left px-3 py-2 text-xs rounded-lg ${quickStartCharacterId === c.id ? 'bg-teal-600 text-white' : 'text-night-200 hover:bg-night-800'}`}
+                            >
+                              {c.name}
+                            </button>
+                          ))}
+                          {quickStartCharacterList.length === 0 && (
+                            <p className="px-3 py-2 text-xs text-night-500">No characters found.</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                <div className="mt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <label htmlFor="generator-max-words" className="label !mb-0">Max words</label>
-                    <span className="text-xs text-night-300">{maxWords}</span>
+                {/* Idea textarea */}
+                <div className="mt-4 relative rounded-xl border border-night-600/50 bg-night-900/60 overflow-hidden">
+                  <textarea
+                    value={quickStartIdea}
+                    onChange={(e) => setQuickStartIdea(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                        e.preventDefault()
+                        handleQuickExpand()
+                      }
+                    }}
+                    className="w-full bg-transparent px-4 pt-4 pb-16 text-sm text-white placeholder-night-500 resize-none min-h-36 focus:outline-none"
+                    placeholder={'Describe your image idea in simple terms… (e.g. "A neon cyberpunk cityscape in the rain")'}
+                  />
+                  <div className="absolute bottom-3 right-3">
+                    <button
+                      type="button"
+                      onClick={handleQuickExpand}
+                      disabled={!quickStartIdea.trim() || expandingIdea}
+                      className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      ✦ {expandingIdea ? 'Expanding…' : 'Magic AI Expansion'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Creativity slider */}
+                <div className="mt-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-white">Creativity Level</label>
+                    <span className="rounded-md border border-night-600/50 bg-night-800 px-2 py-1 text-xs font-medium text-night-300">
+                      {quickStartCreativity.charAt(0).toUpperCase() + quickStartCreativity.slice(1)}
+                    </span>
                   </div>
                   <input
-                    id="generator-max-words"
                     type="range"
-                    min={1}
-                    max={MAX_ALLOWED_WORDS}
-                    value={maxWords}
-                    onChange={(event) => setMaxWords(Number(event.target.value))}
-                    className="mt-2 w-full accent-glow-purple"
+                    min={0}
+                    max={2}
+                    step={1}
+                    value={(['focused', 'balanced', 'wild'] as CreativityLevel[]).indexOf(quickStartCreativity)}
+                    onChange={(e) => {
+                      const levels: CreativityLevel[] = ['focused', 'balanced', 'wild']
+                      setQuickStartCreativity(levels[Number(e.target.value)])
+                    }}
+                    className="w-full accent-teal-500"
                   />
-                  <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
+                  <div className="mt-1 flex justify-between text-[11px] text-night-400">
+                    <span>Focused</span>
+                    <span>Balanced</span>
+                    <span>Wild</span>
+                  </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button onClick={handleGenerate} disabled={loading} className="btn-primary">
-                    {loading ? 'Generating...' : 'Magic Random (AI)'}
-                  </button>
-                  <button onClick={handleCopy} disabled={!generatedPrompt} className="btn-ghost border border-night-600/50">
-                    Copy Prompt
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    disabled={loading}
-                    className="btn-ghost border border-night-600/50"
-                  >
-                    Clear all
-                  </button>
-                </div>
+                {quickStartStatus && (
+                  <p className={`mt-3 text-xs ${quickStartStatus.startsWith('Error') ? 'text-red-400' : 'text-teal-400'}`}>
+                    {quickStartStatus}
+                  </p>
+                )}
               </div>
 
-              {greylistCard}
+              {/* RIGHT: Magic Random AI controls */}
+              <div className="flex flex-col gap-5">
+                <div className="card p-5">
+                  <div>
+                    <label htmlFor="generator-preset" className="label">NightCafe Preset</label>
+                    <select
+                      id="generator-preset"
+                      aria-label="NightCafe Preset"
+                      value={selectedPreset}
+                      onChange={(e) => setSelectedPreset(e.target.value)}
+                      className="input"
+                    >
+                      <option value="">Geen preset</option>
+                      {presetOptions.map((preset) => (
+                        <option key={preset.presetName} value={preset.presetName}>
+                          {preset.presetName}{preset.category ? ` (${preset.category})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <label htmlFor="generator-max-words" className="label !mb-0">Max words</label>
+                      <span className="text-xs text-night-300">{maxWords}</span>
+                    </div>
+                    <input
+                      id="generator-max-words"
+                      type="range"
+                      min={1}
+                      max={MAX_ALLOWED_WORDS}
+                      value={maxWords}
+                      onChange={(event) => setMaxWords(Number(event.target.value))}
+                      className="mt-2 w-full accent-glow-purple"
+                    />
+                    <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button onClick={handleGenerate} disabled={loading} className="btn-primary">
+                      {loading ? 'Generating...' : 'Magic Random (AI)'}
+                    </button>
+                    <button onClick={handleCopy} disabled={!generatedPrompt} className="btn-ghost border border-night-600/50">
+                      Copy Prompt
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearAll}
+                      disabled={loading}
+                      className="btn-ghost border border-night-600/50"
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                </div>
+
+                {greylistCard}
+              </div>
             </div>
 
             <div className="card mt-5 p-5">

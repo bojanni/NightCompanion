@@ -37,6 +37,18 @@ STRICT FORMATTING RULE: Output ONLY a comma-separated list of negative keywords 
 
 const TITLE_SYSTEM_INSTRUCTION = `You generate concise, descriptive library titles for AI art prompts. ${LANGUAGE_INSTRUCTION} Return only the final title text with no quotes, no labels, and no extra commentary. Keep it under ${TITLE_MAX_LENGTH} characters and aim for 4 to 10 words.`
 
+const QUICK_EXPAND_CREATIVITY: Record<string, string> = {
+  focused: 'Expand the following concept into a detailed AI art prompt. Stay true to the original idea — add specific art style, lighting, and composition details that faithfully serve the concept without straying from it.',
+  balanced: 'Expand the following concept into a rich, vivid AI art prompt. Add complementary style, atmospheric lighting, interesting composition, and mood while preserving the original intent.',
+  wild: 'Take bold creative liberties with the following concept. Push it in an unexpected artistic direction — unusual combinations, striking visual contrasts, or a unique aesthetic twist. Use the concept as a loose starting point, not a strict constraint.',
+}
+
+const QUICK_EXPAND_TEMPERATURES: Record<string, number> = {
+  focused: 0.7,
+  balanced: 1.0,
+  wild: 1.4,
+}
+
 function normalizeGeneratedTitle(value: string) {
   return value
     .replace(/\s+/g, ' ')
@@ -829,6 +841,204 @@ export function registerAiIpc({
           status: responseStatus,
           requestPayload,
           responsePrompt: resultTitle || null,
+          error: errorMessage,
+        })
+      } catch (loggingError) {
+        console.error('Failed to write AI request log:', loggingError)
+      }
+    }
+  })
+
+  ipcMain.handle('generator:quickExpand', async (_, input?: {
+    idea?: string
+    creativity?: 'focused' | 'balanced' | 'wild'
+    character?: { name: string; description?: string }
+  }) => {
+    const requestId = crypto.randomUUID()
+    const startedAt = Date.now()
+    let requestModel = ''
+    let requestProvider = ''
+    let requestPayload: Record<string, unknown> | null = null
+    let responseStatus: number | null = null
+    let resultPrompt = ''
+    let errorMessage: string | null = null
+
+    try {
+      const idea = input?.idea?.trim() || ''
+      if (!idea) return { error: 'No idea provided for expansion.' }
+
+      const creativity = input?.creativity || 'balanced'
+      const character = input?.character
+
+      const creativityInstruction = QUICK_EXPAND_CREATIVITY[creativity]
+      const temperature = QUICK_EXPAND_TEMPERATURES[creativity]
+
+      const characterContext = character?.name
+        ? `\n\nCharacter context: The prompt should feature "${character.name}".${character.description ? ` Character description: ${character.description}` : ''}`
+        : ''
+
+      const userPrompt = `${creativityInstruction}\n\nUser's concept: ${idea}${characterContext}`
+
+      const stored = await readStoredSettings()
+      const roleRouting = stored.aiConfig?.dashboardRoleRouting
+      const genRoute = typeof roleRouting === 'object' && roleRouting !== null
+        ? (roleRouting as Record<string, unknown>).generation
+        : undefined
+
+      const providerId = typeof genRoute === 'object' && genRoute !== null
+        ? String((genRoute as Record<string, unknown>).providerId || '')
+        : ''
+      const modelId = typeof genRoute === 'object' && genRoute !== null
+        ? String((genRoute as Record<string, unknown>).modelId || '')
+        : ''
+
+      // Fall back to main OpenRouter settings if no generation route configured
+      if (!providerId || !modelId) {
+        const settings = await getOpenRouterSettings()
+        if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
+
+        requestProvider = 'openrouter'
+        requestModel = settings.model
+
+        requestPayload = {
+          model: settings.model,
+          temperature,
+          max_tokens: 350,
+          messages: [
+            { role: 'system', content: BASE_PERSONA },
+            { role: 'user', content: userPrompt },
+          ],
+        }
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${settings.apiKey}`,
+            'Content-Type': 'application/json',
+            ...(settings.siteUrl ? { 'HTTP-Referer': settings.siteUrl } : {}),
+            ...(settings.appName ? { 'X-Title': settings.appName } : {}),
+          },
+          body: JSON.stringify(requestPayload),
+        })
+
+        responseStatus = response.status
+
+        if (!response.ok) {
+          const errText = await response.text()
+          throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
+        }
+
+        const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+        const prompt = payload.choices?.[0]?.message?.content?.trim()
+        if (!prompt) throw new Error('No prompt content returned from OpenRouter.')
+
+        resultPrompt = prompt
+        return { data: { prompt } }
+      }
+
+      requestProvider = providerId
+      requestModel = modelId
+
+      if (providerId === 'openrouter') {
+        const settings = await getOpenRouterSettings()
+        if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
+
+        requestPayload = {
+          model: modelId,
+          temperature,
+          max_tokens: 350,
+          messages: [
+            { role: 'system', content: BASE_PERSONA },
+            { role: 'user', content: userPrompt },
+          ],
+        }
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${settings.apiKey}`,
+            'Content-Type': 'application/json',
+            ...(settings.siteUrl ? { 'HTTP-Referer': settings.siteUrl } : {}),
+            ...(settings.appName ? { 'X-Title': settings.appName } : {}),
+          },
+          body: JSON.stringify(requestPayload),
+        })
+
+        responseStatus = response.status
+
+        if (!response.ok) {
+          const errText = await response.text()
+          throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
+        }
+
+        const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+        const prompt = payload.choices?.[0]?.message?.content?.trim()
+        if (!prompt) throw new Error('No prompt content returned from OpenRouter.')
+
+        resultPrompt = prompt
+        return { data: { prompt } }
+      }
+
+      const localEndpointsRaw = stored.localEndpoints
+      const localEndpoints = Array.isArray(localEndpointsRaw)
+        ? (localEndpointsRaw as Array<Record<string, unknown>>)
+        : []
+      const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
+      const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
+      if (!baseUrl) {
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+      }
+
+      requestPayload = {
+        model: modelId,
+        temperature,
+        max_tokens: 350,
+        messages: [
+          { role: 'system', content: BASE_PERSONA },
+          { role: 'user', content: userPrompt },
+        ],
+      }
+
+      const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload),
+      })
+
+      responseStatus = response.status
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
+      }
+
+      const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+      const prompt = payload.choices?.[0]?.message?.content?.trim()
+      if (!prompt) throw new Error('No prompt content returned from local provider.')
+
+      resultPrompt = prompt
+      return { data: { prompt } }
+    } catch (error) {
+      errorMessage = String(error)
+      return { error: String(error) }
+    } finally {
+      try {
+        const loggingEnabled = await getAiApiRequestLoggingEnabled()
+        if (loggingEnabled) await appendAiRequestLog({
+          timestamp: new Date().toISOString(),
+          requestId,
+          endpoint: 'generator:quickExpand',
+          provider: requestProvider,
+          model: requestModel,
+          durationMs: Date.now() - startedAt,
+          status: responseStatus,
+          input: {
+            idea: input?.idea?.trim() || null,
+            creativity: input?.creativity || 'balanced',
+            hasCharacter: !!(input?.character?.name),
+          },
+          requestPayload,
+          responsePrompt: resultPrompt || null,
           error: errorMessage,
         })
       } catch (loggingError) {

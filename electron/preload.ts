@@ -167,6 +167,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('generator:improveNegativePrompt', input),
     generateTitle: (input?: { prompt?: string }): Promise<IpcResult<{ title: string }>> =>
       ipcRenderer.invoke('generator:generateTitle', input),
+    quickExpand: (input?: { idea?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>> =>
+      ipcRenderer.invoke('generator:quickExpand', input),
   },
   nightcafeModels: {
     list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>

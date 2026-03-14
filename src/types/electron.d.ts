@@ -100,6 +100,7 @@ declare global {
         generateNegativePrompt(input?: { prompt?: string }): Promise<IpcResult<{ negativePrompt: string }>>
         improveNegativePrompt(input?: { negativePrompt?: string }): Promise<IpcResult<{ negativePrompt: string }>>
         generateTitle(input?: { prompt?: string }): Promise<IpcResult<{ title: string }>>
+        quickExpand(input?: { idea?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>>
       }
       nightcafeModels: {
         list(filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>>
