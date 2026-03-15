@@ -5,9 +5,16 @@ type CreateMainWindowInput = {
   preloadPath: string
   devUrl: string
   prodIndexPath: string
+  nativeWindowFrameEnabled?: boolean
 }
 
-export function createMainWindow({ isPackaged, preloadPath, devUrl, prodIndexPath }: CreateMainWindowInput) {
+export function createMainWindow({
+  isPackaged,
+  preloadPath,
+  devUrl,
+  prodIndexPath,
+  nativeWindowFrameEnabled = false,
+}: CreateMainWindowInput) {
   const isDev = process.env.NODE_ENV === 'development' || !isPackaged
 
   const mainWindow = new BrowserWindow({
@@ -16,8 +23,12 @@ export function createMainWindow({ isPackaged, preloadPath, devUrl, prodIndexPat
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#050810',
-    titleBarStyle: 'hiddenInset',
-    frame: false,
+    ...(nativeWindowFrameEnabled
+      ? { frame: true }
+      : {
+          titleBarStyle: 'hiddenInset',
+          frame: false,
+        }),
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,

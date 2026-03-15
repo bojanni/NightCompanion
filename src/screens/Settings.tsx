@@ -15,6 +15,7 @@ type HfSyncInfo = {
 export default function Settings() {
   const [loading, setLoading] = useState(true)
   const [aiApiRequestLoggingEnabled, setAiApiRequestLoggingEnabled] = useState(false)
+  const [nativeWindowFrameEnabled, setNativeWindowFrameEnabled] = useState(false)
   const [isRefreshingHf, setIsRefreshingHf] = useState(false)
   const [hfSyncMessage, setHfSyncMessage] = useState<string | null>(null)
   const [hfSyncInfo, setHfSyncInfo] = useState<HfSyncInfo | null>(null)
@@ -41,6 +42,7 @@ export default function Settings() {
         return
 
       setAiApiRequestLoggingEnabled(Boolean(settingsResult.data?.aiApiRequestLoggingEnabled))
+      setNativeWindowFrameEnabled(Boolean(settingsResult.data?.nativeWindowFrameEnabled))
       setLoading(false)
     }
 
@@ -56,6 +58,15 @@ export default function Settings() {
 
     await window.electronAPI.settings.saveAiConfigState({
       aiApiRequestLoggingEnabled: nextValue,
+    })
+  }
+
+  async function handleNativeWindowFrameToggle() {
+    const nextValue = !nativeWindowFrameEnabled
+    setNativeWindowFrameEnabled(nextValue)
+
+    await window.electronAPI.settings.saveAiConfigState({
+      nativeWindowFrameEnabled: nextValue,
     })
   }
 
@@ -97,6 +108,31 @@ export default function Settings() {
 
         <section className="card p-6">
           <h2 className="text-base font-semibold text-white mb-4">Diagnostics</h2>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-white">Native Windows title bar</p>
+              <p className="text-xs text-night-400">Gebruik de standaard Windows titelbalk in plaats van de custom frameless balk</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={nativeWindowFrameEnabled}
+              disabled={loading}
+              onClick={() => {
+                if (!loading) void handleNativeWindowFrameToggle()
+              }}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                nativeWindowFrameEnabled ? 'bg-teal-500' : 'bg-night-600'
+              } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  nativeWindowFrameEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
 
           <div className="flex items-center justify-between gap-4">
             <div>

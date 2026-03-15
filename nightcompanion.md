@@ -1,5 +1,7 @@
 ## 2026-03-15
 
+- Settings bevat nu een toggle `Native Windows title bar` om te schakelen tussen custom frameless window en de standaard Windows-titelbalk.
+- De gekozen titelbalkmodus wordt onthouden en direct toegepast door het hoofdvenster opnieuw op te bouwen met behoud van grootte/positie.
 - Prompt Library edit form now supports uploading a local prompt image.
 - Prompt images are stored under the current user's home folder in `NightCompanion/images`.
 - Saved prompt images are shown as thumbnails on prompt cards in the library when available.

@@ -1,5 +1,17 @@
 # Walkthrough
 
+## 2026-03-15 (Togglebare native Windows-titelbalk)
+
+- Findings: User vroeg om een native Windowsbalk (titelbalk/frame) met toggle-optie.
+- Conclusions: Omdat `BrowserWindow.frame` niet runtime-in-place wisselt, is de juiste aanpak een persistente instelling met automatische window-recreate na togglen; renderer drag-region moet conditioneel uit bij native frame.
+- Actions: Uitgebreid settings state met `nativeWindowFrameEnabled` in [electron/ipc/settings.ts](electron/ipc/settings.ts), [electron/preload.ts](electron/preload.ts) en [src/types/electron.d.ts](src/types/electron.d.ts); startup gebruikt nu deze voorkeur in [electron/main.ts](electron/main.ts) + [electron/services/windowManager.ts](electron/services/windowManager.ts); togglen in Settings triggert directe window-recreate met behoud van grootte/positie via callback pad in [electron/services/ipcRegistry.ts](electron/services/ipcRegistry.ts); [src/screens/Settings.tsx](src/screens/Settings.tsx) kreeg een nieuwe `Native Windows title bar` switch; [src/App.tsx](src/App.tsx) toont de custom `drag-region` alleen nog in frameless modus.
+
+## 2026-03-15 (Library prompt image lightbox)
+
+- Findings: User asked that clicking a prompt image in Library opens it in a lightbox, with the largest possible preview and an Apple-style blurred background using a zoomed section of the same image.
+- Conclusions: The cleanest implementation is an in-screen lightbox overlay in Library itself with a full-screen zoomed/blurred image layer plus a centered foreground image constrained by viewport height/width.
+- Actions: Updated [src/screens/Library.tsx](src/screens/Library.tsx) to make card images clickable (`cursor-zoom-in`), open a fullscreen lightbox on click, render a zoomed/blurred backdrop sourced from the same image, and display the opened image at `max-w-[96vw]` and `max-h-[94vh]` with close-on-backdrop and close button behavior.
+
 ## 2026-03-15 (Dev local resource loading enabled)
 
 - Findings: User asked to allow loading local resources in the development environment.

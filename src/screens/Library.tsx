@@ -25,6 +25,7 @@ export default function Library() {
   const [currentPage, setCurrentPage] = useState(0)
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [form, setForm] = useState<FormState>({ mode: 'closed' })
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null)
 
   const fetchPrompts = useCallback(async () => {
     setLoading(true)
@@ -250,7 +251,8 @@ export default function Library() {
                         <img
                           src={prompt.imageUrl}
                           alt={prompt.title || 'Prompt image'}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02] cursor-zoom-in"
+                          onClick={() => setLightboxImage({ url: prompt.imageUrl, title: prompt.title || 'Prompt image' })}
                           onError={(event) => {
                             ;(event.currentTarget.parentElement as HTMLDivElement | null)?.classList.add('hidden')
                           }}
@@ -395,6 +397,41 @@ export default function Library() {
           }
           onClose={() => setForm({ mode: 'closed' })}
         />
+      )}
+
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="absolute inset-0 overflow-hidden">
+            <img
+              src={lightboxImage.url}
+              alt=""
+              aria-hidden="true"
+              className="w-full h-full object-cover scale-150 blur-3xl opacity-60"
+            />
+            <div className="absolute inset-0 bg-black/55 backdrop-blur-xl" />
+          </div>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              setLightboxImage(null)
+            }}
+            className="absolute top-4 right-4 z-[101] rounded-full bg-black/50 border border-white/20 px-3 py-1.5 text-sm text-white hover:bg-black/70"
+          >
+            Close
+          </button>
+
+          <img
+            src={lightboxImage.url}
+            alt={lightboxImage.title}
+            onClick={(event) => event.stopPropagation()}
+            className="relative z-[101] max-w-[96vw] max-h-[94vh] object-contain rounded-2xl shadow-2xl"
+          />
+        </div>
       )}
     </div>
   )

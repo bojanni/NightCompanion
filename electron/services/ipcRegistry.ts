@@ -14,14 +14,20 @@ type RegisterIpcHandlersInput = {
   db: Database
   getOpenRouterSettings: () => Promise<OpenRouterSettings>
   getAiApiRequestLoggingEnabled: () => Promise<boolean>
+  onNativeWindowFrameChanged?: (enabled: boolean) => void
 }
 
-export function registerIpcHandlers({ db, getOpenRouterSettings, getAiApiRequestLoggingEnabled }: RegisterIpcHandlersInput) {
+export function registerIpcHandlers({
+  db,
+  getOpenRouterSettings,
+  getAiApiRequestLoggingEnabled,
+  onNativeWindowFrameChanged,
+}: RegisterIpcHandlersInput) {
   registerPromptsIpc({ db })
   registerStyleProfilesIpc({ db })
   registerGenerationLogIpc({ db })
   registerNightCafeIpc({ db })
   registerCharactersIpc({ db })
-  registerSettingsIpc({ db })
+  registerSettingsIpc({ db, onNativeWindowFrameChanged })
   registerAiIpc({ db, getOpenRouterSettings, getAiApiRequestLoggingEnabled })
 }

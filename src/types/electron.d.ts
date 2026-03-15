@@ -22,6 +22,7 @@ type AiConfigStateStore = {
   cachedModels?: unknown
   advisorModelRoute?: unknown
   aiApiRequestLoggingEnabled?: boolean
+  nativeWindowFrameEnabled?: boolean
 }
 type LocalEndpointStore = {
   id?: string

@@ -4,7 +4,7 @@ import path from 'path'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import * as schema from '../src/lib/schema'
-import { getAiApiRequestLoggingEnabled, getOpenRouterSettings, registerSettingsIpc } from './ipc/settings'
+import { getAiApiRequestLoggingEnabled, getNativeWindowFrameEnabled, getOpenRouterSettings } from './ipc/settings'
 import { syncNightCafeData } from './services/nightcafeSync'
 import { ensurePostgresAndDatabase, formatErrorMessage, runMigrations } from './services/databaseBootstrap'
 import { createMainWindow } from './services/windowManager'
@@ -22,6 +22,48 @@ if (!connectionString) {
 
 const queryClient = postgres(connectionString)
 const db = drizzle(queryClient, { schema })
+
+function createWindowWithPreference(nativeWindowFrameEnabled: boolean) {
+  return createMainWindow({
+    isPackaged: app.isPackaged,
+    preloadPath: path.join(__dirname, 'preload.js'),
+    devUrl: 'http://localhost:5187',
+    prodIndexPath: path.join(__dirname, '..', 'dist-renderer', 'index.html'),
+    nativeWindowFrameEnabled,
+  })
+}
+
+function recreateMainWindowWithPreference(nativeWindowFrameEnabled: boolean) {
+  const currentWindow = BrowserWindow.getAllWindows()[0]
+
+  if (!currentWindow || currentWindow.isDestroyed()) {
+    createWindowWithPreference(nativeWindowFrameEnabled)
+    return
+  }
+
+  const [width, height] = currentWindow.getSize()
+  const [x, y] = currentWindow.getPosition()
+  const wasMaximized = currentWindow.isMaximized()
+
+  const nextWindow = createWindowWithPreference(nativeWindowFrameEnabled)
+  nextWindow.setBounds({ x, y, width, height })
+
+  if (wasMaximized) {
+    nextWindow.maximize()
+  }
+
+  const closeCurrentWindow = () => {
+    if (!currentWindow.isDestroyed()) {
+      currentWindow.close()
+    }
+  }
+
+  if (nextWindow.webContents.isLoadingMainFrame()) {
+    nextWindow.webContents.once('did-finish-load', closeCurrentWindow)
+  } else {
+    closeCurrentWindow()
+  }
+}
 
 app.whenReady().then(async () => {
   try {
@@ -53,21 +95,17 @@ app.whenReady().then(async () => {
     db,
     getOpenRouterSettings,
     getAiApiRequestLoggingEnabled,
+    onNativeWindowFrameChanged: (enabled) => {
+      recreateMainWindowWithPreference(enabled)
+    },
   })
-  createMainWindow({
-    isPackaged: app.isPackaged,
-    preloadPath: path.join(__dirname, 'preload.js'),
-    devUrl: 'http://localhost:5187',
-    prodIndexPath: path.join(__dirname, '..', 'dist-renderer', 'index.html'),
-  })
+  const nativeWindowFrameEnabled = await getNativeWindowFrameEnabled()
+  createWindowWithPreference(nativeWindowFrameEnabled)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow({
-        isPackaged: app.isPackaged,
-        preloadPath: path.join(__dirname, 'preload.js'),
-        devUrl: 'http://localhost:5187',
-        prodIndexPath: path.join(__dirname, '..', 'dist-renderer', 'index.html'),
+      void getNativeWindowFrameEnabled().then((enabled) => {
+        createWindowWithPreference(enabled)
       })
     }
   })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import Dashboard from './screens/Dashboard'
 import AIConfig from './screens/AIConfig'
@@ -13,11 +13,29 @@ import { Toaster } from 'sonner'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
+  const [nativeWindowFrameEnabled, setNativeWindowFrameEnabled] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    const loadWindowAppearance = async () => {
+      const result = await window.electronAPI.settings.getAiConfigState()
+      if (!active || result.error) return
+
+      setNativeWindowFrameEnabled(Boolean(result.data?.nativeWindowFrameEnabled))
+    }
+
+    void loadWindowAppearance()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-night-950">
       {/* Drag region for frameless window */}
-      <div className="drag-region fixed top-0 left-0 right-0 h-8 z-50" />
+      {!nativeWindowFrameEnabled && <div className="drag-region fixed top-0 left-0 right-0 h-8 z-50" />}
 
       <Sidebar activeScreen={screen} onNavigate={setScreen} />
 

@@ -35,6 +35,7 @@ export type AiConfigStateStore = {
   cachedModels?: unknown
   advisorModelRoute?: unknown
   aiApiRequestLoggingEnabled?: boolean
+  nativeWindowFrameEnabled?: boolean
 }
 
 export type LocalEndpointStore = {

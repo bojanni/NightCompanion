@@ -29,6 +29,7 @@ type AiConfigStateStore = {
   cachedModels?: unknown
   advisorModelRoute?: unknown
   aiApiRequestLoggingEnabled?: boolean
+  nativeWindowFrameEnabled?: boolean
 }
 
 type LocalEndpointStore = {
@@ -142,6 +143,9 @@ function normalizeAiConfigState(input: unknown): AiConfigStateStore | undefined 
   if (typeof input.aiApiRequestLoggingEnabled === 'boolean') {
     normalized.aiApiRequestLoggingEnabled = input.aiApiRequestLoggingEnabled
   }
+  if (typeof input.nativeWindowFrameEnabled === 'boolean') {
+    normalized.nativeWindowFrameEnabled = input.nativeWindowFrameEnabled
+  }
 
   return normalized
 }
@@ -231,6 +235,11 @@ export async function getOpenRouterSettings() {
 export async function getAiApiRequestLoggingEnabled() {
   const stored = await readStoredSettings()
   return Boolean(stored.aiConfig?.aiApiRequestLoggingEnabled)
+}
+
+export async function getNativeWindowFrameEnabled() {
+  const stored = await readStoredSettings()
+  return Boolean(stored.aiConfig?.nativeWindowFrameEnabled)
 }
 
 async function listOpenRouterModelsFromDb(db: Database) {
@@ -354,7 +363,13 @@ async function testOpenRouterConnection(settings: OpenRouterSettings) {
   }
 }
 
-export function registerSettingsIpc({ db }: { db: Database }) {
+export function registerSettingsIpc({
+  db,
+  onNativeWindowFrameChanged,
+}: {
+  db: Database
+  onNativeWindowFrameChanged?: (enabled: boolean) => void
+}) {
   ipcMain.handle('settings:getOpenRouter', async () => {
     try {
       const data = await getOpenRouterSettings()
@@ -438,6 +453,7 @@ export function registerSettingsIpc({ db }: { db: Database }) {
   ipcMain.handle('settings:saveAiConfigState', async (_, input: AiConfigStateStore) => {
     try {
       const stored = await readStoredSettings()
+      const previousNativeWindowFrameEnabled = Boolean(stored.aiConfig?.nativeWindowFrameEnabled)
       const nextAiConfig: AiConfigStateStore = {
         ...(stored.aiConfig || {}),
         ...(input || {}),
@@ -449,6 +465,13 @@ export function registerSettingsIpc({ db }: { db: Database }) {
         aiConfig: nextAiConfig,
         localEndpoints: stored.localEndpoints,
       })
+
+      if (typeof input.nativeWindowFrameEnabled === 'boolean') {
+        const nextNativeWindowFrameEnabled = Boolean(nextAiConfig.nativeWindowFrameEnabled)
+        if (nextNativeWindowFrameEnabled !== previousNativeWindowFrameEnabled) {
+          onNativeWindowFrameChanged?.(nextNativeWindowFrameEnabled)
+        }
+      }
 
       return { data: nextAiConfig }
     } catch (error) {
