@@ -126,7 +126,6 @@ Get code index statistics:
 + Per-language breakdown (file count, line count)
 + Useful for understanding codebase size
 
-
 ---
 
 ## Smart Context Features (Automatic)
