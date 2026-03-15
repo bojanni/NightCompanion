@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Prompt } from '../types'
 import PromptForm from '../components/PromptForm'
-import { BookTemplate, Check, Copy, Edit3, Filter, Heart, Plus, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { BookTemplate, Check, Copy, Edit3, Filter, Heart, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const PAGE_SIZE = 20
@@ -12,6 +12,16 @@ type FormState =
   | { mode: 'edit'; prompt: Prompt }
 
 type FilterType = 'all' | 'templates' | 'favorites'
+
+function getStarFill(rating: number, starIndex: number) {
+  if (rating >= starIndex) return 'full'
+  if (rating >= starIndex - 0.5) return 'half'
+  return 'empty'
+}
+
+function isSameRating(left: number, right: number) {
+  return Math.abs(left - right) < 0.001
+}
 
 export default function Library() {
   const [prompts, setPrompts] = useState<Prompt[]>([])
@@ -141,7 +151,8 @@ export default function Library() {
   }
 
   const handleSetRating = async (prompt: Prompt, rating: number) => {
-    const nextRating = prompt.rating === rating ? null : rating
+    const currentRating = prompt.rating ?? 0
+    const nextRating = isSameRating(currentRating, rating) ? null : rating
     const result = await window.electronAPI.prompts.update(prompt.id, { rating: nextRating })
 
     if (result.error) {
@@ -371,16 +382,29 @@ export default function Library() {
                       <div className="rounded-xl border border-night-700 bg-night-950/40 p-3">
                         <div className="flex items-center gap-1 mb-2">
                           {[1, 2, 3, 4, 5].map((value) => (
-                            <button
-                              key={value}
-                              type="button"
-                              onClick={() => handleSetRating(prompt, value)}
-                              className={`text-xs ${((prompt.rating || 0) >= value) ? 'text-yellow-400' : 'text-night-600 hover:text-night-300'}`}
-                              title={`Set rating ${value}`}
-                            >
-                              ★
-                            </button>
+                            <div key={value} className="relative w-4 h-4 text-night-600 hover:text-night-300">
+                              <button
+                                type="button"
+                                onClick={() => handleSetRating(prompt, value - 0.5)}
+                                className="absolute inset-y-0 left-0 w-1/2 z-10"
+                                aria-label={`Set rating ${value - 0.5}`}
+                                title={`Set rating ${value - 0.5}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSetRating(prompt, value)}
+                                className="absolute inset-y-0 right-0 w-1/2 z-10"
+                                aria-label={`Set rating ${value}`}
+                                title={`Set rating ${value}`}
+                              />
+                              <div className={`absolute inset-0 pointer-events-none ${((prompt.rating || 0) >= value - 0.5) ? 'text-yellow-400' : 'text-night-600'}`}>
+                                {getStarFill(prompt.rating || 0, value) === 'full' && <Star size={14} fill="currentColor" />}
+                                {getStarFill(prompt.rating || 0, value) === 'half' && <StarHalf size={14} fill="currentColor" />}
+                                {getStarFill(prompt.rating || 0, value) === 'empty' && <Star size={14} />}
+                              </div>
+                            </div>
                           ))}
+                          <span className="text-[10px] text-night-500 ml-1">{prompt.rating ? prompt.rating.toFixed(1) : '0.0'}</span>
                         </div>
                         <p className="text-[11px] text-night-400 line-clamp-2">
                           {prompt.negativePrompt || 'No negative prompt set.'}

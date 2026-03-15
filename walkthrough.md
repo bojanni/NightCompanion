@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-15 (Halve sterren bij promptwaardering)
+
+- Findings: User vroeg om halve sterren toe te staan bij waardering in plaats van alleen hele sterren.
+- Conclusions: Dit vereist zowel UI-aanpassing (half-star click targets) als opslag als decimale waarde in de database.
+- Actions: `rating` in `prompts` en `prompt_versions` omgezet van integer naar real in [src/lib/schema.ts](src/lib/schema.ts) met migratie [drizzle/0015_prompt_half_star_ratings.sql](drizzle/0015_prompt_half_star_ratings.sql) en journal update; in [src/components/PromptForm.tsx](src/components/PromptForm.tsx) half-star selectie toegevoegd via links/rechts klikzones per ster met `Star`/`StarHalf` iconen; in [src/screens/Library.tsx](src/screens/Library.tsx) kaart-rating idem uitgebreid naar halve stappen (0.5); migratie uitgevoerd via `npm run db:migrate` en gevalideerd met `npm run build`.
+
 ## 2026-03-15 (Soepele lightbox-transitie in Prompt Library)
 
 - Findings: User vroeg om een vloeiendere overgang bij het openen van een promptafbeelding in de Library lightbox.

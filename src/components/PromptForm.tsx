@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import type { Prompt, PromptVersion, StyleProfile, PromptMutationInput } from '../types'
 import PromptPreview from './PromptPreview'
+import { Star, StarHalf } from 'lucide-react'
 
 type FormData = PromptMutationInput
 const MAX_TAG_COUNT = 15
@@ -9,6 +10,16 @@ type Props = {
   initial?: Prompt
   onSubmit: (data: FormData) => Promise<string | null>
   onClose: () => void
+}
+
+function getStarFill(rating: number, starIndex: number) {
+  if (rating >= starIndex) return 'full'
+  if (rating >= starIndex - 0.5) return 'half'
+  return 'empty'
+}
+
+function isSameRating(left: number, right: number) {
+  return Math.abs(left - right) < 0.001
 }
 
 export default function PromptForm({ initial, onSubmit, onClose }: Props) {
@@ -450,17 +461,34 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
             <div>
               <label className="label">Rating</label>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((value) => (
-                  <button
+                  <div
                     key={value}
-                    type="button"
-                    onClick={() => setRating((prev) => (prev === value ? 0 : value))}
-                    className={`w-9 h-9 rounded-lg border text-base transition-colors ${rating >= value ? 'text-yellow-400 border-yellow-600/50 bg-yellow-900/20' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}
+                    className={`relative w-9 h-9 rounded-lg border transition-colors ${rating >= value - 0.5 ? 'text-yellow-400 border-yellow-600/50 bg-yellow-900/20' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}
                   >
-                    ★
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setRating((prev) => (isSameRating(prev, value - 0.5) ? 0 : value - 0.5))}
+                      className="absolute inset-y-0 left-0 w-1/2 z-10"
+                      aria-label={`Set rating ${value - 0.5}`}
+                      title={`Set rating ${value - 0.5}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setRating((prev) => (isSameRating(prev, value) ? 0 : value))}
+                      className="absolute inset-y-0 right-0 w-1/2 z-10"
+                      aria-label={`Set rating ${value}`}
+                      title={`Set rating ${value}`}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      {getStarFill(rating, value) === 'full' && <Star size={16} fill="currentColor" />}
+                      {getStarFill(rating, value) === 'half' && <StarHalf size={16} fill="currentColor" />}
+                      {getStarFill(rating, value) === 'empty' && <Star size={16} />}
+                    </div>
+                  </div>
                 ))}
+                <span className="text-xs text-night-400 min-w-[3rem] ml-1">{rating ? rating.toFixed(1) : '0.0'}/5</span>
               </div>
             </div>
 
