@@ -49,4 +49,30 @@ export function registerNightCafeIpc({ db }: { db: Database }) {
       return { error: String(error) }
     }
   })
+
+  ipcMain.handle('nightcafeModels:getSupport', async (_, input?: { modelName?: string }) => {
+    try {
+      const modelName = input?.modelName?.trim() || ''
+      if (!modelName) {
+        return { data: { modelName: '', supportsNegativePrompt: false } }
+      }
+
+      const [model] = await db
+        .select({
+          modelName: nightcafeModels.modelName,
+          supportsNegativePrompt: nightcafeModels.supportsNegativePrompt,
+        })
+        .from(nightcafeModels)
+        .where(eq(nightcafeModels.modelName, modelName))
+        .limit(1)
+
+      if (!model) {
+        return { data: { modelName, supportsNegativePrompt: false } }
+      }
+
+      return { data: model }
+    } catch (error) {
+      return { error: String(error) }
+    }
+  })
 }

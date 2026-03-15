@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-15 (Generator: rule-first Suggested Model + conditionele negative prompt)
+
+- Findings: User wilde de modeladvies-toggle verwijderen, eerst rule-based modeladvies tonen zoals in de referentie-UI, en de negative prompt opties alleen tonen wanneer het geadviseerde model dit ondersteunt.
+- Conclusions: Een vaste `Suggested Model`-kaart met standaard rule-based advies na generatie en een optionele `Get AI Advice` knop geeft de gewenste flow. De negative prompt sectie moet conditioneel renderen op basis van model-capability uit de database.
+- Actions: In [src/screens/Generator.tsx](src/screens/Generator.tsx) de toggle verwijderd, automatische rule-based adviesaanvraag toegevoegd na `Magic Random` en `Magic Quickstart`, `Suggested Model` presentatie toegevoegd met modelnaam/uitleg/modus en `Get AI Advice`; negative prompt veld + generatie/improve-opties conditioneel gemaakt met `supportsNegativePrompt`. Toegevoegd IPC-capability lookup `nightcafeModels:getSupport` in [electron/ipc/nightcafe.ts](electron/ipc/nightcafe.ts), exposed in [electron/preload.ts](electron/preload.ts) en getypt in [src/types/electron.d.ts](src/types/electron.d.ts); build gevalideerd.
+
 ## 2026-03-15 (Prompt Preview: modeladvies badge)
 
 - Findings: User bevestigde dat de Prompt Preview expliciet moet tonen of automatisch modeladvies actief is.

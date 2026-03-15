@@ -50,8 +50,10 @@ type GeneratorPersistedState = {
   quickStartIdea?: string
   quickStartCreativity?: CreativityLevel
   quickStartCharacterId?: string | null
-  autoModelAdviceEnabled?: boolean
   recommendedModel?: string
+  recommendedModelReason?: string
+  recommendedModelMode?: 'rule' | 'ai'
+  supportsNegativePrompt?: boolean
 }
 
 function buildDefaultTitle(value: string) {
@@ -80,8 +82,10 @@ export default function Generator() {
   const [improvingNegative, setImprovingNegative] = useState(false)
   const [generatingTitle, setGeneratingTitle] = useState(false)
   const [savedTitle, setSavedTitle] = useState('')
-  const [autoModelAdviceEnabled, setAutoModelAdviceEnabled] = useState(true)
   const [recommendedModel, setRecommendedModel] = useState('')
+  const [recommendedModelReason, setRecommendedModelReason] = useState('')
+  const [recommendedModelMode, setRecommendedModelMode] = useState<'rule' | 'ai' | null>(null)
+  const [supportsNegativePrompt, setSupportsNegativePrompt] = useState<boolean | null>(null)
   const [modelAdviceBusy, setModelAdviceBusy] = useState(false)
   const [modelAdviceNote, setModelAdviceNote] = useState<string | null>(null)
   const [greylistEnabled, setGreylistEnabled] = useState(true)
@@ -157,10 +161,7 @@ export default function Generator() {
       setNegativePromptViewTab('final')
       setQuickStartStatus(null)
       setTab('generator')
-
-      if (autoModelAdviceEnabled) {
-        void requestAiModelAdvice(nextPrompt, 'Quickstart Prompt')
-      }
+      void requestModelAdvice('rule', nextPrompt, 'Quickstart Prompt')
     } catch (error) {
       setQuickStartStatus(error instanceof Error ? error.message : 'Error: Failed to expand idea.')
     } finally {
@@ -168,7 +169,27 @@ export default function Generator() {
     }
   }
 
-  const requestAiModelAdvice = async (promptValue: string, sourceLabel: string) => {
+  const fetchModelSupport = async (modelName: string) => {
+    const modelNameTrimmed = modelName.trim()
+    if (!modelNameTrimmed) {
+      setSupportsNegativePrompt(null)
+      return
+    }
+
+    const supportResult = await window.electronAPI.nightcafeModels.getSupport({ modelName: modelNameTrimmed })
+    if (supportResult.error || !supportResult.data) {
+      setSupportsNegativePrompt(null)
+      return
+    }
+
+    setSupportsNegativePrompt(supportResult.data.supportsNegativePrompt)
+  }
+
+  const requestModelAdvice = async (
+    mode: 'rule' | 'ai',
+    promptValue: string,
+    sourceLabel: string,
+  ) => {
     const prompt = promptValue.trim()
     if (!prompt) return
 
@@ -179,28 +200,31 @@ export default function Generator() {
     try {
       const result = await window.electronAPI.generator.adviseModel({
         prompt,
-        mode: 'ai',
+        mode,
       })
 
       if (!result) {
-        setModelAdviceNote('AI-modeladvies gaf geen response terug.')
+        setModelAdviceNote(`${mode === 'rule' ? 'Rule-based' : 'AI'} modeladvies gaf geen response terug.`)
         return
       }
 
       if (result.error) {
-        setModelAdviceNote(`AI-modeladvies mislukt: ${result.error}`)
+        setModelAdviceNote(`${mode === 'rule' ? 'Rule-based' : 'AI'} modeladvies mislukt: ${result.error}`)
         return
       }
 
       if (!result.data?.recommendation?.modelName) {
-        setModelAdviceNote('AI-modeladvies bevatte geen bruikbaar model.')
+        setModelAdviceNote(`${mode === 'rule' ? 'Rule-based' : 'AI'} modeladvies bevatte geen bruikbaar model.`)
         return
       }
 
       setRecommendedModel(result.data.recommendation.modelName)
-      setModelAdviceNote(`${sourceLabel}: AI-modeladvies bijgewerkt.`)
+      setRecommendedModelReason(result.data.recommendation.explanation || '')
+      setRecommendedModelMode(mode)
+      await fetchModelSupport(result.data.recommendation.modelName)
+      setModelAdviceNote(`${sourceLabel}: ${mode === 'rule' ? 'rule-based' : 'AI'} modeladvies bijgewerkt.`)
     } catch (error) {
-      setModelAdviceNote(error instanceof Error ? error.message : 'AI-modeladvies is mislukt.')
+      setModelAdviceNote(error instanceof Error ? error.message : 'Modeladvies is mislukt.')
     } finally {
       setAdvisingAi(false)
       setModelAdviceBusy(false)
@@ -236,8 +260,10 @@ export default function Generator() {
     setNegativePromptViewTab('final')
     setStatus(null)
     setSavedTitle('')
-    setAutoModelAdviceEnabled(true)
     setRecommendedModel('')
+    setRecommendedModelReason('')
+    setRecommendedModelMode(null)
+    setSupportsNegativePrompt(null)
     setModelAdviceNote(null)
     setQuickStartIdea('')
     setQuickStartStatus(null)
@@ -278,8 +304,10 @@ export default function Generator() {
       setNegativeImprovementDiff(parsed.negativeImprovementDiff ?? null)
       setSavedTitle(parsed.savedTitle ?? '')
       setImprovementDiff(parsed.improvementDiff ?? null)
-      setAutoModelAdviceEnabled(parsed.autoModelAdviceEnabled ?? true)
       setRecommendedModel(parsed.recommendedModel ?? '')
+      setRecommendedModelReason(parsed.recommendedModelReason ?? '')
+      setRecommendedModelMode(parsed.recommendedModelMode ?? null)
+      setSupportsNegativePrompt(typeof parsed.supportsNegativePrompt === 'boolean' ? parsed.supportsNegativePrompt : null)
       setQuickStartIdea(parsed.quickStartIdea ?? '')
       setQuickStartCreativity(parsed.quickStartCreativity ?? 'balanced')
       setQuickStartCharacterId(parsed.quickStartCharacterId ?? null)
@@ -295,8 +323,10 @@ export default function Generator() {
       setGeneratedPrompt('')
       setNegativePrompt('')
       setSavedTitle('')
-      setAutoModelAdviceEnabled(true)
       setRecommendedModel('')
+      setRecommendedModelReason('')
+      setRecommendedModelMode(null)
+      setSupportsNegativePrompt(null)
       setImprovementDiff(null)
       setNegativeImprovementDiff(null)
       setPromptViewTab('final')
@@ -319,8 +349,10 @@ export default function Generator() {
         negativePromptViewTab,
         negativeImprovementDiff,
         savedTitle,
-        autoModelAdviceEnabled,
         recommendedModel,
+        recommendedModelReason,
+        recommendedModelMode,
+        supportsNegativePrompt,
         promptViewTab,
         improvementDiff,
         quickStartIdea,
@@ -330,7 +362,7 @@ export default function Generator() {
     } catch (e) {
       console.error('Failed to save generator state to localStorage:', e)
     }
-  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, autoModelAdviceEnabled, recommendedModel, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, quickStartCharacterId])
+  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, quickStartCharacterId])
 
   useEffect(() => {
     const stored = localStorage.getItem('generatorGreylist')
@@ -401,10 +433,7 @@ export default function Generator() {
         if (trimmedTitle && trimmedTitle !== buildDefaultTitle(previousPrompt)) return currentTitle
         return buildDefaultTitle(nextPrompt)
       })
-
-      if (autoModelAdviceEnabled) {
-        void requestAiModelAdvice(nextPrompt, 'Generated Prompt')
-      }
+      void requestModelAdvice('rule', nextPrompt, 'Generated Prompt')
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Error: Failed to generate prompt.')
     } finally {
@@ -688,6 +717,8 @@ export default function Generator() {
     </div>
   )
 
+  const showNegativePromptControls = supportsNegativePrompt !== false
+
   return (
     <div className="no-drag-region h-full overflow-y-auto px-8 pt-8 pb-10">
       <div className="max-w-4xl">
@@ -715,7 +746,6 @@ export default function Generator() {
             negativePrompt={negativePrompt}
             maxWords={maxWords}
             greylistWords={greylistEnabled ? greylistWords : []}
-            modelAdviceEnabled={autoModelAdviceEnabled}
             model={selectedPreset ? `NightCafe preset: ${selectedPreset}` : 'Magic Random AI'}
           />
         </div>
@@ -893,27 +923,32 @@ export default function Generator() {
                     </button>
                   </div>
 
-                  <div className="mt-4 rounded-lg border border-night-700/50 bg-night-900/40 p-3">
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-night-300">
-                      <input
-                        type="checkbox"
-                        checked={autoModelAdviceEnabled}
-                        onChange={(e) => setAutoModelAdviceEnabled(e.target.checked)}
-                        className="h-3.5 w-3.5 accent-glow-purple"
-                        aria-label="Automatisch modeladvies"
-                      />
-                      Automatisch AI-modeladvies na promptgeneratie
-                    </label>
+                  <div className="mt-4 rounded-xl border border-night-700/60 bg-night-900/40 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-yellow-300">Suggested Model</p>
+                      <button
+                        type="button"
+                        onClick={() => void requestModelAdvice('ai', generatedPrompt, 'Generated Prompt')}
+                        disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative || advisingAi}
+                        className="btn-ghost border border-night-600/50 px-3 py-1.5 text-xs"
+                      >
+                        {advisingAi ? 'Getting AI Advice...' : 'Get AI Advice'}
+                      </button>
+                    </div>
+
+                    <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || '—'}</p>
+                    <p className="mt-1 text-sm text-night-300">{recommendedModelReason || 'Nog geen modeladvies beschikbaar. Genereer eerst een prompt.'}</p>
+
+                    <div className="mt-3 flex items-center justify-between text-sm text-night-400">
+                      <p>{recommendedModelMode === 'ai' ? 'AI-based advice' : recommendedModelMode === 'rule' ? 'Rule-based advice' : 'No advice yet'}</p>
+                      <p>NightCafe</p>
+                    </div>
+
                     {modelAdviceBusy && (
-                      <p className="mt-2 text-[11px] text-night-400">AI-modeladvies ophalen...</p>
+                      <p className="mt-2 text-[11px] text-night-400">Modeladvies ophalen...</p>
                     )}
                     {modelAdviceNote && (
                       <p className="mt-2 text-[11px] text-night-300">{modelAdviceNote}</p>
-                    )}
-                    {recommendedModel && (
-                      <p className="mt-1 text-[11px] text-night-400">
-                        Aanbevolen model: <span className="text-night-200">{recommendedModel}</span>
-                      </p>
                     )}
                   </div>
                 </div>
@@ -936,71 +971,79 @@ export default function Generator() {
                 placeholder="Your generated prompt will appear here."
               />
 
-              <div className="mt-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-night-200 uppercase tracking-wide">Negative Prompt</h3>
-                  <span className="text-[10px] text-night-500">{negativePrompt.length} characters</span>
-                </div>
-                <textarea
-                  className="textarea mt-2 min-h-24"
-                  value={negativePrompt}
-                  onChange={(e) => setNegativePrompt(e.target.value)}
-                  placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)…"
-                />
-                <div className="mt-2 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={handleGenerateNegative}
-                    disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative}
-                    className="btn-ghost border border-night-600/50"
-                  >
-                    {generatingNegative ? 'Generating negative...' : 'Generate Negative Prompt'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleImproveNegative}
-                    disabled={!negativePrompt.trim() || loading || improving || generatingNegative || improvingNegative}
-                    className="btn-ghost border border-night-600/50"
-                  >
-                    {improvingNegative ? 'Improving negative...' : 'Improve Negative Prompt'}
-                  </button>
-                </div>
-
-                {negativeImprovementDiff && (
-                  <div className="mt-3 rounded-xl border border-night-600/50 bg-night-900/30 p-3">
-                    <div className="inline-flex rounded-lg border border-night-600/50 bg-night-900/40 p-1">
-                      <button
-                        type="button"
-                        onClick={() => setNegativePromptViewTab('diff')}
-                        className={`px-3 py-1.5 rounded-md text-xs transition-colors ${negativePromptViewTab === 'diff' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
-                      >
-                        Diff View
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setNegativePromptViewTab('final')}
-                        className={`px-3 py-1.5 rounded-md text-xs transition-colors ${negativePromptViewTab === 'final' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
-                      >
-                        Final Result
-                      </button>
-                    </div>
-
-                    {negativePromptViewTab === 'diff' ? (
-                      <PromptDiffView
-                        originalPrompt={negativeImprovementDiff.originalPrompt}
-                        improvedPrompt={negativeImprovementDiff.improvedPrompt}
-                      />
-                    ) : (
-                      <textarea
-                        className="textarea mt-3 min-h-24"
-                        value={negativeImprovementDiff.improvedPrompt}
-                        readOnly
-                        placeholder="Improved negative prompt result"
-                      />
-                    )}
+              {showNegativePromptControls ? (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-semibold text-night-200 uppercase tracking-wide">Negative Prompt</h3>
+                    <span className="text-[10px] text-night-500">{negativePrompt.length} characters</span>
                   </div>
-                )}
-              </div>
+                  <textarea
+                    className="textarea mt-2 min-h-24"
+                    value={negativePrompt}
+                    onChange={(e) => setNegativePrompt(e.target.value)}
+                    placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)…"
+                  />
+                  <div className="mt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleGenerateNegative}
+                      disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative}
+                      className="btn-ghost border border-night-600/50"
+                    >
+                      {generatingNegative ? 'Generating negative...' : 'Generate Negative Prompt'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleImproveNegative}
+                      disabled={!negativePrompt.trim() || loading || improving || generatingNegative || improvingNegative}
+                      className="btn-ghost border border-night-600/50"
+                    >
+                      {improvingNegative ? 'Improving negative...' : 'Improve Negative Prompt'}
+                    </button>
+                  </div>
+
+                  {negativeImprovementDiff && (
+                    <div className="mt-3 rounded-xl border border-night-600/50 bg-night-900/30 p-3">
+                      <div className="inline-flex rounded-lg border border-night-600/50 bg-night-900/40 p-1">
+                        <button
+                          type="button"
+                          onClick={() => setNegativePromptViewTab('diff')}
+                          className={`px-3 py-1.5 rounded-md text-xs transition-colors ${negativePromptViewTab === 'diff' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
+                        >
+                          Diff View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNegativePromptViewTab('final')}
+                          className={`px-3 py-1.5 rounded-md text-xs transition-colors ${negativePromptViewTab === 'final' ? 'bg-glow-purple text-white' : 'text-night-300 hover:text-white hover:bg-night-800'}`}
+                        >
+                          Final Result
+                        </button>
+                      </div>
+
+                      {negativePromptViewTab === 'diff' ? (
+                        <PromptDiffView
+                          originalPrompt={negativeImprovementDiff.originalPrompt}
+                          improvedPrompt={negativeImprovementDiff.improvedPrompt}
+                        />
+                      ) : (
+                        <textarea
+                          className="textarea mt-3 min-h-24"
+                          value={negativeImprovementDiff.improvedPrompt}
+                          readOnly
+                          placeholder="Improved negative prompt result"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-lg border border-night-700/50 bg-night-900/40 p-3">
+                  <p className="text-xs text-night-300">
+                    Dit geadviseerde model ondersteunt geen negative prompt. Daarom zijn de negative prompt opties verborgen.
+                  </p>
+                </div>
+              )}
 
               {improvementDiff && (
                 <div className="mt-4 rounded-xl border border-night-600/50 bg-night-900/30 p-3">

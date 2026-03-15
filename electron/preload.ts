@@ -64,6 +64,11 @@ export type NightcafeModelOption = {
   mediaType: string
 }
 
+export type NightcafeModelSupport = {
+  modelName: string
+  supportsNegativePrompt: boolean
+}
+
 export type ModelAdvisorRecommendation = {
   modelName: string
   explanation: string
@@ -187,6 +192,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   nightcafeModels: {
     list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>
       ipcRenderer.invoke('nightcafeModels:list', filters),
+    getSupport: (input?: { modelName?: string }): Promise<IpcResult<NightcafeModelSupport>> =>
+      ipcRenderer.invoke('nightcafeModels:getSupport', input),
   },
   nightcafePresets: {
     list: (): Promise<IpcResult<NightcafePresetOption[]>> =>

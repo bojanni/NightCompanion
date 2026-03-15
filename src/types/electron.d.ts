@@ -44,6 +44,7 @@ type OpenRouterModel = {
   imagePrice: string | null
 }
 type NightcafeModelOption = { modelName: string; modelType: string; mediaType: string }
+type NightcafeModelSupport = { modelName: string; supportsNegativePrompt: boolean }
 type NightcafePresetOption = { presetName: string; category: string }
 type ModelAdvisorRecommendation = { modelName: string; explanation: string }
 type ModelAdvisorResult = {
@@ -112,6 +113,7 @@ declare global {
       }
       nightcafeModels: {
         list(filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>>
+        getSupport(input?: { modelName?: string }): Promise<IpcResult<NightcafeModelSupport>>
       }
       nightcafePresets: {
         list(): Promise<IpcResult<NightcafePresetOption[]>>
