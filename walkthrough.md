@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-16 (Shared loading skeletons for key screens)
+
+- Findings: First-load states in `Dashboard`, `Library`, `StyleProfiles`, and `GenerationLog` used spinner/text placeholders, which can feel slow and abrupt when Electron IPC responses are delayed.
+- Conclusions: Reusable skeleton components provide better perceived performance and visual continuity while keeping loading behavior and data flow unchanged.
+- Actions: Added shared skeleton primitives/layouts in `src/components/skeletons/SkeletonBlock.tsx`, `src/components/skeletons/DashboardSkeleton.tsx`, `src/components/skeletons/LibrarySkeleton.tsx`, `src/components/skeletons/StyleProfilesSkeleton.tsx`, and `src/components/skeletons/GenerationLogSkeleton.tsx`; wired loading branches in `src/screens/Dashboard.tsx`, `src/screens/Library.tsx`, `src/screens/StyleProfiles.tsx`, and `src/screens/GenerationLog.tsx`; validated with `npm run build`.
+
 ## 2026-03-16 (Characters screen opgesplitst in onderhoudbare componenten)
 
 - Findings: `src/screens/Characters.tsx` was te groot (~27KB) en combineerde meerdere verantwoordelijkheden in één bestand.

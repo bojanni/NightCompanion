@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { GenerationEntry, Prompt, Screen } from '../types'
 import { subscribeDashboardCacheInvalidation } from '../lib/cacheEvents'
+import DashboardSkeleton from '../components/skeletons/DashboardSkeleton'
 
 interface CharacterDashboardItem {
   id: string
@@ -167,9 +168,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 no-drag-region"
       >
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 border-2 border-glow-purple border-t-transparent rounded-full animate-spin" />
-          </div>
+          <DashboardSkeleton />
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

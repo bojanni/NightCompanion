@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { GenerationEntry, NewGenerationEntry } from '../types'
 import { Star, StarHalf } from 'lucide-react'
 import { invalidateDashboardCache } from '../lib/cacheEvents'
+import GenerationLogSkeleton from '../components/skeletons/GenerationLogSkeleton'
 
 type LogFormData = Omit<NewGenerationEntry, 'createdAt' | 'updatedAt'>
 type FormState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; entry: GenerationEntry }
@@ -87,7 +88,7 @@ export default function GenerationLog() {
 
       <div className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region">
         {loading ? (
-          <div className="flex items-center justify-center py-24"><div className="text-night-500 text-sm animate-pulse">Loading…</div></div>
+          <GenerationLogSkeleton />
         ) : entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-2xl bg-night-800 border border-night-600/50 flex items-center justify-center mb-4"><span className="text-3xl text-night-500">⊞</span></div>

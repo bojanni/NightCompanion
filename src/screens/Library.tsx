@@ -5,6 +5,7 @@ import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, Plus, Sea
 import { toast } from 'sonner'
 
 import { invalidateDashboardCache } from '../lib/cacheEvents'
+import LibrarySkeleton from '../components/skeletons/LibrarySkeleton'
 
 const PAGE_SIZE = 20
 
@@ -315,9 +316,7 @@ export default function Library() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="text-night-500 text-sm animate-pulse">Loading prompts…</div>
-          </div>
+          <LibrarySkeleton />
         ) : filteredPrompts.length === 0 ? (
           <EmptyState onNew={() => setForm({ mode: 'create' })} hasFilters={!!(search || modelFilter)} />
         ) : (

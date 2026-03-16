@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { StyleProfile, NewStyleProfile } from '../types'
 import { invalidateDashboardCache } from '../lib/cacheEvents'
+import StyleProfilesSkeleton from '../components/skeletons/StyleProfilesSkeleton'
 
 type ProfileFormData = Omit<NewStyleProfile, 'createdAt' | 'updatedAt'>
 type FormState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; profile: StyleProfile }
@@ -55,7 +56,7 @@ export default function StyleProfiles() {
         {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-950/50 border border-red-800/50 text-red-300 text-sm">{error}</div>}
 
         {loading ? (
-          <div className="flex items-center justify-center py-24"><div className="text-night-500 text-sm animate-pulse">Loading…</div></div>
+          <StyleProfilesSkeleton />
         ) : profiles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-2xl bg-night-800 border border-night-600/50 flex items-center justify-center mb-4">
