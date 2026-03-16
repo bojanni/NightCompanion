@@ -1,4 +1,4 @@
-import { app } from 'electron'
+﻿import { app } from 'electron'
 import path from 'path'
 import { readFile } from 'fs/promises'
 import { drizzle } from 'drizzle-orm/postgres-js'
@@ -11,6 +11,7 @@ type Database = ReturnType<typeof drizzle<typeof schema>>
 
 const NIGHTCAFE_MODELS_FILE = 'nightcafe_models_compleet.csv'
 const NIGHTCAFE_PRESETS_FILE = 'nightcafe_presets.csv'
+const NIGHTCAFE_PRESET_PROMPTS_FILES = ['preset_prompts.csv', 'Preset_prompts.csv']
 
 function getNightCafeModelsCandidates() {
   const candidates = [
@@ -28,6 +29,15 @@ function getNightCafePresetsCandidates() {
     path.join(process.resourcesPath, 'presets', NIGHTCAFE_PRESETS_FILE),
     path.join(process.resourcesPath, 'resources', 'presets', NIGHTCAFE_PRESETS_FILE),
   ]
+
+  return [...new Set(candidates)]
+}
+function getNightCafePresetPromptsCandidates() {
+  const candidates = NIGHTCAFE_PRESET_PROMPTS_FILES.flatMap((fileName) => ([
+    path.join(app.getAppPath(), 'resources', 'presets', fileName),
+    path.join(process.resourcesPath, 'presets', fileName),
+    path.join(process.resourcesPath, 'resources', 'presets', fileName),
+  ]))
 
   return [...new Set(candidates)]
 }
@@ -62,6 +72,22 @@ async function readNightCafePresetsCsv() {
   }
 
   throw new Error(`NightCafe presets file not found. Looked in: ${candidates.join(', ')}`)
+}
+
+async function readNightCafePresetPromptsCsv() {
+  const candidates = getNightCafePresetPromptsCandidates()
+
+  for (const candidate of candidates) {
+    try {
+      return await readFile(candidate, 'utf-8')
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException
+      if (err.code === 'ENOENT') continue
+      throw error
+    }
+  }
+
+  return ''
 }
 
 function parseCsvLine(line: string) {
@@ -172,10 +198,10 @@ function parseNightCafeModelsCsv(csv: string) {
       description: (record.Beschrijving || '').trim(),
       modelType,
       mediaType,
-      artScore: (record['Art (★)'] || '').trim(),
-      promptingScore: (record['Prompting (★)'] || '').trim(),
-      realismScore: (record['Realism (★)'] || '').trim(),
-      typographyScore: (record['Typography (★)'] || '').trim(),
+      artScore: (record['Art (â˜…)'] || '').trim(),
+      promptingScore: (record['Prompting (â˜…)'] || '').trim(),
+      realismScore: (record['Realism (â˜…)'] || '').trim(),
+      typographyScore: (record['Typography (â˜…)'] || '').trim(),
       costTier: (record['Kosten ($)'] || '').trim(),
       supportsNegativePrompt: supportsNegativePromptByNightCafeRule(
         modelName,
@@ -279,10 +305,52 @@ function parseNightCafePresetsCsv(csv: string) {
 
   return [...byKey.values()]
 }
+function parseNightCafePresetPromptsCsv(csv: string) {
+  const lines = csv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+
+  if (lines.length < 2) return new Map<string, string>()
+
+  const headers = parseCsvLine(lines[0]).map((header) => header.replace(/^\uFEFF/, '').trim())
+  const rows = lines.slice(1)
+
+  const findHeaderIndex = (aliases: string[]) => {
+    const lowerAliases = aliases.map((alias) => alias.toLowerCase())
+    return headers.findIndex((header) => lowerAliases.includes(header.toLowerCase()))
+  }
+
+  const presetNameIndex = findHeaderIndex(['Preset Name', 'Preset', 'preset_name', 'name'])
+  const presetPromptIndex = findHeaderIndex(['Prompt', 'Preset Prompt', 'preset_prompt', 'prompt'])
+  const byKey = new Map<string, string>()
+
+  for (const row of rows) {
+    const cells = parseCsvLine(row)
+    if (cells.length === 0) continue
+
+    const presetNameCell = presetNameIndex >= 0 ? (cells[presetNameIndex] || '') : (cells[0] || '')
+    const presetPromptCell = presetPromptIndex >= 0 ? (cells[presetPromptIndex] || '') : (cells[1] || '')
+    const presetName = presetNameCell.trim()
+    const presetPrompt = presetPromptCell.trim()
+    if (!presetName || !presetPrompt) continue
+
+    byKey.set(presetName.toLowerCase(), presetPrompt)
+  }
+
+  return byKey
+}
 
 async function syncNightCafePresetsFromCsv(db: Database) {
-  const csv = await readNightCafePresetsCsv()
-  const rows = parseNightCafePresetsCsv(csv)
+  const [csv, presetPromptsCsv] = await Promise.all([
+    readNightCafePresetsCsv(),
+    readNightCafePresetPromptsCsv(),
+  ])
+  const presetPromptsByKey = parseNightCafePresetPromptsCsv(presetPromptsCsv)
+  const rows = parseNightCafePresetsCsv(csv).map((row) => ({
+    ...row,
+    presetPrompt: presetPromptsByKey.get(row.presetKey) || '',
+  }))
 
   if (rows.length === 0) {
     throw new Error('NightCafe presets CSV parsed but produced zero presets.')
@@ -297,6 +365,7 @@ async function syncNightCafePresetsFromCsv(db: Database) {
         set: {
           presetName: row.presetName,
           category: row.category,
+          presetPrompt: row.presetPrompt,
           gridRow: row.gridRow,
           gridColumn: row.gridColumn,
           updatedAt: new Date(),
@@ -331,3 +400,5 @@ export async function syncNightCafeData({
     `NightCafe Hugging Face sync: processed ${stats.processed}/${stats.total}, matched ${stats.matched}, unmatched ${stats.unmatched}, failed ${stats.failed}, skipped fresh ${stats.skippedFresh}`
   )
 }
+
+

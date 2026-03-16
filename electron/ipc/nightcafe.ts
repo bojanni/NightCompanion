@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+﻿import { ipcMain } from 'electron'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { desc, eq, isNotNull } from 'drizzle-orm'
 import * as schema from '../../src/lib/schema'
@@ -13,6 +13,7 @@ type NightcafeModelFilters = {
 type NightcafePresetOption = {
   presetName: string
   category: string
+  presetPrompt: string
 }
 
 export function registerNightCafeIpc({ db }: { db: Database }) {
@@ -47,6 +48,7 @@ export function registerNightCafeIpc({ db }: { db: Database }) {
         .select({
           presetName: nightcafePresets.presetName,
           category: nightcafePresets.category,
+          presetPrompt: nightcafePresets.presetPrompt,
         })
         .from(nightcafePresets)
         .orderBy(nightcafePresets.presetName)
@@ -133,3 +135,5 @@ export function registerNightCafeIpc({ db }: { db: Database }) {
     }
   })
 }
+
+

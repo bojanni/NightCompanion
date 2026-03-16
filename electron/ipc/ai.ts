@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+﻿import { ipcMain } from 'electron'
 import { app } from 'electron'
 import path from 'path'
 import { appendFile, mkdir, readFile } from 'fs/promises'
@@ -42,9 +42,9 @@ STRICT FORMATTING RULE: Output ONLY a comma-separated list of negative keywords 
 const TITLE_SYSTEM_INSTRUCTION = `You generate concise, descriptive library titles for AI art prompts. ${LANGUAGE_INSTRUCTION} Return only the final title text with no quotes, no labels, and no extra commentary. Keep it under ${TITLE_MAX_LENGTH} characters and aim for 4 to 10 words.`
 
 const QUICK_EXPAND_CREATIVITY: Record<string, string> = {
-  focused: 'Expand the following concept into a detailed AI art prompt. Stay true to the original idea — add specific art style, lighting, and composition details that faithfully serve the concept without straying from it.',
+  focused: 'Expand the following concept into a detailed AI art prompt. Stay true to the original idea â€” add specific art style, lighting, and composition details that faithfully serve the concept without straying from it.',
   balanced: 'Expand the following concept into a rich, vivid AI art prompt. Add complementary style, atmospheric lighting, interesting composition, and mood while preserving the original intent.',
-  wild: 'Take bold creative liberties with the following concept. Push it in an unexpected artistic direction — unusual combinations, striking visual contrasts, or a unique aesthetic twist. Use the concept as a loose starting point, not a strict constraint.',
+  wild: 'Take bold creative liberties with the following concept. Push it in an unexpected artistic direction â€” unusual combinations, striking visual contrasts, or a unique aesthetic twist. Use the concept as a loose starting point, not a strict constraint.',
 }
 
 const QUICK_EXPAND_TEMPERATURES: Record<string, number> = {
@@ -400,7 +400,7 @@ export function registerAiIpc({
 
       const { providerId, modelId, stored } = await getAdvisorRouteSelection()
       if (!providerId || !modelId) {
-        return { error: 'No advisor route is selected. Configure AI Configuration → Research & Reasoning first.' }
+        return { error: 'No advisor route is selected. Configure AI Configuration â†’ Research & Reasoning first.' }
       }
 
       requestProvider = providerId
@@ -489,7 +489,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -551,7 +551,7 @@ export function registerAiIpc({
     }
   })
 
-  ipcMain.handle('generator:magicRandom', async (_, input?: { presetName?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }) => {
+  ipcMain.handle('generator:magicRandom', async (_, input?: { presetName?: string; presetPrompt?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }) => {
     const requestId = crypto.randomUUID()
     const startedAt = Date.now()
     let requestModel = ''
@@ -570,6 +570,7 @@ export function registerAiIpc({
       }
 
       const presetName = input?.presetName?.trim()
+      const presetPrompt = input?.presetPrompt?.trim() || ''
       const maxWords = Number.isFinite(input?.maxWords)
         ? Math.max(1, Math.min(MAX_ALLOWED_WORDS, Math.floor(input?.maxWords as number)))
         : DEFAULT_MAX_WORDS
@@ -656,6 +657,7 @@ export function registerAiIpc({
           status: responseStatus,
           input: {
             presetName: input?.presetName?.trim() || null,
+            presetPrompt: input?.presetPrompt?.trim() || null,
             maxWords: appliedMaxWords,
             greylistEnabled: input?.greylistEnabled !== false,
             greylistWordCount: (input?.greylistWords ?? []).filter((word) => word.trim().length > 0).length,
@@ -693,7 +695,7 @@ export function registerAiIpc({
 
       const { providerId, modelId, stored } = await getAdvisorRouteSelection()
       if (!providerId || !modelId) {
-        return { error: 'No advisor route is selected. Configure AI Configuration → Research & Reasoning first.' }
+        return { error: 'No advisor route is selected. Configure AI Configuration â†’ Research & Reasoning first.' }
       }
 
       requestProvider = providerId
@@ -764,7 +766,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -847,7 +849,7 @@ export function registerAiIpc({
         : ''
 
       if (!providerId || !modelId) {
-        return { error: 'No improvement model is selected. Set it in AI Configuration → Improvement.' }
+        return { error: 'No improvement model is selected. Set it in AI Configuration â†’ Improvement.' }
       }
 
       requestProvider = providerId
@@ -911,7 +913,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -1006,7 +1008,7 @@ export function registerAiIpc({
         : ''
 
       if (!providerId || !modelId) {
-        return { error: 'No improvement model is selected. Set it in AI Configuration → Improvement.' }
+        return { error: 'No improvement model is selected. Set it in AI Configuration â†’ Improvement.' }
       }
 
       requestProvider = providerId
@@ -1070,7 +1072,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -1165,7 +1167,7 @@ export function registerAiIpc({
         : ''
 
       if (!providerId || !modelId) {
-        return { error: 'No improvement model is selected. Set it in AI Configuration → Improvement.' }
+        return { error: 'No improvement model is selected. Set it in AI Configuration â†’ Improvement.' }
       }
 
       requestProvider = providerId
@@ -1229,7 +1231,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -1324,7 +1326,7 @@ export function registerAiIpc({
         : ''
 
       if (!providerId || !modelId) {
-        return { error: 'No improvement model is selected. Set it in AI Configuration → Improvement.' }
+        return { error: 'No improvement model is selected. Set it in AI Configuration â†’ Improvement.' }
       }
 
       requestProvider = providerId
@@ -1388,7 +1390,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -1458,6 +1460,7 @@ export function registerAiIpc({
   ipcMain.handle('generator:quickExpand', async (_, input?: {
     idea?: string
     presetName?: string
+    presetPrompt?: string
     creativity?: 'focused' | 'balanced' | 'wild'
     character?: { name: string; description?: string }
   }) => {
@@ -1475,7 +1478,8 @@ export function registerAiIpc({
       if (!idea) return { error: 'No idea provided for expansion.' }
 
       const creativity = input?.creativity || 'balanced'
-      const presetName = input?.presetName?.trim() || ''
+      const presetName = input?.presetName?.trim()
+      const presetPrompt = input?.presetPrompt?.trim() || ''
       const character = input?.character
 
       const creativityInstruction = QUICK_EXPAND_CREATIVITY[creativity]
@@ -1598,7 +1602,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration → Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
       }
 
       requestPayload = {
@@ -1660,3 +1664,8 @@ export function registerAiIpc({
     }
   })
 }
+
+
+
+
+

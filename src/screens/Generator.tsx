@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
 import PromptPreview from '../components/PromptPreview'
@@ -111,6 +111,11 @@ export default function Generator() {
   const [quickStartStatus, setQuickStartStatus] = useState<string | null>(null)
   const [advisingAi, setAdvisingAi] = useState(false)
 
+  const selectedPresetPrompt = presetOptions.find((preset) => preset.presetName === selectedPreset)?.presetPrompt.trim() || ''
+  const selectedPresetContext = selectedPresetPrompt
+    ? `${selectedPreset}. Preset prompt guidance: ${selectedPresetPrompt}`
+    : selectedPreset
+
   useEffect(() => {
     let ignore = false
 
@@ -141,7 +146,8 @@ export default function Generator() {
 
       const result = await window.electronAPI.generator.quickExpand({
         idea,
-        presetName: selectedPreset || undefined,
+        presetName: selectedPresetContext || undefined,
+        presetPrompt: selectedPresetPrompt || undefined,
         creativity: quickStartCreativity,
         character: characterForContext
           ? { name: characterForContext.name, description: characterForContext.description }
@@ -449,7 +455,8 @@ export default function Generator() {
 
     try {
       const result = await window.electronAPI.generator.magicRandom({
-        presetName: selectedPreset || undefined,
+        presetName: selectedPresetContext || undefined,
+        presetPrompt: selectedPresetPrompt || undefined,
         maxWords,
         greylistEnabled,
         greylistWords,
@@ -771,14 +778,14 @@ export default function Generator() {
   const showNegativePromptControls = supportsNegativePrompt !== false
 
   const formatCompactNumber = (value: number | null | undefined) => {
-    if (!Number.isFinite(value as number)) return '—'
+    if (!Number.isFinite(value as number)) return 'â€”'
     return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value as number)
   }
 
   const formatDate = (value: string | Date | null | undefined) => {
-    if (!value) return '—'
+    if (!value) return 'â€”'
     const parsed = typeof value === 'string' ? new Date(value) : value
-    if (Number.isNaN(parsed.getTime())) return '—'
+    if (Number.isNaN(parsed.getTime())) return 'â€”'
     return parsed.toLocaleDateString()
   }
 
@@ -821,7 +828,7 @@ export default function Generator() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
                     <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-teal-500/20">
-                      <span className="text-teal-400 text-sm">✦</span>
+                      <span className="text-teal-400 text-sm">âœ¦</span>
                     </div>
                     <div>
                       <h2 className="text-base font-semibold text-white">Magic Quickstart</h2>
@@ -836,7 +843,7 @@ export default function Generator() {
                       onClick={() => setShowCharacterPicker((v) => !v)}
                       className={`btn-ghost border text-xs flex items-center gap-1.5 ${quickStartCharacterId ? 'border-teal-500/60 text-teal-300' : 'border-night-600/50'}`}
                     >
-                      ☺{' '}
+                      â˜º{' '}
                       {quickStartCharacterId
                         ? (quickStartCharacterList.find((c) => c.id === quickStartCharacterId)?.name ?? 'Character')
                         : 'Add Character'}
@@ -883,7 +890,7 @@ export default function Generator() {
                       }
                     }}
                     className="w-full bg-transparent px-4 pt-4 pb-16 text-sm text-white placeholder-night-500 resize-none min-h-36 focus:outline-none"
-                    placeholder={'Describe your image idea in simple terms… (e.g. "A neon cyberpunk cityscape in the rain")'}
+                    placeholder={'Describe your image idea in simple termsâ€¦ (e.g. "A neon cyberpunk cityscape in the rain")'}
                   />
                   <div className="absolute bottom-3 right-3">
                     <button
@@ -892,7 +899,7 @@ export default function Generator() {
                       disabled={!quickStartIdea.trim() || expandingIdea}
                       className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      ✦ {expandingIdea ? 'Expanding…' : 'Magic AI Expansion'}
+                      âœ¦ {expandingIdea ? 'Expandingâ€¦' : 'Magic AI Expansion'}
                     </button>
                   </div>
                 </div>
@@ -1035,7 +1042,7 @@ export default function Generator() {
                     className="textarea mt-2 min-h-24"
                     value={negativePrompt}
                     onChange={(e) => setNegativePrompt(e.target.value)}
-                    placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)…"
+                    placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)â€¦"
                   />
                   <div className="mt-2 flex justify-end gap-2">
                     <button
@@ -1112,7 +1119,7 @@ export default function Generator() {
                   </button>
                 </div>
 
-                <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || '—'}</p>
+                <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || 'â€”'}</p>
                 <p className="mt-1 text-sm text-night-300">{recommendedModelReason || 'Nog geen modeladvies beschikbaar. Genereer eerst een prompt.'}</p>
 
                 <div className="mt-3 flex items-center justify-between text-sm text-night-400">
@@ -1241,3 +1248,8 @@ export default function Generator() {
     </div>
   )
 }
+
+
+
+
+

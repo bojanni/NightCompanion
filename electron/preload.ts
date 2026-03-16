@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+﻿import { contextBridge, ipcRenderer } from 'electron'
 import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry } from '../src/lib/schema'
 
 type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
@@ -122,6 +122,7 @@ export type ModelAdvisorResult = {
 export type NightcafePresetOption = {
   presetName: string
   category: string
+  presetPrompt: string
 }
 
 export type CharacterImage = {
@@ -150,119 +151,174 @@ export type CharacterRecord = {
 
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 
+export type IpcUnexpectedErrorPayload = {
+  channel: string
+  message: string
+  occurredAt: string
+}
+
+type IpcUnexpectedErrorListener = (payload: IpcUnexpectedErrorPayload) => void
+
+const ipcUnexpectedErrorListeners = new Set<IpcUnexpectedErrorListener>()
+
+const toIpcErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    const message = error.message?.trim()
+    if (message) return message
+  }
+
+  return String(error)
+}
+
+const notifyUnexpectedIpcError = (payload: IpcUnexpectedErrorPayload) => {
+  console.error(
+    `[preload] Unexpected IPC invoke failure on "${payload.channel}": ${payload.message}`,
+  )
+
+  for (const listener of ipcUnexpectedErrorListeners) {
+    try {
+      listener(payload)
+    } catch (error) {
+      console.error('[preload] Unexpected IPC error listener failure', error)
+    }
+  }
+}
+
+const invokeWithFallback = async <T>(channel: string, ...args: unknown[]): Promise<T> => {
+  try {
+    return await ipcRenderer.invoke(channel, ...args) as T
+  } catch (error) {
+    notifyUnexpectedIpcError({
+      channel,
+      message: toIpcErrorMessage(error),
+      occurredAt: new Date().toISOString(),
+    })
+
+    throw error
+  }
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   prompts: {
     list: (filters?: PromptFilters): Promise<IpcResult<Prompt[]>> =>
-      ipcRenderer.invoke('prompts:list', filters),
+      invokeWithFallback('prompts:list', filters),
     get: (id: number): Promise<IpcResult<Prompt | undefined>> =>
-      ipcRenderer.invoke('prompts:get', id),
+      invokeWithFallback('prompts:get', id),
     create: (data: PromptMutationInput): Promise<IpcResult<Prompt>> =>
-      ipcRenderer.invoke('prompts:create', data),
+      invokeWithFallback('prompts:create', data),
     listVersions: (promptId: number): Promise<IpcResult<PromptVersion[]>> =>
-      ipcRenderer.invoke('prompts:listVersions', promptId),
+      invokeWithFallback('prompts:listVersions', promptId),
     update: (id: number, data: Partial<PromptMutationInput>): Promise<IpcResult<Prompt>> =>
-      ipcRenderer.invoke('prompts:update', id, data),
+      invokeWithFallback('prompts:update', id, data),
     delete: (id: number): Promise<IpcResult<void>> =>
-      ipcRenderer.invoke('prompts:delete', id),
+      invokeWithFallback('prompts:delete', id),
   },
   styleProfiles: {
     list: (): Promise<IpcResult<StyleProfile[]>> =>
-      ipcRenderer.invoke('styleProfiles:list'),
+      invokeWithFallback('styleProfiles:list'),
     get: (id: number): Promise<IpcResult<StyleProfile | undefined>> =>
-      ipcRenderer.invoke('styleProfiles:get', id),
+      invokeWithFallback('styleProfiles:get', id),
     create: (data: NewStyleProfile): Promise<IpcResult<StyleProfile>> =>
-      ipcRenderer.invoke('styleProfiles:create', data),
+      invokeWithFallback('styleProfiles:create', data),
     update: (id: number, data: Partial<NewStyleProfile>): Promise<IpcResult<StyleProfile>> =>
-      ipcRenderer.invoke('styleProfiles:update', id, data),
+      invokeWithFallback('styleProfiles:update', id, data),
     delete: (id: number): Promise<IpcResult<void>> =>
-      ipcRenderer.invoke('styleProfiles:delete', id),
+      invokeWithFallback('styleProfiles:delete', id),
   },
   generationLog: {
     list: (): Promise<IpcResult<GenerationEntry[]>> =>
-      ipcRenderer.invoke('generationLog:list'),
+      invokeWithFallback('generationLog:list'),
     create: (data: NewGenerationEntry): Promise<IpcResult<GenerationEntry>> =>
-      ipcRenderer.invoke('generationLog:create', data),
+      invokeWithFallback('generationLog:create', data),
     update: (id: number, data: Partial<NewGenerationEntry>): Promise<IpcResult<GenerationEntry>> =>
-      ipcRenderer.invoke('generationLog:update', id, data),
+      invokeWithFallback('generationLog:update', id, data),
     delete: (id: number): Promise<IpcResult<void>> =>
-      ipcRenderer.invoke('generationLog:delete', id),
+      invokeWithFallback('generationLog:delete', id),
   },
   settings: {
     getOpenRouter: (): Promise<IpcResult<OpenRouterSettings>> =>
-      ipcRenderer.invoke('settings:getOpenRouter'),
+      invokeWithFallback('settings:getOpenRouter'),
     getProviderMeta: (providerId: string, fallbackModel: string): Promise<IpcResult<ProviderMetaStore>> =>
-      ipcRenderer.invoke('settings:getProviderMeta', providerId, fallbackModel),
+      invokeWithFallback('settings:getProviderMeta', providerId, fallbackModel),
     saveProviderMeta: (providerId: string, input: Partial<ProviderMetaStore>): Promise<IpcResult<ProviderMetaStore>> =>
-      ipcRenderer.invoke('settings:saveProviderMeta', providerId, input),
+      invokeWithFallback('settings:saveProviderMeta', providerId, input),
     getAiConfigState: (): Promise<IpcResult<AiConfigStateStore>> =>
-      ipcRenderer.invoke('settings:getAiConfigState'),
+      invokeWithFallback('settings:getAiConfigState'),
     saveAiConfigState: (input: AiConfigStateStore): Promise<IpcResult<AiConfigStateStore>> =>
-      ipcRenderer.invoke('settings:saveAiConfigState', input),
+      invokeWithFallback('settings:saveAiConfigState', input),
     getNightCompanionFolderPath: (): Promise<IpcResult<string>> =>
-      ipcRenderer.invoke('settings:getNightCompanionFolderPath'),
+      invokeWithFallback('settings:getNightCompanionFolderPath'),
     saveNightCompanionFolderPath: (input: string): Promise<IpcResult<string>> =>
-      ipcRenderer.invoke('settings:saveNightCompanionFolderPath', input),
+      invokeWithFallback('settings:saveNightCompanionFolderPath', input),
     resetNightCompanionFolderPath: (): Promise<IpcResult<string>> =>
-      ipcRenderer.invoke('settings:resetNightCompanionFolderPath'),
+      invokeWithFallback('settings:resetNightCompanionFolderPath'),
     selectNightCompanionFolderPath: (): Promise<IpcResult<string | null>> =>
-      ipcRenderer.invoke('settings:selectNightCompanionFolderPath'),
+      invokeWithFallback('settings:selectNightCompanionFolderPath'),
     getLocalEndpoints: (): Promise<IpcResult<LocalEndpointStore[]>> =>
-      ipcRenderer.invoke('settings:getLocalEndpoints'),
+      invokeWithFallback('settings:getLocalEndpoints'),
     saveLocalEndpoints: (input: LocalEndpointStore[]): Promise<IpcResult<LocalEndpointStore[]>> =>
-      ipcRenderer.invoke('settings:saveLocalEndpoints', input),
+      invokeWithFallback('settings:saveLocalEndpoints', input),
     saveOpenRouter: (input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>> =>
-      ipcRenderer.invoke('settings:saveOpenRouter', input),
+      invokeWithFallback('settings:saveOpenRouter', input),
     listOpenRouterModels: (): Promise<IpcResult<OpenRouterModel[]>> =>
-      ipcRenderer.invoke('settings:listOpenRouterModels'),
+      invokeWithFallback('settings:listOpenRouterModels'),
     refreshOpenRouterModels: (input?: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterModel[]>> =>
-      ipcRenderer.invoke('settings:refreshOpenRouterModels', input),
+      invokeWithFallback('settings:refreshOpenRouterModels', input),
     testOpenRouter: (input?: Partial<OpenRouterSettings>): Promise<IpcResult<{ ok: boolean; modelCount: number }>> =>
-      ipcRenderer.invoke('settings:testOpenRouter', input),
+      invokeWithFallback('settings:testOpenRouter', input),
   },
   generator: {
-    magicRandom: (input?: { presetName?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>> =>
-      ipcRenderer.invoke('generator:magicRandom', input),
+    magicRandom: (input?: { presetName?: string; presetPrompt?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>> =>
+      invokeWithFallback('generator:magicRandom', input),
     improvePrompt: (input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>> =>
-      ipcRenderer.invoke('generator:improvePrompt', input),
+      invokeWithFallback('generator:improvePrompt', input),
     generateNegativePrompt: (input?: { prompt?: string }): Promise<IpcResult<{ negativePrompt: string }>> =>
-      ipcRenderer.invoke('generator:generateNegativePrompt', input),
+      invokeWithFallback('generator:generateNegativePrompt', input),
     improveNegativePrompt: (input?: { negativePrompt?: string }): Promise<IpcResult<{ negativePrompt: string }>> =>
-      ipcRenderer.invoke('generator:improveNegativePrompt', input),
+      invokeWithFallback('generator:improveNegativePrompt', input),
     generateTitle: (input?: { prompt?: string }): Promise<IpcResult<{ title: string }>> =>
-      ipcRenderer.invoke('generator:generateTitle', input),
+      invokeWithFallback('generator:generateTitle', input),
     generateTags: (input?: { title?: string; prompt?: string; negativePrompt?: string; existingTags?: string[]; maxTags?: number }): Promise<IpcResult<GeneratedTagsResult>> =>
-      ipcRenderer.invoke('generator:generateTags', input),
-    quickExpand: (input?: { idea?: string; presetName?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>> =>
-      ipcRenderer.invoke('generator:quickExpand', input),
+      invokeWithFallback('generator:generateTags', input),
+    quickExpand: (input?: { idea?: string; presetName?: string; presetPrompt?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>> =>
+      invokeWithFallback('generator:quickExpand', input),
     adviseModel: (input?: { prompt?: string; mode?: 'rule' | 'ai' }): Promise<IpcResult<ModelAdvisorResult>> =>
-      ipcRenderer.invoke('generator:adviseModel', input),
+      invokeWithFallback('generator:adviseModel', input),
   },
   nightcafeModels: {
     list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>
-      ipcRenderer.invoke('nightcafeModels:list', filters),
+      invokeWithFallback('nightcafeModels:list', filters),
     getSupport: (input?: { modelName?: string }): Promise<IpcResult<NightcafeModelSupport>> =>
-      ipcRenderer.invoke('nightcafeModels:getSupport', input),
+      invokeWithFallback('nightcafeModels:getSupport', input),
     refreshHuggingFace: (input?: { force?: boolean }): Promise<IpcResult<NightcafeHuggingFaceSyncStats>> =>
-      ipcRenderer.invoke('nightcafeModels:refreshHuggingFace', input),
+      invokeWithFallback('nightcafeModels:refreshHuggingFace', input),
     getHuggingFaceSyncInfo: (): Promise<IpcResult<NightcafeHuggingFaceSyncInfo>> =>
-      ipcRenderer.invoke('nightcafeModels:getHuggingFaceSyncInfo'),
+      invokeWithFallback('nightcafeModels:getHuggingFaceSyncInfo'),
   },
   nightcafePresets: {
     list: (): Promise<IpcResult<NightcafePresetOption[]>> =>
-      ipcRenderer.invoke('nightcafePresets:list'),
+      invokeWithFallback('nightcafePresets:list'),
   },
   characters: {
     list: (): Promise<IpcResult<CharacterRecord[]>> =>
-      ipcRenderer.invoke('characters:list'),
+      invokeWithFallback('characters:list'),
     create: (input: Partial<CharacterRecord>): Promise<IpcResult<CharacterRecord>> =>
-      ipcRenderer.invoke('characters:create', input),
+      invokeWithFallback('characters:create', input),
     update: (id: string, input: Partial<CharacterRecord>): Promise<IpcResult<CharacterRecord | undefined>> =>
-      ipcRenderer.invoke('characters:update', id, input),
+      invokeWithFallback('characters:update', id, input),
     delete: (id: string): Promise<IpcResult<{ ok: boolean }>> =>
-      ipcRenderer.invoke('characters:delete', id),
+      invokeWithFallback('characters:delete', id),
     saveImage: (input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>> =>
-      ipcRenderer.invoke('characters:saveImage', input),
+      invokeWithFallback('characters:saveImage', input),
     deleteImage: (input: { fileUrl: string }): Promise<IpcResult<{ ok: boolean }>> =>
-      ipcRenderer.invoke('characters:deleteImage', input),
+      invokeWithFallback('characters:deleteImage', input),
+  },
+  onUnexpectedIpcError: (listener: IpcUnexpectedErrorListener): (() => void) => {
+    ipcUnexpectedErrorListeners.add(listener)
+
+    return () => {
+      ipcUnexpectedErrorListeners.delete(listener)
+    }
   },
 })
+

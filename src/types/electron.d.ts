@@ -1,4 +1,4 @@
-import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry } from '../lib/schema'
+﻿import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry } from '../lib/schema'
 
 type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
@@ -62,7 +62,7 @@ type NightcafeModelOption = {
   hfSyncStatus?: string
 }
 type NightcafeModelSupport = { modelName: string; supportsNegativePrompt: boolean }
-type NightcafePresetOption = { presetName: string; category: string }
+type NightcafePresetOption = { presetName: string; category: string; presetPrompt: string }
 type NightcafeHuggingFaceSyncStats = {
   total: number
   processed: number
@@ -101,6 +101,11 @@ type CharacterRecord = {
   details: CharacterDetail[]
   createdAt: string
   updatedAt: string
+}
+type IpcUnexpectedErrorPayload = {
+  channel: string
+  message: string
+  occurredAt: string
 }
 
 declare global {
@@ -145,13 +150,13 @@ declare global {
         testOpenRouter(input?: Partial<OpenRouterSettings>): Promise<IpcResult<{ ok: boolean; modelCount: number }>>
       }
       generator: {
-        magicRandom(input?: { presetName?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>>
+        magicRandom(input?: { presetName?: string; presetPrompt?: string; maxWords?: number; greylistEnabled?: boolean; greylistWords?: string[] }): Promise<IpcResult<{ prompt: string }>>
         improvePrompt(input?: { prompt?: string }): Promise<IpcResult<{ prompt: string }>>
         generateNegativePrompt(input?: { prompt?: string }): Promise<IpcResult<{ negativePrompt: string }>>
         improveNegativePrompt(input?: { negativePrompt?: string }): Promise<IpcResult<{ negativePrompt: string }>>
         generateTitle(input?: { prompt?: string }): Promise<IpcResult<{ title: string }>>
         generateTags(input?: { title?: string; prompt?: string; negativePrompt?: string; existingTags?: string[]; maxTags?: number }): Promise<IpcResult<GeneratedTagsResult>>
-        quickExpand(input?: { idea?: string; presetName?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>>
+        quickExpand(input?: { idea?: string; presetName?: string; presetPrompt?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>>
         adviseModel(input?: { prompt?: string; mode?: 'rule' | 'ai' }): Promise<IpcResult<ModelAdvisorResult>>
       }
       nightcafeModels: {
@@ -171,8 +176,10 @@ declare global {
         saveImage(input: { dataUrl: string; fileName?: string }): Promise<IpcResult<{ fileUrl: string }>>
         deleteImage(input: { fileUrl: string }): Promise<IpcResult<{ ok: boolean }>>
       }
+      onUnexpectedIpcError(listener: (payload: IpcUnexpectedErrorPayload) => void): () => void
     }
   }
 }
 
 export {}
+

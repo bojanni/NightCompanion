@@ -14,3 +14,8 @@
 - Saved prompt images are shown as thumbnails on prompt cards in the library when available.
 - Prompt records now also store a read-only `Suggested Model`, typically filled from Generator model advice when saving prompts from the Generator page.
 - The prompt edit form can add tags with AI and enforces a maximum of 15 tags per prompt.
+
+## 2026-03-16
+
+- Onverwachte IPC-fouten worden nu centraal onderschept in preload en altijd naar de console gelogd.
+- De app toont nu een globale fallback toast bij onverwachte IPC invoke-fouten, zodat stille failures zichtbaar worden voor de gebruiker.

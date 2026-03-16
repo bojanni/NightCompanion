@@ -173,6 +173,7 @@ export const nightcafePresets = pgTable(
     presetKey: varchar('preset_key', { length: 300 }).notNull().unique(),
     presetName: varchar('preset_name', { length: 255 }).notNull(),
     category: varchar('category', { length: 120 }).default('').notNull(),
+    presetPrompt: text('preset_prompt').default('').notNull(),
     gridRow: integer('grid_row'),
     gridColumn: integer('grid_column'),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

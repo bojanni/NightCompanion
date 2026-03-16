@@ -9,7 +9,7 @@ import GenerationLog from './screens/GenerationLog'
 import Generator from './screens/Generator'
 import Settings from './screens/Settings'
 import type { Screen } from './types'
-import { Toaster } from 'sonner'
+import { Toaster, toast } from 'sonner'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
@@ -30,6 +30,13 @@ export default function App() {
     return () => {
       active = false
     }
+  }, [])
+
+  useEffect(() => {
+    return window.electronAPI.onUnexpectedIpcError((payload) => {
+      console.error('[renderer] Unexpected IPC invoke failure', payload)
+      toast.error('Unexpected app error. Please try again.')
+    })
   }, [])
 
   return (
