@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { GenerationEntry, Prompt, Screen } from '../types'
+import { subscribeDashboardCacheInvalidation } from '../lib/cacheEvents'
 
 interface CharacterDashboardItem {
   id: string
@@ -106,8 +107,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
     loadDashboard()
 
+    const unsubscribe = subscribeDashboardCacheInvalidation(() => {
+      dashboardCache = null
+      if (!ignore) {
+        loadDashboard()
+      }
+    })
+
     return () => {
       ignore = true
+      unsubscribe()
     }
   }, [])
 
@@ -148,16 +157,14 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   return (
     <div className="flex flex-col h-full">
       <div
-        className="px-8 pt-8 pb-5"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        className="px-8 pt-8 pb-5 no-drag-region"
       >
         <h1 className="text-2xl font-semibold text-white tracking-tight">Dashboard</h1>
         <p className="text-sm text-night-400 mt-1">Snel overzicht van je prompts, characters en resultaten.</p>
       </div>
 
       <div
-        className="flex-1 overflow-y-auto px-8 pb-8 space-y-6"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 no-drag-region"
       >
         {loading ? (
           <div className="flex items-center justify-center h-64">

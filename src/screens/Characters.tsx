@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, CSSProperties } from 'react'
+import type { ChangeEvent } from 'react'
 import { Loader2, Plus, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { invalidateDashboardCache } from '../lib/cacheEvents'
 import CharacterCard from '../components/characters/CharacterCard'
 import CharacterFormModal from '../components/characters/CharacterFormModal'
 import type { CharacterDetail, CharacterImage, CharacterRecord } from '../components/characters/types'
@@ -170,6 +171,7 @@ export default function Characters() {
         }
 
         toast.success('Character updated')
+        invalidateDashboardCache()
       } else {
         const createResult = await window.electronAPI.characters.create({
           id: crypto.randomUUID(),
@@ -187,6 +189,7 @@ export default function Characters() {
 
         setCharacters((prev) => [createResult.data!, ...prev])
         toast.success('Character created')
+        invalidateDashboardCache()
       }
 
       setEditor({ mode: 'closed' })
@@ -219,6 +222,7 @@ export default function Characters() {
     setCharacters((prev) => prev.filter((char) => char.id !== id))
     setExpandedId((prev) => (prev === id ? null : prev))
     toast.success('Character deleted')
+    invalidateDashboardCache()
   }
 
   async function handleImageUpload(e: ChangeEvent<HTMLInputElement>) {
@@ -298,8 +302,7 @@ export default function Characters() {
   return (
     <div className="flex flex-col h-full">
       <div
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 pt-8 pb-5"
-        style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 pt-8 pb-5 no-drag-region"
       >
         <div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">Characters</h1>
@@ -327,8 +330,7 @@ export default function Characters() {
       </div>
 
       <div
-        className="flex-1 overflow-y-auto px-8 pb-8"
-        style={{ WebkitAppRegion: 'no-drag' } as CSSProperties}
+        className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region"
       >
         {loading ? (
           <div className="flex items-center justify-center py-28 text-night-400">

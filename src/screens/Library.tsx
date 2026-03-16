@@ -4,6 +4,8 @@ import PromptForm from '../components/PromptForm'
 import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { invalidateDashboardCache } from '../lib/cacheEvents'
+
 const PAGE_SIZE = 20
 
 type FormState =
@@ -135,6 +137,7 @@ export default function Library() {
     const result = await window.electronAPI.prompts.create(data)
     if (result.error) return result.error
     await fetchPrompts()
+    invalidateDashboardCache()
     setForm({ mode: 'closed' })
     return null
   }
@@ -146,6 +149,7 @@ export default function Library() {
     const result = await window.electronAPI.prompts.update(id, data)
     if (result.error) return result.error
     await fetchPrompts()
+    invalidateDashboardCache()
     setForm({ mode: 'closed' })
     return null
   }
@@ -156,6 +160,7 @@ export default function Library() {
       setError(result.error)
       return
     }
+    invalidateDashboardCache()
     setPrompts((prev) => prev.filter((p) => p.id !== id))
     if (form.mode === 'edit' && form.prompt.id === id) {
       setForm({ mode: 'closed' })
@@ -221,7 +226,7 @@ export default function Library() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-8 pt-8 pb-5" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex items-center justify-between px-8 pt-8 pb-5 no-drag-region">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Prompt Library</h1>
           <p className="text-sm text-night-400 mt-0.5">
@@ -235,8 +240,7 @@ export default function Library() {
       </div>
 
       <div
-        className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-night-900/40 mx-8 p-4 rounded-2xl border border-night-700/50 mb-5"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-night-900/40 mx-8 p-4 rounded-2xl border border-night-700/50 mb-5 no-drag-region"
       >
         <div className="flex flex-col sm:flex-row gap-3 flex-1 w-full">
           <div className="relative flex-1">
@@ -282,7 +286,7 @@ export default function Library() {
       </div>
 
       {showTagFilters && allTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mx-8 mb-5 p-4 bg-night-900 border border-night-700 rounded-xl" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="flex flex-wrap gap-1.5 mx-8 mb-5 p-4 bg-night-900 border border-night-700 rounded-xl no-drag-region">
           <button
             onClick={() => setSelectedTag(null)}
             className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!selectedTag ? 'bg-white/10 text-white' : 'text-night-400 hover:text-white'}`}
@@ -302,8 +306,7 @@ export default function Library() {
       )}
 
       <div
-        className="flex-1 overflow-y-auto px-8 pb-8"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+        className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region"
       >
         {error && (
           <div className="mb-4 px-4 py-3 rounded-lg bg-red-950/50 border border-red-800/50 text-red-300 text-sm">

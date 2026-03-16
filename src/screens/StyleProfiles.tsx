@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { StyleProfile, NewStyleProfile } from '../types'
+import { invalidateDashboardCache } from '../lib/cacheEvents'
 
 type ProfileFormData = Omit<NewStyleProfile, 'createdAt' | 'updatedAt'>
 type FormState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; profile: StyleProfile }
@@ -23,6 +24,7 @@ export default function StyleProfiles() {
   const handleDelete = async (id: number) => {
     await window.electronAPI.styleProfiles.delete(id)
     setProfiles((prev) => prev.filter((p) => p.id !== id))
+    invalidateDashboardCache()
   }
 
   const handleSubmit = async (data: ProfileFormData) => {
@@ -32,12 +34,13 @@ export default function StyleProfiles() {
       await window.electronAPI.styleProfiles.create(data)
     }
     await fetchProfiles()
+    invalidateDashboardCache()
     setForm({ mode: 'closed' })
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-8 pt-8 pb-5" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex items-center justify-between px-8 pt-8 pb-5 no-drag-region">
         <div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">Style Profiles</h1>
           <p className="text-sm text-night-400 mt-0.5">Reusable style presets for NightCafe</p>
@@ -48,7 +51,7 @@ export default function StyleProfiles() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 pb-8" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region">
         {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-950/50 border border-red-800/50 text-red-300 text-sm">{error}</div>}
 
         {loading ? (

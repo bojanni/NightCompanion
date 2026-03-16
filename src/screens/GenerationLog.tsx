@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { GenerationEntry, NewGenerationEntry } from '../types'
 import { Star, StarHalf } from 'lucide-react'
+import { invalidateDashboardCache } from '../lib/cacheEvents'
 
 type LogFormData = Omit<NewGenerationEntry, 'createdAt' | 'updatedAt'>
 type FormState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; entry: GenerationEntry }
@@ -53,6 +54,7 @@ export default function GenerationLog() {
   const handleDelete = async (id: number) => {
     await window.electronAPI.generationLog.delete(id)
     setEntries((prev) => prev.filter((e) => e.id !== id))
+    invalidateDashboardCache()
   }
 
   const handleSubmit = async (data: LogFormData) => {
@@ -62,12 +64,13 @@ export default function GenerationLog() {
       await window.electronAPI.generationLog.create(data)
     }
     await fetchEntries()
+    invalidateDashboardCache()
     setForm({ mode: 'closed' })
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-8 pt-8 pb-5" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex items-center justify-between px-8 pt-8 pb-5 no-drag-region">
         <div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">Generation Log</h1>
           <p className="text-sm text-night-400 mt-0.5">{entries.length} generation{entries.length !== 1 ? 's' : ''} logged</p>
@@ -82,7 +85,7 @@ export default function GenerationLog() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 pb-8" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region">
         {loading ? (
           <div className="flex items-center justify-center py-24"><div className="text-night-500 text-sm animate-pulse">Loading…</div></div>
         ) : entries.length === 0 ? (
