@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-16 (Generator pagina: Greylist verplaatst en sliders toegevoegd)
+
+- Findings: Greylist stond onderaan de Magic Random AI sectie, buiten de natuurlijke leesflow; Magic Quickstart miste een max words slider; Magic Random AI miste een creativity slider terwijl deze wel bestond voor Quickstart.
+- Conclusions: Greylist moet boven de twee kolommen staan als gedeelde instelling; beide AI-modi moeten consistent hun eigen creativity level en max words kunnen instellen.
+- Actions: Greylist verplaatst naar boven de Quickstart/Random grid in `src/screens/Generator.tsx`; max words slider toegevoegd aan Magic Quickstart card; separate `magicRandomCreativity` state toegevoegd (naast `quickStartCreativity`) met persistence; creativity slider toegevoegd aan Magic Random AI card; gevalideerd met `npm run build`.
+
 ## 2026-03-16 (ProviderConfigForm opgesplitst in modulaire componenten)
 
 - Findings: `src/screens/Settings/ProviderConfigForm.tsx` was 21KB met hardcoded OpenRouter-specifieke logica (key validatie, test verbinding, model refresh, prijs formatting) door elkaar gemengd in één monolithisch component.

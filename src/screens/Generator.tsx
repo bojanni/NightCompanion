@@ -58,6 +58,7 @@ type GeneratorPersistedState = {
   } | null
   quickStartIdea?: string
   quickStartCreativity?: CreativityLevel
+  magicRandomCreativity?: CreativityLevel
   quickStartCharacterId?: string | null
   recommendedModel?: string
   recommendedModelReason?: string
@@ -104,6 +105,7 @@ export default function Generator() {
 
   const [quickStartIdea, setQuickStartIdea] = useState('')
   const [quickStartCreativity, setQuickStartCreativity] = useState<CreativityLevel>('balanced')
+  const [magicRandomCreativity, setMagicRandomCreativity] = useState<CreativityLevel>('balanced')
   const [quickStartCharacterId, setQuickStartCharacterId] = useState<string | null>(null)
   const [quickStartCharacterList, setQuickStartCharacterList] = useState<Array<{ id: string; name: string; description: string }>>([]) 
   const [showCharacterPicker, setShowCharacterPicker] = useState(false)
@@ -366,6 +368,7 @@ export default function Generator() {
       setSupportsNegativePrompt(typeof parsed.supportsNegativePrompt === 'boolean' ? parsed.supportsNegativePrompt : null)
       setQuickStartIdea(parsed.quickStartIdea ?? '')
       setQuickStartCreativity(parsed.quickStartCreativity ?? 'balanced')
+      setMagicRandomCreativity(parsed.magicRandomCreativity ?? 'balanced')
       setQuickStartCharacterId(parsed.quickStartCharacterId ?? null)
 
       const nextPromptViewTab = parsed.promptViewTab === 'diff' && parsed.improvementDiff ? 'diff' : 'final'
@@ -389,6 +392,7 @@ export default function Generator() {
       setNegativePromptViewTab('final')
       setQuickStartIdea('')
       setQuickStartCreativity('balanced')
+      setMagicRandomCreativity('balanced')
       setQuickStartCharacterId(null)
       setModelAdviceNote(null)
     }
@@ -413,12 +417,13 @@ export default function Generator() {
         improvementDiff,
         quickStartIdea,
         quickStartCreativity,
+        magicRandomCreativity,
         quickStartCharacterId,
       } satisfies GeneratorPersistedState))
     } catch (e) {
       console.error('Failed to save generator state to localStorage:', e)
     }
-  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, quickStartCharacterId])
+  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, magicRandomCreativity, quickStartCharacterId])
 
   useEffect(() => {
     const stored = localStorage.getItem('generatorGreylist')
@@ -822,13 +827,18 @@ export default function Generator() {
 
         {tab === 'generator' ? (
           <>
+            {/* Greylist - moved above the quickstart/random grid */}
+            <div className="mt-5">
+              {greylistCard}
+            </div>
+
             <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
               {/* LEFT: Magic Quickstart card */}
               <div className="card p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
                     <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-teal-500/20">
-                      <span className="text-teal-400 text-sm">âœ¦</span>
+                      <span className="text-teal-400 text-sm">✦</span>
                     </div>
                     <div>
                       <h2 className="text-base font-semibold text-white">Magic Quickstart</h2>
@@ -950,6 +960,24 @@ export default function Generator() {
                   </div>
                 </div>
 
+                {/* Max words slider for Quickstart */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="quickstart-max-words" className="label !mb-0">Max words</label>
+                    <span className="text-xs text-night-300">{maxWords}</span>
+                  </div>
+                  <input
+                    id="quickstart-max-words"
+                    type="range"
+                    min={1}
+                    max={MAX_ALLOWED_WORDS}
+                    value={maxWords}
+                    onChange={(event) => setMaxWords(Number(event.target.value))}
+                    className="mt-2 w-full accent-teal-500"
+                  />
+                  <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
+                </div>
+
                 {quickStartStatus && (
                   <p className={`mt-3 text-xs ${quickStartStatus.startsWith('Error') ? 'text-red-400' : 'text-teal-400'}`}>
                     {quickStartStatus}
@@ -995,6 +1023,34 @@ export default function Generator() {
                     <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
                   </div>
 
+                  {/* Creativity slider for Magic Random */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-medium text-white">Creativity Level</label>
+                      <span className="rounded-md border border-night-600/50 bg-night-800 px-2 py-1 text-xs font-medium text-night-300">
+                        {magicRandomCreativity.charAt(0).toUpperCase() + magicRandomCreativity.slice(1)}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={2}
+                      step={1}
+                      aria-label="Magic Random creativity level"
+                      value={(['focused', 'balanced', 'wild'] as CreativityLevel[]).indexOf(magicRandomCreativity)}
+                      onChange={(e) => {
+                        const levels: CreativityLevel[] = ['focused', 'balanced', 'wild']
+                        setMagicRandomCreativity(levels[Number(e.target.value)])
+                      }}
+                      className="w-full accent-glow-purple"
+                    />
+                    <div className="mt-1 flex justify-between text-[11px] text-night-400">
+                      <span>Focused</span>
+                      <span>Balanced</span>
+                      <span>Wild</span>
+                    </div>
+                  </div>
+
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button onClick={handleGenerate} disabled={loading} className="btn-primary">
                       {loading ? 'Generating...' : 'Magic Random (AI)'}
@@ -1013,8 +1069,6 @@ export default function Generator() {
                   </div>
 
                 </div>
-
-                {greylistCard}
               </div>
             </div>
 
