@@ -28,15 +28,20 @@ function getNightCafePresetsCandidates() {
     path.join(app.getAppPath(), 'resources', 'presets', NIGHTCAFE_PRESETS_FILE),
     path.join(process.resourcesPath, 'presets', NIGHTCAFE_PRESETS_FILE),
     path.join(process.resourcesPath, 'resources', 'presets', NIGHTCAFE_PRESETS_FILE),
+    // Additional dev paths
+    path.join(process.cwd(), 'resources', 'presets', NIGHTCAFE_PRESETS_FILE),
   ]
 
   return [...new Set(candidates)]
 }
+
 function getNightCafePresetPromptsCandidates() {
   const candidates = NIGHTCAFE_PRESET_PROMPTS_FILES.flatMap((fileName) => ([
     path.join(app.getAppPath(), 'resources', 'presets', fileName),
     path.join(process.resourcesPath, 'presets', fileName),
     path.join(process.resourcesPath, 'resources', 'presets', fileName),
+    // Additional dev paths
+    path.join(process.cwd(), 'resources', 'presets', fileName),
   ]))
 
   return [...new Set(candidates)]
@@ -60,13 +65,19 @@ async function readNightCafeModelsCsv() {
 
 async function readNightCafePresetsCsv() {
   const candidates = getNightCafePresetsCandidates()
+  console.log('[nightcafeSync] Looking for presets CSV in:', candidates)
 
   for (const candidate of candidates) {
     try {
-      return await readFile(candidate, 'utf-8')
+      const content = await readFile(candidate, 'utf-8')
+      console.log('[nightcafeSync] Found presets CSV at:', candidate)
+      return content
     } catch (error) {
       const err = error as NodeJS.ErrnoException
-      if (err.code === 'ENOENT') continue
+      if (err.code === 'ENOENT') {
+        console.log('[nightcafeSync] Presets CSV not found at:', candidate)
+        continue
+      }
       throw error
     }
   }

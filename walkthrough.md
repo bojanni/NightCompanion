@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-16 (Generator pagina: NightCafe preset dropdowns empty fix)
+
+- Findings: De NightCafe preset dropdowns in Generator waren leeg omdat de CSV-bestanden niet gevonden werden in development mode; `app.getAppPath()` en `process.resourcesPath` werkten niet correct buiten de gecompileerde app.
+- Conclusions: Extra fallback paden nodig voor development mode met `process.cwd()`, plus betere logging om path-resolutie problemen te diagnosticeren.
+- Actions: In `electron/services/nightcafeSync.ts` extra `process.cwd()` pad toegevoegd aan `getNightCafePresetsCandidates()` en `getNightCafePresetPromptsCandidates()`; logging toegevoegd aan `readNightCafePresetsCsv()` om geprobeerde paden en gevonden bestanden te tonen; gevalideerd met `npm run build`.
+
 ## 2026-03-16 (Generator pagina: Greylist verplaatst en sliders toegevoegd)
 
 - Findings: Greylist stond onderaan de Magic Random AI sectie, buiten de natuurlijke leesflow; Magic Quickstart miste een max words slider; Magic Random AI miste een creativity slider terwijl deze wel bestond voor Quickstart.
