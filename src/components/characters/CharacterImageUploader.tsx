@@ -5,7 +5,7 @@ import type { CharacterImage } from './types'
 type CharacterImageUploaderProps = {
   formImages: CharacterImage[]
   uploading: boolean
-  fileInputRef: RefObject<HTMLInputElement | null>
+  fileInputRef: RefObject<HTMLInputElement>
   onImageUpload: (e: ChangeEvent<HTMLInputElement>) => void
   onSetMainImage: (id: string) => void
   onRemoveImage: (image: CharacterImage) => void
