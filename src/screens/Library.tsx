@@ -3,6 +3,7 @@ import type { Prompt } from '../types'
 import PromptForm from '../components/PromptForm'
 import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 import { invalidateDashboardCache } from '../lib/cacheEvents'
 import LibrarySkeleton from '../components/skeletons/LibrarySkeleton'
@@ -49,6 +50,7 @@ export default function Library() {
   const [lightboxImage, setLightboxImage] = useState<LightboxItem | null>(null)
   const [lightboxVisible, setLightboxVisible] = useState(false)
   const [lightboxOverlayVisible, setLightboxOverlayVisible] = useState(true)
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; promptId: number | null }>({ isOpen: false, promptId: null })
 
   const openLightbox = useCallback((image: LightboxItem) => {
     setLightboxImage(image)
@@ -383,16 +385,7 @@ export default function Library() {
                             <Edit3 size={14} />
                           </button>
                           <button
-                            onClick={async () => {
-                              const result = await window.electronAPI.dialog.showMessageBox({
-                                type: 'warning',
-                                title: 'Prompt Verwijderen',
-                                message: 'Weet u zeker dat u deze prompt wilt verwijderen?',
-                                buttons: ['Annuleren', 'Verwijderen']
-                              })
-                              if (result.response !== 1) return // 1 is the second button (Verwijderen)
-                              await handleDelete(prompt.id)
-                            }}
+                            onClick={() => setDeleteDialog({ isOpen: true, promptId: prompt.id })}
                             className="p-1.5 hover:bg-red-900/20 text-night-500 hover:text-red-400 rounded-lg transition-colors"
                             title="Delete"
                           >
@@ -600,6 +593,21 @@ export default function Library() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title="Prompt Verwijderen"
+        message="Weet u zeker dat u deze prompt wilt verwijderen?"
+        confirmLabel="Verwijderen"
+        cancelLabel="Annuleren"
+        type="warning"
+        onConfirm={async () => {
+          if (deleteDialog.promptId) {
+            await handleDelete(deleteDialog.promptId)
+          }
+          setDeleteDialog({ isOpen: false, promptId: null })
+        }}
+        onCancel={() => setDeleteDialog({ isOpen: false, promptId: null })}
+      />
     </div>
   )
 }

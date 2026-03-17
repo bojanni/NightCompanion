@@ -27,16 +27,5 @@ export default tseslint.config(
     },
     settings: { react: { version: 'detect' } },
   },
-  { 
-  ignores: [
-    'dist/**',
-    'build/**', 
-    'node_modules/**',
-    '.config/**',
-    'coverage/**',
-    '**/*.config.js',
-    '**/*.config.ts',
-    '**/tsconfig.*.json'
-  ] 
-}
+  { ignores: ['dist/', 'build/', 'node_modules/'] }
 );
