@@ -699,6 +699,24 @@ export default function Generator() {
       return
     }
 
+    // Check for duplicates
+    const existingPromptsResult = await window.electronAPI.prompts.list()
+    if (existingPromptsResult.error || !existingPromptsResult.data) {
+      setStatus('Error: Failed to check for duplicates.')
+      return
+    }
+
+    const duplicate = existingPromptsResult.data.find(
+      prompt => 
+        prompt.promptText.trim() === generatedPrompt.trim() && 
+        prompt.title.trim() === savedTitle.trim()
+    )
+
+    if (duplicate) {
+      setStatus('Error: A prompt with this title and content already exists in your library.')
+      return
+    }
+
     const result = await window.electronAPI.prompts.create({
       title: savedTitle.trim(),
       promptText: generatedPrompt,
