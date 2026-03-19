@@ -1,0 +1,157 @@
+# ⚠️ Archivo generado automáticamente
+# Fuente: Ai_Rules.md
+# Fecha: 2026-03-19 09:53:19
+# No editar directamente - los cambios se sobrescribirán
+# 
+# Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
+# "AI Rules: Sincronizar todas las reglas"
+
+---
+
+# 🤖 AI Rules - Source of Truth
+
+This file is the **single source of truth** for all AI rules in this project.
+
+Changes here are automatically synchronized to:
+- Cursor (.cursorrules)
+- GitHub Copilot (.github/copilot-instructions.md)
+- Windsurf (.windsurfrules)
+- Cline (.clinerules)
+- Aider (.aider.conf.yml)
+- Claude (CLAUDE.md)
+- Generic agents (agents.md)
+
+## 📋 General Rules
+
+# NightCompanion 
+
+## General
+- Always run `npm run build` to validate before marking a task complete.
+- Always update `walkthrough.md` after every meaningful change (format below).
+- Update `nightcompanion.md` when user-facing functionality changes.
+- Never install a new dependency without checking if an existing one covers the need.
+
+## Project Structure
+- Screens → `src/screens/`
+- Shared components → `src/components/`
+- Hooks → `src/hooks/`
+- Renderer types → `src/types/index.ts`
+- Electron bridge types → `src/types/electron.d.ts`
+- IPC handlers → `electron/ipc/<domain>.ts`
+- Electron services → `electron/services/`
+- Preload bridge → `electron/preload.ts`
+- DB schema → `src/lib/schema.ts`
+- Migrations → `drizzle/<number>_<name>.sql` + register in `drizzle/meta/_journal.json`
+
+## IPC Rules
+- Channel naming: `domain:action` — e.g. `prompts:list`, `settings:saveOpenRouter`.
+- Every IPC domain has its own file: `electron/ipc/<domain>.ts`.
+- Each file exports one `register<Domain>Ipc({ db, ... })` function.
+- Register handlers only via `electron/services/ipcRegistry.ts` — never directly in `main.ts`.
+- All handlers return `{ data }` on success or `{ error: String(error) }` on failure — never throw.
+- When adding a new IPC channel, always complete ALL 5 steps:
+  1. Implement handler in `electron/ipc/<domain>.ts`
+  2. Register in `electron/services/ipcRegistry.ts`
+  3. Expose in `electron/preload.ts`
+  4. Add types in `src/types/electron.d.ts`
+  5. Call via `window.electronAPI.<domain>.<action>()` in renderer
+
+## Database Rules
+- All tables defined in `src/lib/schema.ts` using Drizzle ORM.
+- Use `jsonb(...).$type<T>().default([]).notNull()` for JSON arrays — never `text`.
+- Use `uuid('id').defaultRandom().primaryKey()` for UUID primary keys.
+- Always add `createdAt` and `updatedAt` to new tables.
+- Every schema change needs a new migration SQL file + journal registration.
+- Never modify existing migrations — only add new ones.
+- Always use `.returning()` on insert/update so renderer gets fresh data.
+- Default sort: `desc(table.createdAt)`.
+
+## Storage Rules
+- Never use `localStorage` for persistent data — always use Electron IPC to `settings.json` or DB.
+- Images are stored via `electron/services/storagePaths.ts` (`resolveNightCompanionSubdir`).
+- Default path: `%LocalAppData%\NightCompanion\` (user-configurable via Settings).
+- Only delete files within validated managed roots using `isPathWithin`.
+- Store images as files with `file://` URLs — never as base64 in the database.
+
+## TypeScript Rules
+- Always use explicit types — no `any`.
+- Use `type` not `interface` for object shapes.
+- Use `ReturnType<typeof drizzle<typeof schema>>` as `Database` type in IPC files.
+- Use `void` operator for fire-and-forget async: `void handleAction()`.
+- Never use `!` non-null assertions — validate explicitly instead.
+
+## React & UI Rules
+- Never use `<form>` elements — use `onClick`/`onChange` handlers.
+- Never use inline `style={{}}` — use Tailwind classes or `src/index.css` component classes.
+- Never use arbitrary hex colors or pixel values outside `tailwind.config.js`.
+- Use only design tokens from `tailwind.config.js`:
+  - Backgrounds: `bg-night-950` to `bg-night-700`
+  - Text: `text-night-100` to `text-night-400`
+  - Accents: `glow-purple`, `glow-blue`, `glow-cyan`, `glow-pink`, `glow-soft`
+  - Shadows: `shadow-glow`, `shadow-glow-sm`
+  - Gradients: `bg-gradient-card`, `bg-gradient-sidebar`, `bg-gradient-night`
+- Use existing component classes: `.btn`, `.btn-primary`, `.btn-ghost`, `.btn-danger`, `.input`, `.textarea`, `.label`, `.card`, `.tag`
+- Load data in `useEffect` via IPC — store in local component state.
+- New screens: register in `src/types/index.ts`, add to `Sidebar.tsx` NAV_ITEMS, route in `src/App.tsx`.
+
+## Error Handling
+- Renderer always checks `result.error` before using `result.data`.
+- Use `sonner` toasts: `toast.success`, `toast.error`, `toast.warning`.
+- Never remove `ErrorBoundary` from `src/main.tsx`.
+
+## AI Prompts
+- All AI instruction constants live in `electron/ipc/ai.ts` — never in the renderer.
+- All AI output uses English (UK) spelling: colour, centre, maximise.
+- AI routes always return plain text — no markdown unless explicitly required.
+
+## Walkthrough Format
+After every significant change, add to `walkthrough.md`:
+```
+## YYYY-MM-DD (Short title)
+
+- Findings: [What was the problem or trigger?]
+- Conclusions: [Why this approach?]
+- Actions: [Which files changed and what exactly?]; validated with `npm run build`.
+```
+
+## Never Do This
+- `localStorage` for settings or images
+- Raw `JSON.parse` of settings without normalization (`normalizeStoredSettings`)
+- Write IPC logic directly in `electron/main.ts`
+- Use `interface` instead of `type`
+- Use `<form>` elements
+- Use `any` as a type
+- Modify existing migration files
+- Skip steps when wiring a new IPC channel
+
+
+## 💡 AI Preferences
+
+- Explain the reasoning behind suggestions
+- Prioritize clean and maintainable code over premature optimization
+- Suggest best practices and design patterns when relevant
+- Detect and warn about potential bugs or security issues
+
+## 📝 Tools
+
+## Context7
+
+1. Always use Context7 tool before starting to code.
+2. Use the Context7 tool to understand the context of the code you are working on, including any relevant documentation, comments, and code structure.
+3. If you have any questions or need clarification, refer to the Context7 tool for additional information before proceeding with your coding tasks.
+4. Ensure that you are following the guidelines and best practices outlined in the Context7 tool to maintain consistency and quality in your code.
+5. Regularly check the Context7 tool for updates or changes that may affect your coding work, and adjust your approach accordingly.
+6. Use the Context7 tool to review your code before finalizing it, ensuring that it aligns with the project's standards and requirements as outlined in the tool.
+
+## Memory
+
+- When asked to remember something, use all abailable momery options to remember it.
+- When asked to recall something,  use all abailable momery options to recall it.
+- When asked to forget something, use all abailable momery options to forget it.
+- Provide a summary of what was remembered, recalled, or forgotten.
+- Proactively use memory tools to maintain context across sessions.
+- Proactively store important information in memory to avoid repetition.
+
+---
+
+✨ **Tip**: Sync these changes by running "AI Rules: Sync All Rules" from the command palette.

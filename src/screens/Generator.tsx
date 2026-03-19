@@ -2,6 +2,7 @@
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
 import PromptPreview from '../components/PromptPreview'
+import { PageContainer } from '../components/PageContainer'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
 const DEFAULT_TITLE_MAX_LENGTH = 140
@@ -24,6 +25,7 @@ const GREYLIST_SUGGESTIONS = [
 type PresetOption = {
   presetName: string
   category: string
+  presetPrompt?: string
 }
 
 type NightcafeModelCardMeta = {
@@ -62,8 +64,8 @@ type GeneratorPersistedState = {
   quickStartCharacterId?: string | null
   recommendedModel?: string
   recommendedModelReason?: string
-  recommendedModelMode?: 'rule' | 'ai'
-  supportsNegativePrompt?: boolean
+  recommendedModelMode?: 'rule' | 'ai' | null
+  supportsNegativePrompt?: boolean | null
 }
 
 function buildDefaultTitle(value: string) {
@@ -113,7 +115,7 @@ export default function Generator() {
   const [quickStartStatus, setQuickStartStatus] = useState<string | null>(null)
   const [advisingAi, setAdvisingAi] = useState(false)
 
-  const selectedPresetPrompt = presetOptions.find((preset) => preset.presetName === selectedPreset)?.presetPrompt.trim() || ''
+  const selectedPresetPrompt = presetOptions.find((preset) => preset.presetName === selectedPreset)?.presetPrompt?.trim() || ''
   const selectedPresetContext = selectedPresetPrompt
     ? `${selectedPreset}. Preset prompt guidance: ${selectedPresetPrompt}`
     : selectedPreset
@@ -829,7 +831,7 @@ export default function Generator() {
 
   return (
     <div className="no-drag-region h-full overflow-y-auto px-8 pt-8 pb-10">
-      <div className="max-w-4xl">
+      <PageContainer>
         <h1 className="text-2xl font-semibold text-white tracking-tight">Generator</h1>
         <p className="text-sm text-night-400 mt-1">Generate prompts with AI or build them modularly in one place.</p>
 
@@ -1331,7 +1333,7 @@ export default function Generator() {
             </div>
           </>
         )}
-      </div>
+      </PageContainer>
     </div>
   )
 }

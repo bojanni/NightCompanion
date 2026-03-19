@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { FolderOpen, RefreshCw, Settings as SettingsIcon } from 'lucide-react'
 
+import { PageContainer } from '../components/PageContainer'
+
 type HfSyncInfo = {
   lastSyncedAt: string | Date | null
   total: number
@@ -157,7 +159,7 @@ export default function Settings() {
 
   return (
     <div className="no-drag-region h-full overflow-y-auto px-8 pt-8 pb-10">
-      <div className="max-w-3xl space-y-6">
+      <PageContainer className="space-y-6">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <SettingsIcon className="w-6 h-6 text-white" />
@@ -291,7 +293,7 @@ export default function Settings() {
             )}
           </div>
         </section>
-      </div>
+      </PageContainer>
     </div>
   )
 }

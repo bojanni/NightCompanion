@@ -6,6 +6,12 @@
 - Conclusions: Migration should be idempotent on fresh installs by creating the table if missing, while still safely adding columns/indexes for existing installs.
 - Actions: Updated `drizzle/0018_greylist_table.sql` to `CREATE TABLE IF NOT EXISTS greylist (...)` before applying `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` and indexes; validated with `npm run build`.
 
+## 2026-03-19 (Center layouts with PageContainer)
+
+- Findings: Several screens needed to be centered with a fixed 1000px content width on viewports >= 1000px, while Dashboard/Home, Library, and Characters should remain full width. Previous ad-hoc changes caused JSX/syntax issues.
+- Conclusions: A small reusable layout wrapper keeps styling consistent and prevents JSX wrapper drift.
+- Actions: Added `src/components/PageContainer.tsx` and refactored centered screens (`src/screens/Settings.tsx`, `src/screens/Generator.tsx`, `src/screens/StyleProfiles.tsx`, `src/screens/GenerationLog.tsx`, `src/screens/AIConfig.tsx`) to use it; kept `src/screens/Dashboard.tsx`, `src/screens/Library.tsx`, and `src/screens/Characters.tsx` full width; validated with `npm run build`.
+
 ## 2026-03-17 (Greylist database persistence)
 
 - Findings: Greylist words were only stored in localStorage, making them non-permanent across app reinstalls and devices.

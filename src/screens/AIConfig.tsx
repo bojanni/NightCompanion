@@ -566,41 +566,43 @@ export function AIConfig() {
 
   return (
     <div className="no-drag-region h-full overflow-y-auto px-8 pt-8 pb-10">
-      {view === 'dashboard' ? (
-        <Dashboard
-          activeGen={activeGen}
-          activeImprove={activeImprove}
-          activeVision={activeVision}
-          activeResearch={activeResearch}
-          onConfigure={() => setView('wizard')}
-          configuredCount={configuredCount}
-          keys={keys}
-          localEndpoints={localEndpoints}
-          dynamicModels={dynamicModels}
-          setDynamicModels={setDynamicModels}
-          onRefreshData={refreshData}
-          getToken={getToken}
-          providerOptions={providerOptions}
-          modelsByProvider={modelsByProvider}
-          roleRouting={roleRouting}
-          onChangeRoleRouting={updateRoleRouting}
-        />
-      ) : (
-        <ConfigurationWizard
-          keys={keys}
-          localEndpoints={localEndpoints}
-          onBack={() => setView('dashboard')}
-          onComplete={() => {
-            void refreshData()
-            setView('dashboard')
-          }}
-          loadKeys={loadKeys}
-          loadLocalEndpoints={loadLocalEndpoints}
-          getToken={getToken}
-          dynamicModels={dynamicModels}
-          setDynamicModels={setDynamicModels}
-        />
-      )}
+      <div className="w-full min-[1000px]:w-[1000px] min-[1000px]:mx-auto">
+        {view === 'dashboard' ? (
+          <Dashboard
+            activeGen={activeGen}
+            activeImprove={activeImprove}
+            activeVision={activeVision}
+            activeResearch={activeResearch}
+            onConfigure={() => setView('wizard')}
+            configuredCount={configuredCount}
+            keys={keys}
+            localEndpoints={localEndpoints}
+            dynamicModels={dynamicModels}
+            setDynamicModels={setDynamicModels}
+            onRefreshData={refreshData}
+            getToken={getToken}
+            providerOptions={providerOptions}
+            modelsByProvider={modelsByProvider}
+            roleRouting={roleRouting}
+            onChangeRoleRouting={updateRoleRouting}
+          />
+        ) : (
+          <ConfigurationWizard
+            keys={keys}
+            localEndpoints={localEndpoints}
+            onBack={() => setView('dashboard')}
+            onComplete={() => {
+              void refreshData()
+              setView('dashboard')
+            }}
+            loadKeys={loadKeys}
+            loadLocalEndpoints={loadLocalEndpoints}
+            getToken={getToken}
+            dynamicModels={dynamicModels}
+            setDynamicModels={setDynamicModels}
+          />
+        )}
+      </div>
     </div>
   )
 }
