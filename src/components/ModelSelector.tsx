@@ -25,7 +25,7 @@ function formatPerMillion(priceText: string | null | undefined): string | null {
 
   const parsed = Number(priceText)
   if (!Number.isFinite(parsed)) return null
-  if (parsed < 0) return null
+  if (parsed < 0) return '$0.00'
 
   const perMillion = parsed * 1_000_000
   if (perMillion === 0) return '$0.00'
@@ -33,14 +33,20 @@ function formatPerMillion(priceText: string | null | undefined): string | null {
   return `$${perMillion.toFixed(2)}`
 }
 
-function buildComputedPriceLabel(model: Pick<ModelOption, 'promptPrice' | 'completionPrice' | 'priceLabel'>): string {
+function buildComputedPriceLabel(model: Pick<ModelOption, 'promptPrice' | 'completionPrice'>): string {
   const promptPerMillion = formatPerMillion(model.promptPrice)
   const completionPerMillion = formatPerMillion(model.completionPrice)
 
   if (promptPerMillion && completionPerMillion)
     return `${promptPerMillion}/${completionPerMillion}`
 
-  return model.priceLabel || ''
+  return ''
+}
+
+function isFreeModel(model: Pick<ModelOption, 'promptPrice' | 'completionPrice'>): boolean {
+  const promptPerMillion = formatPerMillion(model.promptPrice)
+  const completionPerMillion = formatPerMillion(model.completionPrice)
+  return Boolean(promptPerMillion && completionPerMillion && promptPerMillion === '$0.00' && completionPerMillion === '$0.00')
 }
 
 function getCombinedPrice(model: Pick<ModelOption, 'promptPrice' | 'completionPrice'>): number {
@@ -196,7 +202,9 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
   )
 
   const selectedModelName = selectedModel?.displayName || selectedModel?.name || selectedModel?.label || selectedModel?.id || ''
-  const selectedPriceLabel = selectedModel ? buildComputedPriceLabel(selectedModel) : ''
+  const selectedPriceLabel = selectedModel
+    ? (isFreeModel(selectedModel) ? 'Free' : buildComputedPriceLabel(selectedModel))
+    : ''
   const selectedProviderName = getProviderDisplayName(selectedModel?.provider)
 
   // Auto-focus the search input when dropdown opens
@@ -337,13 +345,13 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
             ) : (
               filteredModels.map((model, index) => {
                 const modelName = model.displayName || model.name || model.label || model.id
-                const priceLabel = buildComputedPriceLabel(model)
                 const providerName = getProviderDisplayName(model.provider)
                 const description = model.description?.trim() || ''
                 const capabilityTags = model.capabilities ?? []
                 const capabilityChips = getCapabilityChips(capabilityTags)
                 const promptPerMillion = formatPerMillion(model.promptPrice)
                 const completionPerMillion = formatPerMillion(model.completionPrice)
+                const isFree = isFreeModel(model)
                 const isHighlighted = index === highlightedIndex
                 const isSelected = model.id === value
 
@@ -363,8 +371,8 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
                   >
                     <div className="flex gap-3">
                       <div className="w-16 shrink-0 text-[11px] text-slate-400 leading-5 pt-1">
-                        <div>In: <span className="text-cyan-300">{promptPerMillion || '—'}</span></div>
-                        <div>Out: <span className="text-cyan-300">{completionPerMillion || '—'}</span></div>
+                        <div>In: <span className="text-cyan-300">{isFree ? 'Free' : (promptPerMillion || '—')}</span></div>
+                        <div>Out: <span className="text-cyan-300">{isFree ? 'Free' : (completionPerMillion || '—')}</span></div>
                       </div>
 
                       <div className="min-w-0 flex-1 border-l border-slate-700 pl-3">
@@ -372,7 +380,7 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
                           <span className={`text-sm font-semibold ${isSelected ? 'text-white' : 'text-slate-100'} truncate`}>
                             {modelName}
                           </span>
-                          {priceLabel && <span className="text-[11px] text-teal-300 shrink-0">{priceLabel}</span>}
+                          {isFree && <span className="text-[11px] text-teal-300 shrink-0">Free</span>}
                         </div>
 
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">

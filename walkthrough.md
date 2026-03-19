@@ -22,7 +22,7 @@
 
 - Findings: Model dropdown entries did not clearly show which capabilities (Text/Vision/Reasoning/Web search/Code/Audio/Video) each model supports.
 - Conclusions: Surface capabilities as compact icon+label chips in `ModelSelector` so users can choose the right model at a glance.
-- Actions: Updated `src/components/ModelSelector.tsx` to render normalised capability chips with icons; added `.line-clamp-2` utility class in `src/index.css` to avoid inline styles; fixed OpenRouter price formatting to ignore negative sentinel values; validated with `npm run build`.
+- Actions: Updated `src/components/ModelSelector.tsx` to render normalised capability chips with icons; added `.line-clamp-2` utility class in `src/index.css` to avoid inline styles; removed redundant right-side price labels and display `Free` for models with zero/negative pricing; validated with `npm run build`.
 
 ## 2026-03-17 (Greylist database persistence)
 
