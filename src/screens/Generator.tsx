@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
+import { User, Sparkles } from 'lucide-react'
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
 import PromptPreview from '../components/PromptPreview'
@@ -818,14 +819,14 @@ export default function Generator() {
   const showNegativePromptControls = supportsNegativePrompt !== false
 
   const formatCompactNumber = (value: number | null | undefined) => {
-    if (!Number.isFinite(value as number)) return 'â€”'
+    if (!Number.isFinite(value as number)) return '-'
     return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value as number)
   }
 
   const formatDate = (value: string | Date | null | undefined) => {
-    if (!value) return 'â€”'
+    if (!value) return '-'
     const parsed = typeof value === 'string' ? new Date(value) : value
-    if (Number.isNaN(parsed.getTime())) return 'â€”'
+    if (Number.isNaN(parsed.getTime())) return '-'
     return parsed.toLocaleDateString()
   }
 
@@ -873,7 +874,7 @@ export default function Generator() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
                     <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-teal-500/20">
-                      <span className="text-teal-400 text-sm">✦</span>
+                      <Sparkles className="w-4 h-4 text-teal-400" />
                     </div>
                     <div>
                       <h2 className="text-base font-semibold text-white">Magic Quickstart</h2>
@@ -888,7 +889,7 @@ export default function Generator() {
                       onClick={() => setShowCharacterPicker((v) => !v)}
                       className={`btn-ghost border text-xs flex items-center gap-1.5 ${quickStartCharacterId ? 'border-teal-500/60 text-teal-300' : 'border-night-600/50'}`}
                     >
-                      â˜º{' '}
+                      <User className="w-3.5 h-3.5" />
                       {quickStartCharacterId
                         ? (quickStartCharacterList.find((c) => c.id === quickStartCharacterId)?.name ?? 'Character')
                         : 'Add Character'}

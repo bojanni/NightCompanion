@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-21 (Fix garbled UTF-8 characters in Generator UI)
+
+- Findings: UI showed garbled characters like `â¯º` instead of proper icons due to UTF-8 emoji/special characters being misinterpreted.
+- Conclusions: Replace Unicode emoji characters with Lucide icons to eliminate encoding issues entirely.
+- Actions: Replaced `☺` smiley with `<User>` icon and `✦` star with `<Sparkles>` icon in `src/screens/Generator.tsx`; replaced em-dash `—` with simple dash `-`; added imports for `User` and `Sparkles` from `lucide-react`; validated with `npm run build`.
+
 ## 2026-03-19 (Fix greylist migration for fresh DB)
 
 - Findings: Startup database check failed with `PostgresError: relation "greylist" does not exist` because migration `drizzle/0018_greylist_table.sql` only used `ALTER TABLE greylist ...`, which breaks on databases where the table was never created.
