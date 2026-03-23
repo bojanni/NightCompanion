@@ -67,6 +67,8 @@ type GeneratorPersistedState = {
   recommendedModel?: string
   recommendedModelReason?: string
   recommendedModelMode?: 'rule' | 'ai' | null
+  advisorBestValue?: string
+  advisorFastest?: string
   supportsNegativePrompt?: boolean | null
   budgetMode?: BudgetMode
 }
@@ -100,6 +102,8 @@ export default function Generator() {
   const [recommendedModel, setRecommendedModel] = useState('')
   const [recommendedModelReason, setRecommendedModelReason] = useState('')
   const [recommendedModelMode, setRecommendedModelMode] = useState<'rule' | 'ai' | null>(null)
+  const [advisorBestValue, setAdvisorBestValue] = useState('')
+  const [advisorFastest, setAdvisorFastest] = useState('')
   const [recommendedModelMeta, setRecommendedModelMeta] = useState<NightcafeModelCardMeta | null>(null)
   const [supportsNegativePrompt, setSupportsNegativePrompt] = useState<boolean | null>(null)
   const [modelAdviceBusy, setModelAdviceBusy] = useState(false)
@@ -247,6 +251,8 @@ export default function Generator() {
       setRecommendedModel(result.data.recommendation.modelName)
       setRecommendedModelReason(result.data.recommendation.explanation || '')
       setRecommendedModelMode(mode)
+      setAdvisorBestValue(result.data.bestValue?.modelName || '')
+      setAdvisorFastest(result.data.fastest?.modelName || '')
       await fetchModelSupport(result.data.recommendation.modelName)
       setModelAdviceNote(`${sourceLabel}: ${mode === 'rule' ? 'rule-based' : 'AI'} modeladvies bijgewerkt.`)
     } catch (error) {
@@ -289,6 +295,8 @@ export default function Generator() {
     setRecommendedModel('')
     setRecommendedModelReason('')
     setRecommendedModelMode(null)
+    setAdvisorBestValue('')
+    setAdvisorFastest('')
     setSupportsNegativePrompt(null)
     setModelAdviceNote(null)
     setQuickStartIdea('')
@@ -372,6 +380,8 @@ export default function Generator() {
       setRecommendedModel(parsed.recommendedModel ?? '')
       setRecommendedModelReason(parsed.recommendedModelReason ?? '')
       setRecommendedModelMode(parsed.recommendedModelMode ?? null)
+      setAdvisorBestValue(parsed.advisorBestValue ?? '')
+      setAdvisorFastest(parsed.advisorFastest ?? '')
       setSupportsNegativePrompt(typeof parsed.supportsNegativePrompt === 'boolean' ? parsed.supportsNegativePrompt : null)
       setQuickStartIdea(parsed.quickStartIdea ?? '')
       setQuickStartCreativity(parsed.quickStartCreativity ?? 'balanced')
@@ -393,6 +403,8 @@ export default function Generator() {
       setRecommendedModel('')
       setRecommendedModelReason('')
       setRecommendedModelMode(null)
+      setAdvisorBestValue('')
+      setAdvisorFastest('')
       setSupportsNegativePrompt(null)
       setImprovementDiff(null)
       setNegativeImprovementDiff(null)
@@ -421,6 +433,8 @@ export default function Generator() {
         recommendedModel,
         recommendedModelReason,
         recommendedModelMode,
+        advisorBestValue,
+        advisorFastest,
         supportsNegativePrompt,
         promptViewTab,
         improvementDiff,
@@ -433,7 +447,7 @@ export default function Generator() {
     } catch (e) {
       console.error('Failed to save generator state to localStorage:', e)
     }
-  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, magicRandomCreativity, quickStartCharacterId, budgetMode])
+  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, advisorBestValue, advisorFastest, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, magicRandomCreativity, quickStartCharacterId, budgetMode])
 
   useEffect(() => {
     let ignore = false
@@ -1285,8 +1299,28 @@ export default function Generator() {
                   ))}
                 </div>
 
-                <p className="mt-3 text-2xl font-semibold text-white flex items-center gap-2">{recommendedModel || <Minus className="w-6 h-6 text-night-500" />}</p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-sm text-night-400">Beste kwaliteit</span>
+                  <span className="text-2xl font-semibold text-white flex items-center gap-2">{recommendedModel || <Minus className="w-6 h-6 text-night-500" />}</span>
+                </div>
                 <p className="mt-1 text-sm text-night-300">{recommendedModelReason || 'Nog geen modeladvies beschikbaar. Genereer eerst een prompt.'}</p>
+
+                {(advisorBestValue || advisorFastest) && (
+                  <div className="mt-3 space-y-1.5">
+                    {advisorBestValue && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-night-400">Beste prijs-kwaliteit</span>
+                        <span className="text-night-200 font-medium">{advisorBestValue}</span>
+                      </div>
+                    )}
+                    {advisorFastest && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-night-400">Snelste optie</span>
+                        <span className="text-night-200 font-medium">{advisorFastest}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="mt-3 flex items-center justify-between text-sm text-night-400">
                   <p>{recommendedModelMode === 'ai' ? 'AI-based advice' : recommendedModelMode === 'rule' ? 'Rule-based advice' : 'No advice yet'}</p>

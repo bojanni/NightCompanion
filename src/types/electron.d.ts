@@ -91,6 +91,8 @@ type ModelAdvisorResult = {
   recommendation: ModelAdvisorRecommendation
   alternatives: ModelAdvisorRecommendation[]
   matchedSignals: string[]
+  bestValue?: ModelAdvisorRecommendation
+  fastest?: ModelAdvisorRecommendation
 }
 type CharacterImage = { id: string; url: string; isMain: boolean; createdAt: string }
 type CharacterDetail = { id: string; detail: string; category: string; worksWell: boolean }

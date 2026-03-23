@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-23 (Three contextual model suggestions in Generator)
+
+- Findings: Suggested Model kaart toonde alleen één hoofdaanbeveling, terwijl de rule-based scoringlijst al genoeg data bevatte voor extra contextuele suggesties.
+- Conclusions: Voeg twee aanvullende aanbevelingen toe (`bestValue`, `fastest`) zonder de bestaande hoofdaanbeveling te vervangen; AI-modus blijft ongewijzigd.
+- Actions: Uitgebreid `AdvisorResult` met optionele `bestValue` en `fastest` in `electron/ipc/ai.ts`; toegevoegd: `ScoredAdvisorModel`, `findBestValue` (budget-aware cost-tier filter) en `findFastest` (modelnaam-hints: turbo/lightning/lite/schnell/fast/quick/speed), plus deduplicatie t.o.v. hoofdaanbeveling; `ModelAdvisorResult` geüpdatet in `src/types/electron.d.ts`; in `src/screens/Generator.tsx` nieuwe state `advisorBestValue`/`advisorFastest` toegevoegd met localStorage hydration/persist/reset en compacte UI-rijen onder de hoofdaanbeveling in Suggested Model kaart; gevalideerd met `npm run build`.
+
 ## 2026-03-23 (Budget mode for NightCafe Model Advisor)
 
 - Findings: The rule-based model advisor used keyword-matching (COST_SENSITIVE_HINTS) on prompt text to detect cost sensitivity. Users never type "cheap" in creative prompts, making this detection useless.

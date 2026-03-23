@@ -79,6 +79,36 @@ type AdvisorResult = {
   recommendation: AdvisorRecommendation
   alternatives: AdvisorRecommendation[]
   matchedSignals: string[]
+  bestValue?: AdvisorRecommendation
+  fastest?: AdvisorRecommendation
+}
+
+type ScoredAdvisorModel = {
+  model: AdvisorModelRecord
+  finalScore: number
+  detail: {
+    art: number
+    realism: number
+    typography: number
+    prompting: number
+    costTier: number
+  }
+}
+
+function findBestValue(scored: ScoredAdvisorModel[], budgetMode: BudgetMode): ScoredAdvisorModel | null {
+  if (budgetMode === 'premium') return null
+
+  const maxCostTier = budgetMode === 'cheap' ? 2 : 3
+  return scored.find((entry) => entry.detail.costTier <= maxCostTier) ?? null
+}
+
+function isFastModelName(modelName: string): boolean {
+  const normalizedName = modelName.trim().toLowerCase()
+  return FAST_MODEL_HINTS.some((hint) => normalizedName.includes(hint))
+}
+
+function findFastest(scored: ScoredAdvisorModel[]): ScoredAdvisorModel | null {
+  return scored.find((entry) => isFastModelName(entry.model.modelName)) ?? null
 }
 
 const REALISM_HINTS = [
@@ -95,6 +125,8 @@ const ART_HINTS = [
   'illustration', 'digital art', 'concept art', 'painting', 'anime', 'fantasy', 'surreal',
   'watercolour', 'watercolor', 'oil painting', 'stylized', 'stylised', 'line art', 'comic',
 ]
+
+const FAST_MODEL_HINTS = ['turbo', 'lightning', 'lite', 'schnell', 'fast', 'quick', 'speed']
 
 type BudgetMode = 'cheap' | 'balanced' | 'premium'
 
@@ -153,7 +185,7 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
     prompting: 0.1,
   })
 
-  const scored = models
+  const scored: ScoredAdvisorModel[] = models
     .filter((model) => model.mediaType === 'image')
     .map((model) => {
       const art = parseScore(model.artScore)
@@ -204,6 +236,33 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
     }
   }
 
+  const bestValueCandidate = findBestValue(scored, budgetMode)
+  const bestValue = bestValueCandidate && bestValueCandidate.model.modelName !== best.model.modelName
+    ? {
+      modelName: bestValueCandidate.model.modelName,
+      explanation: `Best value under current budget mode (${budgetMode}) with strong fit score and cost tier ${bestValueCandidate.detail.costTier}.`,
+    }
+    : undefined
+
+  const excludedModelNames = new Set<string>([
+    best.model.modelName,
+    ...(bestValue ? [bestValue.modelName] : []),
+  ])
+  const fastestCandidate = findFastest(scored)
+  const fastestFallback = scored.find((entry) =>
+    isFastModelName(entry.model.modelName) && !excludedModelNames.has(entry.model.modelName),
+  )
+  const fastestSelection = fastestCandidate && !excludedModelNames.has(fastestCandidate.model.modelName)
+    ? fastestCandidate
+    : fastestFallback
+
+  const fastest = fastestSelection
+    ? {
+      modelName: fastestSelection.model.modelName,
+      explanation: `Fastest-oriented option based on model family hints and overall fit score (cost tier ${fastestSelection.detail.costTier}).`,
+    }
+    : undefined
+
   return {
     mode: 'rule',
     recommendation: {
@@ -215,6 +274,8 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
       explanation: `Strong alternative with balanced fit (art ${entry.detail.art.toFixed(1)}, realism ${entry.detail.realism.toFixed(1)}, typography ${entry.detail.typography.toFixed(1)}).`,
     })),
     matchedSignals,
+    bestValue,
+    fastest,
   }
 }
 
