@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-24 (Magic Random controls aligned with Quickstart)
+
+- Findings: In de Generator stonden in Magic Random de actieknoppen in een andere volgorde dan gewenst (primary niet rechts) en de volgorde van sliders was omgekeerd t.o.v. Magic Quickstart.
+- Conclusions: Voor consistente UX moet de primaire actieknop visueel rechtsonder staan en moet Magic Random dezelfde control-volgorde volgen als Quickstart (Creativity boven Max words).
+- Actions: In `src/screens/Generator.tsx` de knopvolgorde in Magic Random aangepast naar `Copy Prompt` → `Clear all` → `Magic Random (AI)` zodat de primaire knop rechts eindigt; sliderblokken omgewisseld naar eerst `Creativity Level`, daarna `Max words`; gevalideerd met `npm run build`.
+
 ## 2026-03-24 (Generator cards aligned for Quickstart and Magic Random)
 
 - Findings: Magic Random blok miste een consistente titel/header zoals Magic Quickstart, knoppen stonden niet op dezelfde plek en de twee kaarten hadden ongelijke visuele hoogte.

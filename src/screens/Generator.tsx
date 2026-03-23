@@ -1124,23 +1124,6 @@ export default function Generator() {
                 </div>
 
                 <div className="mt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <label htmlFor="generator-max-words" className="label !mb-0">Max words</label>
-                    <span className="text-xs text-night-300">{maxWords}</span>
-                  </div>
-                  <input
-                    id="generator-max-words"
-                    type="range"
-                    min={1}
-                    max={MAX_ALLOWED_WORDS}
-                    value={maxWords}
-                    onChange={(event) => setMaxWords(Number(event.target.value))}
-                    className="mt-2 w-full accent-glow-purple"
-                  />
-                  <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
-                </div>
-
-                <div className="mt-4">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-white">Creativity Level</label>
                     <span className="rounded-md border border-night-600/50 bg-night-800 px-2 py-1 text-xs font-medium text-night-300">
@@ -1167,10 +1150,24 @@ export default function Generator() {
                   </div>
                 </div>
 
+                <div className="mt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <label htmlFor="generator-max-words" className="label !mb-0">Max words</label>
+                    <span className="text-xs text-night-300">{maxWords}</span>
+                  </div>
+                  <input
+                    id="generator-max-words"
+                    type="range"
+                    min={1}
+                    max={MAX_ALLOWED_WORDS}
+                    value={maxWords}
+                    onChange={(event) => setMaxWords(Number(event.target.value))}
+                    className="mt-2 w-full accent-glow-purple"
+                  />
+                  <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
+                </div>
+
                 <div className="mt-auto pt-4 flex flex-wrap justify-end gap-3">
-                  <button onClick={handleGenerate} disabled={loading} className="btn-primary">
-                    {loading ? 'Generating...' : 'Magic Random (AI)'}
-                  </button>
                   <button onClick={handleCopy} disabled={!generatedPrompt} className="btn-ghost border border-night-600/50">
                     Copy Prompt
                   </button>
@@ -1181,6 +1178,9 @@ export default function Generator() {
                     className="btn-ghost border border-night-600/50"
                   >
                     Clear all
+                  </button>
+                  <button onClick={handleGenerate} disabled={loading} className="btn-primary">
+                    {loading ? 'Generating...' : 'Magic Random (AI)'}
                   </button>
                 </div>
               </div>
