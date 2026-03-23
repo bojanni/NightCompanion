@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-24 (Read-only generated prompt field in Magic Random card)
+
+- Findings: Magic Random had no preview text area in the card itself, waardoor de kaartindeling afweek van Magic Quickstart.
+- Conclusions: Een read-only promptveld in dezelfde positie/stijl maakt de layout consistenter en toont direct waar de gegenereerde prompt verschijnt.
+- Actions: In `src/screens/Generator.tsx` een read-only textarea toegevoegd aan de Magic Random kaart (met `value={generatedPrompt}`, `readOnly`, `min-h-36`) direct onder de header; geen editable input toegevoegd; gevalideerd met `npm run build`.
+
 ## 2026-03-24 (Glow amber token rollout)
 
 - Findings: In meerdere schermen werden losse Tailwind yellow-utilities gebruikt voor ratings en highlights, buiten de design token-set.

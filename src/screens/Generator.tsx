@@ -1105,6 +1105,16 @@ export default function Generator() {
                   </div>
                 </div>
 
+                <div className="mt-4 rounded-xl border border-night-600/50 bg-night-900/60 overflow-hidden">
+                  <textarea
+                    value={generatedPrompt}
+                    readOnly
+                    aria-label="Generated prompt preview"
+                    className="w-full bg-transparent px-4 py-4 text-sm text-night-200 placeholder-night-500 resize-none min-h-36 focus:outline-none"
+                    placeholder="Generated prompt will appear here."
+                  />
+                </div>
+
                 <div className="mt-4">
                   <label htmlFor="generator-preset" className="label">NightCafe Preset</label>
                   <select
