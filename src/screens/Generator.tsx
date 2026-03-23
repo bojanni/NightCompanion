@@ -951,7 +951,7 @@ export default function Generator() {
                       }
                     }}
                     className="w-full bg-transparent px-4 pt-4 pb-16 text-sm text-white placeholder-night-500 resize-none min-h-36 focus:outline-none"
-                    placeholder={'Describe your image idea in simple termsâ€¦ (e.g. "A neon cyberpunk cityscape in the rain")'}
+                    placeholder={'Describe your image idea in simple terms... (e.g. "A neon cyberpunk cityscape in the rain")'}
                   />
                   <div className="absolute bottom-3 right-3">
                     <button
@@ -960,7 +960,7 @@ export default function Generator() {
                       disabled={!quickStartIdea.trim() || expandingIdea}
                       className="flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      âœ¦ {expandingIdea ? 'Expandingâ€¦' : 'Magic AI Expansion'}
+                      <Sparkles className="w-4 h-4" /> {expandingIdea ? 'Expanding...' : 'Magic AI Expansion'}
                     </button>
                   </div>
                 </div>
@@ -1194,7 +1194,7 @@ export default function Generator() {
                     className="textarea mt-2 min-h-24"
                     value={negativePrompt}
                     onChange={(e) => setNegativePrompt(e.target.value)}
-                    placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)â€¦"
+                    placeholder="Things to avoid (e.g. blurry, watermark, deformed hands)..."
                   />
                   <div className="mt-2 flex justify-end gap-2">
                     <button
@@ -1285,7 +1285,7 @@ export default function Generator() {
                   ))}
                 </div>
 
-                <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || 'â€”'}</p>
+                <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || <span className="text-night-500">—</span>}</p>
                 <p className="mt-1 text-sm text-night-300">{recommendedModelReason || 'Nog geen modeladvies beschikbaar. Genereer eerst een prompt.'}</p>
 
                 <div className="mt-3 flex items-center justify-between text-sm text-night-400">
