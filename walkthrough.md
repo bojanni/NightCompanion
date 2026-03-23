@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-24 (Glow amber token rollout)
+
+- Findings: In meerdere schermen werden losse Tailwind yellow-utilities gebruikt voor ratings en highlights, buiten de design token-set.
+- Conclusions: Een centrale `glow.amber` token + bijhorende shadow zorgt voor consistente styling en voorkomt hardcoded kleurvarianten.
+- Actions: In `tailwind.config.js` `glow.amber: '#d97706'` en `boxShadow.glow-amber` toegevoegd; gele utility-klassen vervangen in `src/components/PromptForm.tsx`, `src/screens/Library.tsx`, `src/screens/GenerationLog.tsx`, `src/screens/Generator.tsx`, `src/screens/PromptBuilder.tsx`, en `src/components/PromptPreview.tsx` volgens de afgesproken tokenmapping (`text-glow-amber`, `bg-glow-amber/10`, `border-glow-amber/40`); gevalideerd met `npm run build`.
+
 ## 2026-03-24 (Magic Random controls aligned with Quickstart)
 
 - Findings: In de Generator stonden in Magic Random de actieknoppen in een andere volgorde dan gewenst (primary niet rechts) en de volgorde van sliders was omgekeerd t.o.v. Magic Quickstart.

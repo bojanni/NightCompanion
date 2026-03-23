@@ -28,12 +28,14 @@ export default {
           cyan: '#0891b2',
           pink: '#db2777',
           soft: '#a78bfa',
+          amber: '#d97706',
         },
       },
       boxShadow: {
         glow: '0 0 20px rgba(124, 58, 237, 0.3)',
         'glow-sm': '0 0 10px rgba(124, 58, 237, 0.2)',
         'glow-blue': '0 0 20px rgba(37, 99, 235, 0.3)',
+        'glow-amber': '0 0 20px rgba(217, 119, 6, 0.25)',
       },
       backgroundImage: {
         'gradient-night': 'linear-gradient(135deg, #050810 0%, #0a0e1a 50%, #0f1526 100%)',

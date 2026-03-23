@@ -465,7 +465,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                 {[1, 2, 3, 4, 5].map((value) => (
                   <div
                     key={value}
-                    className={`relative w-9 h-9 rounded-lg border transition-colors ${rating >= value - 0.5 ? 'text-yellow-400 border-yellow-600/50 bg-yellow-900/20' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}
+                    className={`relative w-9 h-9 rounded-lg border transition-colors ${rating >= value - 0.5 ? 'text-glow-amber border-glow-amber/40 bg-glow-amber/10' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}
                   >
                     <button
                       type="button"

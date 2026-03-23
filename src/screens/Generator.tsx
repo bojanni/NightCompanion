@@ -1276,7 +1276,7 @@ export default function Generator() {
 
               <div className="mt-4 rounded-xl border border-night-700/60 bg-night-900/40 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-yellow-300">Suggested Model</p>
+                  <p className="text-sm font-semibold text-glow-amber">Suggested Model</p>
                   <button
                     type="button"
                     onClick={() => void requestModelAdvice('ai', generatedPrompt, 'Generated Prompt')}

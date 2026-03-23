@@ -26,7 +26,7 @@ function RatingStars({ rating }: { rating: number | null }) {
       {[1, 2, 3, 4, 5].map((value) => {
         const fill = getStarFill(safeRating, value)
         return (
-          <span key={value} className={fill === 'empty' ? 'text-night-600' : 'text-yellow-400'}>
+          <span key={value} className={fill === 'empty' ? 'text-night-600' : 'text-glow-amber'}>
             {fill === 'full' && <Star size={14} fill="currentColor" />}
             {fill === 'half' && <StarHalf size={14} fill="currentColor" />}
             {fill === 'empty' && <Star size={14} />}
@@ -186,7 +186,7 @@ function GenerationForm({ initial, onSubmit, onClose }: { initial?: GenerationEn
             <label className="label">Rating</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className={`relative w-9 h-9 rounded-lg border transition-colors ${rating >= n - 0.5 ? 'text-yellow-400 border-yellow-600/50 bg-yellow-900/20' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}>
+                <div key={n} className={`relative w-9 h-9 rounded-lg border transition-colors ${rating >= n - 0.5 ? 'text-glow-amber border-glow-amber/40 bg-glow-amber/10' : 'text-night-600 border-night-600/50 hover:text-night-400'}`}>
                   <button
                     type="button"
                     onClick={() => setRating((prev) => (isSameRating(prev, n - 0.5) ? 0 : n - 0.5))}

@@ -201,8 +201,8 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
 
         {/* Greylist warning */}
         {detectedGreylistWords.length > 0 && (
-          <div className="px-5 py-2 bg-yellow-900/30 border-b border-yellow-700/50">
-            <p className="text-[10px] text-yellow-400">
+          <div className="px-5 py-2 bg-glow-amber/10 border-b border-glow-amber/40">
+            <p className="text-[10px] text-glow-amber">
               ⚠️ Greylist words detected: {detectedGreylistWords.join(', ')}
             </p>
           </div>

@@ -440,7 +440,7 @@ export default function Library() {
                                 aria-label={`Set rating ${value}`}
                                 title={`Set rating ${value}`}
                               />
-                              <div className={`absolute inset-0 pointer-events-none ${((prompt.rating || 0) >= value - 0.5) ? 'text-yellow-400' : 'text-night-600'}`}>
+                              <div className={`absolute inset-0 pointer-events-none ${((prompt.rating || 0) >= value - 0.5) ? 'text-glow-amber' : 'text-night-600'}`}>
                                 {getStarFill(prompt.rating || 0, value) === 'full' && <Star size={14} fill="currentColor" />}
                                 {getStarFill(prompt.rating || 0, value) === 'half' && <StarHalf size={14} fill="currentColor" />}
                                 {getStarFill(prompt.rating || 0, value) === 'empty' && <Star size={14} />}
@@ -568,7 +568,7 @@ export default function Library() {
               className="pointer-events-auto w-full max-w-3xl rounded-[28px] border border-white/15 bg-black/45 px-5 py-4 text-white shadow-2xl backdrop-blur-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-center gap-1 text-yellow-300">
+              <div className="flex items-center justify-center gap-1 text-glow-amber">
                 {[1, 2, 3, 4, 5].map((value) => {
                   const fill = getStarFill(lightboxImage.rating, value)
 

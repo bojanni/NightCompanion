@@ -30,7 +30,7 @@ function splitTokens(value: string) {
 
 function getWordTone(wordCount: number, maxWords: number) {
   if (wordCount > maxWords) return 'text-red-400'
-  if (wordCount >= Math.max(1, Math.floor(maxWords * 0.85))) return 'text-yellow-400'
+  if (wordCount >= Math.max(1, Math.floor(maxWords * 0.85))) return 'text-glow-amber'
   return 'text-green-400'
 }
 
