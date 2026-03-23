@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
-import { User, Sparkles } from 'lucide-react'
+import { User, Sparkles, Minus } from 'lucide-react'
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
 import PromptPreview from '../components/PromptPreview'
@@ -1285,7 +1285,7 @@ export default function Generator() {
                   ))}
                 </div>
 
-                <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || <span className="text-night-500">—</span>}</p>
+                <p className="mt-3 text-2xl font-semibold text-white flex items-center gap-2">{recommendedModel || <Minus className="w-6 h-6 text-night-500" />}</p>
                 <p className="mt-1 text-sm text-night-300">{recommendedModelReason || 'Nog geen modeladvies beschikbaar. Genereer eerst een prompt.'}</p>
 
                 <div className="mt-3 flex items-center justify-between text-sm text-night-400">
