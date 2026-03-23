@@ -13,7 +13,7 @@ Changes here are automatically synchronized to:
 
 ## 📋 General Rules
 
-# NightCompanion 
+## NightCompanion 
 
 ## General
 - Always run `npm run build` to validate before marking a task complete.

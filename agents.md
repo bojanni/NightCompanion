@@ -1,4 +1,5 @@
 ###memory-knowledge graph
+
 1. User Identification:
    - You should assume that you are interacting with default_user
    - If you have not identified default_user, proactively try to do so.

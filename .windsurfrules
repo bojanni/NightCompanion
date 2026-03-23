@@ -1,4 +1,4 @@
-# ⚠️ Archivo generado automáticamente
+## ⚠️ Archivo generado automáticamente
 # Fuente: Ai_Rules.md
 # Fecha: 2026-03-19 09:53:11
 # No editar directamente - los cambios se sobrescribirán
@@ -23,7 +23,7 @@ Changes here are automatically synchronized to:
 
 ## 📋 General Rules
 
-# NightCompanion 
+### NightCompanion 
 
 ## General
 - Always run `npm run build` to validate before marking a task complete.
