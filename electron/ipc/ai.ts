@@ -573,7 +573,6 @@ export function registerAiIpc({
       }
 
       const presetName = input?.presetName?.trim()
-      const presetPrompt = input?.presetPrompt?.trim() || ''
       const maxWords = Number.isFinite(input?.maxWords)
         ? Math.max(1, Math.min(MAX_ALLOWED_WORDS, Math.floor(input?.maxWords as number)))
         : DEFAULT_MAX_WORDS
@@ -1493,7 +1492,6 @@ export function registerAiIpc({
 
       const creativity = input?.creativity || 'balanced'
       const presetName = input?.presetName?.trim()
-      const presetPrompt = input?.presetPrompt?.trim() || ''
       const character = input?.character
 
       const creativityInstruction = QUICK_EXPAND_CREATIVITY[creativity]
