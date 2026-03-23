@@ -13,7 +13,7 @@ export default tseslint.config(
   {
     languageOptions: {
       globals: globals.browser,
-      parserOptions: { project: './tsconfig.json' },
+      parserOptions: { project: ['./tsconfig.json', './tsconfig.electron.json'] },
     },
   },
   {

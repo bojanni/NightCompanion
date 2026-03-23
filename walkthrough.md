@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-23 (Budget mode for NightCafe Model Advisor)
+
+- Findings: The rule-based model advisor used keyword-matching (COST_SENSITIVE_HINTS) on prompt text to detect cost sensitivity. Users never type "cheap" in creative prompts, making this detection useless.
+- Conclusions: Replace keyword detection with an explicit budget mode UI (Goedkoop / Gebalanceerd / Premium) that the user controls. Pass budgetMode through to both rule-based and AI advisor paths.
+- Actions: Added `BudgetMode` type and replaced `COST_SENSITIVE_HINTS` + `costHits` logic with `budgetMode`-based `costPenalty` in `getRuleBasedRecommendation` in `electron/ipc/ai.ts`; updated `generator:adviseModel` handler to accept and parse `budgetMode`; added budget preference line to AI advisor instruction; updated IPC types in `electron/preload.ts` and `src/types/electron.d.ts`; added `budgetMode` state with localStorage persistence and three-pill selector UI in the Suggested Model card in `src/screens/Generator.tsx`; validated with `npm run build`.
+
 ## 2026-03-23 (Add character option to Magic Random AI)
 
 - Findings: User requested to add character selection to the Magic Random (AI) option on the Generator page, similar to the existing character picker in Magic Quickstart.

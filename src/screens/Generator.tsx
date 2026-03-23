@@ -41,6 +41,7 @@ type NightcafeModelCardMeta = {
 type PromptViewTab = 'final' | 'diff'
 type NegativePromptViewTab = 'final' | 'diff'
 type CreativityLevel = 'focused' | 'balanced' | 'wild'
+type BudgetMode = 'cheap' | 'balanced' | 'premium'
 
 type GeneratorPersistedState = {
   tab?: 'generator' | 'builder'
@@ -67,6 +68,7 @@ type GeneratorPersistedState = {
   recommendedModelReason?: string
   recommendedModelMode?: 'rule' | 'ai' | null
   supportsNegativePrompt?: boolean | null
+  budgetMode?: BudgetMode
 }
 
 function buildDefaultTitle(value: string) {
@@ -112,6 +114,7 @@ export default function Generator() {
   const [quickStartCharacterId, setQuickStartCharacterId] = useState<string | null>(null)
   const [quickStartCharacterList, setQuickStartCharacterList] = useState<Array<{ id: string; name: string; description: string }>>([]) 
   const [showCharacterPicker, setShowCharacterPicker] = useState(false)
+  const [budgetMode, setBudgetMode] = useState<BudgetMode>('balanced')
   const [expandingIdea, setExpandingIdea] = useState(false)
   const [quickStartStatus, setQuickStartStatus] = useState<string | null>(null)
   const [advisingAi, setAdvisingAi] = useState(false)
@@ -223,6 +226,7 @@ export default function Generator() {
       const result = await window.electronAPI.generator.adviseModel({
         prompt,
         mode,
+        budgetMode,
       })
 
       if (!result) {
@@ -373,6 +377,7 @@ export default function Generator() {
       setQuickStartCreativity(parsed.quickStartCreativity ?? 'balanced')
       setMagicRandomCreativity(parsed.magicRandomCreativity ?? 'balanced')
       setQuickStartCharacterId(parsed.quickStartCharacterId ?? null)
+      setBudgetMode(parsed.budgetMode === 'cheap' ? 'cheap' : parsed.budgetMode === 'premium' ? 'premium' : 'balanced')
 
       const nextPromptViewTab = parsed.promptViewTab === 'diff' && parsed.improvementDiff ? 'diff' : 'final'
       setPromptViewTab(nextPromptViewTab)
@@ -397,6 +402,7 @@ export default function Generator() {
       setQuickStartCreativity('balanced')
       setMagicRandomCreativity('balanced')
       setQuickStartCharacterId(null)
+      setBudgetMode('balanced')
       setModelAdviceNote(null)
     }
   }, [])
@@ -422,11 +428,12 @@ export default function Generator() {
         quickStartCreativity,
         magicRandomCreativity,
         quickStartCharacterId,
+        budgetMode,
       } satisfies GeneratorPersistedState))
     } catch (e) {
       console.error('Failed to save generator state to localStorage:', e)
     }
-  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, magicRandomCreativity, quickStartCharacterId])
+  }, [tab, selectedPreset, maxWords, generatedPrompt, negativePrompt, negativePromptViewTab, negativeImprovementDiff, savedTitle, recommendedModel, recommendedModelReason, recommendedModelMode, supportsNegativePrompt, promptViewTab, improvementDiff, quickStartIdea, quickStartCreativity, magicRandomCreativity, quickStartCharacterId, budgetMode])
 
   useEffect(() => {
     let ignore = false
@@ -1262,6 +1269,20 @@ export default function Generator() {
                   >
                     {advisingAi ? 'Getting AI Advice...' : 'Get AI Advice'}
                   </button>
+                </div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-xs text-night-400 mr-1">Budget:</span>
+                  {(['cheap', 'balanced', 'premium'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setBudgetMode(mode)}
+                      className={`rounded-lg px-3 py-1 text-xs font-medium transition-colors ${budgetMode === mode ? 'btn-primary' : 'btn-ghost border border-night-600/50'}`}
+                    >
+                      {mode === 'cheap' ? 'Goedkoop' : mode === 'balanced' ? 'Gebalanceerd' : 'Premium'}
+                    </button>
+                  ))}
                 </div>
 
                 <p className="mt-3 text-2xl font-semibold text-white">{recommendedModel || 'â€”'}</p>

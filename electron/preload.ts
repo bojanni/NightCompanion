@@ -283,7 +283,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('generator:generateTags', input),
     quickExpand: (input?: { idea?: string; presetName?: string; presetPrompt?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>> =>
       invokeWithFallback('generator:quickExpand', input),
-    adviseModel: (input?: { prompt?: string; mode?: 'rule' | 'ai' }): Promise<IpcResult<ModelAdvisorResult>> =>
+    adviseModel: (input?: { prompt?: string; mode?: 'rule' | 'ai'; budgetMode?: 'cheap' | 'balanced' | 'premium' }): Promise<IpcResult<ModelAdvisorResult>> =>
       invokeWithFallback('generator:adviseModel', input),
   },
   nightcafeModels: {

@@ -96,9 +96,7 @@ const ART_HINTS = [
   'watercolour', 'watercolor', 'oil painting', 'stylized', 'stylised', 'line art', 'comic',
 ]
 
-const COST_SENSITIVE_HINTS = [
-  'cheap', 'budget', 'low cost', 'cost effective', 'fast draft', 'quick draft', 'test render', 'economy',
-]
+type BudgetMode = 'cheap' | 'balanced' | 'premium'
 
 function parseScore(value: string) {
   const numeric = Number.parseFloat(String(value ?? '').trim())
@@ -135,18 +133,17 @@ function normalizeWeights(base: { art: number; realism: number; typography: numb
   }
 }
 
-function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]): AdvisorResult {
+function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[], budgetMode: BudgetMode): AdvisorResult {
   const normalizedPrompt = prompt.trim().toLowerCase()
   const realismHits = countMatches(normalizedPrompt, REALISM_HINTS)
   const typographyHits = countMatches(normalizedPrompt, TYPOGRAPHY_HINTS)
   const artHits = countMatches(normalizedPrompt, ART_HINTS)
-  const costHits = countMatches(normalizedPrompt, COST_SENSITIVE_HINTS)
 
   const matchedSignals: string[] = []
   if (realismHits > 0) matchedSignals.push('realism')
   if (typographyHits > 0) matchedSignals.push('typography')
   if (artHits > 0) matchedSignals.push('artistic style')
-  if (costHits > 0) matchedSignals.push('cost-sensitive')
+  if (budgetMode === 'cheap') matchedSignals.push('budget')
   if (matchedSignals.length === 0) matchedSignals.push('general balance')
 
   const weights = normalizeWeights({
@@ -171,7 +168,11 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
         typography * weights.typography +
         prompting * weights.prompting
 
-      const costPenalty = costHits > 0 ? (costTier - 1) * 0.35 : 0
+      const costPenalty = budgetMode === 'cheap'
+        ? (costTier - 1) * 0.6
+        : budgetMode === 'balanced'
+          ? (costTier - 1) * 0.2
+          : 0
       const finalScore = qualityScore - costPenalty
 
       return {
@@ -207,7 +208,7 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
     mode: 'rule',
     recommendation: {
       modelName: best.model.modelName,
-      explanation: `Top score based on prompt-fit weights (art ${best.detail.art.toFixed(1)}, realism ${best.detail.realism.toFixed(1)}, typography ${best.detail.typography.toFixed(1)}, prompting ${best.detail.prompting.toFixed(1)}${costHits > 0 ? `, cost tier ${best.detail.costTier}` : ''}).`,
+      explanation: `Top score based on prompt-fit weights (art ${best.detail.art.toFixed(1)}, realism ${best.detail.realism.toFixed(1)}, typography ${best.detail.typography.toFixed(1)}, prompting ${best.detail.prompting.toFixed(1)}, budget: ${budgetMode}${budgetMode !== 'balanced' ? `, cost tier ${best.detail.costTier}` : ''}).`,
     },
     alternatives: alternatives.map((entry) => ({
       modelName: entry.model.modelName,
@@ -356,7 +357,7 @@ export function registerAiIpc({
   getOpenRouterSettings: () => Promise<OpenRouterSettings>
   getAiApiRequestLoggingEnabled: () => Promise<boolean>
 }) {
-  ipcMain.handle('generator:adviseModel', async (_, input?: { prompt?: string; mode?: AdvisorMode }) => {
+  ipcMain.handle('generator:adviseModel', async (_, input?: { prompt?: string; mode?: AdvisorMode; budgetMode?: BudgetMode }) => {
     const requestId = crypto.randomUUID()
     const startedAt = Date.now()
     let requestModel = ''
@@ -369,6 +370,7 @@ export function registerAiIpc({
     try {
       const prompt = input?.prompt?.trim() || ''
       const mode: AdvisorMode = input?.mode === 'ai' ? 'ai' : 'rule'
+      const budgetMode: BudgetMode = input?.budgetMode === 'cheap' ? 'cheap' : input?.budgetMode === 'premium' ? 'premium' : 'balanced'
 
       if (!prompt) {
         return { error: 'Enter a prompt or concept first.' }
@@ -393,7 +395,7 @@ export function registerAiIpc({
       }
 
       if (mode === 'rule') {
-        const advice = getRuleBasedRecommendation(prompt, models)
+        const advice = getRuleBasedRecommendation(prompt, models, budgetMode)
         resultData = advice
         return { data: advice }
       }
@@ -424,6 +426,7 @@ export function registerAiIpc({
         LANGUAGE_INSTRUCTION,
         'Based on the user prompt and provided model metadata, recommend the best single model.',
         'Use the scores and description to justify fit for style, realism, typography, and cost sensitivity.',
+        `User budget preference: ${budgetMode} — factor this into your recommendation.`,
         'Return strict JSON only with this shape:',
         '{"recommendedModel":"string","reasoning":"string","alternatives":[{"modelName":"string","why":"string"}]}',
         'Keep alternatives to max 3.',
