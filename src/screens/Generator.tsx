@@ -907,7 +907,7 @@ export default function Generator() {
                     </div>
                     <div>
                       <h2 className="text-base font-semibold text-white">Magic Quickstart</h2>
-                      <p className="text-xs text-night-400 mt-0.5">Describe your idea and let AI do the heavy lifting</p>
+                      <p className="text-xs text-night-400 mt-0.5 min-h-8">Describe your idea and let AI do the heavy lifting</p>
                     </div>
                   </div>
 
@@ -1060,7 +1060,7 @@ export default function Generator() {
                     </div>
                     <div>
                       <h2 className="text-base font-semibold text-white">Magic Random</h2>
-                      <p className="text-xs text-night-400 mt-0.5">Generate a surprise prompt with AI</p>
+                      <p className="text-xs text-night-400 mt-0.5 min-h-8">Generate a surprise prompt with AI</p>
                     </div>
                   </div>
 
