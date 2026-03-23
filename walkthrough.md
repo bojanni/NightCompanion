@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-24 (Leesbare modeluitleg in Suggested Model)
+
+- Findings: De rule-based modeluitleg gebruikte technische scoretekst (art/realism/typography/prompting), wat voor eindgebruikers weinig begrijpelijk is.
+- Conclusions: Gebruik `matchedSignals` + `budgetMode` om natuurlijke Nederlandse uitleg te bouwen, met aparte formulering voor hoofdaanbeveling en alternatieven.
+- Actions: In `electron/ipc/ai.ts` een pure helper `buildRuleExplanation(signals, budgetMode, isAlternative)` toegevoegd met signaalmapping (`realism`, `typography`, `artistic style`, `general balance`), fallback-zinnen voor alround-situaties, en budget-suffixen voor hoofdaanbeveling (`cheap`/`premium`); technische explanation-strings in `getRuleBasedRecommendation` vervangen door helper-aanroepen voor recommendation en alternatives; AI-modus ongemoeid gelaten; gevalideerd met `npm run build`.
+
 ## 2026-03-23 (Three contextual model suggestions in Generator)
 
 - Findings: Suggested Model kaart toonde alleen één hoofdaanbeveling, terwijl de rule-based scoringlijst al genoeg data bevatte voor extra contextuele suggesties.

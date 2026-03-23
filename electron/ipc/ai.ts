@@ -95,6 +95,61 @@ type ScoredAdvisorModel = {
   }
 }
 
+function appendPeriod(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) return '.'
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`
+}
+
+function buildRuleExplanation(signals: string[], budgetMode: BudgetMode, isAlternative: boolean): string {
+  const normalizedSignals = Array.from(new Set(signals))
+    .filter((signal) => signal !== 'cost-sensitive' && signal !== 'budget')
+
+  const hasOnlyGeneralBalance = normalizedSignals.length === 0
+    || normalizedSignals.every((signal) => signal === 'general balance')
+
+  if (hasOnlyGeneralBalance) {
+    const base = isAlternative
+      ? 'Goed alternatief met gebalanceerde kwaliteit.'
+      : 'Aanbevolen als sterke alrounder voor deze prompt.'
+
+    if (isAlternative) return base
+
+    const suffix = budgetMode === 'cheap'
+      ? ' Past binnen een zuinig budget.'
+      : budgetMode === 'premium'
+        ? ' Geoptimaliseerd voor maximale kwaliteit.'
+        : ''
+
+    return appendPeriod(`${base}${suffix}`)
+  }
+
+  const signalPhrases = normalizedSignals
+    .filter((signal) => signal !== 'general balance')
+    .map((signal) => {
+      if (signal === 'realism') return 'fotorealistische kwaliteit'
+      if (signal === 'typography') return 'tekst in beeld'
+      if (signal === 'artistic style') return 'artistieke stijlen'
+      if (signal === 'general balance') return 'algemene veelzijdigheid'
+      return signal
+    })
+
+  const signalPhrase = signalPhrases.length > 0
+    ? signalPhrases.join(' en ')
+    : 'algemene veelzijdigheid'
+
+  const prefix = isAlternative ? 'Sterk alternatief voor ' : 'Aanbevolen vanwege '
+  const suffix = !isAlternative
+    ? budgetMode === 'cheap'
+      ? ' Past binnen een zuinig budget.'
+      : budgetMode === 'premium'
+        ? ' Geoptimaliseerd voor maximale kwaliteit.'
+        : ''
+    : ''
+
+  return appendPeriod(`${prefix}${signalPhrase}.${suffix}`)
+}
+
 function findBestValue(scored: ScoredAdvisorModel[], budgetMode: BudgetMode): ScoredAdvisorModel | null {
   if (budgetMode === 'premium') return null
 
@@ -267,11 +322,11 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
     mode: 'rule',
     recommendation: {
       modelName: best.model.modelName,
-      explanation: `Top score based on prompt-fit weights (art ${best.detail.art.toFixed(1)}, realism ${best.detail.realism.toFixed(1)}, typography ${best.detail.typography.toFixed(1)}, prompting ${best.detail.prompting.toFixed(1)}, budget: ${budgetMode}${budgetMode !== 'balanced' ? `, cost tier ${best.detail.costTier}` : ''}).`,
+      explanation: buildRuleExplanation(matchedSignals, budgetMode, false),
     },
     alternatives: alternatives.map((entry) => ({
       modelName: entry.model.modelName,
-      explanation: `Strong alternative with balanced fit (art ${entry.detail.art.toFixed(1)}, realism ${entry.detail.realism.toFixed(1)}, typography ${entry.detail.typography.toFixed(1)}).`,
+      explanation: buildRuleExplanation(matchedSignals, budgetMode, true),
     })),
     matchedSignals,
     bestValue,
