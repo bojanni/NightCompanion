@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-24 (Magic AI Expansion teal gradient)
+
+- Findings: Magic AI Expansion knop had dezelfde oranje gradient als andere AI knoppen, maar de gebruiker wilde een teal/cyan kleur (#1ee7d0) voor deze specifieke actie.
+- Conclusions: Een aparte teal gradient voor Magic AI Expansion maakt het visueel onderscheidend van de andere oranje AI knoppen.
+- Actions: Nieuwe `.btn-ai-expansion` class toegevoegd in `src/index.css` met teal gradient (`from-teal-500 to-teal-600`); `teal-500` in `tailwind.config.js` aangepast naar `#1ee7d0`; `Magic AI Expansion` knop in `Generator.tsx` omgezet naar `btn-ai-expansion` class; gevalideerd met `npm run build`.
+
 ## 2026-03-24 (Unified orange gradient for all AI generation buttons)
 
 - Findings: AI-activatie knoppen hadden inconsistente styling - sommige teal, sommige amber ghost, sommige custom borders - terwijl de referentie een uniforme oranje CTA gradient toont.

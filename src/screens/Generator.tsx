@@ -1044,7 +1044,7 @@ export default function Generator() {
                     type="button"
                     onClick={handleQuickExpand}
                     disabled={!quickStartIdea.trim() || expandingIdea}
-                    className="btn-primary"
+                    className="btn-ai-expansion"
                   >
                     <Sparkles className="w-4 h-4" /> {expandingIdea ? 'Expanding...' : 'Magic AI Expansion'}
                   </button>
