@@ -45,6 +45,12 @@ const NAV_ITEMS: NavItem[] = [
     description: 'Track your creations',
   },
   {
+    id: 'gallery',
+    label: 'Gallery',
+    icon: '▣',
+    description: 'AI-generated media',
+  },
+  {
     id: 'settings',
     label: 'Settings',
     icon: '⚙',

@@ -200,6 +200,13 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+  /* Gallery dynamic grid */
+  .dynamic-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cards-per-row, 3), minmax(0, 1fr));
+    gap: 1rem;
+  }
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-box-orient: vertical;

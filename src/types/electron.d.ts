@@ -1,4 +1,4 @@
-﻿import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry, Greylist } from '../lib/schema'
+﻿import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry, Greylist, GalleryItem, Collection } from '../lib/schema'
 
 type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
@@ -94,6 +94,7 @@ type ModelAdvisorResult = {
   bestValue?: ModelAdvisorRecommendation
   fastest?: ModelAdvisorRecommendation
 }
+type GalleryFilters = { search?: string; collectionId?: string | null; minRating?: number; page?: number }
 type CharacterImage = { id: string; url: string; isMain: boolean; createdAt: string }
 type CharacterDetail = { id: string; detail: string; category: string; worksWell: boolean }
 type CharacterRecord = {
@@ -183,6 +184,15 @@ declare global {
         get(): Promise<IpcResult<Greylist>>
         save(input: { words: string[] }): Promise<IpcResult<Greylist>>
         update(input: { words: string[] }): Promise<IpcResult<Greylist>>
+      }
+      gallery: {
+        list(filters?: GalleryFilters): Promise<IpcResult<{ items: GalleryItem[]; totalCount: number }>>
+        createItem(input: Partial<GalleryItem>): Promise<IpcResult<GalleryItem>>
+        updateItem(id: string, input: Partial<GalleryItem>): Promise<IpcResult<GalleryItem>>
+        deleteItem(id: string): Promise<IpcResult<{ ok: boolean }>>
+        listCollections(): Promise<IpcResult<Collection[]>>
+        createCollection(input: { name: string; description?: string; color?: string }): Promise<IpcResult<Collection>>
+        deleteCollection(id: string): Promise<IpcResult<{ ok: boolean }>>
       }
       dialog: {
         showErrorBox(title: string, content: string): Promise<void>

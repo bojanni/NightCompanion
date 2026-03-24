@@ -1,5 +1,5 @@
 // Re-export schema types for use in the renderer
-export type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry } from '../lib/schema'
+export type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry, Collection, GalleryItem, NewGalleryItem, NewCollection } from '../lib/schema'
 
 export type PromptMutationInput = Omit<import('../lib/schema').NewPrompt, 'createdAt' | 'updatedAt'> & {
   imageDataUrl?: string | null
@@ -15,6 +15,7 @@ export type Screen =
   | 'style-profiles'
   | 'generation-log'
   | 'generator'
+  | 'gallery'
   | 'settings'
 
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }

@@ -231,6 +231,54 @@ export const greylistTable = pgTable(
   ]
 )
 
+// ─── Collections ─────────────────────────────────────────────────────────────
+
+export const collections = pgTable(
+  'collections',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    description: text('description'),
+    color: text('color').default('#6366f1'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('collections_created_at_idx').on(table.createdAt),
+  ]
+)
+
+// ─── Gallery Items ───────────────────────────────────────────────────────────
+
+export const galleryItems = pgTable(
+  'gallery_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: text('title'),
+    imageUrl: text('image_url'),
+    videoUrl: text('video_url'),
+    thumbnailUrl: text('thumbnail_url'),
+    mediaType: text('media_type').default('image'),
+    promptUsed: text('prompt_used'),
+    promptId: uuid('prompt_id'),
+    model: text('model'),
+    aspectRatio: text('aspect_ratio'),
+    rating: integer('rating').default(0),
+    notes: text('notes'),
+    collectionId: uuid('collection_id').references(() => collections.id, { onDelete: 'set null' }),
+    storageMode: text('storage_mode').default('url'),
+    durationSeconds: integer('duration_seconds'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('gallery_items_collection_id_idx').on(table.collectionId),
+    index('gallery_items_rating_idx').on(table.rating),
+    index('gallery_items_media_type_idx').on(table.mediaType),
+    index('gallery_items_created_at_idx').on(table.createdAt),
+  ]
+)
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Prompt = typeof prompts.$inferSelect
@@ -258,3 +306,9 @@ export type NewCharacter = typeof characters.$inferInsert
 
 export type Greylist = typeof greylistTable.$inferSelect
 export type NewGreylist = typeof greylistTable.$inferInsert
+
+export type Collection = typeof collections.$inferSelect
+export type NewCollection = typeof collections.$inferInsert
+
+export type GalleryItem = typeof galleryItems.$inferSelect
+export type NewGalleryItem = typeof galleryItems.$inferInsert

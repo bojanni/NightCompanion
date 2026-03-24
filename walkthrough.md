@@ -1,5 +1,11 @@
 # Walkthrough
 
+## 2026-03-24 (Gallery page — full feature implementation)
+
+- Findings: User requested a Gallery page to display AI-generated images and videos with collections, filtering, lightbox viewer, and slideshow mode.
+- Conclusions: Implemented as a complete feature following all 5 IPC steps, with Drizzle schema, migration, reusable components (MediaRenderer, StarRating, GridDensitySelector, GalleryLightbox), a state hook, and the Gallery screen. Used framer-motion for card animations and react-blurhash for image placeholders.
+- Actions: Added `collections` and `gallery_items` tables to `src/lib/schema.ts` with types; created migration `drizzle/0020_gallery_collections.sql` + journal entry; created `src/components/MediaRenderer.tsx`, `src/components/StarRating.tsx`, `src/components/GridDensitySelector.tsx`, `src/components/GalleryLightbox.tsx`; created `src/hooks/useGalleryState.ts`; created IPC handler `electron/ipc/gallery.ts` and registered in `electron/services/ipcRegistry.ts`; exposed in `electron/preload.ts`; added types in `src/types/electron.d.ts`; added `'gallery'` to `Screen` type in `src/types/index.ts`; created `src/screens/Gallery.tsx`; added route in `src/App.tsx` and nav item in `src/components/Sidebar.tsx`; added `.dynamic-grid` CSS class to `src/index.css`; installed `react-blurhash` and `framer-motion`; validated with `npm run build`.
+
 ## 2026-03-24 (Save to Library colours unified for consistency)
 
 - Findings: Na de vorige wijziging hadden `Save to Library` varianten elk een andere kleur, maar de gebruiker wilde onderlinge kleurconsistentie.

@@ -1,5 +1,5 @@
 ﻿import { contextBridge, ipcRenderer } from 'electron'
-import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry, Greylist } from '../src/lib/schema'
+import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, GenerationEntry, NewGenerationEntry, Greylist, GalleryItem, Collection } from '../src/lib/schema'
 
 type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
   imageDataUrl?: string | null
@@ -124,6 +124,13 @@ export type NightcafePresetOption = {
   presetName: string
   category: string
   presetPrompt: string
+}
+
+export type GalleryFilters = {
+  search?: string
+  collectionId?: string | null
+  minRating?: number
+  page?: number
 }
 
 export type CharacterImage = {
@@ -321,6 +328,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('greylist:save', input),
     update: (input: { words: string[] }): Promise<IpcResult<Greylist>> =>
       invokeWithFallback('greylist:update', input),
+  },
+  gallery: {
+    list: (filters?: GalleryFilters): Promise<IpcResult<{ items: GalleryItem[]; totalCount: number }>> =>
+      invokeWithFallback('gallery:list', filters),
+    createItem: (input: Partial<GalleryItem>): Promise<IpcResult<GalleryItem>> =>
+      invokeWithFallback('gallery:createItem', input),
+    updateItem: (id: string, input: Partial<GalleryItem>): Promise<IpcResult<GalleryItem>> =>
+      invokeWithFallback('gallery:updateItem', id, input),
+    deleteItem: (id: string): Promise<IpcResult<{ ok: boolean }>> =>
+      invokeWithFallback('gallery:deleteItem', id),
+    listCollections: (): Promise<IpcResult<Collection[]>> =>
+      invokeWithFallback('gallery:listCollections'),
+    createCollection: (input: { name: string; description?: string; color?: string }): Promise<IpcResult<Collection>> =>
+      invokeWithFallback('gallery:createCollection', input),
+    deleteCollection: (id: string): Promise<IpcResult<{ ok: boolean }>> =>
+      invokeWithFallback('gallery:deleteCollection', id),
   },
   dialog: {
     showErrorBox: (title: string, content: string): Promise<void> =>
