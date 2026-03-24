@@ -1052,15 +1052,15 @@ export default function Generator() {
               </div>
 
               {/* RIGHT: Magic Random AI controls */}
-              <div className="card p-5 h-full flex flex-col">
+              <div className="card p-5 h-full flex flex-col border-glow-amber/25 bg-gradient-to-br from-night-900 via-night-900 to-glow-amber/5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-glow-purple/20">
-                      <Sparkles className="w-4 h-4 text-glow-purple" />
+                    <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-glow-amber/20">
+                      <Sparkles className="w-4 h-4 text-glow-amber" />
                     </div>
                     <div>
                       <h2 className="text-base font-semibold text-white">Magic Random</h2>
-                      <p className="text-xs text-night-400 mt-0.5 min-h-8">Generate a surprise prompt with AI</p>
+                      <p className="text-xs text-night-300 mt-0.5 min-h-8">Generate a surprise prompt with AI</p>
                     </div>
                   </div>
 
@@ -1068,7 +1068,7 @@ export default function Generator() {
                     <button
                       type="button"
                       onClick={() => setShowCharacterPicker((v) => !v)}
-                      className={`btn-ghost border text-xs flex items-center gap-1.5 ${quickStartCharacterId ? 'border-glow-purple/60 text-glow-purple' : 'border-night-600/50'}`}
+                      className={`btn-ghost border text-xs flex items-center gap-1.5 ${quickStartCharacterId ? 'border-glow-amber/60 text-glow-amber' : 'border-night-600/50'}`}
                     >
                       <User className="w-3.5 h-3.5" />
                       {quickStartCharacterId
@@ -1091,7 +1091,7 @@ export default function Generator() {
                               key={c.id}
                               type="button"
                               onClick={() => { setQuickStartCharacterId(c.id); setShowCharacterPicker(false) }}
-                              className={`w-full text-left px-3 py-2 text-xs rounded-lg ${quickStartCharacterId === c.id ? 'bg-glow-purple text-white' : 'text-night-200 hover:bg-night-800'}`}
+                              className={`w-full text-left px-3 py-2 text-xs rounded-lg ${quickStartCharacterId === c.id ? 'bg-glow-amber text-white' : 'text-night-200 hover:bg-night-800'}`}
                             >
                               {c.name}
                             </button>
@@ -1151,7 +1151,7 @@ export default function Generator() {
                       const levels: CreativityLevel[] = ['focused', 'balanced', 'wild']
                       setMagicRandomCreativity(levels[Number(e.target.value)])
                     }}
-                    className="w-full accent-glow-purple"
+                    className="w-full accent-glow-amber"
                   />
                   <div className="mt-1 flex justify-between text-[11px] text-night-400">
                     <span>Focused</span>
@@ -1172,7 +1172,7 @@ export default function Generator() {
                     max={MAX_ALLOWED_WORDS}
                     value={maxWords}
                     onChange={(event) => setMaxWords(Number(event.target.value))}
-                    className="mt-2 w-full accent-glow-purple"
+                    className="mt-2 w-full accent-glow-amber"
                   />
                   <p className="mt-1 text-[11px] text-night-400">AI keeps generated prompt at or below {maxWords} words.</p>
                 </div>
@@ -1189,7 +1189,11 @@ export default function Generator() {
                   >
                     Clear all
                   </button>
-                  <button onClick={handleGenerate} disabled={loading} className="btn-primary">
+                  <button
+                    onClick={handleGenerate}
+                    disabled={loading}
+                    className="rounded-xl border border-glow-amber/40 bg-glow-amber/15 px-4 py-2 text-sm font-medium text-glow-amber shadow-glow-amber transition-colors hover:bg-glow-amber/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
                     {loading ? 'Generating...' : 'Magic Random (AI)'}
                   </button>
                 </div>
@@ -1209,6 +1213,17 @@ export default function Generator() {
                 onChange={(e) => setGeneratedPrompt(e.target.value)}
                 placeholder="Your generated prompt will appear here."
               />
+
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleImprove}
+                  disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative}
+                  className="rounded-xl border border-glow-amber/40 bg-glow-amber/10 px-4 py-2 text-sm font-medium text-glow-amber shadow-glow-amber transition-colors hover:bg-glow-amber/20 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {improving ? 'Improving...' : 'Improve Prompt'}
+                </button>
+              </div>
 
               {showNegativePromptControls ? (
                 <div className="mt-4">
@@ -1452,16 +1467,6 @@ export default function Generator() {
                 </p>
               )}
 
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleImprove}
-                  disabled={!generatedPrompt.trim() || loading || improving || generatingNegative || improvingNegative}
-                  className="btn-ghost border border-night-600/50"
-                >
-                  {improving ? 'Improving...' : 'Improve Prompt'}
-                </button>
-              </div>
             </div>
           </>
         ) : (

@@ -1,5 +1,17 @@
 # Walkthrough
 
+## 2026-03-24 (Generator colour tuning toward amber reference look)
+
+- Findings: De huidige Generator gebruikte vooral koele paars/blauwe accenten, terwijl de referentie visueel meer nadruk legt op een warme amber-accentzone rond de random-kaart en CTA.
+- Conclusions: Door alleen de Magic Random kaart en bijbehorende controls warm amber te maken blijft de huidige design language behouden, maar komt de pagina dichter bij de referentie-look.
+- Actions: In `src/screens/Generator.tsx` de `Magic Random` kaart voorzien van amber-tinted gradient + border (`to-glow-amber/5`, `border-glow-amber/25`), random-header icon en actieve character states naar amber gezet, random sliders omgezet naar `accent-glow-amber`, en de `Magic Random (AI)` knop restyled naar een amber rounded CTA met `shadow-glow-amber`; gevalideerd met `npm run build`.
+
+## 2026-03-24 (Improve Prompt moved under generated field)
+
+- Findings: `Improve Prompt` stond onderaan de kaart, los van het generated prompt-veld, waardoor de actie niet dicht bij de hoofdoutput zat.
+- Conclusions: De knop direct onder het generated prompt-veld plaatsen maakt de flow logischer; amber styling maakt het een duidelijke secundaire focusactie.
+- Actions: In `src/screens/Generator.tsx` de `Improve Prompt` knop verplaatst naar direct onder de generated textarea en opnieuw gestyled als afgeronde amber knop (`bg-glow-amber/10`, `border-glow-amber/40`, `text-glow-amber`, `shadow-glow-amber`); oude knoppositie onderaan verwijderd; gevalideerd met `npm run build`.
+
 ## 2026-03-24 (Copy/Clear actions under Negative Prompt controls)
 
 - Findings: In de Generated Prompt-kaart ontbraken directe `Copy Prompt` en `Clear all` acties onder de `Generate Negative Prompt`/`Improve Negative Prompt` knoppen.
