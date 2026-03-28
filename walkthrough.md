@@ -12,6 +12,12 @@
 - Conclusions: Treat Research & Reasoning as a first-class role (`general`) across cloud and local providers to keep role routing consistent and make switching active models predictable.
 - Actions: Extended `AIRole` with `general` in `src/lib/constants.ts`; expanded provider meta to include `is_active_general` across `electron/ipc/settings.ts`, `electron/preload.ts`, `src/types/electron.d.ts`, and `src/screens/Settings/ProviderConfig/types.ts`; updated cloud activation UI in `src/screens/Settings/ProviderConfig/components/ModelAndActivation.tsx` + `forms/ProviderConfigForm.tsx`; updated local provider model fields and activation buttons in `src/components/LocalEndpointCard.tsx` + `src/screens/Settings/ConfigurationWizard.tsx`; ensured AI config state hydration includes `model_general` / `is_active_general` in `src/screens/AIConfig.tsx`; validated with `npm run build`.
 
+## 2026-03-28 (Model selector — read more modal)
+
+- Findings: Model descriptions in the selector list were truncated, making it hard to review full details before selecting.
+- Conclusions: A lightweight modal keeps the list compact while still allowing full inspection of model details on demand.
+- Actions: Updated `src/components/ModelSelector.tsx` to add a `Read more` action that opens a modal showing full model details (capabilities, prices, ID, and full description) and uses a lightbox-style blurred backdrop; validated with `npm run build`.
+
 ## 2026-03-28 (AI config — show last updated for models list)
 
 - Findings: The AI configuration provider setup allowed refreshing the models list, but it was not visible when the list was last fetched.

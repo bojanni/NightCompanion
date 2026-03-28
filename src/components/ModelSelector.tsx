@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Brain, ChevronDown, Code2, Eye, FileText, Globe, Mic, Video } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Brain, ChevronDown, Code2, Eye, FileText, Globe, Mic, Video, X } from 'lucide-react'
 
 import type { ModelOption } from '../screens/Settings/types'
 
@@ -18,6 +18,10 @@ interface ModelSelectorProps {
   placeholder?: string
   className?: string
   sortMode?: 'cheapest' | 'alphabetical'
+}
+
+function getModelTitle(model: ModelOption): string {
+  return model.displayName || model.name || model.label || model.id
 }
 
 function formatPerMillion(priceText: string | null | undefined): string | null {
@@ -174,9 +178,44 @@ function getCapabilityChips(capabilities: string[]): Array<{
   return chips
 }
 
-export default function ModelSelector({ value, onChange, models, placeholder, className, sortMode = 'alphabetical' }: ModelSelectorProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
+export default function ModelSelector({
+  value,
+  onChange,
+  models,
+  providers,
+  placeholder,
+  className,
+  sortMode,
+}: ModelSelectorProps) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  const [detailsModel, setDetailsModel] = useState<ModelOption | null>(null)
+
+  const providerLabelMap = useMemo(() => {
+    const map = new Map<string, string>()
+    ;(providers || []).forEach((provider) => {
+      map.set(provider.id.toLowerCase(), provider.name)
+    })
+    return map
+  }, [providers])
+
+  const resolveProviderLabel = useCallback((providerId: string | undefined): string => {
+    if (!providerId) return ''
+    return providerLabelMap.get(providerId.toLowerCase()) ?? getProviderDisplayName(providerId)
+  }, [providerLabelMap])
+
+  useEffect(() => {
+    if (!detailsModel) return
+
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setDetailsModel(null)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [detailsModel])
+
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlightedIndex, setHighlightedIndex] = useState(0)
@@ -196,16 +235,12 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
     })
   }, [models, sortMode])
 
-  const selectedModel = useMemo(
-    () => sortedModels.find((model) => model.id === value),
-    [sortedModels, value]
-  )
-
-  const selectedModelName = selectedModel?.displayName || selectedModel?.name || selectedModel?.label || selectedModel?.id || ''
-  const selectedPriceLabel = selectedModel
-    ? (isFreeModel(selectedModel) ? 'Free' : buildComputedPriceLabel(selectedModel))
+  const selectedModel = useMemo(() => models.find((model) => model.id === value), [models, value])
+  const selectedModelName = selectedModel ? getModelTitle(selectedModel) : undefined
+  const selectedProviderName = selectedModel?.provider ? resolveProviderLabel(selectedModel.provider) : ''
+  const selectedPriceLabel = selectedModel?.promptPrice || selectedModel?.completionPrice
+    ? buildComputedPriceLabel(selectedModel)
     : ''
-  const selectedProviderName = getProviderDisplayName(selectedModel?.provider)
 
   // Auto-focus the search input when dropdown opens
   useEffect(() => {
@@ -216,10 +251,10 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (!containerRef.current)
+      if (!wrapperRef.current)
         return
 
-      if (containerRef.current.contains(event.target as Node))
+      if (wrapperRef.current.contains(event.target as Node))
         return
 
       setIsOpen(false)
@@ -236,7 +271,7 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
       return sortedModels
 
     return sortedModels.filter((model) => {
-      const modelName = (model.displayName || model.name || model.label || model.id).toLowerCase()
+      const modelName = getModelTitle(model).toLowerCase()
       const description = (model.description || '').toLowerCase()
       return modelName.includes(needle) || description.includes(needle) || model.id.toLowerCase().includes(needle)
     })
@@ -291,7 +326,84 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
   }
 
   return (
-    <div ref={containerRef} className={`relative ${className || ''}`.trim()}>
+    <div ref={wrapperRef} className={`relative ${className || ''}`}>
+      {detailsModel && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 backdrop-blur-md px-4"
+          onMouseDown={() => setDetailsModel(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full max-w-2xl rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
+              <div className="min-w-0">
+                <div className="text-base font-semibold text-white truncate">{getModelTitle(detailsModel)}</div>
+                {detailsModel.provider && (
+                  <div className="mt-1 text-xs text-slate-400 truncate">● {getProviderDisplayName(detailsModel.provider).toLowerCase()}</div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDetailsModel(null)}
+                className="rounded-xl border border-slate-700 bg-slate-800 p-2 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-5">
+              <div className="flex flex-wrap gap-2">
+                {getCapabilityChips(detailsModel.capabilities ?? []).map((capability) => (
+                  <span
+                    key={`${detailsModel.id}-${capability.key}-details`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border leading-none ${capability.className}`}
+                  >
+                    {capability.icon}
+                    {capability.label}
+                  </span>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Model ID</span>
+                    <span className="font-mono text-xs truncate">{detailsModel.id}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Price (prompt/out)</span>
+                    <span className="text-xs">{buildComputedPriceLabel(detailsModel) || '—'}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Request price</span>
+                    <span className="text-xs">{detailsModel.requestPrice || '—'}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-slate-400">Image price</span>
+                    <span className="text-xs">{detailsModel.imagePrice || '—'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {detailsModel.description?.trim() && (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-slate-200">Description</div>
+                  <div className="text-sm text-slate-300 whitespace-pre-wrap">{detailsModel.description.trim()}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => isOpen ? setIsOpen(false) : openDropdown()}
@@ -344,8 +456,8 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
               <div className="px-3 py-2 text-sm text-slate-400">No models found</div>
             ) : (
               filteredModels.map((model, index) => {
-                const modelName = model.displayName || model.name || model.label || model.id
-                const providerName = getProviderDisplayName(model.provider)
+                const modelName = getModelTitle(model)
+                const providerName = resolveProviderLabel(model.provider)
                 const description = model.description?.trim() || ''
                 const capabilityTags = model.capabilities ?? []
                 const capabilityChips = getCapabilityChips(capabilityTags)
@@ -401,13 +513,22 @@ export default function ModelSelector({ value, onChange, models, placeholder, cl
                         </div>
 
                         {description && (
-                          <>
-                            <div
-                              className="mt-1.5 text-xs text-slate-400 line-clamp-2"
-                            >
+                          <div className="mt-1.5">
+                            <div className="text-xs text-slate-400 line-clamp-2">
                               {description}
                             </div>
-                          </>
+                            <button
+                              type="button"
+                              className="mt-1 text-[11px] text-cyan-300 hover:text-cyan-200 underline underline-offset-2"
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                setDetailsModel(model)
+                              }}
+                            >
+                              Read more
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
