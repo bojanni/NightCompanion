@@ -1,5 +1,5 @@
 import type { KeyboardEvent } from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Brain, ChevronDown, Code2, Eye, FileText, Globe, Mic, Video, X } from 'lucide-react'
 
 import type { ModelOption } from '../screens/Settings/types'
@@ -200,10 +200,10 @@ export default function ModelSelector({
     return map
   }, [providers])
 
-  const resolveProviderLabel = useCallback((providerId: string | undefined): string => {
+  const resolveProviderLabel = (providerId: string | undefined): string => {
     if (!providerId) return ''
     return providerLabelMap.get(providerId.toLowerCase()) ?? getProviderDisplayName(providerId)
-  }, [providerLabelMap])
+  }
 
   useEffect(() => {
     if (!detailsModel) return

@@ -16,7 +16,7 @@
 
 - Findings: Model descriptions in the selector list were truncated, making it hard to review full details before selecting.
 - Conclusions: A lightweight modal keeps the list compact while still allowing full inspection of model details on demand.
-- Actions: Updated `src/components/ModelSelector.tsx` to add a `Read more` action that opens a modal showing full model details (capabilities, prices, ID, and full description) and uses a lightbox-style blurred backdrop; increased z-index values so the dropdown and modal always render above the rest of the UI; constrained the modal to `max-h-[95vh]` and made the body scrollable; validated with `npm run build`.
+- Actions: Updated `src/components/ModelSelector.tsx` to add a `Read more` action that opens a modal showing full model details (capabilities, prices, ID, and full description) and uses a lightbox-style blurred backdrop; increased z-index values so the dropdown and modal always render above the rest of the UI; constrained the modal to `max-h-[95vh]` and made the body scrollable; fixed a generator-page runtime error by avoiding `useCallback`; validated with `npm run build`.
 
 ## 2026-03-28 (AI config — show last updated for models list)
 
