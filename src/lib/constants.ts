@@ -3,4 +3,4 @@ export const LOCAL_PROVIDERS = {
   LMSTUDIO: 'lmstudio',
 } as const
 
-export type AIRole = 'generation' | 'improvement' | 'vision'
+export type AIRole = 'generation' | 'improvement' | 'vision' | 'general'

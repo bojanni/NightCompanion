@@ -12,10 +12,12 @@ type ProviderMetaStore = {
   model_gen: string
   model_improve: string
   model_vision: string
+  model_general: string
   is_active: boolean
   is_active_gen: boolean
   is_active_improve: boolean
   is_active_vision: boolean
+  is_active_general: boolean
 }
 type AiConfigStateStore = {
   dashboardRoleRouting?: unknown
@@ -34,10 +36,12 @@ type LocalEndpointStore = {
   model_gen?: string
   model_improve?: string
   model_vision?: string
+  model_general?: string
   is_active?: boolean
   is_active_gen?: boolean
   is_active_improve?: boolean
   is_active_vision?: boolean
+  is_active_general?: boolean
   updated_at?: string
 }
 type OpenRouterModel = {

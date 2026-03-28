@@ -1,4 +1,4 @@
-import { Loader2, RefreshCw, Server, Zap, Eye } from 'lucide-react'
+import { Loader2, RefreshCw, Server, Zap, Eye, BookOpen } from 'lucide-react'
 import ModelSelector from '../../../../components/ModelSelector'
 import type { ActivationButtonsProps, ModelSelectorSectionProps } from '../types'
 
@@ -6,6 +6,7 @@ export function ModelSelectorSection({
   selectedModelGen,
   selectedModelImprove,
   selectedModelVision,
+  selectedModelGeneral,
   onModelChange,
   models,
   providersInfo,
@@ -13,7 +14,24 @@ export function ModelSelectorSection({
   setModelSortMode,
   onRefresh,
   isRefreshing,
+  lastUpdatedAt,
 }: ModelSelectorSectionProps) {
+  const generalModels = models.filter((m) =>
+    m.capabilities?.includes('reasoning') ||
+    m.capabilities?.includes('web_search')
+  )
+
+  const selectedGeneral = models.find((m) => m.id === selectedModelGeneral)
+
+  const hasGeneralCandidates = generalModels.length > 0
+  const generalOptions = hasGeneralCandidates
+    ? (generalModels.some((m) => m.id === selectedModelGeneral)
+        ? generalModels
+        : (selectedGeneral
+          ? [selectedGeneral, ...generalModels]
+          : generalModels))
+    : models
+
   return (
     <div className="space-y-4 pt-4 border-t border-slate-800/50">
       <div className="flex items-center justify-between gap-3">
@@ -40,6 +58,12 @@ export function ModelSelectorSection({
             </button>
           </div>
 
+          {lastUpdatedAt && (
+            <span className="text-[11px] text-slate-500">
+              Last updated {lastUpdatedAt}
+            </span>
+          )}
+
           <button
             onClick={onRefresh}
             disabled={isRefreshing}
@@ -52,12 +76,12 @@ export function ModelSelectorSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-xs text-slate-400 mb-2">Generation Model</label>
           <ModelSelector
             value={selectedModelGen}
-            onChange={(id) => onModelChange(id, selectedModelImprove, selectedModelVision)}
+            onChange={(id) => onModelChange(id, selectedModelImprove, selectedModelVision, selectedModelGeneral)}
             models={models}
             providers={providersInfo}
             placeholder="Select generation model..."
@@ -70,7 +94,7 @@ export function ModelSelectorSection({
           <label className="block text-xs text-slate-400 mb-2">Improvement Model</label>
           <ModelSelector
             value={selectedModelImprove}
-            onChange={(id) => onModelChange(selectedModelGen, id, selectedModelVision)}
+            onChange={(id) => onModelChange(selectedModelGen, id, selectedModelVision, selectedModelGeneral)}
             models={models}
             providers={providersInfo}
             placeholder="Select improvement model..."
@@ -83,7 +107,7 @@ export function ModelSelectorSection({
           <label className="block text-xs text-slate-400 mb-2">Vision Model</label>
           <ModelSelector
             value={selectedModelVision}
-            onChange={(id) => onModelChange(selectedModelGen, selectedModelImprove, id)}
+            onChange={(id) => onModelChange(selectedModelGen, selectedModelImprove, id, selectedModelGeneral)}
             models={models.filter((m) =>
               m.capabilities?.includes('vision') ||
               m.id.toLowerCase().includes('vision') ||
@@ -93,6 +117,19 @@ export function ModelSelectorSection({
             )}
             providers={providersInfo}
             placeholder="Select vision model..."
+            sortMode={modelSortMode}
+            className="w-full"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-slate-400 mb-2">Research & Reasoning Model</label>
+          <ModelSelector
+            value={selectedModelGeneral}
+            onChange={(id) => onModelChange(selectedModelGen, selectedModelImprove, selectedModelVision, id)}
+            models={generalOptions}
+            providers={providersInfo}
+            placeholder="Select research model..."
             sortMode={modelSortMode}
             className="w-full"
           />
@@ -110,7 +147,7 @@ export function ActivationButtons({
 }: ActivationButtonsProps) {
   return (
     <div className="pt-6 mt-4 border-t border-slate-800/50 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
         <button
           onClick={() => onSetActive('generation')}
           disabled={actionLoading === `${provider.id}-generation`}
@@ -136,6 +173,15 @@ export function ActivationButtons({
         >
           <Eye size={16} className={actionLoading === `${provider.id}-vision` ? 'animate-spin' : ''} />
           {activeMeta.is_active_vision ? 'Active Vision' : 'Set Vision'}
+        </button>
+
+        <button
+          onClick={() => onSetActive('general')}
+          disabled={actionLoading === `${provider.id}-general`}
+          className={`py-3 rounded-xl flex flex-col items-center justify-center gap-1 font-medium text-xs transition-all border ${activeMeta.is_active_general ? 'bg-blue-500/10 text-blue-300 border-blue-500/20 hover:bg-blue-500/20' : 'bg-slate-800 text-slate-400 border-transparent hover:bg-slate-700 hover:text-white'}`}
+        >
+          <BookOpen size={16} className={actionLoading === `${provider.id}-general` ? 'animate-spin' : ''} />
+          {activeMeta.is_active_general ? 'Active Research & Reasoning' : 'Set Research & Reasoning'}
         </button>
       </div>
     </div>

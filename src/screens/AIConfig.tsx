@@ -23,10 +23,12 @@ interface ProviderMetaStore {
   model_gen: string
   model_improve: string
   model_vision: string
+  model_general: string
   is_active: boolean
   is_active_gen: boolean
   is_active_improve: boolean
   is_active_vision: boolean
+  is_active_general: boolean
 }
 
 type LegacyLocalEndpoint = Partial<LocalEndpoint> & {
@@ -41,10 +43,12 @@ function getDefaultProviderMeta(fallbackModel: string): ProviderMetaStore {
     model_gen: fallbackModel,
     model_improve: fallbackModel,
     model_vision: fallbackModel,
+    model_general: fallbackModel,
     is_active: false,
     is_active_gen: false,
     is_active_improve: false,
     is_active_vision: false,
+    is_active_general: false,
   }
 }
 
@@ -60,10 +64,12 @@ function normalizeLocalEndpoint(input: Partial<LocalEndpoint> & { id?: string; n
     model_gen: input.model_gen || modelName,
     model_improve: input.model_improve || modelName,
     model_vision: input.model_vision || modelName,
+    model_general: input.model_general || modelName,
     is_active: input.is_active || false,
     is_active_gen: input.is_active_gen || false,
     is_active_improve: input.is_active_improve || false,
     is_active_vision: input.is_active_vision || false,
+    is_active_general: input.is_active_general || false,
     updated_at: input.updated_at || new Date().toISOString(),
   }
 }
@@ -320,10 +326,12 @@ export function AIConfig() {
         model_gen: meta.model_gen || modelName,
         model_improve: meta.model_improve || modelName,
         model_vision: meta.model_vision || modelName,
+        model_general: meta.model_general || modelName,
         is_active: meta.is_active,
         is_active_gen: meta.is_active_gen,
         is_active_improve: meta.is_active_improve,
         is_active_vision: meta.is_active_vision,
+        is_active_general: meta.is_active_general,
       },
     ])
   }, [])
@@ -429,7 +437,12 @@ export function AIConfig() {
     [keys, localEndpoints]
   )
 
-  const activeResearch = activeGen
+  const activeGeneral = useMemo(
+    () => keys.find((key) => key.is_active_general) || localEndpoints.find((endpoint) => endpoint.is_active_general),
+    [keys, localEndpoints]
+  )
+
+  const activeResearch = activeGeneral || activeGen
   const configuredCount = keys.length + localEndpoints.length
 
   const providerOptions = useMemo<ProviderOption[]>(() => {
@@ -477,6 +490,7 @@ export function AIConfig() {
         endpoint.model_gen,
         endpoint.model_improve,
         endpoint.model_vision,
+        endpoint.model_general,
       ].filter(Boolean) as string[]
       const bucket = modelMap.get(providerId) || new Set<string>()
       models.forEach((model) => bucket.add(model))
@@ -533,7 +547,7 @@ export function AIConfig() {
 
       return changed ? next : prev
     })
-  }, [providerOptions, modelsByProvider, activeGen, activeImprove, activeVision])
+  }, [providerOptions, modelsByProvider, activeGen, activeImprove, activeVision, activeGeneral])
 
   const updateRoleRouting = useCallback((role: DashboardRole, patch: Partial<RoleRouteSelection>) => {
     setRoleRouting((prev) => {

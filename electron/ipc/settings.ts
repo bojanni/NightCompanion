@@ -19,10 +19,12 @@ type ProviderMetaStore = {
   model_gen: string
   model_improve: string
   model_vision: string
+  model_general: string
   is_active: boolean
   is_active_gen: boolean
   is_active_improve: boolean
   is_active_vision: boolean
+  is_active_general: boolean
 }
 
 type AiConfigStateStore = {
@@ -43,10 +45,12 @@ type LocalEndpointStore = {
   model_gen?: string
   model_improve?: string
   model_vision?: string
+  model_general?: string
   is_active?: boolean
   is_active_gen?: boolean
   is_active_improve?: boolean
   is_active_vision?: boolean
+  is_active_general?: boolean
   updated_at?: string
 }
 
@@ -122,10 +126,12 @@ function normalizeProviderMetaMap(input: unknown): Record<string, Partial<Provid
     if (typeof rawMeta.model_gen === 'string') nextMeta.model_gen = rawMeta.model_gen
     if (typeof rawMeta.model_improve === 'string') nextMeta.model_improve = rawMeta.model_improve
     if (typeof rawMeta.model_vision === 'string') nextMeta.model_vision = rawMeta.model_vision
+    if (typeof rawMeta.model_general === 'string') nextMeta.model_general = rawMeta.model_general
     if (typeof rawMeta.is_active === 'boolean') nextMeta.is_active = rawMeta.is_active
     if (typeof rawMeta.is_active_gen === 'boolean') nextMeta.is_active_gen = rawMeta.is_active_gen
     if (typeof rawMeta.is_active_improve === 'boolean') nextMeta.is_active_improve = rawMeta.is_active_improve
     if (typeof rawMeta.is_active_vision === 'boolean') nextMeta.is_active_vision = rawMeta.is_active_vision
+    if (typeof rawMeta.is_active_general === 'boolean') nextMeta.is_active_general = rawMeta.is_active_general
 
     normalized[providerId] = nextMeta
   }
@@ -194,10 +200,12 @@ function normalizeProviderMeta(input: Partial<ProviderMetaStore> | undefined, fa
     model_gen: input?.model_gen || fallbackModel,
     model_improve: input?.model_improve || fallbackModel,
     model_vision: input?.model_vision || fallbackModel,
+    model_general: input?.model_general || fallbackModel,
     is_active: input?.is_active ?? false,
     is_active_gen: input?.is_active_gen ?? false,
     is_active_improve: input?.is_active_improve ?? false,
     is_active_vision: input?.is_active_vision ?? false,
+    is_active_general: input?.is_active_general ?? false,
   }
 }
 
@@ -453,7 +461,7 @@ export function registerSettingsIpc({
     try {
       const stored = await readStoredSettings()
       const providerMap = stored.providerMeta || {}
-      const fallbackModel = input.model_gen || input.model_improve || input.model_vision || DEFAULT_OPENROUTER_MODEL
+      const fallbackModel = input.model_gen || input.model_improve || input.model_vision || input.model_general || DEFAULT_OPENROUTER_MODEL
       const current = normalizeProviderMeta(providerMap[providerId], fallbackModel)
       const next = normalizeProviderMeta({ ...current, ...input }, fallbackModel)
 

@@ -3,7 +3,7 @@ import { ExternalLink, Key, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { syncTaskModel } from '../../../../hooks/useTaskModels'
-import type { ApiKeyInfo, ModelOption } from '../../../types'
+import type { ApiKeyInfo, ModelOption } from '../../types'
 import type { ProviderDefinition, ProviderMetaStore } from '../types'
 import { ApiKeyInput } from '../components/ApiKeyInput'
 import { ModelSelectorSection, ActivationButtons } from '../components/ModelAndActivation'
@@ -26,10 +26,12 @@ function getDefaultProviderMeta(modelName: string): ProviderMetaStore {
     model_gen: modelName,
     model_improve: modelName,
     model_vision: modelName,
+    model_general: modelName,
     is_active: false,
     is_active_gen: false,
     is_active_improve: false,
     is_active_vision: false,
+    is_active_general: false,
   }
 }
 
@@ -60,9 +62,15 @@ export function ProviderConfigForm({
   const [selectedModelGen, setSelectedModelGen] = useState(keyInfo?.model_gen || keyInfo?.model_name || 'openai/gpt-4o-mini')
   const [selectedModelImprove, setSelectedModelImprove] = useState(keyInfo?.model_improve || keyInfo?.model_name || 'openai/gpt-4o-mini')
   const [selectedModelVision, setSelectedModelVision] = useState(keyInfo?.model_vision || keyInfo?.model_name || 'openai/gpt-4o-mini')
+  const [selectedModelGeneral, setSelectedModelGeneral] = useState(keyInfo?.model_name || 'openai/gpt-4o-mini')
   const [showKey, setShowKey] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [providerMeta, setProviderMeta] = useState<ProviderMetaStore>(getDefaultProviderMeta(keyInfo?.model_name || 'openai/gpt-4o-mini'))
+  const [lastModelsUpdatedAt, setLastModelsUpdatedAt] = useState<string | null>(null)
+
+  const lastModelsUpdatedLabel = lastModelsUpdatedAt
+    ? new Date(lastModelsUpdatedAt).toLocaleString()
+    : null
 
   useEffect(() => {
     if (!adapter) return
@@ -82,6 +90,7 @@ export function ProviderConfigForm({
       setSelectedModelGen(keyInfo?.model_gen || nextMeta.model_gen || defaultModel)
       setSelectedModelImprove(keyInfo?.model_improve || nextMeta.model_improve || defaultModel)
       setSelectedModelVision(keyInfo?.model_vision || nextMeta.model_vision || defaultModel)
+      setSelectedModelGeneral(nextMeta.model_general || defaultModel)
     }
 
     void loadProviderMeta()
@@ -163,6 +172,7 @@ export function ProviderConfigForm({
         model_gen: selectedModelGen,
         model_improve: selectedModelImprove,
         model_vision: selectedModelVision,
+        model_general: selectedModelGeneral,
       }
 
       await persistProviderMeta(nextMeta)
@@ -178,6 +188,8 @@ export function ProviderConfigForm({
           ...prev,
           [provider.id]: models,
         }))
+
+        setLastModelsUpdatedAt(new Date().toISOString())
       } else {
         modelSyncWarning = modelsResult.error || 'Model sync failed after saving the API key.'
       }
@@ -199,7 +211,7 @@ export function ProviderConfigForm({
     } finally {
       setActionLoading(null)
     }
-  }, [adapter, provider, inputValue, selectedModelGen, selectedModelImprove, selectedModelVision, providerMeta, persistProviderMeta, mapRawModelsToOptions, setDynamicModels, loadKeys, setActionLoading])
+  }, [adapter, provider, inputValue, selectedModelGen, selectedModelImprove, selectedModelVision, selectedModelGeneral, providerMeta, persistProviderMeta, mapRawModelsToOptions, setDynamicModels, loadKeys, setActionLoading, setLastModelsUpdatedAt])
 
   const handleDelete = useCallback(async () => {
     if (!adapter) {
@@ -224,7 +236,7 @@ export function ProviderConfigForm({
     }
   }, [adapter, provider.id, provider.name, persistProviderMeta, loadKeys, setActionLoading])
 
-  const handleSetActive = useCallback(async (role: 'generation' | 'improvement' | 'vision') => {
+  const handleSetActive = useCallback(async (role: 'generation' | 'improvement' | 'vision' | 'general') => {
     setActionLoading(`${provider.id}-${role}`)
 
     try {
@@ -234,13 +246,17 @@ export function ProviderConfigForm({
         ? meta.is_active_gen
         : role === 'improvement'
           ? meta.is_active_improve
-          : meta.is_active_vision
+          : role === 'vision'
+            ? meta.is_active_vision
+            : meta.is_active_general
 
       const currentModel = role === 'generation'
         ? selectedModelGen
         : role === 'improvement'
           ? selectedModelImprove
-          : selectedModelVision
+          : role === 'vision'
+            ? selectedModelVision
+            : selectedModelGeneral
 
       const nextMeta = {
         ...meta,
@@ -248,9 +264,11 @@ export function ProviderConfigForm({
         is_active_gen: role === 'generation' ? !isActive : false,
         is_active_improve: role === 'improvement' ? !isActive : false,
         is_active_vision: role === 'vision' ? !isActive : false,
+        is_active_general: role === 'general' ? !isActive : false,
         model_gen: selectedModelGen,
         model_improve: selectedModelImprove,
         model_vision: selectedModelVision,
+        model_general: selectedModelGeneral,
       }
 
       await persistProviderMeta(nextMeta)
@@ -264,7 +282,7 @@ export function ProviderConfigForm({
     } finally {
       setActionLoading(null)
     }
-  }, [provider, providerMeta, selectedModelGen, selectedModelImprove, selectedModelVision, persistProviderMeta, loadKeys, loadLocalEndpoints, setActionLoading])
+  }, [provider, providerMeta, selectedModelGen, selectedModelImprove, selectedModelVision, selectedModelGeneral, persistProviderMeta, loadKeys, loadLocalEndpoints, setActionLoading])
 
   const handleFetchModels = useCallback(async () => {
     if (!adapter) {
@@ -290,15 +308,17 @@ export function ProviderConfigForm({
         [provider.id]: models,
       }))
 
+      setLastModelsUpdatedAt(new Date().toISOString())
+
       toast.success('Models list updated')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to fetch models')
     } finally {
       setActionLoading(null)
     }
-  }, [adapter, provider, inputValue, selectedModelGen, mapRawModelsToOptions, setDynamicModels, setActionLoading])
+  }, [adapter, provider, inputValue, selectedModelGen, mapRawModelsToOptions, setDynamicModels, setActionLoading, setLastModelsUpdatedAt])
 
-  const handleModelChange = useCallback(async (genId: string, improveId: string, visionId: string) => {
+  const handleModelChange = useCallback(async (genId: string, improveId: string, visionId: string, generalId: string) => {
     const meta = providerMeta
 
     await persistProviderMeta({
@@ -306,11 +326,13 @@ export function ProviderConfigForm({
       model_gen: genId,
       model_improve: improveId,
       model_vision: visionId,
+      model_general: generalId,
     })
 
     if (meta.is_active_gen) syncTaskModel('generation', provider.id, genId)
     if (meta.is_active_improve) syncTaskModel('improvement', provider.id, improveId)
     if (meta.is_active_vision) syncTaskModel('vision', provider.id, visionId)
+    if (meta.is_active_general) syncTaskModel('general', provider.id, generalId)
 
     if (!isEditing && keyInfo)
       toast.success('Model preferences updated')
@@ -463,6 +485,7 @@ export function ProviderConfigForm({
         selectedModelGen={selectedModelGen}
         selectedModelImprove={selectedModelImprove}
         selectedModelVision={selectedModelVision}
+        selectedModelGeneral={selectedModelGeneral}
         onModelChange={handleModelChange}
         models={allModels}
         providersInfo={providersInfo}
@@ -470,6 +493,7 @@ export function ProviderConfigForm({
         setModelSortMode={setModelSortMode}
         onRefresh={handleFetchModels}
         isRefreshing={isFetching}
+        lastUpdatedAt={lastModelsUpdatedLabel}
       />
 
       {keyInfo && !isEditing && (

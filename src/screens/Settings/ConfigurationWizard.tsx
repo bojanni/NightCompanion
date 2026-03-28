@@ -26,6 +26,7 @@ function getModelForRole(endpoint: LocalEndpoint | undefined, role: AIRole): str
   if (role === 'generation' && endpoint.model_gen) return endpoint.model_gen
   if (role === 'improvement' && endpoint.model_improve) return endpoint.model_improve
   if (role === 'vision' && endpoint.model_vision) return endpoint.model_vision
+  if (role === 'general' && endpoint.model_general) return endpoint.model_general
   return endpoint.model_name
 }
 
@@ -47,6 +48,7 @@ async function upsertEndpoint({
   modelGen,
   modelImprove,
   modelVision,
+  modelGeneral,
 }: {
   provider: string
   name: string
@@ -54,6 +56,7 @@ async function upsertEndpoint({
   modelGen: string
   modelImprove: string
   modelVision: string
+  modelGeneral: string
 }) {
   const endpoints = await readEndpoints()
   const existing = endpoints.find((item) => item.provider === provider)
@@ -67,10 +70,12 @@ async function upsertEndpoint({
     model_gen: modelGen,
     model_improve: modelImprove,
     model_vision: modelVision,
+    model_general: modelGeneral,
     is_active: existing?.is_active || false,
     is_active_gen: existing?.is_active_gen || false,
     is_active_improve: existing?.is_active_improve || false,
     is_active_vision: existing?.is_active_vision || false,
+    is_active_general: existing?.is_active_general || false,
     updated_at: new Date().toISOString(),
   }
 
@@ -93,13 +98,16 @@ async function toggleLocalRole(provider: string, role: AIRole) {
         is_active_gen: false,
         is_active_improve: false,
         is_active_vision: false,
+        is_active_general: false,
       }
 
     const isRoleActive = role === 'generation'
       ? endpoint.is_active_gen
       : role === 'improvement'
         ? endpoint.is_active_improve
-        : endpoint.is_active_vision
+        : role === 'vision'
+          ? endpoint.is_active_vision
+          : endpoint.is_active_general
 
     return {
       ...endpoint,
@@ -107,6 +115,7 @@ async function toggleLocalRole(provider: string, role: AIRole) {
       is_active_gen: role === 'generation' ? !isRoleActive : false,
       is_active_improve: role === 'improvement' ? !isRoleActive : false,
       is_active_vision: role === 'vision' ? !isRoleActive : false,
+      is_active_general: role === 'general' ? !isRoleActive : false,
       updated_at: new Date().toISOString(),
     }
   })
@@ -173,10 +182,11 @@ export function ConfigurationWizard({
 
           <div className="space-y-6">
             <LocalEndpointCard
+              key={`local-${LOCAL_PROVIDERS.OLLAMA}-${localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.OLLAMA)?.updated_at || 'new'}`}
               type={LOCAL_PROVIDERS.OLLAMA}
               endpoint={localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.OLLAMA)}
               actionLoading={actionLoading}
-              onSave={async (url, modelGen, modelImprove, modelVision) => {
+              onSave={async (url, modelGen, modelImprove, modelVision, modelGeneral) => {
                 setActionLoading('ollama')
                 try {
                   await upsertEndpoint({
@@ -186,6 +196,7 @@ export function ConfigurationWizard({
                     modelGen,
                     modelImprove,
                     modelVision,
+                    modelGeneral,
                   })
                   await loadLocalEndpoints()
                   toast.success('Ollama config saved')
@@ -227,10 +238,11 @@ export function ConfigurationWizard({
             />
 
             <LocalEndpointCard
+              key={`local-${LOCAL_PROVIDERS.LMSTUDIO}-${localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.LMSTUDIO)?.updated_at || 'new'}`}
               type={LOCAL_PROVIDERS.LMSTUDIO}
               endpoint={localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.LMSTUDIO)}
               actionLoading={actionLoading}
-              onSave={async (url, modelGen, modelImprove, modelVision) => {
+              onSave={async (url, modelGen, modelImprove, modelVision, modelGeneral) => {
                 setActionLoading('lmstudio')
                 try {
                   await upsertEndpoint({
@@ -240,6 +252,7 @@ export function ConfigurationWizard({
                     modelGen,
                     modelImprove,
                     modelVision,
+                    modelGeneral,
                   })
                   await loadLocalEndpoints()
                   toast.success('LM Studio config saved')

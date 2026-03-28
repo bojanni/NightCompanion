@@ -1,5 +1,23 @@
 # Walkthrough
 
+## 2026-03-28 (AI config — add Research & Reasoning model selector)
+
+- Findings: Provider configuration only offered Generation/Improvement/Vision model selectors, while the dashboard supports a combined Research & Reasoning role.
+- Conclusions: Adding a dedicated provider preference for the combined role keeps provider-level model selection aligned with the dashboard routing and makes it easy to pick capable models.
+- Actions: Added `model_general` to `ProviderMetaStore` in `electron/ipc/settings.ts`, `electron/preload.ts`, and `src/types/electron.d.ts`; extended provider config types in `src/screens/Settings/ProviderConfig/types.ts`; updated `ProviderConfigForm` + `ModelSelectorSection` to render 4 selectors in a 2x2 grid and persist `model_general`; validated with `npm run build`.
+
+## 2026-03-28 (AI config — activate Research & Reasoning + local provider support)
+
+- Findings: The combined Research & Reasoning role could be selected on the dashboard, but cloud provider activation buttons and local provider cards did not allow setting an active model for that role.
+- Conclusions: Treat Research & Reasoning as a first-class role (`general`) across cloud and local providers to keep role routing consistent and make switching active models predictable.
+- Actions: Extended `AIRole` with `general` in `src/lib/constants.ts`; expanded provider meta to include `is_active_general` across `electron/ipc/settings.ts`, `electron/preload.ts`, `src/types/electron.d.ts`, and `src/screens/Settings/ProviderConfig/types.ts`; updated cloud activation UI in `src/screens/Settings/ProviderConfig/components/ModelAndActivation.tsx` + `forms/ProviderConfigForm.tsx`; updated local provider model fields and activation buttons in `src/components/LocalEndpointCard.tsx` + `src/screens/Settings/ConfigurationWizard.tsx`; ensured AI config state hydration includes `model_general` / `is_active_general` in `src/screens/AIConfig.tsx`; validated with `npm run build`.
+
+## 2026-03-28 (AI config — show last updated for models list)
+
+- Findings: The AI configuration provider setup allowed refreshing the models list, but it was not visible when the list was last fetched.
+- Conclusions: A small timestamp shown next to the refresh control provides immediate feedback that the models list is current without changing the underlying fetch logic.
+- Actions: Extended `ModelSelectorSectionProps` in `src/screens/Settings/ProviderConfig/types.ts`; wired a `lastModelsUpdatedAt` timestamp in `src/screens/Settings/ProviderConfig/forms/ProviderConfigForm.tsx` (updated on successful model sync/refresh) and displayed it in `src/screens/Settings/ProviderConfig/components/ModelAndActivation.tsx`; validated with `npm run build`.
+
 ## 2026-03-24 (Remove Save changes button from PromptPreview)
 
 - Findings: User wanted the Save changes button removed from the edit prompt form next to the Copy button.

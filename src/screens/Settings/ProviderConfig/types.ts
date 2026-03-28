@@ -14,10 +14,12 @@ export interface ProviderMetaStore {
   model_gen: string
   model_improve: string
   model_vision: string
+  model_general: string
   is_active: boolean
   is_active_gen: boolean
   is_active_improve: boolean
   is_active_vision: boolean
+  is_active_general: boolean
 }
 
 export interface ProviderConfigCallbacks {
@@ -39,6 +41,8 @@ export interface ProviderConfigState {
   setSelectedModelImprove: (value: string) => void
   selectedModelVision: string
   setSelectedModelVision: (value: string) => void
+  selectedModelGeneral: string
+  setSelectedModelGeneral: (value: string) => void
   modelSortMode: 'cheapest' | 'alphabetical'
   setModelSortMode: (value: 'cheapest' | 'alphabetical') => void
   providerMeta: ProviderMetaStore
@@ -86,18 +90,20 @@ export interface ModelSelectorSectionProps {
   selectedModelGen: string
   selectedModelImprove: string
   selectedModelVision: string
-  onModelChange: (genId: string, improveId: string, visionId: string) => void
+  selectedModelGeneral: string
+  onModelChange: (genId: string, improveId: string, visionId: string, generalId: string) => void
   models: BaseModelOption[]
   providersInfo: Array<{ id: string, name: string, type: 'cloud' | 'local' }>
   modelSortMode: 'cheapest' | 'alphabetical'
   setModelSortMode: (value: 'cheapest' | 'alphabetical') => void
   onRefresh: () => void
   isRefreshing: boolean
+  lastUpdatedAt?: string | null
 }
 
 export interface ActivationButtonsProps {
   provider: ProviderDefinition
   activeMeta: ProviderMetaStore
   actionLoading: string | null
-  onSetActive: (role: 'generation' | 'improvement' | 'vision') => void
+  onSetActive: (role: 'generation' | 'improvement' | 'vision' | 'general') => void
 }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Check, Loader2, Server, Trash2, Zap, Eye } from 'lucide-react'
+import { useState } from 'react'
+import { Check, Loader2, Server, Trash2, Zap, Eye, BookOpen } from 'lucide-react'
 
 import type { LocalEndpoint } from '../screens/Settings/types'
 import type { AIRole } from '../lib/constants'
@@ -8,7 +8,7 @@ interface LocalEndpointCardProps {
   type: string
   endpoint?: LocalEndpoint
   actionLoading: string | null
-  onSave: (url: string, modelGen: string, modelImprove: string, modelVision: string) => Promise<void>
+  onSave: (url: string, modelGen: string, modelImprove: string, modelVision: string, modelGeneral: string) => Promise<void>
   onDelete: () => Promise<void>
   onSetActive: (role: AIRole) => Promise<void>
 }
@@ -31,19 +31,13 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
   const [modelGen, setModelGen] = useState(endpoint?.model_gen || endpoint?.model_name || '')
   const [modelImprove, setModelImprove] = useState(endpoint?.model_improve || endpoint?.model_name || '')
   const [modelVision, setModelVision] = useState(endpoint?.model_vision || endpoint?.model_name || '')
-
-  useEffect(() => {
-    setUrl(endpoint?.baseUrl || '')
-    setModelGen(endpoint?.model_gen || endpoint?.model_name || '')
-    setModelImprove(endpoint?.model_improve || endpoint?.model_name || '')
-    setModelVision(endpoint?.model_vision || endpoint?.model_name || '')
-  }, [endpoint])
+  const [modelGeneral, setModelGeneral] = useState(endpoint?.model_general || endpoint?.model_name || '')
 
   const title = type === 'ollama' ? 'Ollama' : 'LM Studio'
   const isSaving = actionLoading === type
   const isDeleting = actionLoading === `${type}-delete`
   const meta = PROVIDER_META[type] ?? { title, description: '', placeholder: 'http://localhost/v1' }
-  const isAnyRoleActive = !!(endpoint?.is_active_gen || endpoint?.is_active_improve || endpoint?.is_active_vision)
+  const isAnyRoleActive = !!(endpoint?.is_active_gen || endpoint?.is_active_improve || endpoint?.is_active_vision || endpoint?.is_active_general)
 
   return (
     <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-6 space-y-6 w-full animate-in fade-in slide-in-from-left-4 duration-300">
@@ -82,7 +76,7 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
           Model Selection
         </h4>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-xs text-slate-400 mb-2">Generation Model</label>
             <input
@@ -113,13 +107,24 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all text-sm"
             />
           </div>
+
+          <div>
+            <label className="block text-xs text-slate-400 mb-2">Research & Reasoning Model</label>
+            <input
+              type="text"
+              value={modelGeneral}
+              onChange={(event) => setModelGeneral(event.target.value)}
+              placeholder="e.g. llama3.2"
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 transition-all text-sm"
+            />
+          </div>
         </div>
       </div>
 
       {/* Save / Remove — matches ProviderConfigForm */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => onSave(url, modelGen, modelImprove, modelVision)}
+          onClick={() => onSave(url, modelGen, modelImprove, modelVision, modelGeneral)}
           disabled={isSaving || !url || !modelGen}
           className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-900 font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
@@ -142,7 +147,7 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
       {/* Role Activation — matches ProviderConfigForm */}
       {endpoint && (
         <div className="pt-6 border-t border-slate-800/50">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             <button
               onClick={() => onSetActive('generation')}
               className={`py-3 rounded-xl flex flex-col items-center justify-center gap-1 font-medium text-xs transition-all border ${endpoint.is_active_gen ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-800 text-slate-400 border-transparent hover:bg-slate-700 hover:text-white'}`}
@@ -163,6 +168,14 @@ export function LocalEndpointCard({ type, endpoint, actionLoading, onSave, onDel
             >
               <Eye size={16} />
               {endpoint.is_active_vision ? 'Active Vision' : 'Set Vision'}
+            </button>
+
+            <button
+              onClick={() => onSetActive('general')}
+              className={`py-3 rounded-xl flex flex-col items-center justify-center gap-1 font-medium text-xs transition-all border ${endpoint.is_active_general ? 'bg-blue-500/10 text-blue-300 border-blue-500/20 hover:bg-blue-500/20' : 'bg-slate-800 text-slate-400 border-transparent hover:bg-slate-700 hover:text-white'}`}
+            >
+              <BookOpen size={16} />
+              {endpoint.is_active_general ? 'Active Research' : 'Set Research & Reasoning'}
             </button>
           </div>
         </div>
