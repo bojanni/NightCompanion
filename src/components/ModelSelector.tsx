@@ -329,7 +329,7 @@ export default function ModelSelector({
     <div ref={wrapperRef} className={`relative ${className || ''}`}>
       {detailsModel && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 backdrop-blur-md px-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/55 backdrop-blur-md px-4"
           onMouseDown={() => setDetailsModel(null)}
           role="dialog"
           aria-modal="true"
@@ -434,7 +434,7 @@ export default function ModelSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-full rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl flex flex-col max-h-[26rem] p-3">
+        <div className="absolute z-[9998] mt-2 w-full rounded-3xl border border-slate-700 bg-slate-900 shadow-2xl flex flex-col max-h-[26rem] p-3">
           <div className="px-1 pb-2 shrink-0">
             <input
               ref={searchInputRef}
