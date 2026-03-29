@@ -1532,11 +1532,9 @@ export function registerAiIpc({
           throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
         }
 
-        const payload = (await response.json()) as {
-          choices?: Array<{ message?: { content?: string } }>
-        }
+        const payload = (await response.json()) as unknown
 
-        const title = normalizeGeneratedTitle(payload.choices?.[0]?.message?.content?.trim() || '')
+        const title = normalizeGeneratedTitle(extractChatCompletionContent(payload))
         if (!title) throw new Error('No title content returned.')
 
         resultTitle = title
@@ -1550,13 +1548,13 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†' Configure Providers.` }
       }
 
       requestPayload = {
         model: modelId,
         temperature: 0.4,
-        max_tokens: 60,
+        max_tokens: 2048,
         messages: [
           {
             role: 'system',
@@ -1584,11 +1582,9 @@ export function registerAiIpc({
         throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>
-      }
+      const payload = (await response.json()) as unknown
 
-      const title = normalizeGeneratedTitle(payload.choices?.[0]?.message?.content?.trim() || '')
+      const title = normalizeGeneratedTitle(extractChatCompletionContent(payload))
       if (!title) throw new Error('No title content returned.')
 
       resultTitle = title
