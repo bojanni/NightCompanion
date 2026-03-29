@@ -105,6 +105,7 @@ function extractChatCompletionContent(payload: unknown): string {
   if (typeof first !== 'object' || first === null) return ''
 
   const message = (first as { message?: unknown }).message
+  console.log('[extractContent] message keys:', message && typeof message === 'object' ? Object.keys(message).join(',') : typeof message)
   if (typeof message === 'object' && message !== null) {
     const content = (message as { content?: unknown }).content
     if (typeof content === 'string' && content.trim()) return content.trim()
@@ -771,7 +772,7 @@ export function registerAiIpc({
       requestPayload = {
         model: settings.model,
         temperature,
-        max_tokens: 220,
+        max_tokens: 2048,
         messages: [
           {
             role: 'system',
@@ -802,11 +803,9 @@ export function registerAiIpc({
         throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>
-      }
+      const payload = (await response.json()) as unknown
 
-      const prompt = payload.choices?.[0]?.message?.content?.trim()
+      const prompt = extractChatCompletionContent(payload)
       if (!prompt) {
         throw new Error('No prompt content returned from OpenRouter.')
       }
@@ -924,8 +923,8 @@ export function registerAiIpc({
           throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
         }
 
-        const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-        const raw = payload.choices?.[0]?.message?.content?.trim() || ''
+        const payload = (await response.json()) as unknown
+        const raw = extractChatCompletionContent(payload)
         if (!raw) throw new Error('No generated tags returned.')
 
         resultTags = parseGeneratedTags(raw, existingTags, maxTags)
@@ -939,13 +938,13 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†' Configure Providers.` }
       }
 
       requestPayload = {
         model: modelId,
         temperature: 0.3,
-        max_tokens: 160,
+        max_tokens: 2048,
         messages: [
           { role: 'system', content: tagInstruction },
           { role: 'user', content: userContent },
@@ -964,8 +963,8 @@ export function registerAiIpc({
         throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-      const raw = payload.choices?.[0]?.message?.content?.trim() || ''
+      const payload = (await response.json()) as unknown
+      const raw = extractChatCompletionContent(payload)
       if (!raw) throw new Error('No generated tags returned.')
 
       resultTags = parseGeneratedTags(raw, existingTags, maxTags)
@@ -1068,11 +1067,9 @@ export function registerAiIpc({
           throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
         }
 
-        const payload = (await response.json()) as {
-          choices?: Array<{ message?: { content?: string } }>
-        }
+        const payload = (await response.json()) as unknown
 
-        const improved = payload.choices?.[0]?.message?.content?.trim()
+        const improved = extractChatCompletionContent(payload)
         if (!improved) throw new Error('No improved prompt content returned.')
 
         resultPrompt = improved
@@ -1086,13 +1083,13 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†' Configure Providers.` }
       }
 
       requestPayload = {
         model: modelId,
         temperature: 0.7,
-        max_tokens: 420,
+        max_tokens: 2048,
         messages: [
           {
             role: 'system',
@@ -1120,11 +1117,9 @@ export function registerAiIpc({
         throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>
-      }
+      const payload = (await response.json()) as unknown
 
-      const improved = payload.choices?.[0]?.message?.content?.trim()
+      const improved = extractChatCompletionContent(payload)
       if (!improved) throw new Error('No improved prompt content returned.')
 
       resultPrompt = improved
@@ -1227,11 +1222,9 @@ export function registerAiIpc({
           throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
         }
 
-        const payload = (await response.json()) as {
-          choices?: Array<{ message?: { content?: string } }>
-        }
+        const payload = (await response.json()) as unknown
 
-        const improved = payload.choices?.[0]?.message?.content?.trim()
+        const improved = extractChatCompletionContent(payload)
         if (!improved) throw new Error('No improved negative prompt content returned.')
 
         resultPrompt = improved
@@ -1251,7 +1244,7 @@ export function registerAiIpc({
       requestPayload = {
         model: modelId,
         temperature: 0.4,
-        max_tokens: 220,
+        max_tokens: 2048,
         messages: [
           {
             role: 'system',
@@ -1279,11 +1272,9 @@ export function registerAiIpc({
         throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>
-      }
+      const payload = (await response.json()) as unknown
 
-      const improved = payload.choices?.[0]?.message?.content?.trim()
+      const improved = extractChatCompletionContent(payload)
       if (!improved) throw new Error('No improved negative prompt content returned.')
 
       resultPrompt = improved
@@ -1386,11 +1377,9 @@ export function registerAiIpc({
           throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
         }
 
-        const payload = (await response.json()) as {
-          choices?: Array<{ message?: { content?: string } }>
-        }
+        const payload = (await response.json()) as unknown
 
-        const generated = payload.choices?.[0]?.message?.content?.trim()
+        const generated = extractChatCompletionContent(payload)
         if (!generated) throw new Error('No generated negative prompt content returned.')
 
         resultPrompt = generated
@@ -1410,7 +1399,7 @@ export function registerAiIpc({
       requestPayload = {
         model: modelId,
         temperature: 0.4,
-        max_tokens: 220,
+        max_tokens: 2048,
         messages: [
           {
             role: 'system',
@@ -1438,11 +1427,9 @@ export function registerAiIpc({
         throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as {
-        choices?: Array<{ message?: { content?: string } }>
-      }
+      const payload = (await response.json()) as unknown
 
-      const generated = payload.choices?.[0]?.message?.content?.trim()
+      const generated = extractChatCompletionContent(payload)
       if (!generated) throw new Error('No generated negative prompt content returned.')
 
       resultPrompt = generated
