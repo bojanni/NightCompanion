@@ -899,7 +899,7 @@ export function registerAiIpc({
         requestPayload = {
           model: modelId,
           temperature: 0.3,
-          max_tokens: 160,
+          max_tokens: 2048,
           messages: [
             { role: 'system', content: tagInstruction },
             { role: 'user', content: userContent },
@@ -1036,7 +1036,7 @@ export function registerAiIpc({
         requestPayload = {
           model: modelId,
           temperature: 0.7,
-          max_tokens: 420,
+          max_tokens: 2048,
           messages: [
             {
               role: 'system',
@@ -1191,7 +1191,7 @@ export function registerAiIpc({
         requestPayload = {
           model: modelId,
           temperature: 0.4,
-          max_tokens: 220,
+          max_tokens: 2048,
           messages: [
             {
               role: 'system',
@@ -1346,7 +1346,7 @@ export function registerAiIpc({
         requestPayload = {
           model: modelId,
           temperature: 0.4,
-          max_tokens: 220,
+          max_tokens: 2048,
           messages: [
             {
               role: 'system',
@@ -1501,7 +1501,7 @@ export function registerAiIpc({
         requestPayload = {
           model: modelId,
           temperature: 0.4,
-          max_tokens: 60,
+          max_tokens: 2048,
           messages: [
             {
               role: 'system',
@@ -1674,7 +1674,7 @@ export function registerAiIpc({
         requestPayload = {
           model: settings.model,
           temperature,
-          max_tokens: 350,
+          max_tokens: 2048,
           messages: [
             { role: 'system', content: BASE_PERSONA },
             { role: 'user', content: userPrompt },
