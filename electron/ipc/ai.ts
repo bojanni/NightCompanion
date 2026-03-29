@@ -620,9 +620,11 @@ export function registerAiIpc({
         }
 
         const payload = (await response.json()) as unknown
+        console.log('[adviseModel] OpenRouter raw payload:', JSON.stringify(payload, null, 2).slice(0, 2000))
         const raw = extractChatCompletionContent(payload)
+        console.log('[adviseModel] extracted content:', raw ? raw.slice(0, 500) : '(empty)')
         if (!raw) {
-          throw new Error(`No advisor response content returned. Response keys: ${Object.keys((payload && typeof payload === 'object') ? payload as Record<string, unknown> : {}).join(', ')}`)
+          throw new Error(`No advisor response content returned. Payload snippet: ${JSON.stringify(payload, null, 0).slice(0, 400)}`)
         }
 
         const parsed = parseAdvisorAiResponse(raw)
@@ -669,9 +671,11 @@ export function registerAiIpc({
       }
 
       const payload = (await response.json()) as unknown
+      console.log('[adviseModel] Local raw payload:', JSON.stringify(payload, null, 2).slice(0, 2000))
       const raw = extractChatCompletionContent(payload)
+      console.log('[adviseModel] extracted content:', raw ? raw.slice(0, 500) : '(empty)')
       if (!raw) {
-        throw new Error(`No advisor response content returned. Response keys: ${Object.keys((payload && typeof payload === 'object') ? payload as Record<string, unknown> : {}).join(', ')}`)
+        throw new Error(`No advisor response content returned. Payload snippet: ${JSON.stringify(payload, null, 0).slice(0, 400)}`)
       }
 
       const parsed = parseAdvisorAiResponse(raw)
