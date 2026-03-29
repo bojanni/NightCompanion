@@ -24,6 +24,12 @@
 - Conclusions: Scoped console logs around the request make debugging easy without adding global noise.
 - Actions: Updated `src/screens/Generator.tsx` to log the `adviseModel` input payload and the IPC result/error using `console.groupCollapsed`; validated with `npm run build`.
 
+## 2026-03-29 (Generator — fix empty advisor response content)
+
+- Findings: `Get AI Advice` could return `No advisor response content returned` even when the provider returned a valid chat completion payload (e.g. `message.content` as an array of parts).
+- Conclusions: Extracting response content defensively across common chat completion shapes prevents false negatives and improves diagnostics.
+- Actions: Updated `electron/ipc/ai.ts` to extract chat completion content from either a string or an array of parts and to include response keys in the error message when content is missing; validated with `npm run build`.
+
 ## 2026-03-28 (AI config — show last updated for models list)
 
 - Findings: The AI configuration provider setup allowed refreshing the models list, but it was not visible when the list was last fetched.

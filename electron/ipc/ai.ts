@@ -95,6 +95,39 @@ type ScoredAdvisorModel = {
   }
 }
 
+function extractChatCompletionContent(payload: unknown): string {
+  if (typeof payload !== 'object' || payload === null) return ''
+
+  const maybeChoices = (payload as { choices?: unknown }).choices
+  if (!Array.isArray(maybeChoices) || maybeChoices.length === 0) return ''
+
+  const first = maybeChoices[0] as unknown
+  if (typeof first !== 'object' || first === null) return ''
+
+  const message = (first as { message?: unknown }).message
+  if (typeof message === 'object' && message !== null) {
+    const content = (message as { content?: unknown }).content
+    if (typeof content === 'string') return content.trim()
+    if (Array.isArray(content)) {
+      const out = content
+        .map((part) => {
+          if (typeof part === 'string') return part
+          if (typeof part === 'object' && part !== null && typeof (part as { text?: unknown }).text === 'string')
+            return String((part as { text: string }).text)
+          return ''
+        })
+        .join('')
+        .trim()
+      if (out) return out
+    }
+  }
+
+  const text = (first as { text?: unknown }).text
+  if (typeof text === 'string') return text.trim()
+
+  return ''
+}
+
 function appendPeriod(text: string): string {
   const trimmed = text.trim()
   if (!trimmed) return '.'
@@ -586,9 +619,11 @@ export function registerAiIpc({
           throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
         }
 
-        const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-        const raw = payload.choices?.[0]?.message?.content?.trim() || ''
-        if (!raw) throw new Error('No advisor response content returned.')
+        const payload = (await response.json()) as unknown
+        const raw = extractChatCompletionContent(payload)
+        if (!raw) {
+          throw new Error(`No advisor response content returned. Response keys: ${Object.keys((payload && typeof payload === 'object') ? payload as Record<string, unknown> : {}).join(', ')}`)
+        }
 
         const parsed = parseAdvisorAiResponse(raw)
         const advice: AdvisorResult = {
@@ -633,9 +668,11 @@ export function registerAiIpc({
         throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
       }
 
-      const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
-      const raw = payload.choices?.[0]?.message?.content?.trim() || ''
-      if (!raw) throw new Error('No advisor response content returned.')
+      const payload = (await response.json()) as unknown
+      const raw = extractChatCompletionContent(payload)
+      if (!raw) {
+        throw new Error(`No advisor response content returned. Response keys: ${Object.keys((payload && typeof payload === 'object') ? payload as Record<string, unknown> : {}).join(', ')}`)
+      }
 
       const parsed = parseAdvisorAiResponse(raw)
       const advice: AdvisorResult = {
