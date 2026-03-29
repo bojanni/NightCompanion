@@ -107,7 +107,7 @@ function extractChatCompletionContent(payload: unknown): string {
   const message = (first as { message?: unknown }).message
   if (typeof message === 'object' && message !== null) {
     const content = (message as { content?: unknown }).content
-    if (typeof content === 'string') return content.trim()
+    if (typeof content === 'string' && content.trim()) return content.trim()
     if (Array.isArray(content)) {
       const out = content
         .map((part) => {
@@ -120,6 +120,9 @@ function extractChatCompletionContent(payload: unknown): string {
         .trim()
       if (out) return out
     }
+
+    const reasoning = (message as { reasoning?: unknown }).reasoning
+    if (typeof reasoning === 'string' && reasoning.trim()) return reasoning.trim()
   }
 
   const text = (first as { text?: unknown }).text
@@ -595,7 +598,7 @@ export function registerAiIpc({
         requestPayload = {
           model: modelId,
           temperature: 0.2,
-          max_tokens: 700,
+          max_tokens: 4096,
           messages: [
             { role: 'system', content: advisorInstruction },
             { role: 'user', content: userContent },
@@ -651,7 +654,7 @@ export function registerAiIpc({
       requestPayload = {
         model: modelId,
         temperature: 0.2,
-        max_tokens: 700,
+        max_tokens: 4096,
         messages: [
           { role: 'system', content: advisorInstruction },
           { role: 'user', content: userContent },

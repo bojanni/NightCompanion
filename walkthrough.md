@@ -26,9 +26,9 @@
 
 ## 2026-03-29 (Generator — fix empty advisor response content)
 
-- Findings: `Get AI Advice` could return `No advisor response content returned` even when the provider returned a valid chat completion payload (e.g. `message.content` as an array of parts).
-- Conclusions: Extracting response content defensively across common chat completion shapes prevents false negatives and improves diagnostics.
-- Actions: Updated `electron/ipc/ai.ts` to extract chat completion content from either a string or an array of parts and to include response keys in the error message when content is missing; validated with `npm run build`.
+- Findings: `Get AI Advice` returned `No advisor response content returned` because reasoning models (e.g. `qwen/qwen3-14b`) put their output in `message.reasoning` instead of `message.content`, and `max_tokens: 700` was too low for the model to finish its chain-of-thought and produce the final `content`.
+- Conclusions: (1) Increase `max_tokens` to 4096 so reasoning models have enough room for thinking + answer. (2) Fall back to `message.reasoning` when `content` is null/empty. (3) Also handle `content` as an array of parts and include a payload snippet in the error for easier debugging.
+- Actions: Updated `electron/ipc/ai.ts`: added `extractChatCompletionContent` helper that reads `message.content` (string or array), then `message.reasoning`, then `choice.text`; raised `max_tokens` from 700 → 4096 for both OpenRouter and local provider paths; added main-process `console.log` for raw payload debugging; validated with `npm run build`.
 
 ## 2026-03-28 (AI config — show last updated for models list)
 
