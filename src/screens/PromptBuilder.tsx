@@ -46,37 +46,27 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
 
     setGeneratingPartId(partId)
 
-    // Field-specific prompts - generate SHORT, SIMPLE content only
-    const fieldPrompts = {
-      subject: 'Generate a short, simple subject (1-3 words). Examples: "a tree", "a yellow frog", "a mountain lake", "an old castle". No adjectives, no descriptions, just the core subject.',
-      style: 'Generate a short art style (1-3 words). Examples: "oil painting", "digital art", "watercolor", "3D render". Just the style name, nothing else.',
-      lighting: 'Generate short lighting terms (1-3 words). Examples: "golden hour", "moonlight", "dramatic lighting", "soft glow". Just the lighting description.',
-      mood: 'Generate a short mood (1-2 words). Examples: "dreamy", "mysterious", "serene", "dark". Just the mood word.',
-      artist: 'Generate a short artist reference. Examples: "in the style of Van Gogh", "in the style of Mucha". Just one artist reference.',
-      technical: 'Generate short technical terms (2-4 words). Examples: "8k resolution", "highly detailed", "cinematic lighting", "octane render". Just technical specs.',
+    // Map part.id to fieldType
+    const fieldTypeMap: Record<string, 'subject' | 'style' | 'lighting' | 'mood' | 'artist' | 'technical'> = {
+      subject: 'subject',
+      style: 'style',
+      lighting: 'lighting',
+      mood: 'mood',
+      artist: 'artist',
+      technical: 'technical',
     }
 
-    const ideaPrompt = fieldPrompts[part.id as keyof typeof fieldPrompts] ?? `Generate a ${part.label.toLowerCase()} for an AI art prompt.`
-
     try {
-      const result = await window.electronAPI.generator.quickExpand({
-        idea: ideaPrompt,
-        creativity: 'balanced',
+      const result = await window.electronAPI.generator.simpleGenerate({
+        fieldType: fieldTypeMap[part.id],
+        maxWords: part.maxWords,
       })
 
-      if (result.error || !result.data?.prompt) {
+      if (result.error || !result.data?.text) {
         throw new Error(result.error || 'No content generated.')
       }
 
-      let generated = result.data.prompt.trim()
-
-      // Enforce word limit
-      if (part.maxWords) {
-        const words = generated.split(/\s+/).slice(0, part.maxWords)
-        generated = words.join(' ')
-      }
-
-      updatePart(partId, generated)
+      updatePart(partId, result.data.text)
     } catch (error) {
       toast.error(`Failed to generate ${part.label.toLowerCase()}: ${String(error)}`)
     } finally {

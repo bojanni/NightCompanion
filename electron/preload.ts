@@ -321,6 +321,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('generator:generateTags', input),
     quickExpand: (input?: { idea?: string; presetName?: string; presetPrompt?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>> =>
       invokeWithFallback('generator:quickExpand', input),
+    simpleGenerate: (input?: { fieldType?: 'subject' | 'style' | 'lighting' | 'mood' | 'artist' | 'technical'; maxWords?: number }): Promise<IpcResult<{ text: string }>> =>
+      invokeWithFallback('generator:simpleGenerate', input),
     adviseModel: (input?: { prompt?: string; mode?: 'rule' | 'ai'; budgetMode?: 'cheap' | 'balanced' | 'premium' }): Promise<IpcResult<ModelAdvisorResult>> =>
       invokeWithFallback('generator:adviseModel', input),
   },
