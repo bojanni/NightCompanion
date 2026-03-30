@@ -39,6 +39,9 @@ export type AiConfigStateStore = {
   aiApiRequestLoggingEnabled?: boolean
   nativeWindowFrameEnabled?: boolean
   nightCompanionFolderPath?: string
+  usageCurrency?: 'usd' | 'eur'
+  eurRate?: number
+  storeAiPromptResponseForUsage?: boolean
 }
 
 export type LocalEndpointStore = {
@@ -159,6 +162,30 @@ export type CharacterRecord = {
   details: CharacterDetail[]
   createdAt: string
   updatedAt: string
+}
+
+export type UsageTotals = {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  costUsd: number
+}
+
+export type UsageEventSummary = UsageTotals & {
+  providerId: string
+  modelId: string
+  endpoint: string
+  createdAt: string
+}
+
+export type UsageSummary = {
+  session: UsageTotals
+  today: UsageTotals
+  lastAction: UsageEventSummary | null
+}
+
+export type UsageDailyTotals = UsageTotals & {
+  day: string
 }
 
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
@@ -296,6 +323,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('generator:quickExpand', input),
     adviseModel: (input?: { prompt?: string; mode?: 'rule' | 'ai'; budgetMode?: 'cheap' | 'balanced' | 'premium' }): Promise<IpcResult<ModelAdvisorResult>> =>
       invokeWithFallback('generator:adviseModel', input),
+  },
+  usage: {
+    getSummary: (): Promise<IpcResult<UsageSummary>> =>
+      invokeWithFallback('usage:getSummary'),
+    listDaily: (input?: { days?: number }): Promise<IpcResult<UsageDailyTotals[]>> =>
+      invokeWithFallback('usage:listDaily', input),
+    reset: (input?: { clearHistory?: boolean }): Promise<IpcResult<void>> =>
+      invokeWithFallback('usage:reset', input),
   },
   nightcafeModels: {
     list: (filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>> =>

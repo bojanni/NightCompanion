@@ -34,6 +34,9 @@ type AiConfigStateStore = {
   aiApiRequestLoggingEnabled?: boolean
   nativeWindowFrameEnabled?: boolean
   nightCompanionFolderPath?: string
+  usageCurrency?: 'usd' | 'eur'
+  eurRate?: number
+  storeAiPromptResponseForUsage?: boolean
 }
 
 type LocalEndpointStore = {
@@ -157,6 +160,16 @@ function normalizeAiConfigState(input: unknown): AiConfigStateStore | undefined 
   }
   if (typeof input.nightCompanionFolderPath === 'string') {
     normalized.nightCompanionFolderPath = input.nightCompanionFolderPath.trim()
+  }
+
+  if (input.usageCurrency === 'usd' || input.usageCurrency === 'eur') {
+    normalized.usageCurrency = input.usageCurrency
+  }
+  if (typeof input.eurRate === 'number' && Number.isFinite(input.eurRate) && input.eurRate > 0) {
+    normalized.eurRate = input.eurRate
+  }
+  if (typeof input.storeAiPromptResponseForUsage === 'boolean') {
+    normalized.storeAiPromptResponseForUsage = input.storeAiPromptResponseForUsage
   }
 
   return normalized

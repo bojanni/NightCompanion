@@ -7,6 +7,7 @@ import { registerNightCafeIpc } from '../ipc/nightcafe'
 import { registerCharactersIpc } from '../ipc/characters'
 import { registerSettingsIpc, type OpenRouterSettings } from '../ipc/settings'
 import { registerAiIpc } from '../ipc/ai'
+import { registerUsageIpc } from '../ipc/usage'
 import { registerGreylistHandlers } from '../ipc/greylist'
 import { registerDialogHandlers } from '../ipc/dialog'
 import { registerGalleryIpc } from '../ipc/gallery'
@@ -33,6 +34,7 @@ export function registerIpcHandlers({
   registerCharactersIpc({ db })
   registerSettingsIpc({ db, onNativeWindowFrameChanged })
   registerAiIpc({ db, getOpenRouterSettings, getAiApiRequestLoggingEnabled })
+  registerUsageIpc({ db })
   registerGreylistHandlers(db)
   registerDialogHandlers()
   registerGalleryIpc({ db })

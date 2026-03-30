@@ -16,6 +16,7 @@ export type Screen =
   | 'generation-log'
   | 'generator'
   | 'gallery'
+  | 'usage'
   | 'settings'
 
 export type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }

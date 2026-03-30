@@ -185,6 +185,29 @@ export const nightcafePresets = pgTable(
   ]
 )
 
+export const aiUsageEvents = pgTable(
+  'ai_usage_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    endpoint: varchar('endpoint', { length: 255 }).notNull(),
+    providerId: varchar('provider_id', { length: 64 }).notNull(),
+    modelId: varchar('model_id', { length: 255 }).notNull(),
+    promptTokens: integer('prompt_tokens').default(0).notNull(),
+    completionTokens: integer('completion_tokens').default(0).notNull(),
+    totalTokens: integer('total_tokens').default(0).notNull(),
+    costUsd: real('cost_usd').default(0).notNull(),
+    promptText: text('prompt_text'),
+    responseText: text('response_text'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('ai_usage_events_created_at_idx').on(table.createdAt),
+    index('ai_usage_events_provider_id_idx').on(table.providerId),
+    index('ai_usage_events_model_id_idx').on(table.modelId),
+  ]
+)
+
 // ─── Characters ───────────────────────────────────────────────────────────────
 
 export const characters = pgTable(

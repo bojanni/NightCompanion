@@ -30,6 +30,12 @@
 - Conclusions: (1) Centralise response extraction into `extractChatCompletionContent` that reads `message.content` (string or array), then falls back to `message.reasoning`, then `choice.text`. (2) Increase `max_tokens` across all handlers (60–700 → 2048–4096) so reasoning models have room for thinking + answer. (3) Add main-process debug logging for raw payloads.
 - Actions: Updated `electron/ipc/ai.ts`: added `extractChatCompletionContent` helper; replaced all 14 inline `payload.choices?.[0]?.message?.content?.trim()` extractions across magicRandom, generateTags, improvePrompt, improveNegativePrompt, generateNegativePrompt, generateTitle, quickExpand (OpenRouter + local paths) with the helper; raised `max_tokens` to 2048 (4096 for adviseModel); validated with `npm run build`.
 
+## 2026-03-30 (Usage — sidebar token + cost widget)
+
+- Findings: It was hard to track token usage and estimated costs across different models/providers from within the app.
+- Conclusions: Persisting per-request usage events enables session + daily aggregates, a lightweight sidebar widget, and a history screen without relying on optional JSONL debug logs.
+- Actions: Added `ai_usage_events` table in `src/lib/schema.ts` with migration `drizzle/0021_ai_usage_events.sql` + journal registration; implemented usage aggregation IPC in `electron/ipc/usage.ts` and registered in `electron/services/ipcRegistry.ts`; wired renderer bridge/types via `electron/preload.ts` and `src/types/electron.d.ts`; recorded usage events from all generator IPC handlers in `electron/ipc/ai.ts` (OpenRouter usage when present, otherwise estimates; OpenRouter cost via cached `openRouterModels` prices); added `TokenCostWidget` in `src/components/TokenCostWidget.tsx` and integrated into `src/components/Sidebar.tsx` with a new `Usage` screen `src/screens/Usage.tsx` and route in `src/App.tsx`; extended Settings (`src/screens/Settings.tsx`) with currency (USD/EUR), EUR rate, opt-in prompt/response storage for usage, and a Danger zone reset; validated with `npm run build`.
+
 ## 2026-03-28 (AI config — show last updated for models list)
 
 - Findings: The AI configuration provider setup allowed refreshing the models list, but it was not visible when the list was last fetched.

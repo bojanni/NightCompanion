@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FolderOpen, RefreshCw, Settings as SettingsIcon } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { PageContainer } from '../components/PageContainer'
 
@@ -18,12 +19,55 @@ export default function Settings() {
   const [loading, setLoading] = useState(true)
   const [aiApiRequestLoggingEnabled, setAiApiRequestLoggingEnabled] = useState(false)
   const [nativeWindowFrameEnabled, setNativeWindowFrameEnabled] = useState(false)
+  const [usageCurrency, setUsageCurrency] = useState<'usd' | 'eur'>('usd')
+  const [eurRate, setEurRate] = useState('1')
+  const [storeAiPromptResponseForUsage, setStoreAiPromptResponseForUsage] = useState(false)
   const [nightCompanionFolderPath, setNightCompanionFolderPath] = useState('')
   const [savingNightCompanionFolderPath, setSavingNightCompanionFolderPath] = useState(false)
   const [nightCompanionFolderMessage, setNightCompanionFolderMessage] = useState<string | null>(null)
   const [isRefreshingHf, setIsRefreshingHf] = useState(false)
   const [hfSyncMessage, setHfSyncMessage] = useState<string | null>(null)
   const [hfSyncInfo, setHfSyncInfo] = useState<HfSyncInfo | null>(null)
+
+  async function handleUsageCurrencyChange(next: 'usd' | 'eur') {
+    setUsageCurrency(next)
+    await window.electronAPI.settings.saveAiConfigState({
+      usageCurrency: next,
+    })
+  }
+
+  async function handleEurRateChange(next: string) {
+    setEurRate(next)
+
+    const parsed = Number(next)
+    if (!Number.isFinite(parsed) || parsed <= 0) return
+
+    await window.electronAPI.settings.saveAiConfigState({
+      eurRate: parsed,
+    })
+  }
+
+  async function handleStorePromptResponseToggle() {
+    const next = !storeAiPromptResponseForUsage
+    setStoreAiPromptResponseForUsage(next)
+    await window.electronAPI.settings.saveAiConfigState({
+      storeAiPromptResponseForUsage: next,
+    })
+  }
+
+  async function handleResetUsage() {
+    const confirmed = window.confirm('Reset usage counters? This will reset session totals. You can also clear history (DB).')
+    if (!confirmed) return
+
+    const clearHistory = window.confirm('Also clear usage history?')
+    const result = await window.electronAPI.usage.reset({ clearHistory })
+    if (result.error) {
+      toast.error(result.error)
+      return
+    }
+
+    toast.success('Usage counters reset.')
+  }
 
   const loadHuggingFaceSyncInfo = async () => {
     const result = await window.electronAPI.nightcafeModels.getHuggingFaceSyncInfo()
@@ -49,6 +93,11 @@ export default function Settings() {
 
       setAiApiRequestLoggingEnabled(Boolean(settingsResult.data?.aiApiRequestLoggingEnabled))
       setNativeWindowFrameEnabled(Boolean(settingsResult.data?.nativeWindowFrameEnabled))
+      setUsageCurrency(settingsResult.data?.usageCurrency === 'eur' ? 'eur' : 'usd')
+      setEurRate(typeof settingsResult.data?.eurRate === 'number' && Number.isFinite(settingsResult.data.eurRate)
+        ? String(settingsResult.data.eurRate)
+        : '1')
+      setStoreAiPromptResponseForUsage(Boolean(settingsResult.data?.storeAiPromptResponseForUsage))
       setNightCompanionFolderPath(folderPathResult.data || '')
       setLoading(false)
     }
@@ -164,6 +213,84 @@ export default function Settings() {
           <div className="flex items-center gap-2.5 mb-1">
             <SettingsIcon className="w-6 h-6 text-white" />
             <h1 className="text-2xl font-bold text-white">Settings</h1>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-slate-800/50 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-white">Usage</p>
+              <p className="text-xs text-slate-500">Tokens and cost estimation display preferences</p>
+            </div>
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">Currency</p>
+                <p className="text-xs text-slate-500">USD is native for OpenRouter pricing; EUR uses a manual exchange rate</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (!loading) void handleUsageCurrencyChange('usd')
+                  }}
+                  className={`btn-compact ${usageCurrency === 'usd' ? 'btn-compact-primary' : 'btn-compact-ghost'}`}
+                >
+                  USD
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (!loading) void handleUsageCurrencyChange('eur')
+                  }}
+                  className={`btn-compact ${usageCurrency === 'eur' ? 'btn-compact-primary' : 'btn-compact-ghost'}`}
+                >
+                  EUR
+                </button>
+              </div>
+            </div>
+
+            {usageCurrency === 'eur' && (
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">EUR rate</p>
+                  <p className="text-xs text-slate-500">1 USD = ? EUR</p>
+                </div>
+                <input
+                  type="text"
+                  value={eurRate}
+                  onChange={(event) => {
+                    void handleEurRateChange(event.target.value)
+                  }}
+                  className="w-28 rounded-xl border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">Store prompt/response for usage</p>
+                <p className="text-xs text-slate-500">Opt-in: store text to explain which prompt an event belonged to</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Toggle storing prompt/response"
+                title="Toggle storing prompt/response"
+                disabled={loading}
+                onClick={() => {
+                  if (!loading) void handleStorePromptResponseToggle()
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  storeAiPromptResponseForUsage ? 'bg-teal-500' : 'bg-slate-600'
+                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    storeAiPromptResponseForUsage ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
           <p className="text-sm text-slate-500">Application preferences and diagnostics</p>
         </div>
@@ -291,6 +418,23 @@ export default function Settings() {
             {hfSyncMessage && (
               <p className="text-xs text-slate-400">{hfSyncMessage}</p>
             )}
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-slate-800/50 space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-white">Danger zone</p>
+              <p className="text-xs text-slate-500">Reset counters and local state</p>
+            </div>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                if (!loading) void handleResetUsage()
+              }}
+              className="btn-danger"
+            >
+              Reset usage counters
+            </button>
           </div>
         </section>
       </PageContainer>

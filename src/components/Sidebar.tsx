@@ -1,4 +1,5 @@
 import type { Screen } from '../types'
+import TokenCostWidget from './TokenCostWidget'
 
 type NavItem = {
   id: Screen
@@ -49,6 +50,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Gallery',
     icon: '▣',
     description: 'AI-generated media',
+  },
+  {
+    id: 'usage',
+    label: 'Usage',
+    icon: '◷',
+    description: 'Tokens & cost history',
   },
   {
     id: 'settings',
@@ -126,7 +133,8 @@ export default function Sidebar({ activeScreen, onNavigate }: Props) {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-5 border-t border-slate-900/50">
+      <div className="px-5 py-5 border-t border-slate-900/50 space-y-4">
+        <TokenCostWidget onNavigate={onNavigate} />
         <div className="text-[10px] text-slate-600 text-center tracking-wide">
           NightCompanion v0.1
         </div>

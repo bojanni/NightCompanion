@@ -3,9 +3,11 @@ import { app } from 'electron'
 import path from 'path'
 import { appendFile, mkdir, readFile } from 'fs/promises'
 import { drizzle } from 'drizzle-orm/postgres-js'
+import { eq } from 'drizzle-orm'
 import * as schema from '../../src/lib/schema'
-import { nightcafeModels } from '../../src/lib/schema'
+import { aiUsageEvents, nightcafeModels, openRouterModels } from '../../src/lib/schema'
 import type { OpenRouterSettings } from './settings'
+import { bumpSessionTotals } from './usage'
 
 const AI_REQUEST_LOG_FILE = 'ai-api-requests.jsonl'
 const TITLE_MAX_LENGTH = 140
@@ -105,11 +107,8 @@ function extractChatCompletionContent(payload: unknown): string {
   if (typeof first !== 'object' || first === null) return ''
 
   const message = (first as { message?: unknown }).message
-  const msgKeys = message && typeof message === 'object' ? Object.keys(message).join(',') : typeof message
-  console.log('[extractContent] message keys:', msgKeys)
   if (typeof message === 'object' && message !== null) {
     const content = (message as { content?: unknown }).content
-    console.log('[extractContent] content type:', typeof content, '| value preview:', content === null ? 'null' : typeof content === 'string' ? content.slice(0, 80) : Array.isArray(content) ? 'array' : 'other')
     if (typeof content === 'string' && content.trim()) return content.trim()
     if (Array.isArray(content)) {
       const out = content
@@ -125,7 +124,6 @@ function extractChatCompletionContent(payload: unknown): string {
     }
 
     const reasoning = (message as { reasoning?: unknown }).reasoning
-    console.log('[extractContent] reasoning type:', typeof reasoning, '| preview:', typeof reasoning === 'string' ? reasoning.slice(0, 80) : String(reasoning))
     if (typeof reasoning === 'string' && reasoning.trim()) return reasoning.trim()
   }
 
@@ -133,6 +131,107 @@ function extractChatCompletionContent(payload: unknown): string {
   if (typeof text === 'string') return text.trim()
 
   return ''
+}
+
+type TokenUsage = {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+}
+
+function toFiniteNumber(value: unknown): number {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+function estimateTokensFromText(text: string): number {
+  const trimmed = text.trim()
+  if (!trimmed) return 0
+  return Math.ceil(trimmed.length / 4)
+}
+
+function extractTokenUsage(payload: unknown, fallback: { promptText: string; responseText: string }): TokenUsage {
+  if (typeof payload === 'object' && payload !== null) {
+    const usage = (payload as { usage?: unknown }).usage
+    if (typeof usage === 'object' && usage !== null) {
+      const promptTokens = toFiniteNumber((usage as { prompt_tokens?: unknown }).prompt_tokens)
+      const completionTokens = toFiniteNumber((usage as { completion_tokens?: unknown }).completion_tokens)
+      const totalTokens = toFiniteNumber((usage as { total_tokens?: unknown }).total_tokens)
+
+      if (promptTokens || completionTokens || totalTokens) {
+        return {
+          promptTokens,
+          completionTokens,
+          totalTokens: totalTokens || promptTokens + completionTokens,
+        }
+      }
+    }
+  }
+
+  const promptTokens = estimateTokensFromText(fallback.promptText)
+  const completionTokens = estimateTokensFromText(fallback.responseText)
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens: promptTokens + completionTokens,
+  }
+}
+
+async function computeOpenRouterCostUsd(input: { db: Database; modelId: string; usage: TokenUsage }): Promise<number> {
+  const [model] = await input.db
+    .select({
+      promptPrice: openRouterModels.promptPrice,
+      completionPrice: openRouterModels.completionPrice,
+    })
+    .from(openRouterModels)
+    .where(eq(openRouterModels.modelId, input.modelId))
+    .limit(1)
+
+  const promptPrice = toFiniteNumber(model?.promptPrice)
+  const completionPrice = toFiniteNumber(model?.completionPrice)
+  if (!promptPrice && !completionPrice) return 0
+
+  return input.usage.promptTokens * promptPrice + input.usage.completionTokens * completionPrice
+}
+
+async function recordUsageEvent(input: {
+  db: Database
+  endpoint: string
+  providerId: string
+  modelId: string
+  payload: unknown
+  promptText: string
+  responseText: string
+  storePromptResponse: boolean
+}): Promise<void> {
+  const usage = extractTokenUsage(input.payload, { promptText: input.promptText, responseText: input.responseText })
+  const costUsd = input.providerId === 'openrouter'
+    ? await computeOpenRouterCostUsd({ db: input.db, modelId: input.modelId, usage })
+    : 0
+
+  bumpSessionTotals({
+    promptTokens: usage.promptTokens,
+    completionTokens: usage.completionTokens,
+    totalTokens: usage.totalTokens,
+    costUsd,
+  })
+
+  await input.db
+    .insert(aiUsageEvents)
+    .values({
+      endpoint: input.endpoint,
+      providerId: input.providerId,
+      modelId: input.modelId,
+      promptTokens: usage.promptTokens,
+      completionTokens: usage.completionTokens,
+      totalTokens: usage.totalTokens,
+      costUsd,
+      promptText: input.storePromptResponse ? input.promptText : null,
+      responseText: input.storePromptResponse ? input.responseText : null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning()
 }
 
 function appendPeriod(text: string): string {
@@ -483,10 +582,10 @@ function getSettingsFilePath() {
   return path.join(app.getPath('userData'), 'settings.json')
 }
 
-async function readStoredSettings(): Promise<{ openRouter?: Partial<OpenRouterSettings>; aiConfig?: { dashboardRoleRouting?: unknown }; localEndpoints?: unknown }> {
+async function readStoredSettings(): Promise<{ openRouter?: Partial<OpenRouterSettings>; aiConfig?: { dashboardRoleRouting?: unknown; storeAiPromptResponseForUsage?: boolean; usageCurrency?: 'usd' | 'eur'; eurRate?: number }; localEndpoints?: unknown }> {
   try {
     const raw = await readFile(getSettingsFilePath(), 'utf-8')
-    return JSON.parse(raw) as { openRouter?: Partial<OpenRouterSettings>; aiConfig?: { dashboardRoleRouting?: unknown }; localEndpoints?: unknown }
+    return JSON.parse(raw) as { openRouter?: Partial<OpenRouterSettings>; aiConfig?: { dashboardRoleRouting?: unknown; storeAiPromptResponseForUsage?: boolean; usageCurrency?: 'usd' | 'eur'; eurRate?: number }; localEndpoints?: unknown }
   } catch (error) {
     const err = error as NodeJS.ErrnoException
     if (err.code === 'ENOENT') return {}
@@ -634,6 +733,17 @@ export function registerAiIpc({
           throw new Error(`No advisor response content returned. Payload snippet: ${JSON.stringify(payload, null, 0).slice(0, 400)}`)
         }
 
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:adviseModel',
+          providerId,
+          modelId,
+          payload,
+          promptText: userContent,
+          responseText: raw,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
         const parsed = parseAdvisorAiResponse(raw)
         const advice: AdvisorResult = {
           mode: 'ai',
@@ -684,6 +794,17 @@ export function registerAiIpc({
       if (!raw) {
         throw new Error(`No advisor response content returned. Payload snippet: ${JSON.stringify(payload, null, 0).slice(0, 400)}`)
       }
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:adviseModel',
+        providerId,
+        modelId,
+        payload,
+        promptText: userContent,
+        responseText: raw,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
 
       const parsed = parseAdvisorAiResponse(raw)
       const advice: AdvisorResult = {
@@ -813,6 +934,18 @@ export function registerAiIpc({
         throw new Error('No prompt content returned from OpenRouter.')
       }
 
+      const stored = await readStoredSettings()
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:magicRandom',
+        providerId: 'openrouter',
+        modelId: settings.model,
+        payload,
+        promptText: userPrompt,
+        responseText: prompt,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
+
       resultPrompt = prompt
 
       return { data: { prompt } }
@@ -931,6 +1064,17 @@ export function registerAiIpc({
         if (!raw) throw new Error('No generated tags returned.')
 
         resultTags = parseGeneratedTags(raw, existingTags, maxTags)
+
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:generateTags',
+          providerId,
+          modelId,
+          payload,
+          promptText: userContent,
+          responseText: raw,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
         return { data: { tags: resultTags } }
       }
 
@@ -971,6 +1115,17 @@ export function registerAiIpc({
       if (!raw) throw new Error('No generated tags returned.')
 
       resultTags = parseGeneratedTags(raw, existingTags, maxTags)
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:generateTags',
+        providerId,
+        modelId,
+        payload,
+        promptText: userContent,
+        responseText: raw,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
       return { data: { tags: resultTags } }
     } catch (error) {
       errorMessage = String(error)
@@ -1075,6 +1230,17 @@ export function registerAiIpc({
         const improved = extractChatCompletionContent(payload)
         if (!improved) throw new Error('No improved prompt content returned.')
 
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:improvePrompt',
+          providerId,
+          modelId,
+          payload,
+          promptText: prompt,
+          responseText: improved,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
         resultPrompt = improved
         return { data: { prompt: improved } }
       }
@@ -1124,6 +1290,17 @@ export function registerAiIpc({
 
       const improved = extractChatCompletionContent(payload)
       if (!improved) throw new Error('No improved prompt content returned.')
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:improvePrompt',
+        providerId,
+        modelId,
+        payload,
+        promptText: prompt,
+        responseText: improved,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
 
       resultPrompt = improved
       return { data: { prompt: improved } }
@@ -1230,6 +1407,17 @@ export function registerAiIpc({
         const improved = extractChatCompletionContent(payload)
         if (!improved) throw new Error('No improved negative prompt content returned.')
 
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:improveNegativePrompt',
+          providerId,
+          modelId,
+          payload,
+          promptText: negativePrompt,
+          responseText: improved,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
         resultPrompt = improved
         return { data: { negativePrompt: improved } }
       }
@@ -1279,6 +1467,17 @@ export function registerAiIpc({
 
       const improved = extractChatCompletionContent(payload)
       if (!improved) throw new Error('No improved negative prompt content returned.')
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:improveNegativePrompt',
+        providerId,
+        modelId,
+        payload,
+        promptText: negativePrompt,
+        responseText: improved,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
 
       resultPrompt = improved
       return { data: { negativePrompt: improved } }
@@ -1385,6 +1584,17 @@ export function registerAiIpc({
         const generated = extractChatCompletionContent(payload)
         if (!generated) throw new Error('No generated negative prompt content returned.')
 
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:generateNegativePrompt',
+          providerId,
+          modelId,
+          payload,
+          promptText: prompt,
+          responseText: generated,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
         resultPrompt = generated
         return { data: { negativePrompt: generated } }
       }
@@ -1434,6 +1644,17 @@ export function registerAiIpc({
 
       const generated = extractChatCompletionContent(payload)
       if (!generated) throw new Error('No generated negative prompt content returned.')
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:generateNegativePrompt',
+        providerId,
+        modelId,
+        payload,
+        promptText: prompt,
+        responseText: generated,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
 
       resultPrompt = generated
       return { data: { negativePrompt: generated } }
@@ -1537,8 +1758,20 @@ export function registerAiIpc({
 
         const payload = (await response.json()) as unknown
 
-        const title = normalizeGeneratedTitle(extractChatCompletionContent(payload))
+        const raw = extractChatCompletionContent(payload)
+        const title = normalizeGeneratedTitle(raw)
         if (!title) throw new Error('No title content returned.')
+
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:generateTitle',
+          providerId,
+          modelId,
+          payload,
+          promptText: prompt,
+          responseText: raw,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
 
         resultTitle = title
         return { data: { title } }
@@ -1587,8 +1820,20 @@ export function registerAiIpc({
 
       const payload = (await response.json()) as unknown
 
-      const title = normalizeGeneratedTitle(extractChatCompletionContent(payload))
+      const raw = extractChatCompletionContent(payload)
+      const title = normalizeGeneratedTitle(raw)
       if (!title) throw new Error('No title content returned.')
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:generateTitle',
+        providerId,
+        modelId,
+        payload,
+        promptText: prompt,
+        responseText: raw,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
 
       resultTitle = title
       return { data: { title } }
@@ -1706,6 +1951,18 @@ export function registerAiIpc({
         const prompt = extractChatCompletionContent(payload)
         if (!prompt) throw new Error('No prompt content returned from OpenRouter.')
 
+        const stored = await readStoredSettings()
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:quickExpand',
+          providerId: 'openrouter',
+          modelId: settings.model,
+          payload,
+          promptText: userPrompt,
+          responseText: prompt,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
         resultPrompt = prompt
         return { data: { prompt } }
       }
@@ -1789,6 +2046,17 @@ export function registerAiIpc({
       const payload = (await response.json()) as unknown
       const prompt = extractChatCompletionContent(payload)
       if (!prompt) throw new Error('No prompt content returned from local provider.')
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:quickExpand',
+        providerId,
+        modelId,
+        payload,
+        promptText: userPrompt,
+        responseText: prompt,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
 
       resultPrompt = prompt
       return { data: { prompt } }

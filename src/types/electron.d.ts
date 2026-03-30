@@ -26,6 +26,9 @@ type AiConfigStateStore = {
   aiApiRequestLoggingEnabled?: boolean
   nativeWindowFrameEnabled?: boolean
   nightCompanionFolderPath?: string
+  usageCurrency?: 'usd' | 'eur'
+  eurRate?: number
+  storeAiPromptResponseForUsage?: boolean
 }
 type LocalEndpointStore = {
   id?: string
@@ -110,6 +113,30 @@ type CharacterRecord = {
   createdAt: string
   updatedAt: string
 }
+
+type UsageTotals = {
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  costUsd: number
+}
+
+type UsageEventSummary = UsageTotals & {
+  providerId: string
+  modelId: string
+  endpoint: string
+  createdAt: string
+}
+
+type UsageSummary = {
+  session: UsageTotals
+  today: UsageTotals
+  lastAction: UsageEventSummary | null
+}
+
+type UsageDailyTotals = UsageTotals & {
+  day: string
+}
 type IpcUnexpectedErrorPayload = {
   channel: string
   message: string
@@ -166,6 +193,11 @@ declare global {
         generateTags(input?: { title?: string; prompt?: string; negativePrompt?: string; existingTags?: string[]; maxTags?: number }): Promise<IpcResult<GeneratedTagsResult>>
         quickExpand(input?: { idea?: string; presetName?: string; presetPrompt?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>>
         adviseModel(input?: { prompt?: string; mode?: 'rule' | 'ai'; budgetMode?: 'cheap' | 'balanced' | 'premium' }): Promise<IpcResult<ModelAdvisorResult>>
+      }
+      usage: {
+        getSummary(): Promise<IpcResult<UsageSummary>>
+        listDaily(input?: { days?: number }): Promise<IpcResult<UsageDailyTotals[]>>
+        reset(input?: { clearHistory?: boolean }): Promise<IpcResult<void>>
       }
       nightcafeModels: {
         list(filters?: { mediaType?: 'image' | 'video' }): Promise<IpcResult<NightcafeModelOption[]>>

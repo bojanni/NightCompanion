@@ -9,6 +9,7 @@ import GenerationLog from './screens/GenerationLog'
 import Generator from './screens/Generator'
 import Gallery from './screens/Gallery'
 import Settings from './screens/Settings'
+import Usage from './screens/Usage'
 import type { Screen } from './types'
 import { Toaster, toast } from 'sonner'
 
@@ -70,6 +71,7 @@ export default function App() {
           {screen === 'generation-log' && <GenerationLog />}
           {screen === 'generator' && <Generator />}
           {screen === 'gallery' && <Gallery />}
+          {screen === 'usage' && <Usage />}
           {screen === 'settings' && <Settings />}
         </div>
       </main>
