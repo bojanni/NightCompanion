@@ -1,5 +1,23 @@
 # Walkthrough
 
+## 2026-03-30 (PromptBuilder — Gebruik als basis voor de generator knop)
+
+- Findings: User wanted a way to use the composed prompt from Prompt Builder as a starting point (basis) for the Generator's Magic Quickstart feature, with a single button click.
+- Conclusions: Using localStorage as a communication channel between PromptBuilder and Generator is the simplest approach since PromptBuilder is embedded within Generator as a tab. The button saves the composed prompt to localStorage and switches to the Generator tab.
+- Actions: Added `onNavigate` prop to `PromptBuilder` component; added `🚀 Gebruik als basis` button in the header controls that saves `composedPrompt` to `localStorage.setItem('generatorInitialPrompt', ...)` and calls `onNavigate('generator')`; updated `Generator.tsx` to check for `generatorInitialPrompt` in localStorage on mount, set it as `quickStartIdea`, switch to the 'generator' tab, and clean up the localStorage key; validated with `npm run build`.
+
+## 2026-03-30 (PromptBuilder — Magic Fill button to fill all empty fields)
+
+- Findings: User wanted a single button to fill all empty fields at once with AI-generated content, instead of clicking each field's generate button individually.
+- Conclusions: A batch generation handler that identifies empty fields and generates them all in one API call is more efficient and user-friendly.
+- Actions: Added `generator:fillAllFields` IPC handler in `electron/ipc/ai.ts` that takes all 6 field values, identifies empty ones, generates content for them in a single AI call with JSON output format; exposed in `electron/preload.ts` and `src/types/electron.d.ts`; updated `src/screens/PromptBuilder.tsx` with `isFillingAll` state, `handleFillAll` function, and "✨ Magic Fill" button in the header controls; button fills only empty fields and shows toast with count of filled fields; validated with `npm run build`.
+
+## 2026-03-30 (PromptBuilder — AI generate buttons for all fields + complete prompt generator)
+
+- Findings: User wanted AI-powered generation buttons for individual Prompt Builder fields (subject, art style, lighting, mood, artist references, technical details) with specific word limits, plus a complete prompt generator that uses all field values and fills in missing ones.
+- Conclusions: Created a dedicated `simpleGenerate` IPC handler for short field-specific content, and a `generatePromptFromFields` handler for complete prompt generation. Both use tailored system prompts without the heavy BASE_PERSONA to get concise results.
+- Actions: Added `generator:simpleGenerate` handler in `electron/ipc/ai.ts` with field-specific brief prompts (subject: 1-3 words, style: 1-3 words, etc.); added `generator:generatePromptFromFields` handler that takes all 6 field values, lists provided vs empty fields to AI, and returns a cohesive NightCafe prompt; exposed both in `electron/preload.ts` and `src/types/electron.d.ts`; updated `src/screens/PromptBuilder.tsx` with per-field ✨ generate buttons, field-type mapping, `isGeneratingPrompt` state, and a 🎨 "Generate Prompt" button underneath the fields with helper text; validated with `npm run build`.
+
 ## 2026-03-28 (AI config — add Research & Reasoning model selector)
 
 - Findings: Provider configuration only offered Generation/Improvement/Vision model selectors, while the dashboard supports a combined Research & Reasoning role.

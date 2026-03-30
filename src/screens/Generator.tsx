@@ -326,6 +326,14 @@ export default function Generator() {
       setQuickStartCharacterId(null)
       setBudgetMode('balanced')
     }
+
+    // Check for initial prompt from PromptBuilder
+    const initialPrompt = localStorage.getItem('generatorInitialPrompt')
+    if (initialPrompt) {
+      setQuickStartIdea(initialPrompt)
+      setTab('generator')
+      localStorage.removeItem('generatorInitialPrompt')
+    }
   }, [])
 
   useEffect(() => {
@@ -1060,7 +1068,7 @@ export default function Generator() {
               {greylistCard}
             </div>
             <div className="mt-1 card border-slate-800/50">
-              <PromptBuilder embedded greylistEnabled={greylistEnabled} greylistWords={greylistWords} maxWords={maxWords} />
+              <PromptBuilder embedded greylistEnabled={greylistEnabled} greylistWords={greylistWords} maxWords={maxWords} onNavigate={() => setTab('generator')} />
             </div>
           </>
         )}

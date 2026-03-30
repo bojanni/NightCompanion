@@ -25,9 +25,10 @@ type PromptBuilderProps = {
   greylistEnabled?: boolean
   greylistWords?: string[]
   maxWords?: number
+  onNavigate?: (screen: 'generator') => void
 }
 
-export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [], maxWords = 70 }: PromptBuilderProps) {
+export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [], maxWords = 70, onNavigate }: PromptBuilderProps) {
   const [parts, setParts] = useState<Part[]>(DEFAULT_PARTS)
   const [separator, setSeparator] = useState<', ' | '. ' | ' | '>( ', ')
   const [savedTitle, setSavedTitle] = useState('')
@@ -35,6 +36,8 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
   const [styleProfiles, setStyleProfiles] = useState<StyleProfile[]>([])
   const [selectedStyleProfileId, setSelectedStyleProfileId] = useState<number | ''>('')
   const [generatingPartId, setGeneratingPartId] = useState<string | null>(null)
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false)
+  const [isFillingAll, setIsFillingAll] = useState(false)
 
   const updatePart = (id: string, value: string) => {
     setParts((prev) => prev.map((p) => (p.id === id ? { ...p, value } : p)))
@@ -71,6 +74,73 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
       toast.error(`Failed to generate ${part.label.toLowerCase()}: ${String(error)}`)
     } finally {
       setGeneratingPartId(null)
+    }
+  }
+
+  const handleGeneratePrompt = async () => {
+    setIsGeneratingPrompt(true)
+
+    try {
+      const result = await window.electronAPI.generator.generatePromptFromFields({
+        subject: parts.find(p => p.id === 'subject')?.value,
+        style: parts.find(p => p.id === 'style')?.value,
+        lighting: parts.find(p => p.id === 'lighting')?.value,
+        mood: parts.find(p => p.id === 'mood')?.value,
+        artist: parts.find(p => p.id === 'artist')?.value,
+        technical: parts.find(p => p.id === 'technical')?.value,
+      })
+
+      if (result.error || !result.data?.prompt) {
+        throw new Error(result.error || 'No prompt generated.')
+      }
+
+      // Update all parts with the generated values by parsing the result
+      // The AI returns a complete prompt, so we'll put it in the subject field
+      // and clear the others, or we could try to parse it - for now, put in subject
+      updatePart('subject', result.data.prompt)
+      toast.success('Prompt generated!')
+    } catch (error) {
+      toast.error(`Failed to generate prompt: ${String(error)}`)
+    } finally {
+      setIsGeneratingPrompt(false)
+    }
+  }
+
+  const handleFillAll = async () => {
+    setIsFillingAll(true)
+
+    try {
+      const result = await window.electronAPI.generator.fillAllFields({
+        subject: parts.find(p => p.id === 'subject')?.value,
+        style: parts.find(p => p.id === 'style')?.value,
+        lighting: parts.find(p => p.id === 'lighting')?.value,
+        mood: parts.find(p => p.id === 'mood')?.value,
+        artist: parts.find(p => p.id === 'artist')?.value,
+        technical: parts.find(p => p.id === 'technical')?.value,
+      })
+
+      if (result.error || !result.data?.fields) {
+        throw new Error(result.error || 'No fields generated.')
+      }
+
+      // Update each generated field
+      const generatedFields = result.data.fields
+      for (const [key, value] of Object.entries(generatedFields)) {
+        if (value) {
+          updatePart(key, value)
+        }
+      }
+
+      const filledCount = Object.keys(generatedFields).length
+      if (filledCount > 0) {
+        toast.success(`Filled ${filledCount} empty field${filledCount === 1 ? '' : 's'}!`)
+      } else {
+        toast.info('All fields already have content.')
+      }
+    } catch (error) {
+      toast.error(`Failed to fill fields: ${String(error)}`)
+    } finally {
+      setIsFillingAll(false)
     }
   }
 
@@ -169,6 +239,13 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
     setSavedTitle('')
   }
 
+  const handleUseAsBasis = () => {
+    // Save composed prompt to localStorage for Generator to pick up
+    localStorage.setItem('generatorInitialPrompt', composedPrompt)
+    // Navigate to generator
+    onNavigate?.('generator')
+  }
+
   return (
     <div className={`${embedded ? 'flex min-h-[560px] flex-col lg:flex-row' : 'no-drag-region flex h-full flex-col lg:flex-row'}`}>
       {/* Left: part inputs */}
@@ -210,6 +287,24 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
               </select>
             </div>
             <button onClick={handleClear} className="btn-ghost text-xs">Clear all</button>
+            <button
+              type="button"
+              disabled={!composedPrompt || isFillingAll}
+              onClick={() => void handleUseAsBasis()}
+              className="btn-primary text-xs"
+              title="Gebruik dit prompt als basis in de Generator"
+            >
+              🚀 Gebruik als basis
+            </button>
+            <button
+              type="button"
+              disabled={isFillingAll}
+              onClick={() => void handleFillAll()}
+              className="btn-primary text-xs"
+              title="Fill all empty fields with AI-generated content"
+            >
+              {isFillingAll ? 'Filling…' : '✨ Magic Fill'}
+            </button>
           </div>
         </div>
 
@@ -237,6 +332,21 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
               </div>
             </div>
           ))}
+
+          {/* Generate Complete Prompt Button */}
+          <div className="pt-4 border-t border-slate-800/50">
+            <button
+              type="button"
+              disabled={isGeneratingPrompt}
+              onClick={() => void handleGeneratePrompt()}
+              className="w-full btn-primary"
+            >
+              {isGeneratingPrompt ? 'Generating…' : '🎨 Generate Prompt'}
+            </button>
+            <p className="text-xs text-slate-500 mt-2 text-center">
+              Creates a complete NightCafe prompt. Empty fields will be filled by AI.
+            </p>
+          </div>
         </div>
       </div>
 

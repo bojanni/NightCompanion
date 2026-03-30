@@ -193,6 +193,8 @@ declare global {
         generateTags(input?: { title?: string; prompt?: string; negativePrompt?: string; existingTags?: string[]; maxTags?: number }): Promise<IpcResult<GeneratedTagsResult>>
         quickExpand(input?: { idea?: string; presetName?: string; presetPrompt?: string; creativity?: 'focused' | 'balanced' | 'wild'; character?: { name: string; description?: string } }): Promise<IpcResult<{ prompt: string }>>
         simpleGenerate(input?: { fieldType?: 'subject' | 'style' | 'lighting' | 'mood' | 'artist' | 'technical'; maxWords?: number }): Promise<IpcResult<{ text: string }>>
+        generatePromptFromFields(input?: { subject?: string; style?: string; lighting?: string; mood?: string; artist?: string; technical?: string }): Promise<IpcResult<{ prompt: string }>>
+        fillAllFields(input?: { subject?: string; style?: string; lighting?: string; mood?: string; artist?: string; technical?: string }): Promise<IpcResult<{ fields: Record<string, string> }>>
         adviseModel(input?: { prompt?: string; mode?: 'rule' | 'ai'; budgetMode?: 'cheap' | 'balanced' | 'premium' }): Promise<IpcResult<ModelAdvisorResult>>
       }
       usage: {
