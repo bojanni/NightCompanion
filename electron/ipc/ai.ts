@@ -105,9 +105,11 @@ function extractChatCompletionContent(payload: unknown): string {
   if (typeof first !== 'object' || first === null) return ''
 
   const message = (first as { message?: unknown }).message
-  console.log('[extractContent] message keys:', message && typeof message === 'object' ? Object.keys(message).join(',') : typeof message)
+  const msgKeys = message && typeof message === 'object' ? Object.keys(message).join(',') : typeof message
+  console.log('[extractContent] message keys:', msgKeys)
   if (typeof message === 'object' && message !== null) {
     const content = (message as { content?: unknown }).content
+    console.log('[extractContent] content type:', typeof content, '| value preview:', content === null ? 'null' : typeof content === 'string' ? content.slice(0, 80) : Array.isArray(content) ? 'array' : 'other')
     if (typeof content === 'string' && content.trim()) return content.trim()
     if (Array.isArray(content)) {
       const out = content
@@ -123,6 +125,7 @@ function extractChatCompletionContent(payload: unknown): string {
     }
 
     const reasoning = (message as { reasoning?: unknown }).reasoning
+    console.log('[extractContent] reasoning type:', typeof reasoning, '| preview:', typeof reasoning === 'string' ? reasoning.slice(0, 80) : String(reasoning))
     if (typeof reasoning === 'string' && reasoning.trim()) return reasoning.trim()
   }
 

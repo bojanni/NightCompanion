@@ -26,9 +26,9 @@
 
 ## 2026-03-29 (Generator — fix empty advisor response content)
 
-- Findings: `Get AI Advice` returned `No advisor response content returned` because reasoning models (e.g. `qwen/qwen3-14b`) put their output in `message.reasoning` instead of `message.content`, and `max_tokens: 700` was too low for the model to finish its chain-of-thought and produce the final `content`.
-- Conclusions: (1) Increase `max_tokens` to 4096 so reasoning models have enough room for thinking + answer. (2) Fall back to `message.reasoning` when `content` is null/empty. (3) Also handle `content` as an array of parts and include a payload snippet in the error for easier debugging.
-- Actions: Updated `electron/ipc/ai.ts`: added `extractChatCompletionContent` helper that reads `message.content` (string or array), then `message.reasoning`, then `choice.text`; raised `max_tokens` from 700 → 4096 for both OpenRouter and local provider paths; added main-process `console.log` for raw payload debugging; validated with `npm run build`.
+- Findings: Reasoning models (e.g. `qwen/qwen3-14b`) put their chain-of-thought in `message.reasoning` instead of `message.content`, and low `max_tokens` values caused the model to exhaust all tokens on reasoning before producing `content` (`finish_reason: "length"`). This broke all AI actions: adviseModel, generateTitle, magicRandom, improvePrompt, generateTags, quickExpand, and negative prompt generation/improvement.
+- Conclusions: (1) Centralise response extraction into `extractChatCompletionContent` that reads `message.content` (string or array), then falls back to `message.reasoning`, then `choice.text`. (2) Increase `max_tokens` across all handlers (60–700 → 2048–4096) so reasoning models have room for thinking + answer. (3) Add main-process debug logging for raw payloads.
+- Actions: Updated `electron/ipc/ai.ts`: added `extractChatCompletionContent` helper; replaced all 14 inline `payload.choices?.[0]?.message?.content?.trim()` extractions across magicRandom, generateTags, improvePrompt, improveNegativePrompt, generateNegativePrompt, generateTitle, quickExpand (OpenRouter + local paths) with the helper; raised `max_tokens` to 2048 (4096 for adviseModel); validated with `npm run build`.
 
 ## 2026-03-28 (AI config — show last updated for models list)
 
