@@ -48,12 +48,12 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
 
     // Field-specific prompts
     const fieldPrompts = {
-      subject: 'Generate a concise subject for an AI art prompt. Examples: "a lonely young man", "a majestic phoenix rising", "an abandoned lighthouse on a cliff". Be specific and evocative.',
-      style: 'Generate an art style for an AI art prompt. Examples: "oil painting, impressionist", "digital art, hyper-realistic", "watercolor, minimalist". Use medium and aesthetic terms.',
-      lighting: 'Generate lighting for an AI art prompt. Examples: "golden hour, dramatic rim lighting", "moonlight, soft glow", "dramatic side lighting, harsh shadows". Include time and quality.',
-      mood: 'Generate a mood or atmosphere for an AI art prompt. Examples: "ethereal, melancholic", "dreamlike, serene", "mysterious, haunting". Use 2-3 evocative words.',
-      artist: 'Generate artist references for an AI art prompt. Examples: "in the style of Alphonse Mucha", "in the style of Greg Rutkowski", "in the style of Zdzisław Beksiński". Use "in the style of" format.',
-      technical: 'Generate technical details for an AI art prompt. Examples: "8k, highly detailed, cinematic", "trending on ArtStation, octane render", "sharp focus, intricate details". Include resolution and rendering terms.',
+      subject: 'Generate only a subject for an AI art prompt. Examples: "a solitary young woman", "a majestic phoenix rising", "an abandoned lighthouse on a cliff". Do not include any other prompt elements.',
+      style: 'Generate only an art style for an AI art prompt. Examples: "vivid digital concept art", "oil painting, impressionist", "hyper-realistic digital art". Do not include subject or other elements.',
+      lighting: 'Generate only lighting for an AI art prompt. Examples: "golden hour, dramatic rim lighting", "moonlight, soft glow", "dramatic side lighting, harsh shadows". Do not include subject or style.',
+      mood: 'Generate only a mood or atmosphere for an AI art prompt. Examples: "ethereal, melancholic", "dreamlike, serene", "mysterious, haunting". Use 2-3 evocative words only.',
+      artist: 'Generate only artist references for an AI art prompt. Examples: "in the style of Alphonse Mucha", "in the style of Greg Rutkowski", "in the style of Zdzisław Beksiński". Use only the "in the style of" format.',
+      technical: 'Generate only technical details for an AI art prompt. Examples: "8k, highly detailed, cinematic", "trending on ArtStation, octane render", "sharp focus, intricate details". Use only resolution and rendering terms.',
     }
 
     const ideaPrompt = fieldPrompts[part.id as keyof typeof fieldPrompts] ?? `Generate a ${part.label.toLowerCase()} for an AI art prompt.`
