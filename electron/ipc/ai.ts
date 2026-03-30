@@ -2089,9 +2089,242 @@ export function registerAiIpc({
       }
     }
   })
+
+  ipcMain.handle('generator:simpleGenerate', async (_, input?: {
+    fieldType?: 'subject' | 'style' | 'lighting' | 'mood' | 'artist' | 'technical'
+    maxWords?: number
+  }) => {
+    const requestId = crypto.randomUUID()
+    const startedAt = Date.now()
+    let requestModel = ''
+    let requestProvider = ''
+    let requestPayload: Record<string, unknown> | null = null
+    let responseStatus: number | null = null
+    let resultText = ''
+    let errorMessage: string | null = null
+
+    try {
+      const fieldType = input?.fieldType || 'subject'
+      const maxWords = input?.maxWords || 5
+
+      // Field-specific brief prompts
+      const fieldPrompts: Record<string, string> = {
+        subject: 'Generate a short subject (1-3 words). Examples: "a tree", "a yellow frog", "a mountain lake". Only the core subject.',
+        style: 'Generate an art style (1-3 words). Examples: "oil painting", "digital art", "watercolor". Only the style name.',
+        lighting: 'Generate lighting description (1-3 words). Examples: "golden hour", "moonlight", "dramatic lighting". Only lighting.',
+        mood: 'Generate a mood (1-2 words). Examples: "dreamy", "mysterious", "serene". Only the mood word.',
+        artist: 'Generate artist reference. Examples: "in the style of Van Gogh", "in the style of Mucha". One artist only.',
+        technical: 'Generate technical specs (2-4 words). Examples: "8k resolution", "highly detailed", "octane render". Only specs.',
+      }
+
+      const userPrompt = fieldPrompts[fieldType] || fieldPrompts.subject
+
+      const stored = await readStoredSettings()
+      const roleRouting = stored.aiConfig?.dashboardRoleRouting
+      const genRoute = typeof roleRouting === 'object' && roleRouting !== null
+        ? (roleRouting as Record<string, unknown>).generation
+        : undefined
+
+      const providerId = typeof genRoute === 'object' && genRoute !== null
+        ? String((genRoute as Record<string, unknown>).providerId || '')
+        : ''
+      const modelId = typeof genRoute === 'object' && genRoute !== null
+        ? String((genRoute as Record<string, unknown>).modelId || '')
+        : ''
+
+      // Simple system prompt - no BASE_PERSONA
+      const simpleSystemPrompt = `You generate short, simple text for AI art prompt fields. ${LANGUAGE_INSTRUCTION} Output ONLY the requested content. No explanations, no extra text. Keep it brief.`
+
+      // Fall back to main OpenRouter settings if no generation route configured
+      if (!providerId || !modelId) {
+        const settings = await getOpenRouterSettings()
+        if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
+
+        requestProvider = 'openrouter'
+        requestModel = settings.model
+
+        requestPayload = {
+          model: settings.model,
+          temperature: 0.8,
+          max_tokens: 60,
+          messages: [
+            { role: 'system', content: simpleSystemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${settings.apiKey}`,
+            'Content-Type': 'application/json',
+            ...(settings.siteUrl ? { 'HTTP-Referer': settings.siteUrl } : {}),
+            ...(settings.appName ? { 'X-Title': settings.appName } : {}),
+          },
+          body: JSON.stringify(requestPayload),
+        })
+
+        responseStatus = response.status
+
+        if (!response.ok) {
+          const errText = await response.text()
+          throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
+        }
+
+        const payload = (await response.json()) as unknown
+        const raw = extractChatCompletionContent(payload)
+        if (!raw) throw new Error('No content returned from OpenRouter.')
+
+        // Enforce word limit
+        const words = raw.trim().split(/\s+/).slice(0, maxWords)
+        resultText = words.join(' ')
+
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:simpleGenerate',
+          providerId: 'openrouter',
+          modelId: settings.model,
+          payload,
+          promptText: userPrompt,
+          responseText: raw,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
+        return { data: { text: resultText } }
+      }
+
+      requestProvider = providerId
+      requestModel = modelId
+
+      if (providerId === 'openrouter') {
+        const settings = await getOpenRouterSettings()
+        if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
+
+        requestPayload = {
+          model: modelId,
+          temperature: 0.8,
+          max_tokens: 60,
+          messages: [
+            { role: 'system', content: simpleSystemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${settings.apiKey}`,
+            'Content-Type': 'application/json',
+            ...(settings.siteUrl ? { 'HTTP-Referer': settings.siteUrl } : {}),
+            ...(settings.appName ? { 'X-Title': settings.appName } : {}),
+          },
+          body: JSON.stringify(requestPayload),
+        })
+
+        responseStatus = response.status
+
+        if (!response.ok) {
+          const errText = await response.text()
+          throw new Error(`OpenRouter request failed (${response.status}): ${errText.slice(0, 300)}`)
+        }
+
+        const payload = (await response.json()) as unknown
+        const raw = extractChatCompletionContent(payload)
+        if (!raw) throw new Error('No content returned from OpenRouter.')
+
+        // Enforce word limit
+        const words = raw.trim().split(/\s+/).slice(0, maxWords)
+        resultText = words.join(' ')
+
+        await recordUsageEvent({
+          db,
+          endpoint: 'generator:simpleGenerate',
+          providerId,
+          modelId,
+          payload,
+          promptText: userPrompt,
+          responseText: raw,
+          storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+        })
+
+        return { data: { text: resultText } }
+      }
+
+      // Local provider path
+      const localEndpointsRaw = stored.localEndpoints
+      const localEndpoints = Array.isArray(localEndpointsRaw)
+        ? (localEndpointsRaw as Array<Record<string, unknown>>)
+        : []
+      const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
+      const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
+      if (!baseUrl) {
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration.` }
+      }
+
+      requestPayload = {
+        model: modelId,
+        temperature: 0.8,
+        max_tokens: 60,
+        messages: [
+          { role: 'system', content: simpleSystemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }
+
+      const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload),
+      })
+
+      responseStatus = response.status
+
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(`Local AI request failed (${response.status}): ${errText.slice(0, 300)}`)
+      }
+
+      const payload = (await response.json()) as unknown
+      const raw = extractChatCompletionContent(payload)
+      if (!raw) throw new Error('No content returned from local provider.')
+
+      // Enforce word limit
+      const words = raw.trim().split(/\s+/).slice(0, maxWords)
+      resultText = words.join(' ')
+
+      await recordUsageEvent({
+        db,
+        endpoint: 'generator:simpleGenerate',
+        providerId,
+        modelId,
+        payload,
+        promptText: userPrompt,
+        responseText: raw,
+        storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
+      })
+
+      return { data: { text: resultText } }
+    } catch (error) {
+      errorMessage = String(error)
+      return { error: String(error) }
+    } finally {
+      try {
+        const loggingEnabled = await getAiApiRequestLoggingEnabled()
+        if (loggingEnabled) await appendAiRequestLog({
+          timestamp: new Date().toISOString(),
+          requestId,
+          endpoint: 'generator:simpleGenerate',
+          provider: requestProvider,
+          model: requestModel,
+          durationMs: Date.now() - startedAt,
+          status: responseStatus,
+          requestPayload,
+          responseText: resultText || null,
+          error: errorMessage,
+        })
+      } catch (loggingError) {
+        console.error('Failed to write AI request log:', loggingError)
+      }
+    }
+  })
 }
-
-
-
-
-
