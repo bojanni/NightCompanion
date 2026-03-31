@@ -24,6 +24,24 @@
 - Conclusions: Keep Prompt Preview only on the Quickstart tab.
 - Actions: Updated `src/screens/Generator.tsx` to render `PromptPreview` only when `tab === 'generator'`; validated with `npm run build`.
 
+## 2026-03-31 (Generator — re-add Creativity + Max Words controls)
+
+- Findings: Creativity selection and max words slider were removed from Quickstart, and the same controls were also needed on the Prompt Builder tab.
+- Conclusions: Keep a single `maxWords` state for both tabs and expose creativity controls for Quickstart expansion, Magic Random generation, and Prompt Builder prompt generation.
+- Actions: Updated `src/screens/Generator.tsx` to re-add a max words slider and creativity selectors on the Quickstart tab; added the same max words + creativity controls on the Prompt Builder tab and passed creativity/maxWords into `PromptBuilder` so `generator.generatePromptFromFields` respects them; updated typings in `electron/preload.ts` + `src/types/electron.d.ts`; ensured `generator:generatePromptFromFields` truncates to `maxWords` in all provider paths; validated with `npm run build`.
+
+## 2026-03-31 (Generator — move Max Words + Creativity into cards)
+
+- Findings: The Max Words slider and Creativity controls were visible as a separate panel, but you wanted them inside the Magic Quickstart and Magic Random cards.
+- Conclusions: Placing the controls inside each card keeps settings close to the actions they affect and reduces top-of-page clutter.
+- Actions: Updated `src/screens/Generator.tsx` to move the Max Words slider and the corresponding Creativity controls into the Magic Quickstart and Magic Random cards; validated with `npm run build`.
+
+## 2026-03-31 (Generator — remove Prompt Preview)
+
+- Findings: The Prompt Preview panel was still shown on Quickstart and you wanted it removed.
+- Conclusions: Removing the section reduces UI clutter and keeps focus on the generation workflow.
+- Actions: Updated `src/screens/Generator.tsx` to remove the `PromptPreview` section (and its import); validated with `npm run build`.
+
 ## 2026-03-30 (PromptBuilder — Magic Fill button to fill all empty fields)
 
 - Findings: User wanted a single button to fill all empty fields at once with AI-generated content, instead of clicking each field's generate button individually.

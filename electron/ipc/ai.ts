@@ -2335,6 +2335,8 @@ export function registerAiIpc({
     mood?: string
     artist?: string
     technical?: string
+    creativity?: 'focused' | 'balanced' | 'wild'
+    maxWords?: number
   }) => {
     const requestId = crypto.randomUUID()
     const startedAt = Date.now()
@@ -2354,6 +2356,18 @@ export function registerAiIpc({
         artist: input?.artist?.trim() || '',
         technical: input?.technical?.trim() || '',
       }
+
+      const creativity = input?.creativity === 'focused'
+        ? 'focused'
+        : input?.creativity === 'wild'
+          ? 'wild'
+          : 'balanced'
+
+      const requestedMaxWords = typeof input?.maxWords === 'number' && Number.isFinite(input.maxWords)
+        ? Math.max(1, Math.floor(input.maxWords))
+        : null
+
+      const temperature = creativity === 'focused' ? 0.5 : creativity === 'wild' ? 1.1 : 0.8
 
       // Build instruction based on what fields are provided
       const providedFields = Object.entries(fields)
@@ -2391,7 +2405,13 @@ export function registerAiIpc({
         }
       }
 
-      userPrompt += '\nCombine all elements into a single, cohesive, detailed prompt. Expand on the provided elements with additional descriptive details. Output ONLY the final prompt text, no explanations or labels.'
+      userPrompt += '\nCombine all elements into a single, cohesive, detailed prompt. Expand on the provided elements with additional descriptive details.'
+
+      if (requestedMaxWords) {
+        userPrompt += ` Keep the final prompt under ${requestedMaxWords} words.`
+      }
+
+      userPrompt += ' Output ONLY the final prompt text, no explanations or labels.'
 
       const systemPrompt = `You are an expert AI Art Prompt Engineer for NightCafe Studio. ${LANGUAGE_INSTRUCTION} 
 Create detailed, optimized prompts that work well with text-to-image models.
@@ -2422,7 +2442,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
 
         requestPayload = {
           model: settings.model,
-          temperature: 0.8,
+          temperature,
           max_tokens: 2048,
           messages: [
             { role: 'system', content: systemPrompt },
@@ -2464,6 +2484,11 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         })
 
         resultPrompt = prompt.trim()
+
+        if (requestedMaxWords) {
+          resultPrompt = resultPrompt.split(/\s+/).slice(0, requestedMaxWords).join(' ')
+        }
+
         return { data: { prompt: resultPrompt } }
       }
 
@@ -2476,7 +2501,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
 
         requestPayload = {
           model: modelId,
-          temperature: 0.8,
+          temperature,
           max_tokens: 2048,
           messages: [
             { role: 'system', content: systemPrompt },
@@ -2518,6 +2543,11 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         })
 
         resultPrompt = prompt.trim()
+
+        if (requestedMaxWords) {
+          resultPrompt = resultPrompt.split(/\s+/).slice(0, requestedMaxWords).join(' ')
+        }
+
         return { data: { prompt: resultPrompt } }
       }
 
@@ -2534,7 +2564,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
 
       requestPayload = {
         model: modelId,
-        temperature: 0.8,
+        temperature,
         max_tokens: 2048,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -2571,6 +2601,11 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       })
 
       resultPrompt = prompt.trim()
+
+      if (requestedMaxWords) {
+        resultPrompt = resultPrompt.split(/\s+/).slice(0, requestedMaxWords).join(' ')
+      }
+
       return { data: { prompt: resultPrompt } }
     } catch (error) {
       errorMessage = String(error)

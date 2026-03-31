@@ -26,9 +26,10 @@ type PromptBuilderProps = {
   greylistEnabled?: boolean
   greylistWords?: string[]
   maxWords?: number
+  creativity?: 'focused' | 'balanced' | 'wild'
 }
 
-export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [], maxWords = 70 }: PromptBuilderProps) {
+export default function PromptBuilder({ embedded = false, greylistEnabled = true, greylistWords = [], maxWords = 70, creativity = 'balanced' }: PromptBuilderProps) {
   const [parts, setParts] = useState<Part[]>(DEFAULT_PARTS)
   const [separator, setSeparator] = useState<', ' | '. ' | ' | '>( ', ')
   const [savedTitle, setSavedTitle] = useState('')
@@ -117,6 +118,8 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
         mood: parts.find(p => p.id === 'mood')?.value,
         artist: parts.find(p => p.id === 'artist')?.value,
         technical: parts.find(p => p.id === 'technical')?.value,
+        creativity,
+        maxWords,
       })
 
       if (result.error || !result.data?.prompt) {

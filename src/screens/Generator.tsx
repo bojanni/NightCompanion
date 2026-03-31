@@ -2,7 +2,6 @@
 import { User, Sparkles, Minus, Copy, Edit3, Save, ArrowRight, Wand2 } from 'lucide-react'
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
-import PromptPreview from '../components/PromptPreview'
 import { PageContainer } from '../components/PageContainer'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
@@ -690,18 +689,6 @@ export default function Generator() {
           </button>
         </div>
 
-        {tab === 'generator' && (
-          <div className="mt-5">
-            <PromptPreview
-              promptText={generatedPrompt || quickStartIdea}
-              negativePrompt={negativePrompt}
-              maxWords={maxWords}
-              greylistWords={greylistEnabled ? greylistWords : []}
-              model={selectedPreset ? `NightCafe preset: ${selectedPreset}` : 'Magic Random AI'}
-            />
-          </div>
-        )}
-
         {tab === 'generator' ? (
           <>
             {/* Greylist */}
@@ -782,6 +769,40 @@ export default function Generator() {
                   />
                 </div>
 
+                <div className="mt-4 rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Max words</p>
+                      <span className="text-xs text-slate-400">{maxWords}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={MAX_ALLOWED_WORDS}
+                      value={maxWords}
+                      onChange={(e) => setMaxWords(Math.max(1, Math.min(MAX_ALLOWED_WORDS, Number(e.target.value))))}
+                      className="mt-2 w-full accent-teal-500"
+                      aria-label="Max words"
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Creativity</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(['focused', 'balanced', 'wild'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setQuickStartCreativity(mode)}
+                          className={quickStartCreativity === mode ? 'btn-compact-primary' : 'btn-compact-ghost'}
+                        >
+                          {mode === 'focused' ? 'Focused' : mode === 'balanced' ? 'Balanced' : 'Wild'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mt-auto pt-4 flex justify-end">
                   <button
                     type="button"
@@ -856,6 +877,40 @@ export default function Generator() {
                     className="w-full bg-transparent px-4 py-4 text-sm text-slate-300 placeholder-night-500 resize-none min-h-36 focus:outline-none"
                     placeholder="Generated prompt will appear here."
                   />
+                </div>
+
+                <div className="mt-4 rounded-xl border border-slate-700/50 bg-slate-900/40 p-4">
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Max words</p>
+                      <span className="text-xs text-slate-400">{maxWords}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={MAX_ALLOWED_WORDS}
+                      value={maxWords}
+                      onChange={(e) => setMaxWords(Math.max(1, Math.min(MAX_ALLOWED_WORDS, Number(e.target.value))))}
+                      className="mt-2 w-full accent-teal-500"
+                      aria-label="Max words"
+                    />
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Creativity</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(['focused', 'balanced', 'wild'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setMagicRandomCreativity(mode)}
+                          className={magicRandomCreativity === mode ? 'btn-compact-primary' : 'btn-compact-ghost'}
+                        >
+                          {mode === 'focused' ? 'Focused' : mode === 'balanced' ? 'Balanced' : 'Wild'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="mt-auto pt-4 flex flex-wrap justify-end gap-3">
@@ -1059,11 +1114,47 @@ export default function Generator() {
           </>
         ) : (
           <>
+            <div className="mt-5 card p-5">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-white">Max words</p>
+                    <span className="text-xs text-slate-400">{maxWords}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={MAX_ALLOWED_WORDS}
+                    value={maxWords}
+                    onChange={(e) => setMaxWords(Math.max(1, Math.min(MAX_ALLOWED_WORDS, Number(e.target.value))))}
+                    className="mt-2 w-full accent-teal-500"
+                    aria-label="Max words"
+                  />
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-white">Creativity</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(['focused', 'balanced', 'wild'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setMagicRandomCreativity(mode)}
+                        className={magicRandomCreativity === mode ? 'btn-compact-primary' : 'btn-compact-ghost'}
+                      >
+                        {mode === 'focused' ? 'Focused' : mode === 'balanced' ? 'Balanced' : 'Wild'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-5">
               {greylistCard}
             </div>
             <div className="mt-1 card border-slate-800/50">
-              <PromptBuilder embedded greylistEnabled={greylistEnabled} greylistWords={greylistWords} maxWords={maxWords} />
+              <PromptBuilder embedded greylistEnabled={greylistEnabled} greylistWords={greylistWords} maxWords={maxWords} creativity={magicRandomCreativity} />
             </div>
           </>
         )}

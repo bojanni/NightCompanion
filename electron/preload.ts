@@ -323,7 +323,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('generator:quickExpand', input),
     simpleGenerate: (input?: { fieldType?: 'subject' | 'style' | 'lighting' | 'mood' | 'artist' | 'technical'; maxWords?: number }): Promise<IpcResult<{ text: string }>> =>
       invokeWithFallback('generator:simpleGenerate', input),
-    generatePromptFromFields: (input?: { subject?: string; style?: string; lighting?: string; mood?: string; artist?: string; technical?: string }): Promise<IpcResult<{ prompt: string }>> =>
+    generatePromptFromFields: (input?: { subject?: string; style?: string; lighting?: string; mood?: string; artist?: string; technical?: string; creativity?: 'focused' | 'balanced' | 'wild'; maxWords?: number }): Promise<IpcResult<{ prompt: string }>> =>
       invokeWithFallback('generator:generatePromptFromFields', input),
     fillAllFields: (input?: { subject?: string; style?: string; lighting?: string; mood?: string; artist?: string; technical?: string }): Promise<IpcResult<{ fields: Record<string, string> }>> =>
       invokeWithFallback('generator:fillAllFields', input),
