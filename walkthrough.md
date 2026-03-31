@@ -42,6 +42,12 @@
 - Conclusions: Removing the section reduces UI clutter and keeps focus on the generation workflow.
 - Actions: Updated `src/screens/Generator.tsx` to remove the `PromptPreview` section (and its import); validated with `npm run build`.
 
+## 2026-03-31 (AI — sanitise prompt output escape tokens)
+
+- Findings: Some AI outputs contained stray escape sequences like `\\(`, `\\)`, and `\\/`, which appeared as visible junk characters in generated prompts.
+- Conclusions: Normalising the returned text in IPC ensures the renderer never displays provider-specific escaping artefacts.
+- Actions: Updated `electron/ipc/ai.ts` to normalise AI output text via `normalizeAiText()` and applied it to generator prompt outputs (including `generator:quickExpand` and `generator:generatePromptFromFields`); validated with `npm run build`.
+
 ## 2026-03-30 (PromptBuilder — Magic Fill button to fill all empty fields)
 
 - Findings: User wanted a single button to fill all empty fields at once with AI-generated content, instead of clicking each field's generate button individually.

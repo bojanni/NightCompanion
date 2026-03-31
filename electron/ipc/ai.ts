@@ -541,6 +541,16 @@ function normalizeGeneratedTitle(value: string) {
     .trim()
 }
 
+function normalizeAiText(value: string) {
+  return value
+    .replace(/\\\(/g, '(')
+    .replace(/\\\)/g, ')')
+    .replace(/\\\//g, '/')
+    .replace(/\\([,.:;!?])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function normalizeGeneratedTag(value: string) {
   return value
     .toLowerCase()
@@ -1963,8 +1973,9 @@ export function registerAiIpc({
           storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
         })
 
-        resultPrompt = prompt
-        return { data: { prompt } }
+        const cleanedPrompt = normalizeAiText(prompt)
+        resultPrompt = cleanedPrompt
+        return { data: { prompt: cleanedPrompt } }
       }
 
       requestProvider = providerId
@@ -2006,8 +2017,9 @@ export function registerAiIpc({
         const prompt = extractChatCompletionContent(payload)
         if (!prompt) throw new Error('No prompt content returned from OpenRouter.')
 
-        resultPrompt = prompt
-        return { data: { prompt } }
+        const cleanedPrompt = normalizeAiText(prompt)
+        resultPrompt = cleanedPrompt
+        return { data: { prompt: cleanedPrompt } }
       }
 
       const localEndpointsRaw = stored.localEndpoints
@@ -2058,8 +2070,9 @@ export function registerAiIpc({
         storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
       })
 
-      resultPrompt = prompt
-      return { data: { prompt } }
+      const cleanedPrompt = normalizeAiText(prompt)
+      resultPrompt = cleanedPrompt
+      return { data: { prompt: cleanedPrompt } }
     } catch (error) {
       errorMessage = String(error)
       return { error: String(error) }
@@ -2483,7 +2496,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
           storePromptResponse: Boolean(stored.aiConfig?.storeAiPromptResponseForUsage),
         })
 
-        resultPrompt = prompt.trim()
+        resultPrompt = normalizeAiText(prompt)
 
         if (requestedMaxWords) {
           resultPrompt = resultPrompt.split(/\s+/).slice(0, requestedMaxWords).join(' ')
@@ -2605,6 +2618,8 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       if (requestedMaxWords) {
         resultPrompt = resultPrompt.split(/\s+/).slice(0, requestedMaxWords).join(' ')
       }
+
+      resultPrompt = normalizeAiText(resultPrompt)
 
       return { data: { prompt: resultPrompt } }
     } catch (error) {
