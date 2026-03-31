@@ -54,6 +54,12 @@
 - Conclusions: Use `usage:getSummary` for session + today, and `usage:listDaily` for range totals; include `calls` in usage totals so the widget can display call counts consistently.
 - Actions: Updated `electron/ipc/usage.ts` + `electron/ipc/ai.ts` to track `calls` in session/today/range totals; updated typings in `electron/preload.ts`, `src/types/electron.d.ts`, and `src/screens/Usage.tsx`; rebuilt `src/components/TokenCostWidget.tsx` to show Session Usage + Daily Usage rows with an expandable panel containing period tabs and Calls/Tokens/Cost tiles with Close; validated with `npm run build`.
 
+## 2026-03-31 (UI — Wider sidebar)
+
+- Findings: The sidebar felt too narrow for the navigation + usage widget.
+- Conclusions: Increase the fixed sidebar width while keeping the layout behaviour (`flex-shrink-0`) unchanged.
+- Actions: Updated `src/components/Sidebar.tsx` to set the sidebar width to `w-[270px]`; validated with `npm run build`.
+
 ## 2026-03-30 (PromptBuilder — Magic Fill button to fill all empty fields)
 
 - Findings: User wanted a single button to fill all empty fields at once with AI-generated content, instead of clicking each field's generate button individually.

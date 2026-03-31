@@ -78,7 +78,7 @@ type Props = {
 
 export default function Sidebar({ activeScreen, onNavigate }: Props) {
   return (
-    <aside className="w-60 flex-shrink-0 flex flex-col bg-gradient-sidebar border-r border-slate-900/50 pt-10">
+    <aside className="w-[270px] flex-shrink-0 flex flex-col bg-gradient-sidebar border-r border-slate-900/50 pt-10">
       {/* Logo */}
       <div className="px-5 pb-8">
         <div className="flex items-center gap-2.5">
