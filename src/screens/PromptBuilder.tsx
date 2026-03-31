@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { StyleProfile } from '../types'
 import PromptPreview from '../components/PromptPreview'
+import PromptDiffView from '../components/PromptDiffView'
 import { toast } from 'sonner'
 
 type Part = {
@@ -40,6 +41,8 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [isImprovingGeneratedPrompt, setIsImprovingGeneratedPrompt] = useState(false)
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false)
+  const [generatedPromptViewTab, setGeneratedPromptViewTab] = useState<'final' | 'diff'>('final')
+  const [generatedImprovementDiff, setGeneratedImprovementDiff] = useState<{ originalPrompt: string; improvedPrompt: string } | null>(null)
 
   const updatePart = (id: string, value: string) => {
     setParts((prev) => prev.map((p) => (p.id === id ? { ...p, value } : p)))
@@ -153,7 +156,10 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
         throw new Error(result.error || 'No improved prompt returned.')
       }
 
-      setGeneratedPrompt(result.data.prompt)
+      const improved = result.data.prompt
+      setGeneratedPrompt(improved)
+      setGeneratedImprovementDiff({ originalPrompt: value, improvedPrompt: improved })
+      setGeneratedPromptViewTab('diff')
       toast.success('Prompt improved!')
     } catch (error) {
       toast.error(`Failed to improve prompt: ${String(error)}`)
@@ -294,6 +300,8 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
     setParts(DEFAULT_PARTS)
     setSavedTitle('')
     setGeneratedPrompt('')
+    setGeneratedImprovementDiff(null)
+    setGeneratedPromptViewTab('final')
   }
 
   return (
@@ -390,13 +398,57 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
 
             <div className="mt-4">
               <label className="label">Generated Prompt</label>
-              <textarea
-                value={generatedPrompt}
-                onChange={(e) => setGeneratedPrompt(e.target.value)}
-                className="textarea w-full"
-                rows={4}
-                placeholder="Generate a prompt to see it here…"
-              />
+              {generatedImprovementDiff ? (
+                <div>
+                  <div className="inline-flex rounded-lg border border-slate-700/50 bg-slate-900/40 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setGeneratedPromptViewTab('diff')}
+                      className={`px-3 py-1.5 rounded-md text-xs transition-colors ${generatedPromptViewTab === 'diff' ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                    >
+                      Diff View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGeneratedPromptViewTab('final')}
+                      className={`px-3 py-1.5 rounded-md text-xs transition-colors ${generatedPromptViewTab === 'final' ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                    >
+                      Final Result
+                    </button>
+                  </div>
+
+                  {generatedPromptViewTab === 'diff' ? (
+                    <div className="mt-3">
+                      <PromptDiffView
+                        originalPrompt={generatedImprovementDiff.originalPrompt}
+                        improvedPrompt={generatedImprovementDiff.improvedPrompt}
+                      />
+                    </div>
+                  ) : (
+                    <textarea
+                      className="textarea mt-3 w-full"
+                      value={generatedImprovementDiff.improvedPrompt}
+                      readOnly
+                      rows={4}
+                      placeholder="Improved prompt result"
+                    />
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  value={generatedPrompt}
+                  onChange={(e) => {
+                    setGeneratedPrompt(e.target.value)
+                    if (generatedImprovementDiff) {
+                      setGeneratedImprovementDiff(null)
+                      setGeneratedPromptViewTab('final')
+                    }
+                  }}
+                  className="textarea w-full"
+                  rows={4}
+                  placeholder="Generate a prompt to see it here…"
+                />
+              )}
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
@@ -410,7 +462,7 @@ export default function PromptBuilder({ embedded = false, greylistEnabled = true
                   type="button"
                   disabled={!generatedPrompt.trim() || isImprovingGeneratedPrompt}
                   onClick={() => void handleImproveGeneratedPrompt()}
-                  className="btn-primary text-xs"
+                  className="btn-compact-teal"
                 >
                   {isImprovingGeneratedPrompt ? 'Improving…' : 'Improve Prompt'}
                 </button>

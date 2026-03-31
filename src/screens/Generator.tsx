@@ -690,15 +690,17 @@ export default function Generator() {
           </button>
         </div>
 
-        <div className="mt-5">
-          <PromptPreview
-            promptText={generatedPrompt || quickStartIdea}
-            negativePrompt={negativePrompt}
-            maxWords={maxWords}
-            greylistWords={greylistEnabled ? greylistWords : []}
-            model={selectedPreset ? `NightCafe preset: ${selectedPreset}` : 'Magic Random AI'}
-          />
-        </div>
+        {tab === 'generator' && (
+          <div className="mt-5">
+            <PromptPreview
+              promptText={generatedPrompt || quickStartIdea}
+              negativePrompt={negativePrompt}
+              maxWords={maxWords}
+              greylistWords={greylistEnabled ? greylistWords : []}
+              model={selectedPreset ? `NightCafe preset: ${selectedPreset}` : 'Magic Random AI'}
+            />
+          </div>
+        )}
 
         {tab === 'generator' ? (
           <>

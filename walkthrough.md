@@ -12,6 +12,18 @@
 - Conclusions: Reuse the existing `generator.generateTitle` IPC call and base it on the current composed prompt.
 - Actions: Updated `src/screens/PromptBuilder.tsx` to add a `Generate Title (AI)` button next to the title input (left of Save), with loading state and toast feedback; validated with `npm run build`.
 
+## 2026-03-31 (PromptBuilder — Improve Prompt matches Quickstart)
+
+- Findings: Prompt Builder's Improve Prompt needed to behave like the Quickstart improve flow and use the same button colours.
+- Conclusions: Mirror Quickstart by tracking an improvement diff and rendering Diff/Final tabs using `PromptDiffView`, and reuse the existing teal button class.
+- Actions: Updated `src/screens/PromptBuilder.tsx` to track `generatedImprovementDiff` + `generatedPromptViewTab`, render Diff View / Final Result tabs with `PromptDiffView`, and use `btn-compact-teal` for the Improve button; validated with `npm run build`.
+
+## 2026-03-31 (Generator — hide Prompt Preview on Prompt Builder tab)
+
+- Findings: The Prompt Preview panel was shown on the Prompt Builder tab, but it was redundant and should be removed there.
+- Conclusions: Keep Prompt Preview only on the Quickstart tab.
+- Actions: Updated `src/screens/Generator.tsx` to render `PromptPreview` only when `tab === 'generator'`; validated with `npm run build`.
+
 ## 2026-03-30 (PromptBuilder — Magic Fill button to fill all empty fields)
 
 - Findings: User wanted a single button to fill all empty fields at once with AI-generated content, instead of clicking each field's generate button individually.
