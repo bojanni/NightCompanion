@@ -276,3 +276,21 @@
 - Findings: You wanted usage tracking split across four AI categories (generation, improvement, vision, research & reasoning) and to see which models are used most.
 - Conclusions: Extend usage database schema with category field; group dashboard statistics by category and render top models per category.
 - Actions: Updated usage schema in `src/db/schema.ts` to include category; extended Dashboard.tsx and corresponding query/grouping logic to break down usage by category and display top 3 models per category; validated with `npm run build`.
+
+## 2026-04-05 (Prompt Library — Multiple Images + Seed Metadata)
+
+- Findings: Prompt add/edit only supported a single image and there was no seed field, so image-specific generation context (model/seed) could not be captured.
+- Conclusions: Store prompt images as a JSON array with per-image metadata (note, model, seed) and keep a cover image for backwards compatibility; add a prompt-level seed field.
+- Actions: Added `images_json` + `seed` columns for prompts and prompt versions with a new migration; updated prompt IPC to persist multiple local images and metadata; updated PromptForm to edit multiple images and added a Seed field; updated Library cards to use the first image as cover; validated with `npm run build`.
+
+## 2026-04-05 (Dashboard — Recent Images strip)
+
+- Findings: Dashboard showed counts, recent prompts, and top characters, but not the most recent visual results.
+- Conclusions: Fetch the latest Gallery image items and render them as a horizontal “recent images” strip linking to Gallery.
+- Actions: Updated `src/screens/Dashboard.tsx` to load recent Gallery images and render a scrollable strip; invalidated the dashboard cache from Gallery mutations; validated with `npm run build`.
+
+## 2026-04-05 (Generator — Greylist words persist)
+
+- Findings: Greylist words added in Generator could be overwritten on startup because the initial “save” ran before the DB load completed.
+- Conclusions: Only persist greylist changes after the initial greylist load finishes.
+- Actions: Updated `src/screens/Generator.tsx` to gate greylist saving behind a `greylistLoaded` flag; validated with `npm run build`.

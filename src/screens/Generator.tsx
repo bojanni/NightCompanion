@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User, Sparkles, Minus, Copy, Edit3, Save, ArrowRight, Wand2 } from 'lucide-react'
 import PromptBuilder from './PromptBuilder'
 import PromptDiffView from '../components/PromptDiffView'
@@ -98,6 +98,7 @@ export default function Generator() {
   const [greylistEnabled, setGreylistEnabled] = useState(true)
   const [greylistWords, setGreylistWords] = useState<string[]>(DEFAULT_GREYLIST)
   const [greylistInput, setGreylistInput] = useState('')
+  const [greylistLoaded, setGreylistLoaded] = useState(false)
 
   const [quickStartIdea, setQuickStartIdea] = useState('')
   const [quickStartCreativity, setQuickStartCreativity] = useState<CreativityLevel>('balanced')
@@ -372,6 +373,8 @@ export default function Generator() {
       } catch (error) {
         console.error('Failed to load greylist:', error)
         setGreylistWords(DEFAULT_GREYLIST)
+      } finally {
+        if (!ignore) setGreylistLoaded(true)
       }
     }
 
@@ -385,6 +388,7 @@ export default function Generator() {
 
     async function saveGreylist() {
       if (ignore) return
+      if (!greylistLoaded) return
       try {
         await window.electronAPI.greylist.save({ words: greylistWords })
       } catch (error) {
@@ -395,7 +399,7 @@ export default function Generator() {
     saveGreylist()
 
     return () => { ignore = true }
-  }, [greylistWords])
+  }, [greylistLoaded, greylistWords])
 
   const handleGenerate = async () => {
     setStatus(null)

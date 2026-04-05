@@ -1,10 +1,22 @@
-﻿import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, Greylist, GalleryItem, Collection } from '../src/lib/schema'
+
+type PromptImageMutationInput = {
+  id?: string
+  url?: string
+  dataUrl?: string | null
+  fileName?: string | null
+  note?: string
+  model?: string
+  seed?: string
+  createdAt?: string
+}
 
 type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
   imageDataUrl?: string | null
   imageFileName?: string | null
   removeImage?: boolean
+  images?: PromptImageMutationInput[] | null
 }
 
 export type PromptFilters = {

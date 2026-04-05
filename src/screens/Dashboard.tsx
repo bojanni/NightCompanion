@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { Prompt, Screen } from '../types'
+import type { GalleryItem, Prompt, Screen } from '../types'
 import { subscribeDashboardCacheInvalidation } from '../lib/cacheEvents'
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton'
 
@@ -26,6 +26,7 @@ interface DashboardCache {
   stats: DashboardStats
   recentPrompts: Prompt[]
   topCharacters: CharacterDashboardItem[]
+  recentImages: GalleryItem[]
 }
 
 const DASHBOARD_CACHE_STALE_MS = 60_000
@@ -40,11 +41,13 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   })
   const [recentPrompts, setRecentPrompts] = useState<Prompt[]>([])
   const [topCharacters, setTopCharacters] = useState<CharacterDashboardItem[]>([])
+  const [recentImages, setRecentImages] = useState<GalleryItem[]>([])
 
   function applyDashboardData(data: Omit<DashboardCache, 'cachedAt'>) {
     setStats(data.stats)
     setRecentPrompts(data.recentPrompts)
     setTopCharacters(data.topCharacters)
+    setRecentImages(data.recentImages)
   }
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
           stats: cache.stats,
           recentPrompts: cache.recentPrompts,
           topCharacters: cache.topCharacters,
+          recentImages: cache.recentImages,
         })
         setLoading(false)
         return
@@ -65,10 +69,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       setLoading(true)
 
-      const [promptsResult, styleProfilesResult, charactersResult] = await Promise.all([
+      const [promptsResult, styleProfilesResult, charactersResult, galleryResult] = await Promise.all([
         window.electronAPI.prompts.list(),
         window.electronAPI.styleProfiles.list(),
         window.electronAPI.characters.list(),
+        window.electronAPI.gallery.list({ page: 0 }),
       ])
 
       if (ignore) return
@@ -76,6 +81,12 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       const prompts = promptsResult.error ? [] : promptsResult.data || []
       const styleProfiles = styleProfilesResult.error ? [] : styleProfilesResult.data || []
       const characters = charactersResult.error ? [] : charactersResult.data || []
+      const galleryItems = galleryResult.error ? [] : galleryResult.data?.items || []
+
+      const imageItems = galleryItems
+        .filter((item) => item.mediaType === 'image')
+        .filter((item) => Boolean(item.imageUrl))
+        .slice(0, 12)
 
       const data = {
         stats: {
@@ -85,6 +96,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         },
         recentPrompts: prompts.slice(0, 5),
         topCharacters: characters.slice(0, 3),
+        recentImages: imageItems,
       }
 
       dashboardCache = {
@@ -143,38 +155,38 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       <div
         className="px-8 pt-8 pb-5 no-drag-region"
       >
-        <h1 className="text-2xl font-semibold text-white tracking-tight">Dashboard</h1>
-        <p className="text-sm text-night-400 mt-1">Snel overzicht van je prompts, characters en resultaten.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
+        <p className="mt-1 text-sm text-night-400">Snel overzicht van je prompts, characters en resultaten.</p>
       </div>
 
       <div
-        className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 no-drag-region"
+        className="overflow-y-auto flex-1 px-8 pb-8 space-y-6 no-drag-region"
       >
         {loading ? (
           <DashboardSkeleton />
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {cards.map((card) => (
                 <button
                   key={card.label}
                   onClick={() => onNavigate(card.target)}
-                  className="card text-left p-5 hover:border-night-500/70 transition-all group"
+                  className="p-5 text-left transition-all card hover:border-night-500/70 group"
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex justify-between items-center mb-3">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shadow-glow-sm`}>
-                      <span className="text-white text-base">{card.icon}</span>
+                      <span className="text-base text-white">{card.icon}</span>
                     </div>
                     <span className="text-3xl font-semibold text-white">{card.value}</span>
                   </div>
-                  <p className="text-sm text-night-400 group-hover:text-night-300 transition-colors">{card.label}</p>
+                  <p className="text-sm transition-colors text-night-400 group-hover:text-night-300">{card.label}</p>
                 </button>
               ))}
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 card p-6">
-                <div className="flex items-center justify-between mb-4">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="p-6 xl:col-span-2 card">
+                <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-white">Recente Prompts</h2>
                   <button onClick={() => onNavigate('library')} className="text-sm text-glow-blue hover:underline">
                     Bekijk alles
@@ -189,20 +201,20 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                       <button
                         key={prompt.id}
                         onClick={() => onNavigate('library')}
-                        className="w-full text-left p-3 rounded-xl bg-night-800/60 hover:bg-night-800 transition-colors"
+                        className="p-3 w-full text-left rounded-xl transition-colors bg-night-800/60 hover:bg-night-800"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex gap-2 items-center">
                           <h3 className="text-sm font-medium text-white truncate">{prompt.title || 'Untitled'}</h3>
                         </div>
-                        <p className="text-xs text-night-400 mt-1 truncate">{prompt.promptText}</p>
+                        <p className="mt-1 text-xs truncate text-night-400">{prompt.promptText}</p>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="card p-6">
-                <div className="flex items-center justify-between mb-4">
+              <div className="p-6 card">
+                <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-white">Top Characters</h2>
                   <button onClick={() => onNavigate('characters')} className="text-sm text-glow-blue hover:underline">
                     Bekijk alles
@@ -220,16 +232,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                         <button
                           key={character.id}
                           onClick={() => onNavigate('characters')}
-                          className="w-full text-left p-3 rounded-xl bg-night-800/60 hover:bg-night-800 transition-colors flex items-center gap-3"
+                          className="flex gap-3 items-center p-3 w-full text-left rounded-xl transition-colors bg-night-800/60 hover:bg-night-800"
                         >
                           {mainImage ? (
-                            <img src={mainImage} alt={character.name} className="w-10 h-10 rounded-lg object-cover" />
+                            <img src={mainImage} alt={character.name} className="object-cover w-10 h-10 rounded-lg" />
                           ) : (
-                            <div className="w-10 h-10 rounded-lg bg-night-700 flex items-center justify-center text-night-500">◉</div>
+                            <div className="flex justify-center items-center w-10 h-10 rounded-lg bg-night-700 text-night-500">◉</div>
                           )}
                           <div className="min-w-0">
                             <h3 className="text-sm font-medium text-white truncate">{character.name}</h3>
-                            <p className="text-xs text-night-400 truncate">{character.description || 'Geen beschrijving'}</p>
+                            <p className="text-xs truncate text-night-400">{character.description || 'Geen beschrijving'}</p>
                           </div>
                         </button>
                       )
@@ -237,6 +249,48 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="p-6 card">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-white">Recente Afbeeldingen</h2>
+                <button onClick={() => onNavigate('gallery')} className="text-sm text-glow-blue hover:underline">
+                  Bekijk alles
+                </button>
+              </div>
+
+              {recentImages.length === 0 ? (
+                <div className="py-10 text-center text-night-500">Nog geen afbeeldingen opgeslagen.</div>
+              ) : (
+                <div className="flex overflow-x-auto gap-3 pb-2">
+                  {recentImages.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onNavigate('gallery')}
+                      className="flex-shrink-0 w-28"
+                      title={item.title || undefined}
+                      aria-label={item.title ? `Open Gallery: ${item.title}` : 'Open Gallery'}
+                    >
+                      <div className="overflow-hidden relative w-28 h-20 rounded-xl border transition-colors border-night-700/60 bg-night-900/50 hover:border-night-500/70">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.title || 'Gallery item'}
+                            className="object-cover w-full h-full"
+                            onError={(event) => {
+                              ;(event.currentTarget.parentElement as HTMLDivElement | null)?.classList.add('hidden')
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-[11px] text-night-400 truncate">
+                        {item.title || 'Untitled'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
           </>

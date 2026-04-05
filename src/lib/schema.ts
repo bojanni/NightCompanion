@@ -21,11 +21,20 @@ export const prompts = pgTable(
     id: serial('id').primaryKey(),
     title: varchar('title', { length: 255 }).notNull(),
     imageUrl: text('image_url').default('').notNull(),
+    imagesJson: jsonb('images_json').$type<Array<{
+      id: string
+      url: string
+      note: string
+      model: string
+      seed: string
+      createdAt: string
+    }>>().default([]).notNull(),
     promptText: text('prompt_text').notNull(),
     negativePrompt: text('negative_prompt').default(''),
     tags: text('tags').array().default([]).notNull(),
     model: varchar('model', { length: 100 }).default('').notNull(),
     suggestedModel: varchar('suggested_model', { length: 100 }).default('').notNull(),
+    seed: varchar('seed', { length: 64 }).default('').notNull(),
     isTemplate: boolean('is_template').default(false).notNull(),
     isFavorite: boolean('is_favorite').default(false).notNull(),
     rating: real('rating'),
@@ -50,11 +59,20 @@ export const promptVersions = pgTable(
     versionNumber: integer('version_number').notNull(),
     title: varchar('title', { length: 255 }).notNull(),
     imageUrl: text('image_url').default('').notNull(),
+    imagesJson: jsonb('images_json').$type<Array<{
+      id: string
+      url: string
+      note: string
+      model: string
+      seed: string
+      createdAt: string
+    }>>().default([]).notNull(),
     promptText: text('prompt_text').notNull(),
     negativePrompt: text('negative_prompt').default('').notNull(),
     tags: text('tags').array().default([]).notNull(),
     model: varchar('model', { length: 100 }).default('').notNull(),
     suggestedModel: varchar('suggested_model', { length: 100 }).default('').notNull(),
+    seed: varchar('seed', { length: 64 }).default('').notNull(),
     isTemplate: boolean('is_template').default(false).notNull(),
     isFavorite: boolean('is_favorite').default(false).notNull(),
     rating: real('rating'),

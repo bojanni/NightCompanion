@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 import type { GalleryItem, Collection } from '../lib/schema'
+import { invalidateDashboardCache } from '../lib/cacheEvents'
 
 const PAGE_SIZE = 24
 
@@ -156,6 +157,7 @@ export default function useGalleryState() {
       toast.error(result.error)
     } else {
       toast.success('Item deleted')
+      invalidateDashboardCache()
       void loadData()
     }
   }, [loadData])
@@ -186,6 +188,7 @@ export default function useGalleryState() {
       toast.error(result.error)
     } else {
       toast.success('Collection deleted')
+      invalidateDashboardCache()
       if (filterCollection === id) setFilterCollection(null)
       void loadData()
     }

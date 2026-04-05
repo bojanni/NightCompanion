@@ -12,10 +12,31 @@ import { getManagedNightCompanionRoots, isPathWithin, resolveNightCompanionSubdi
 
 type Database = ReturnType<typeof drizzle<typeof schema>>
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
+type PromptImageMutationInput = {
+  id?: string
+  url?: string
+  dataUrl?: string | null
+  fileName?: string | null
+  note?: string
+  model?: string
+  seed?: string
+  createdAt?: string
+}
+
+type PromptImageRow = {
+  id: string
+  url: string
+  note: string
+  model: string
+  seed: string
+  createdAt: string
+}
+
 type PromptMutationInput = Partial<NewPrompt> & {
   imageDataUrl?: string | null
   imageFileName?: string | null
   removeImage?: boolean
+  images?: PromptImageMutationInput[] | null
 }
 
 function getPromptImageDir() {
@@ -96,6 +117,75 @@ async function resolvePromptImage(currentImageUrl: string, data: PromptMutationI
   return currentImageUrl
 }
 
+function normalisePromptImageRow(input: {
+  id?: string
+  url: string
+  note?: string
+  model?: string
+  seed?: string
+  createdAt?: string
+}): PromptImageRow {
+  return {
+    id: input.id?.trim() || randomUUID(),
+    url: input.url.trim(),
+    note: (input.note ?? '').trim(),
+    model: (input.model ?? '').trim(),
+    seed: (input.seed ?? '').trim(),
+    createdAt: input.createdAt?.trim() || new Date().toISOString(),
+  }
+}
+
+async function resolvePromptImages(
+  currentImages: PromptImageRow[],
+  currentLegacyImageUrl: string,
+  data: PromptMutationInput
+) {
+  if (data.images === null) {
+    return []
+  }
+
+  if (Array.isArray(data.images)) {
+    const next: PromptImageRow[] = []
+
+    for (const image of data.images) {
+      const rawDataUrl = typeof image.dataUrl === 'string' ? image.dataUrl.trim() : ''
+      const rawUrl = typeof image.url === 'string' ? image.url.trim() : ''
+
+      const url = rawDataUrl
+        ? await savePromptImageDataUrl(rawDataUrl, image.fileName ?? undefined)
+        : rawUrl
+
+      if (!url) continue
+
+      next.push(
+        normalisePromptImageRow({
+          id: image.id,
+          url,
+          note: image.note,
+          model: image.model,
+          seed: image.seed,
+          createdAt: image.createdAt,
+        })
+      )
+    }
+
+    return next
+  }
+
+  if (currentImages.length > 0) return currentImages
+
+  const legacyUrl = await resolvePromptImage(currentLegacyImageUrl, data)
+  if (!legacyUrl) return []
+
+  return [
+    normalisePromptImageRow({
+      url: legacyUrl,
+      model: typeof data.model === 'string' ? data.model : '',
+      seed: typeof data.seed === 'string' ? data.seed : '',
+    }),
+  ]
+}
+
 export function registerPromptsIpc({ db }: { db: Database }) {
   ipcMain.handle('prompts:list', async (_, filters: PromptFilters = {}) => {
     try {
@@ -159,17 +249,20 @@ export function registerPromptsIpc({ db }: { db: Database }) {
 
   ipcMain.handle('prompts:create', async (_, data: PromptMutationInput) => {
     try {
-      const imageUrl = await resolvePromptImage('', data)
+      const images = await resolvePromptImages([], '', data)
+      const imageUrl = images[0]?.url ?? ''
       const [created] = await db
         .insert(prompts)
         .values({
           title: data.title ?? '',
           imageUrl,
+          imagesJson: images,
           promptText: data.promptText ?? '',
           negativePrompt: data.negativePrompt ?? '',
           tags: data.tags ?? [],
           model: data.model ?? '',
           suggestedModel: data.suggestedModel ?? '',
+          seed: typeof data.seed === 'string' ? data.seed : '',
           isTemplate: data.isTemplate ?? false,
           isFavorite: data.isFavorite ?? false,
           rating: data.rating ?? null,
@@ -203,7 +296,9 @@ export function registerPromptsIpc({ db }: { db: Database }) {
       const [current] = await db.select().from(prompts).where(eq(prompts.id, id))
       if (!current) throw new Error(`Prompt with id ${id} not found.`)
 
-      const imageUrl = await resolvePromptImage(current.imageUrl ?? '', data)
+      const currentImages = Array.isArray(current.imagesJson) ? current.imagesJson : []
+      const images = await resolvePromptImages(currentImages, current.imageUrl ?? '', data)
+      const imageUrl = images[0]?.url ?? ''
 
       const updated = await db.transaction(async (tx) => {
         const [versionCounter] = await tx
@@ -220,11 +315,13 @@ export function registerPromptsIpc({ db }: { db: Database }) {
           versionNumber: nextVersionNumber,
           title: current.title,
           imageUrl: current.imageUrl ?? '',
+          imagesJson: currentImages,
           promptText: current.promptText,
           negativePrompt: current.negativePrompt ?? '',
           tags: current.tags,
           model: current.model,
           suggestedModel: current.suggestedModel,
+          seed: current.seed ?? '',
           isTemplate: current.isTemplate,
           isFavorite: current.isFavorite,
           rating: current.rating,
@@ -237,11 +334,13 @@ export function registerPromptsIpc({ db }: { db: Database }) {
           .set({
             title: data.title,
             imageUrl,
+            imagesJson: images,
             promptText: data.promptText,
             negativePrompt: data.negativePrompt,
             tags: data.tags,
             model: data.model,
             suggestedModel: data.suggestedModel,
+            seed: typeof data.seed === 'string' ? data.seed : current.seed ?? '',
             isTemplate: data.isTemplate,
             isFavorite: data.isFavorite,
             rating: data.rating,
@@ -264,7 +363,7 @@ export function registerPromptsIpc({ db }: { db: Database }) {
     try {
       const [current] = await db.select().from(prompts).where(eq(prompts.id, id))
       const versions = await db
-        .select({ imageUrl: promptVersions.imageUrl })
+        .select({ imageUrl: promptVersions.imageUrl, imagesJson: promptVersions.imagesJson })
         .from(promptVersions)
         .where(eq(promptVersions.promptId, id))
 
@@ -272,7 +371,9 @@ export function registerPromptsIpc({ db }: { db: Database }) {
 
       const localImageUrls = [...new Set([
         current?.imageUrl,
+        ...(Array.isArray(current?.imagesJson) ? current.imagesJson.map((image) => image.url) : []),
         ...versions.map((version) => version.imageUrl),
+        ...versions.flatMap((version) => (Array.isArray(version.imagesJson) ? version.imagesJson.map((image) => image.url) : [])),
       ].filter((value): value is string => Boolean(value) && value.startsWith('file:')))]
 
       if (localImageUrls.length > 0) {

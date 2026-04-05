@@ -325,18 +325,21 @@ export default function Library() {
                 const preview = prompt.promptText.length > 170
                   ? `${prompt.promptText.slice(0, 170)}...`
                   : prompt.promptText
+                const coverImageUrl = Array.isArray(prompt.imagesJson) && prompt.imagesJson.length > 0
+                  ? prompt.imagesJson[0].url
+                  : prompt.imageUrl
 
                 return (
                   <div key={prompt.id} className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden">
-                    {prompt.imageUrl ? (
+                    {coverImageUrl ? (
                       <div className="aspect-[16/9] bg-slate-950/60 overflow-hidden border-b border-slate-800/60">
                         <img
-                          src={prompt.imageUrl}
+                          src={coverImageUrl}
                           alt={prompt.title || 'Prompt image'}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02] cursor-zoom-in"
                           onClick={() =>
                             openLightbox({
-                              url: prompt.imageUrl,
+                              url: coverImageUrl,
                               title: prompt.title || 'Prompt image',
                               promptText: prompt.promptText,
                               rating: prompt.rating ?? 0,

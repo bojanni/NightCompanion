@@ -4,6 +4,17 @@ import PromptPreview from './PromptPreview'
 import { Star, StarHalf } from 'lucide-react'
 
 type FormData = PromptMutationInput
+type ImageDraft = {
+  id: string
+  url: string
+  dataUrl: string | null
+  fileName: string | null
+  note: string
+  model: string
+  seed: string
+  createdAt: string
+}
+
 const MAX_TAG_COUNT = 15
 
 type Props = {
@@ -27,14 +38,47 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [promptText, setPromptText] = useState(initial?.promptText ?? '')
   const [negativePrompt, setNegativePrompt] = useState(initial?.negativePrompt ?? '')
   const [model, setModel] = useState(initial?.model ?? '')
+  const [seed, setSeed] = useState(initial?.seed ?? '')
   const [isTemplate, setIsTemplate] = useState(initial?.isTemplate ?? false)
   const [isFavorite, setIsFavorite] = useState(initial?.isFavorite ?? false)
   const [rating, setRating] = useState<number>(initial?.rating ?? 0)
   const [notes, setNotes] = useState(initial?.notes ?? '')
-  const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? '')
-  const [imageDataUrl, setImageDataUrl] = useState<string | null>(null)
-  const [imageFileName, setImageFileName] = useState<string | null>(null)
-  const [readingImage, setReadingImage] = useState(false)
+  const [images, setImages] = useState<ImageDraft[]>(() => {
+    const stored = Array.isArray(initial?.imagesJson) ? initial.imagesJson : []
+    if (stored.length > 0) {
+      return stored.map((image) => ({
+        id: image.id,
+        url: image.url,
+        dataUrl: null,
+        fileName: null,
+        note: image.note ?? '',
+        model: image.model ?? '',
+        seed: image.seed ?? '',
+        createdAt: image.createdAt ?? new Date().toISOString(),
+      }))
+    }
+
+    if (initial?.imageUrl) {
+      const now = new Date().toISOString()
+      const id = typeof globalThis.crypto?.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+      return [{
+        id,
+        url: initial.imageUrl,
+        dataUrl: null,
+        fileName: null,
+        note: '',
+        model: initial.model ?? '',
+        seed: initial.seed ?? '',
+        createdAt: now,
+      }]
+    }
+
+    return []
+  })
+  const [readingImages, setReadingImages] = useState(false)
   const [suggestedModel, setSuggestedModel] = useState(initial?.suggestedModel ?? '')
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>((initial?.tags ?? []).slice(0, MAX_TAG_COUNT))
@@ -49,7 +93,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
   const titleRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
-  const imageInputRef = useRef<HTMLInputElement>(null)
+  const imagesInputRef = useRef<HTMLInputElement>(null)
   const isEdit = !!initial
 
   useEffect(() => {
@@ -120,13 +164,46 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
   const restoreFromVersion = (version: PromptVersion) => {
     setTitle(version.title)
-    setImageUrl(version.imageUrl ?? '')
-    setImageDataUrl(null)
-    setImageFileName(null)
+    setImages(() => {
+      const stored = Array.isArray(version.imagesJson) ? version.imagesJson : []
+      if (stored.length > 0) {
+        return stored.map((image) => ({
+          id: image.id,
+          url: image.url,
+          dataUrl: null,
+          fileName: null,
+          note: image.note ?? '',
+          model: image.model ?? '',
+          seed: image.seed ?? '',
+          createdAt: image.createdAt ?? new Date().toISOString(),
+        }))
+      }
+
+      if (version.imageUrl) {
+        const now = new Date().toISOString()
+        const id = typeof globalThis.crypto?.randomUUID === 'function'
+          ? globalThis.crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+        return [{
+          id,
+          url: version.imageUrl,
+          dataUrl: null,
+          fileName: null,
+          note: '',
+          model: version.model ?? '',
+          seed: version.seed ?? '',
+          createdAt: now,
+        }]
+      }
+
+      return []
+    })
     setPromptText(version.promptText)
     setNegativePrompt(version.negativePrompt)
     setModel(version.model)
     setSuggestedModel(version.suggestedModel ?? '')
+    setSeed(version.seed ?? '')
     setIsTemplate(version.isTemplate)
     setIsFavorite(version.isFavorite)
     setRating(version.rating ?? 0)
@@ -181,30 +258,65 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
     }
   }
 
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleImagesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? [])
+    if (selected.length === 0) return
 
-    setReadingImage(true)
+    setReadingImages(true)
     setError(null)
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file)
-      setImageUrl(dataUrl)
-      setImageDataUrl(dataUrl)
-      setImageFileName(file.name)
-    } catch {
-      setError('Could not read the selected image.')
-    } finally {
-      setReadingImage(false)
-      if (imageInputRef.current) imageInputRef.current.value = ''
+    const now = new Date().toISOString()
+    const next: ImageDraft[] = []
+
+    for (const file of selected) {
+      try {
+        const dataUrl = await readFileAsDataUrl(file)
+        const id = typeof globalThis.crypto?.randomUUID === 'function'
+          ? globalThis.crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+        next.push({
+          id,
+          url: '',
+          dataUrl,
+          fileName: file.name,
+          note: '',
+          model: model.trim(),
+          seed: seed.trim(),
+          createdAt: now,
+        })
+      } catch {
+        setError('Could not read one of the selected images.')
+      }
     }
+
+    if (next.length > 0) {
+      setImages((prev) => [...prev, ...next])
+    }
+
+    setReadingImages(false)
+    if (imagesInputRef.current) imagesInputRef.current.value = ''
   }
 
-  const handleRemoveImage = () => {
-    setImageUrl('')
-    setImageDataUrl(null)
-    setImageFileName(null)
+  const removeImage = (id: string) => {
+    setImages((prev) => prev.filter((img) => img.id !== id))
+  }
+
+  const updateImage = (id: string, patch: Partial<Omit<ImageDraft, 'id'>>) => {
+    setImages((prev) =>
+      prev.map((img) => (img.id === id ? { ...img, ...patch } : img))
+    )
+  }
+
+  const makeCoverImage = (id: string) => {
+    setImages((prev) => {
+      const index = prev.findIndex((img) => img.id === id)
+      if (index <= 0) return prev
+      const next = [...prev]
+      const [picked] = next.splice(index, 1)
+      next.unshift(picked)
+      return next
+    })
   }
 
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
@@ -225,19 +337,26 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
     const err = await onSubmit({
       title: title.trim(),
-      imageUrl: imageDataUrl ? '' : imageUrl.trim(),
-      imageDataUrl,
-      imageFileName,
-      removeImage: !imageDataUrl && !imageUrl.trim() && Boolean(initial?.imageUrl),
       promptText: promptText.trim(),
       negativePrompt: negativePrompt.trim(),
       model: model.trim(),
       suggestedModel: suggestedModel.trim(),
+      seed: seed.trim(),
       isTemplate,
       isFavorite,
       rating: rating || null,
       notes: notes.trim(),
       tags: tags.slice(0, MAX_TAG_COUNT),
+      images: images.map((image) => ({
+        id: image.id,
+        url: image.url,
+        dataUrl: image.dataUrl,
+        fileName: image.fileName,
+        note: image.note,
+        model: image.model,
+        seed: image.seed,
+        createdAt: image.createdAt,
+      })),
     })
 
     if (err) {
@@ -248,7 +367,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
+      className="flex fixed inset-0 z-50 justify-center items-center p-4 backdrop-blur-sm bg-slate-950/80 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -256,7 +375,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800/50">
           <h2 className="text-base font-semibold text-white">
             {isEdit ? 'Edit Prompt' : 'New Prompt'}
           </h2>
@@ -270,7 +389,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         </div>
 
         {/* Form */}
-        <form ref={formRef} onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex overflow-hidden flex-col flex-1">
           <div className="flex-1 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_22rem]">
             <div className="overflow-y-auto px-6 py-5 space-y-5">
             {/* Title */}
@@ -289,51 +408,115 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="label !mb-0">Prompt Image</label>
+                <label className="label !mb-0">Prompt Images</label>
                 <span className="text-[10px] text-slate-500">optional</span>
               </div>
 
-              {imageUrl ? (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden">
-                  <div className="aspect-[16/9] bg-slate-950/60">
-                    <img
-                      src={imageUrl}
-                      alt="Prompt preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3 px-3 py-2.5 border-t border-slate-800/60">
-                    <p className="text-[11px] text-slate-500 truncate">
-                      {imageFileName || 'Stored prompt image'}
+              {images.length > 0 ? (
+                <div className="space-y-3">
+                  {images.map((image, index) => {
+                    const previewUrl = image.dataUrl || image.url
+
+                    return (
+                      <div key={image.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+                        <div className="aspect-[16/9] bg-slate-950/60">
+                          <img
+                            src={previewUrl}
+                            alt="Prompt preview"
+                            className="object-cover w-full h-full"
+                            onError={(event) => {
+                              ;(event.currentTarget.parentElement as HTMLDivElement | null)?.classList.add('hidden')
+                            }}
+                          />
+                        </div>
+                        <div className="px-3 py-3 space-y-3 border-t border-slate-800/60">
+                          <div className="flex gap-3 justify-between items-center">
+                            <p className="text-[11px] text-slate-500 truncate">
+                              {image.fileName || (index === 0 ? 'Cover image' : 'Stored prompt image')}
+                            </p>
+                            <div className="flex gap-2 items-center">
+                              {index !== 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => makeCoverImage(image.id)}
+                                  className="btn-ghost border border-slate-700/50 px-2.5 py-1 text-[11px]"
+                                  disabled={readingImages}
+                                >
+                                  Set cover
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => removeImage(image.id)}
+                                className="btn-ghost border border-red-900/50 px-2.5 py-1 text-[11px] text-red-300 hover:text-red-200"
+                                disabled={readingImages}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="label">Image Note</label>
+                            <textarea
+                              value={image.note}
+                              onChange={(e) => updateImage(image.id, { note: e.target.value })}
+                              className="textarea"
+                              rows={2}
+                              placeholder="Optional note about this image…"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                            <div>
+                              <label className="label">Generated By (Model)</label>
+                              <input
+                                type="text"
+                                value={image.model}
+                                onChange={(e) => updateImage(image.id, { model: e.target.value })}
+                                className="input"
+                                placeholder="e.g. SDXL, Flux, etc."
+                              />
+                            </div>
+                            <div>
+                              <label className="label">Image Seed</label>
+                              <input
+                                type="text"
+                                value={image.seed}
+                                onChange={(e) => updateImage(image.id, { seed: e.target.value })}
+                                className="input"
+                                placeholder="e.g. 123456789"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => imagesInputRef.current?.click()}
+                    className="px-4 py-4 w-full text-left rounded-2xl border border-dashed transition-colors border-slate-700 bg-slate-900/30 hover:border-amber-500/40 hover:bg-slate-900/50"
+                    disabled={readingImages}
+                  >
+                    <p className="text-sm font-medium text-slate-300">
+                      {readingImages ? 'Reading images…' : 'Add images'}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => imageInputRef.current?.click()}
-                        className="btn-ghost border border-slate-700/50 px-2.5 py-1 text-[11px]"
-                        disabled={readingImage}
-                      >
-                        Replace
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="btn-ghost border border-red-900/50 px-2.5 py-1 text-[11px] text-red-300 hover:text-red-200"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Saved locally under your user profile in NightCompanion/images.
+                    </p>
+                  </button>
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={() => imageInputRef.current?.click()}
-                  className="w-full rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 px-4 py-5 text-left transition-colors hover:border-amber-500/40 hover:bg-slate-900/50"
-                  disabled={readingImage}
+                  onClick={() => imagesInputRef.current?.click()}
+                  className="px-4 py-5 w-full text-left rounded-2xl border border-dashed transition-colors border-slate-700 bg-slate-900/30 hover:border-amber-500/40 hover:bg-slate-900/50"
+                  disabled={readingImages}
                 >
                   <p className="text-sm font-medium text-slate-300">
-                    {readingImage ? 'Reading image…' : 'Upload prompt image'}
+                    {readingImages ? 'Reading images…' : 'Upload prompt images'}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     Saved locally under your user profile in NightCompanion/images.
@@ -342,11 +525,12 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
               )}
 
               <input
-                ref={imageInputRef}
+                ref={imagesInputRef}
                 type="file"
+                multiple
                 accept="image/*"
-                onChange={handleImageSelect}
-                aria-label="Upload prompt image"
+                onChange={handleImagesSelect}
+                aria-label="Upload prompt images"
                 className="hidden"
               />
             </div>
@@ -390,7 +574,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                   value={modelOptions.includes(model) ? model : ''}
                   onChange={(e) => setModel(e.target.value)}
                   aria-label="Select model"
-                  className="input w-1/2"
+                  className="w-1/2 input"
                 >
                   <option value="">— kies model —</option>
                   {modelOptions.map((m) => (
@@ -403,10 +587,21 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                   type="text"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
-                  className="input w-1/2"
+                  className="w-1/2 input"
                   placeholder="of typ een modelnaam"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="label">Seed</label>
+              <input
+                type="text"
+                value={seed}
+                onChange={(e) => setSeed(e.target.value)}
+                className="input"
+                placeholder="e.g. 123456789"
+              />
             </div>
 
             <div>
@@ -441,18 +636,18 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
             <div>
               <label className="label">Status</label>
-              <div className="flex items-center gap-3">
+              <div className="flex gap-3 items-center">
                 <button
                   type="button"
                   onClick={() => setIsTemplate((prev) => !prev)}
-                  className={`px-3 py-2 rounded-lg border text-xs transition-colors ${isTemplate ? 'bg-teal-500/15 border-teal-500/40 text-teal-300' : 'bg-slate-800 border-slate-800 text-slate-400 hover:text-white'}`}
+                  className={`px-3 py-2 rounded-lg border text-xs transition-colors ${isTemplate ? 'text-teal-300 bg-teal-500/15 border-teal-500/40' : 'bg-slate-800 border-slate-800 text-slate-400 hover:text-white'}`}
                 >
                   Template
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFavorite((prev) => !prev)}
-                  className={`px-3 py-2 rounded-lg border text-xs transition-colors ${isFavorite ? 'bg-rose-500/15 border-rose-500/40 text-rose-300' : 'bg-slate-800 border-slate-800 text-slate-400 hover:text-white'}`}
+                  className={`px-3 py-2 rounded-lg border text-xs transition-colors ${isFavorite ? 'text-rose-300 bg-rose-500/15 border-rose-500/40' : 'bg-slate-800 border-slate-800 text-slate-400 hover:text-white'}`}
                 >
                   Favorite
                 </button>
@@ -461,7 +656,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
             <div>
               <label className="label">Rating</label>
-              <div className="flex items-center gap-2">
+              <div className="flex gap-2 items-center">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <div
                     key={value}
@@ -470,18 +665,18 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                     <button
                       type="button"
                       onClick={() => setRating((prev) => (isSameRating(prev, value - 0.5) ? 0 : value - 0.5))}
-                      className="absolute inset-y-0 left-0 w-1/2 z-10"
+                      className="absolute inset-y-0 left-0 z-10 w-1/2"
                       aria-label={`Set rating ${value - 0.5}`}
                       title={`Set rating ${value - 0.5}`}
                     />
                     <button
                       type="button"
                       onClick={() => setRating((prev) => (isSameRating(prev, value) ? 0 : value))}
-                      className="absolute inset-y-0 right-0 w-1/2 z-10"
+                      className="absolute inset-y-0 right-0 z-10 w-1/2"
                       aria-label={`Set rating ${value}`}
                       title={`Set rating ${value}`}
                     />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="flex absolute inset-0 justify-center items-center pointer-events-none">
                       {getStarFill(rating, value) === 'full' && <Star size={16} fill="currentColor" />}
                       {getStarFill(rating, value) === 'half' && <StarHalf size={16} fill="currentColor" />}
                       {getStarFill(rating, value) === 'empty' && <Star size={16} />}
@@ -496,7 +691,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="label !mb-0">Tags</label>
-                <div className="flex items-center gap-2">
+                <div className="flex gap-2 items-center">
                   <span className="text-[10px] text-slate-500">{tags.length}/{MAX_TAG_COUNT}</span>
                   <button
                     type="button"
@@ -510,12 +705,12 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
               </div>
               <div className="input flex flex-wrap gap-1.5 min-h-[42px] cursor-text" onClick={() => document.getElementById('tag-input')?.focus()}>
                 {tags.map((tag) => (
-                  <span key={tag} className="tag-removable flex-shrink-0">
+                  <span key={tag} className="flex-shrink-0 tag-removable">
                     {tag}
                     <button
                       type="button"
                       onClick={() => removeTag(tag)}
-                      className="text-slate-500 hover:text-white transition-colors leading-none"
+                      className="leading-none transition-colors text-slate-500 hover:text-white"
                     >
                       ×
                     </button>
@@ -556,19 +751,19 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                 </div>
 
                 {loadingVersions ? (
-                  <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-500">
+                  <div className="px-3 py-2 text-xs rounded-lg border border-slate-800 bg-slate-900/40 text-slate-500">
                     Loading history…
                   </div>
                 ) : versions.length === 0 ? (
-                  <div className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2 text-xs text-slate-500">
+                  <div className="px-3 py-2 text-xs rounded-lg border border-slate-800 bg-slate-900/40 text-slate-500">
                     No previous versions yet.
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-slate-800 bg-slate-900/40 divide-y divide-slate-700/60">
+                  <div className="rounded-lg border divide-y border-slate-800 bg-slate-900/40 divide-slate-700/60">
                     {versions.slice(0, 8).map((version) => (
-                      <div key={version.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                      <div key={version.id} className="flex gap-3 justify-between items-center px-3 py-2">
                         <div className="min-w-0">
-                          <p className="text-xs text-slate-300 truncate">v{version.versionNumber} · {version.title || 'Untitled'}</p>
+                          <p className="text-xs truncate text-slate-300">v{version.versionNumber} · {version.title || 'Untitled'}</p>
                           <p className="text-[10px] text-slate-500">{new Date(version.createdAt).toLocaleString()}</p>
                         </div>
                         <button
@@ -587,13 +782,13 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
             {/* Error */}
             {error && (
-              <div className="px-4 py-3 rounded-lg bg-red-950/50 border border-red-800/50 text-red-300 text-sm">
+              <div className="px-4 py-3 text-sm text-red-300 rounded-lg border bg-red-950/50 border-red-800/50">
                 {error}
               </div>
             )}
             </div>
 
-            <div className="border-t border-slate-800/50 lg:border-t-0 lg:border-l overflow-y-auto p-4 md:p-5">
+            <div className="overflow-y-auto p-4 border-t border-slate-800/50 lg:border-t-0 lg:border-l md:p-5">
               <div className="lg:sticky lg:top-0">
                 <PromptPreview
                   promptText={promptText}
@@ -611,7 +806,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-slate-800/50 flex items-center justify-end gap-3 bg-slate-900/30">
+          <div className="flex gap-3 justify-end items-center px-6 py-4 border-t border-slate-800/50 bg-slate-900/30">
             <button type="button" onClick={onClose} className="btn-ghost">
               Cancel
             </button>

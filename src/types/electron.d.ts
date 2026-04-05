@@ -1,11 +1,22 @@
-﻿import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, Greylist, GalleryItem, Collection } from '../lib/schema'
+import type { Prompt, PromptVersion, NewPrompt, StyleProfile, NewStyleProfile, Greylist, GalleryItem, Collection } from '../lib/schema'
 
 type IpcResult<T> = { data: T; error?: never } | { data?: never; error: string }
 type PromptFilters = { search?: string; tags?: string[]; model?: string }
+type PromptImageMutationInput = {
+  id?: string
+  url?: string
+  dataUrl?: string | null
+  fileName?: string | null
+  note?: string
+  model?: string
+  seed?: string
+  createdAt?: string
+}
 type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
   imageDataUrl?: string | null
   imageFileName?: string | null
   removeImage?: boolean
+  images?: PromptImageMutationInput[] | null
 }
 type OpenRouterSettings = { apiKey: string; model: string; siteUrl: string; appName: string }
 type ProviderMetaStore = {

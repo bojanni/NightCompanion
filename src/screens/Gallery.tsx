@@ -21,6 +21,7 @@ import StarRating from '../components/StarRating'
 import GridDensitySelector from '../components/GridDensitySelector'
 import GalleryLightbox from '../components/GalleryLightbox'
 import type { GalleryItem, Prompt } from '../lib/schema'
+import { invalidateDashboardCache } from '../lib/cacheEvents'
 
 type DisplaySettings = {
   title: boolean
@@ -132,6 +133,7 @@ export default function Gallery() {
           toast.error(result.error)
           return
         }
+        invalidateDashboardCache()
         toast.success('Item updated')
       } else {
         const result = await window.electronAPI.gallery.createItem(payload)
@@ -139,6 +141,7 @@ export default function Gallery() {
           toast.error(result.error)
           return
         }
+        invalidateDashboardCache()
         toast.success('Item added')
       }
 
@@ -184,6 +187,7 @@ export default function Gallery() {
       state.setCollName('')
       state.setCollDesc('')
       state.setCollColor('#6366f1')
+      invalidateDashboardCache()
       void state.loadData()
     } catch (err) {
       toast.error(String(err))
