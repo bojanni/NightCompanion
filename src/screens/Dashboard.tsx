@@ -83,9 +83,37 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       const characters = charactersResult.error ? [] : charactersResult.data || []
       const galleryItems = galleryResult.error ? [] : galleryResult.data?.items || []
 
-      const imageItems = galleryItems
+      // Include prompt-backed images (like useGalleryState does)
+      const promptImages = prompts
+        .filter((prompt) => Boolean(String(prompt.imageUrl || '').trim()))
+        .map((prompt) => ({
+          id: `prompt-${prompt.id}`,
+          title: prompt.title || null,
+          imageUrl: prompt.imageUrl || null,
+          videoUrl: null,
+          thumbnailUrl: null,
+          mediaType: 'image' as const,
+          promptUsed: prompt.promptText || null,
+          promptId: String(prompt.id),
+          model: prompt.model || null,
+          aspectRatio: null,
+          rating: typeof prompt.rating === 'number' && Number.isFinite(prompt.rating)
+            ? Math.max(0, Math.min(5, Math.round(prompt.rating)))
+            : 0,
+          notes: prompt.notes || null,
+          collectionId: null,
+          storageMode: 'file' as const,
+          durationSeconds: null,
+          metadata: { source: 'prompt', promptId: prompt.id } as Record<string, unknown>,
+          createdAt: prompt.createdAt,
+          updatedAt: prompt.updatedAt,
+        }))
+
+      const allItems = [...galleryItems, ...promptImages]
+      const imageItems = allItems
         .filter((item) => item.mediaType === 'image')
         .filter((item) => Boolean(item.imageUrl))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 12)
 
       const data = {
@@ -268,11 +296,11 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                       key={item.id}
                       type="button"
                       onClick={() => onNavigate('gallery')}
-                      className="flex-shrink-0 w-28"
+                      className="flex-shrink-0 w-[300px]"
                       title={item.title || undefined}
                       aria-label={item.title ? `Open Gallery: ${item.title}` : 'Open Gallery'}
                     >
-                      <div className="overflow-hidden relative w-28 h-20 rounded-xl border transition-colors border-night-700/60 bg-night-900/50 hover:border-night-500/70">
+                      <div className="overflow-hidden relative w-[300px] h-48 rounded-xl border transition-colors border-night-700/60 bg-night-900/50 hover:border-night-500/70">
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
