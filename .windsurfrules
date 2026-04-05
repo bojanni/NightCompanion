@@ -1,6 +1,6 @@
 # ⚠️ Archivo generado automáticamente
 # Fuente: Ai_Rules.md
-# Fecha: 2026-04-04 04:04:12
+# Fecha: 2026-04-05 23:49:13
 # No editar directamente - los cambios se sobrescribirán
 # 
 # Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
@@ -118,7 +118,7 @@ Changes here are automatically synchronized to:
 
 After every significant change, add at the end so dates are from oldest to newest to `walkthrough.md` :
 
-```
+```markdown
 ## YYYY-MM-DD (Short title)
 
 - Findings: [What was the problem or trigger?]
@@ -157,9 +157,9 @@ After every significant change, add at the end so dates are from oldest to newes
 
 ## Memory
 
-- When asked to remember something, use all abailable momery options to remember it.
-- When asked to recall something, use all abailable momery options to recall it.
-- When asked to forget something, use all abailable momery options to forget it.
+- When asked to remember something, use all available memory options to remember it.
+- When asked to recall something, use all available memory options to recall it.
+- When asked to forget something, use all available memory options to forget it.
 - Provide a summary of what was remembered, recalled, or forgotten.
 - Proactively use memory tools to maintain context across sessions.
 - Proactively store important information in memory to avoid repetition.
