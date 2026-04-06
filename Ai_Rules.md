@@ -56,6 +56,7 @@ Before Referencing Files
 
 - Call mcp_cortex_verify_files to check if file paths are real.
 
+All the important architectural decisions, UI patterns, and implementation details from coding sessions are to be stored in Cortex for future reference and consistency across the codebase.
 ---
 
 

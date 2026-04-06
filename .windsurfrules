@@ -1,6 +1,6 @@
 # ⚠️ Archivo generado automáticamente
 # Fuente: Ai_Rules.md
-# Fecha: 2026-04-05 23:49:13
+# Fecha: 2026-04-06 03:58:05
 # No editar directamente - los cambios se sobrescribirán
 # 
 # Para actualizar estas reglas, edita Ai_Rules.md y ejecuta:
@@ -23,6 +23,52 @@ Changes here are automatically synchronized to:
 - Generic agents (agents.md)
 
 ## 📋 General Rules
+
+## Cortex
+
+Cortex Memory Rules — MANDATORY
+
+At Conversation Start (ALWAYS)
+
+- ALWAYS call mcp_cortex_force_recall with the topic of the user's question
+- This returns ALL corrections, decisions, conventions, and bug fixes
+- Plus topic-specific search results
+
+DO NOT skip this step. It is mandatory.
+After EVERY Response (ALWAYS)
+
+- ALWAYS call mcp_cortex_auto_learn with the text of your response
+
+- Cortex will automatically extract and store any decisions, corrections, conventions, or bug fixes
+- This is how Cortex learns passively — zero manual effort required
+
+DO NOT skip this step. It is mandatory.
+
+- Example: mcp_cortex_auto_learn(text: "We decided to use PostgreSQL instead of MongoDB because...")
+
+When Decisions Are Made (Manual Override)
+
+- ALSO call mcp_cortex_store_memory for high-importance items:
+  - Example: mcp_cortex_store_memory(text: "We decided to use PostgreSQL instead of MongoDB because...", type: "DECISION")
+  - A critical architectural decision (type: DECISION)
+  - A mistake that must never be repeated (type: CORRECTION)
+  - A project-wide coding convention (type: CONVENTION)
+  - A tricky bug that was hard to find (type: BUG_FIX)
+
+Before Suggesting Code
+
+- Call mcp_cortex_verify_code to check:
+  - Are import packages real (exist in package.json)?
+  - Are imported functions actually exported?
+  - Are env variables defined in .env?
+
+Before Referencing Files
+
+- Call mcp_cortex_verify_files to check if file paths are real.
+
+All the important architectural decisions, UI patterns, and implementation details from coding sessions are to be stored in Cortex for future reference and consistency across the codebase.
+---
+
 
 ## NightCompanion
 
@@ -157,55 +203,12 @@ After every significant change, add at the end so dates are from oldest to newes
 
 ## Memory
 
-- When asked to remember something, use all available memory options to remember it.
-- When asked to recall something, use all available memory options to recall it.
-- When asked to forget something, use all available memory options to forget it.
+- When asked to remember something, use all abailable momery options to remember it.
+- When asked to recall something, use all abailable momery options to recall it.
+- When asked to forget something, use all abailable momery options to forget it.
 - Provide a summary of what was remembered, recalled, or forgotten.
 - Proactively use memory tools to maintain context across sessions.
 - Proactively store important information in memory to avoid repetition.
 
-## Cortex
-
-Cortex Memory Rules — MANDATORY
-
-At Conversation Start (ALWAYS)
-
-- ALWAYS call mcp_cortex_force_recall with the topic of the user's question
-- This returns ALL corrections, decisions, conventions, and bug fixes
-- Plus topic-specific search results
-
-DO NOT skip this step. It is mandatory.
-After EVERY Response (ALWAYS)
-
-- ALWAYS call mcp_cortex_auto_learn with the text of your response
-
-- Cortex will automatically extract and store any decisions, corrections, conventions, or bug fixes
-- This is how Cortex learns passively — zero manual effort required
-
-DO NOT skip this step. It is mandatory.
-
-- Example: mcp_cortex_auto_learn(text: "We decided to use PostgreSQL instead of MongoDB because...")
-
-When Decisions Are Made (Manual Override)
-
-- ALSO call mcp_cortex_store_memory for high-importance items:
-  - Example: mcp_cortex_store_memory(text: "We decided to use PostgreSQL instead of MongoDB because...", type: "DECISION")
-  - A critical architectural decision (type: DECISION)
-  - A mistake that must never be repeated (type: CORRECTION)
-  - A project-wide coding convention (type: CONVENTION)
-  - A tricky bug that was hard to find (type: BUG_FIX)
-
-Before Suggesting Code
-
-- Call mcp_cortex_verify_code to check:
-  - Are import packages real (exist in package.json)?
-  - Are imported functions actually exported?
-  - Are env variables defined in .env?
-
-Before Referencing Files
-
-- Call mcp_cortex_verify_files to check if file paths are real.
-
----
 
 ✨ **Tip**: Sync these changes by running "AI Rules: Sync All Rules" from the command palette.
