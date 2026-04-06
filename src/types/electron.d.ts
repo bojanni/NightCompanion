@@ -17,6 +17,7 @@ type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
   imageFileName?: string | null
   removeImage?: boolean
   images?: PromptImageMutationInput[] | null
+  originalPrompt?: string
 }
 type OpenRouterSettings = { apiKey: string; model: string; siteUrl: string; appName: string }
 type ProviderMetaStore = {

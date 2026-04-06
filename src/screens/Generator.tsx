@@ -690,6 +690,9 @@ export default function Generator() {
   const handleSaveToLibrary = async () => {
     if (!generatedPrompt || !savedTitle.trim()) return
 
+    const nextPromptText = promptImprovement.improvementDiff?.improvedPrompt ?? generatedPrompt
+    const nextOriginalPrompt = promptImprovement.improvementDiff?.originalPrompt ?? nextPromptText
+
     // Check for duplicates
     const existingPromptsResult = await window.electronAPI.prompts.list()
     if (existingPromptsResult.error || !existingPromptsResult.data) {
@@ -699,7 +702,7 @@ export default function Generator() {
 
     const duplicate = existingPromptsResult.data.find(
       prompt => 
-        prompt.promptText.trim() === generatedPrompt.trim() && 
+        prompt.promptText.trim() === nextPromptText.trim() && 
         prompt.title.trim() === savedTitle.trim()
     )
 
@@ -715,7 +718,8 @@ export default function Generator() {
 
     const result = await window.electronAPI.prompts.create({
       title: savedTitle.trim(),
-      promptText: generatedPrompt,
+      promptText: nextPromptText,
+      originalPrompt: nextOriginalPrompt,
       negativePrompt: negativePrompt.trim(),
       model: recommendedModel.trim(),
       suggestedModel: recommendedModel.trim(),

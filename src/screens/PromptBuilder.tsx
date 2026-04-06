@@ -350,6 +350,9 @@ export default function PromptBuilder({
   const handleSaveToLibrary = async () => {
     if (!composedPrompt || !savedTitle.trim()) return
 
+    const nextPromptText = generatedPromptImprovement.improvementDiff?.improvedPrompt ?? composedPrompt
+    const nextOriginalPrompt = generatedPromptImprovement.improvementDiff?.originalPrompt ?? nextPromptText
+
     // Check for duplicates
     const existingPromptsResult = await window.electronAPI.prompts.list()
     if (existingPromptsResult.error || !existingPromptsResult.data) {
@@ -359,7 +362,7 @@ export default function PromptBuilder({
 
     const duplicate = existingPromptsResult.data.find(
       prompt =>
-        prompt.promptText.trim() === composedPrompt.trim() &&
+        prompt.promptText.trim() === nextPromptText.trim() &&
         prompt.title.trim() === savedTitle.trim()
     )
 
@@ -375,7 +378,8 @@ export default function PromptBuilder({
 
     const result = await window.electronAPI.prompts.create({
       title: savedTitle.trim(),
-      promptText: composedPrompt,
+      promptText: nextPromptText,
+      originalPrompt: nextOriginalPrompt,
       negativePrompt: composedNegative,
       model: '',
       suggestedModel: '',

@@ -420,3 +420,15 @@
 - Findings: Generator and PromptBuilder UI state were the last remaining localStorage consumers, inconsistent with the established settings store architecture.
 - Conclusions: Migrating to settings IPC aligns with existing patterns and eliminates renderer localStorage dependency for persistent data.
 - Actions: Added `settings:getGeneratorUiState`, `settings:saveGeneratorUiState`, `settings:getPromptBuilderUiState`, `settings:savePromptBuilderUiState` IPC handlers in `electron/ipc/settings.ts`; exposed in `electron/preload.ts` + `src/types/electron.d.ts`; refactored `src/screens/Generator.tsx` and `src/screens/PromptBuilder.tsx` with one-time legacy migration and debounced settings store persistence; validated with `npm run build`.
+
+## 2026-04-06 (Per-screen React error boundaries)
+
+- Findings: A render error in any screen component caused the entire app to go blank with only the global ErrorBoundary catching it.
+- Conclusions: Per-screen error boundaries provide granular error recovery without losing the rest of the app's state.
+- Actions: Created `src/components/ScreenErrorBoundary.tsx` with error logging and recovery button; wrapped every screen in `src/App.tsx` with `ScreenErrorBoundary`; validated with `npm run build`.
+
+## 2026-04-06 (Save original + improved prompt to Library)
+
+- Findings: Only the final prompt text was saved to Library, losing the original AI-generated version and making it impossible to compare or trace prompt evolution.
+- Conclusions: Adding an `original_prompt` column preserves the full generation lineage without changing the existing save flow.
+- Actions: Added `original_prompt` to `prompts` and `prompt_versions` in `src/lib/schema.ts` with migration; updated `electron/ipc/prompts.ts` create/update to persist `originalPrompt` and include it in version snapshots; updated types in `src/types/index.ts` + `src/types/electron.d.ts` + `electron/preload.ts`; updated save flows in Generator and PromptBuilder to pass `originalPrompt` when an improvement diff exists; validated with `npm run build` and `npm run db:migrate`.

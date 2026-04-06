@@ -9,6 +9,7 @@ import Generator from './screens/Generator'
 import Gallery from './screens/Gallery'
 import Settings from './screens/Settings'
 import Usage from './screens/Usage'
+import ScreenErrorBoundary from './components/ScreenErrorBoundary'
 import type { Screen } from './types'
 import { Toaster, toast } from 'sonner'
 
@@ -68,15 +69,51 @@ export default function App() {
 
       <main className="flex-1 overflow-hidden">
         <div className="animate-fade-in h-full">
-          {screen === 'dashboard' && <Dashboard onNavigate={handleNavigate} />}
-          {screen === 'ai-config' && <AIConfig />}
-          {screen === 'library' && <Library />}
-          {screen === 'characters' && <Characters />}
-          {screen === 'style-profiles' && <StyleProfiles />}
-          {screen === 'generator' && <Generator />}
-          {screen === 'gallery' && <Gallery initialImageId={screenParams?.imageId as string | undefined} />}
-          {screen === 'usage' && <Usage />}
-          {screen === 'settings' && <Settings />}
+          {screen === 'dashboard' && (
+            <ScreenErrorBoundary screenName="Dashboard">
+              <Dashboard onNavigate={handleNavigate} />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'ai-config' && (
+            <ScreenErrorBoundary screenName="AI Config">
+              <AIConfig />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'library' && (
+            <ScreenErrorBoundary screenName="Library">
+              <Library />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'characters' && (
+            <ScreenErrorBoundary screenName="Characters">
+              <Characters />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'style-profiles' && (
+            <ScreenErrorBoundary screenName="Style Profiles">
+              <StyleProfiles />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'generator' && (
+            <ScreenErrorBoundary screenName="Generator">
+              <Generator />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'gallery' && (
+            <ScreenErrorBoundary screenName="Gallery">
+              <Gallery initialImageId={screenParams?.imageId as string | undefined} />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'usage' && (
+            <ScreenErrorBoundary screenName="Usage">
+              <Usage />
+            </ScreenErrorBoundary>
+          )}
+          {screen === 'settings' && (
+            <ScreenErrorBoundary screenName="Settings">
+              <Settings />
+            </ScreenErrorBoundary>
+          )}
         </div>
       </main>
 

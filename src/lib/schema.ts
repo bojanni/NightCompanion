@@ -30,6 +30,7 @@ export const prompts = pgTable(
       createdAt: string
     }>>().default([]).notNull(),
     promptText: text('prompt_text').notNull(),
+    originalPrompt: text('original_prompt'),
     negativePrompt: text('negative_prompt').default(''),
     tags: text('tags').array().default([]).notNull(),
     model: varchar('model', { length: 100 }).default('').notNull(),
@@ -68,6 +69,7 @@ export const promptVersions = pgTable(
       createdAt: string
     }>>().default([]).notNull(),
     promptText: text('prompt_text').notNull(),
+    originalPrompt: text('original_prompt'),
     negativePrompt: text('negative_prompt').default('').notNull(),
     tags: text('tags').array().default([]).notNull(),
     model: varchar('model', { length: 100 }).default('').notNull(),
