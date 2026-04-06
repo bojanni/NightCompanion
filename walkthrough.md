@@ -378,3 +378,9 @@
 - Findings: Prompt library needs to show which prompt (original or improved) is selected on cards and overlay.
 - Conclusions: Add placeholder comments and structure for improved prompt indicators when the database field exists.
 - Actions: Added TODO comments in `src/screens/Library.tsx` for improved prompt indicators on prompt cards and in lightbox overlay; prepared structure for checkmark display when `improvedPrompt` field is added to schema; validated with `npm run build`.
+
+## 2026-04-06 (Prompt Form — add image prompt selection)
+
+- Findings: When uploading images to prompts, users need to select which prompt (original, improved, or custom) to use for each image.
+- Conclusions: Add image-specific prompt selection functionality with a dialog for new uploads and inline controls for existing images.
+- Actions: Added state for tracking image prompt selections and custom prompts in `src/components/PromptForm.tsx`; created image prompt selection dialog that appears after uploading images; added inline prompt selection UI for each image with radio buttons and custom prompt textarea; updated image upload flow to show prompt selection dialog; validated with `npm run build`.

@@ -45,6 +45,10 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [improvedPrompt, setImprovedPrompt] = useState('')
   const [selectedPromptType, setSelectedPromptType] = useState<'original' | 'improved'>('original')
+  const [imagePromptSelection, setImagePromptSelection] = useState<{ [imageId: string]: 'original' | 'improved' | 'custom' }>({})
+  const [imageCustomPrompts, setImageCustomPrompts] = useState<{ [imageId: string]: string }>({})
+  const [showImagePromptDialog, setShowImagePromptDialog] = useState(false)
+  const [pendingImageId, setPendingImageId] = useState<string | null>(null)
   const [images, setImages] = useState<ImageDraft[]>(() => {
     const stored = Array.isArray(initial?.imagesJson) ? initial.imagesJson : []
     if (stored.length > 0) {
@@ -294,10 +298,26 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
     if (next.length > 0) {
       setImages((prev) => [...prev, ...next])
+      // Show prompt selection dialog for the first uploaded image
+      setPendingImageId(next[0].id)
+      setShowImagePromptDialog(true)
     }
 
     setReadingImages(false)
     if (imagesInputRef.current) imagesInputRef.current.value = ''
+  }
+
+  const handleImagePromptSelection = (imageId: string, selection: 'original' | 'improved' | 'custom') => {
+    setImagePromptSelection(prev => ({ ...prev, [imageId]: selection }))
+  }
+
+  const handleImageCustomPrompt = (imageId: string, customPrompt: string) => {
+    setImageCustomPrompts(prev => ({ ...prev, [imageId]: customPrompt }))
+  }
+
+  const handleImagePromptDialogClose = () => {
+    setShowImagePromptDialog(false)
+    setPendingImageId(null)
   }
 
   const removeImage = (id: string) => {
@@ -491,6 +511,61 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                                 placeholder="e.g. 123456789"
                               />
                             </div>
+                          </div>
+
+                          <div>
+                            <label className="label mb-2">Prompt Selection</label>
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="radio"
+                                  name={`prompt-${image.id}`}
+                                  value="original"
+                                  checked={imagePromptSelection[image.id] === 'original' || !imagePromptSelection[image.id]}
+                                  onChange={() => handleImagePromptSelection(image.id, 'original')}
+                                  className="w-3 h-3 text-teal-500 border-slate-600"
+                                />
+                                <span className="text-slate-300">Use original prompt</span>
+                              </label>
+                              
+                              {improvedPrompt && (
+                                <label className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="radio"
+                                    name={`prompt-${image.id}`}
+                                    value="improved"
+                                    checked={imagePromptSelection[image.id] === 'improved'}
+                                    onChange={() => handleImagePromptSelection(image.id, 'improved')}
+                                    className="w-3 h-3 text-teal-500 border-slate-600"
+                                  />
+                                  <span className="text-slate-300">Use improved prompt</span>
+                                </label>
+                              )}
+                              
+                              <label className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="radio"
+                                  name={`prompt-${image.id}`}
+                                  value="custom"
+                                  checked={imagePromptSelection[image.id] === 'custom'}
+                                  onChange={() => handleImagePromptSelection(image.id, 'custom')}
+                                  className="w-3 h-3 text-teal-500 border-slate-600"
+                                />
+                                <span className="text-slate-300">Custom prompt</span>
+                              </label>
+                            </div>
+                            
+                            {imagePromptSelection[image.id] === 'custom' && (
+                              <div className="mt-2">
+                                <textarea
+                                  value={imageCustomPrompts[image.id] || ''}
+                                  onChange={(e) => handleImageCustomPrompt(image.id, e.target.value)}
+                                  className="textarea w-full"
+                                  rows={2}
+                                  placeholder="Enter custom prompt for this image..."
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -882,6 +957,95 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           </div>
         </form>
       </div>
+
+      {/* Image Prompt Selection Dialog */}
+      {showImagePromptDialog && pendingImageId && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Select Prompt for Image</h3>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-700 hover:bg-slate-800 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="image-prompt"
+                  value="original"
+                  checked={imagePromptSelection[pendingImageId] === 'original'}
+                  onChange={() => handleImagePromptSelection(pendingImageId, 'original')}
+                  className="w-4 h-4 text-teal-500 border-slate-600"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-white">Original Prompt</div>
+                  <div className="text-sm text-slate-400 mt-1">Use the main prompt text</div>
+                </div>
+              </label>
+
+              {improvedPrompt && (
+                <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-700 hover:bg-slate-800 cursor-pointer transition-colors">
+                  <input
+                    type="radio"
+                    name="image-prompt"
+                    value="improved"
+                    checked={imagePromptSelection[pendingImageId] === 'improved'}
+                    onChange={() => handleImagePromptSelection(pendingImageId, 'improved')}
+                    className="w-4 h-4 text-teal-500 border-slate-600"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-white">Improved Prompt</div>
+                    <div className="text-sm text-slate-400 mt-1">Use the improved version</div>
+                  </div>
+                </label>
+              )}
+
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-700 hover:bg-slate-800 cursor-pointer transition-colors">
+                <input
+                  type="radio"
+                  name="image-prompt"
+                  value="custom"
+                  checked={imagePromptSelection[pendingImageId] === 'custom'}
+                  onChange={() => handleImagePromptSelection(pendingImageId, 'custom')}
+                  className="w-4 h-4 text-teal-500 border-slate-600"
+                />
+                <div className="flex-1">
+                  <div className="font-medium text-white">Custom Prompt</div>
+                  <div className="text-sm text-slate-400 mt-1">Enter a custom prompt for this image</div>
+                </div>
+              </label>
+            </div>
+
+            {imagePromptSelection[pendingImageId] === 'custom' && (
+              <div className="mt-4">
+                <label className="label !mb-2">Custom Prompt</label>
+                <textarea
+                  value={imageCustomPrompts[pendingImageId] || ''}
+                  onChange={(e) => handleImageCustomPrompt(pendingImageId, e.target.value)}
+                  className="textarea w-full"
+                  rows={3}
+                  placeholder="Enter a custom prompt for this image..."
+                />
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                type="button"
+                onClick={handleImagePromptDialogClose}
+                className="btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleImagePromptDialogClose}
+                className="btn-primary"
+                disabled={imagePromptSelection[pendingImageId] === 'custom' && !imageCustomPrompts[pendingImageId]?.trim()}
+              >
+                Set Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
