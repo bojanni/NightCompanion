@@ -406,5 +406,5 @@
 ## 2026-04-06 (Prompt Form — per-image prompt used checkmark)
 
 - Findings: Prompt library images need an indicator for which prompt variant was used to generate each image.
-- Conclusions: Add a per-image selector with checkmark-style options (Original / Improved when available / Custom) and persist the choice in `imagesJson`.
-- Actions: Updated `src/components/PromptForm.tsx` to add `promptSource` to image drafts (stored in `imagesJson`), default to `original`, show an inline checkmark selector per image, and conditionally show “Improved” when `improvedPrompt` is available; validated with `npm run build`.
+- Conclusions: Add a per-image selector with checkmark-style options (Generated / Improved when available / Custom) and persist the choice in `imagesJson`.
+- Actions: Updated `src/components/PromptForm.tsx` to add `promptSource` to image drafts (stored in `imagesJson`), default to `generated` (with backwards-compat for stored `original`), show an inline checkmark selector per image, and conditionally show “Improved” when `improvedPrompt` is available; validated with `npm run build`.

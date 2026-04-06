@@ -13,7 +13,7 @@ type ImageDraft = {
   model: string
   seed: string
   createdAt: string
-  promptSource?: 'original' | 'improved' | 'custom'
+  promptSource?: 'generated' | 'improved' | 'custom'
 }
 
 const MAX_TAG_COUNT = 15
@@ -63,7 +63,12 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         model: image.model ?? '',
         seed: image.seed ?? '',
         createdAt: image.createdAt ?? new Date().toISOString(),
-        promptSource: (image as unknown as { promptSource?: 'original' | 'improved' | 'custom' }).promptSource ?? 'original',
+        promptSource: (() => {
+          const saved = (image as unknown as { promptSource?: 'generated' | 'improved' | 'custom' | 'original' }).promptSource
+          if (saved === 'original') return 'generated'
+          if (saved === 'generated' || saved === 'improved' || saved === 'custom') return saved
+          return 'generated'
+        })(),
       }))
     }
     if (initial?.imageUrl) {
@@ -81,6 +86,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         model: initial.model ?? '',
         seed: initial.seed ?? '',
         createdAt: now,
+        promptSource: 'generated',
       }]
     }
 
@@ -184,6 +190,12 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           model: image.model ?? '',
           seed: image.seed ?? '',
           createdAt: image.createdAt ?? new Date().toISOString(),
+          promptSource: (() => {
+            const saved = (image as unknown as { promptSource?: 'generated' | 'improved' | 'custom' | 'original' }).promptSource
+            if (saved === 'original') return 'generated'
+            if (saved === 'generated' || saved === 'improved' || saved === 'custom') return saved
+            return 'generated'
+          })(),
         }))
       }
 
@@ -202,6 +214,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           model: version.model ?? '',
           seed: version.seed ?? '',
           createdAt: now,
+          promptSource: 'generated',
         }]
       }
 
@@ -292,7 +305,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           model: model.trim(),
           seed: seed.trim(),
           createdAt: now,
-          promptSource: 'original',
+          promptSource: 'generated',
         })
       } catch {
         setError('Could not read one of the selected images.')
@@ -366,7 +379,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         model: image.model,
         seed: image.seed,
         createdAt: image.createdAt,
-        promptSource: image.promptSource ?? 'original',
+        promptSource: image.promptSource ?? 'generated',
       })),
     })
 
@@ -512,14 +525,14 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                             <div className="mt-2 flex flex-wrap gap-2">
                               {(
                                 [
-                                  { id: 'original' as const, label: 'Original' },
+                                  { id: 'generated' as const, label: 'Generated' },
                                   ...(improvedPromptValue.trim()
                                     ? [{ id: 'improved' as const, label: 'Improved' }]
                                     : []),
                                   { id: 'custom' as const, label: 'Custom' },
                                 ] as const
                               ).map((option) => {
-                                const checked = (image.promptSource ?? 'original') === option.id
+                                const checked = (image.promptSource ?? 'generated') === option.id
                                 return (
                                   <button
                                     key={option.id}
