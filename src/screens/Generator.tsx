@@ -855,57 +855,23 @@ export default function Generator() {
           </>
         ) : (
           <>
-            <div className="mt-5 card p-5">
-              <div className="flex flex-col gap-4">
-                <div>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-white">Max words</p>
-                    <span className="text-xs text-slate-400">{maxWords}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1}
-                    max={MAX_ALLOWED_WORDS}
-                    value={maxWords}
-                    onChange={(e) => setMaxWords(Math.max(1, Math.min(MAX_ALLOWED_WORDS, Number(e.target.value))))}
-                    className="mt-2 w-full accent-teal-500"
-                    aria-label="Max words"
-                  />
-                </div>
-
-                <div>
-                  <p className="text-sm font-semibold text-white">Creativity</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {(['focused', 'balanced', 'wild'] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setMagicRandomCreativity(mode)}
-                        className={magicRandomCreativity === mode ? 'btn-compact-primary' : 'btn-compact-ghost'}
-                      >
-                        {mode === 'focused' ? 'Focused' : mode === 'balanced' ? 'Balanced' : 'Wild'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
               {/* LEFT: Greylist Card */}
-              <GreylistCard
-                greylistEnabled={greylistEnabled}
-                setGreylistEnabled={setGreylistEnabled}
-                greylistWords={greylistWords}
-                setGreylistWords={setGreylistWords}
-                greylistInput={greylistInput}
-                setGreylistInput={setGreylistInput}
-                addGreylistWord={addGreylistWord}
-                removeGreylistWord={removeGreylistWord}
-              />
+              <div className="mb-4">
+                <GreylistCard
+                  greylistEnabled={greylistEnabled}
+                  setGreylistEnabled={setGreylistEnabled}
+                  greylistWords={greylistWords}
+                  setGreylistWords={setGreylistWords}
+                  greylistInput={greylistInput}
+                  setGreylistInput={setGreylistInput}
+                  addGreylistWord={addGreylistWord}
+                  removeGreylistWord={removeGreylistWord}
+                />
+              </div>
               
               {/* RIGHT: Max Words and Creativity */}
-              <div className="card p-5">
+              <div className="card p-5 mb-4">
                 <div className="grid grid-cols-1 gap-4">
                   {/* Preset and Style Profile Row */}
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -950,38 +916,37 @@ export default function Generator() {
                     </div>
                   </div>
 
-                  {/* Max Words and Creativity Row */}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Max words</p>
-                        <span className="text-xs text-slate-400">{maxWords}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={1}
-                        max={MAX_ALLOWED_WORDS}
-                        value={maxWords}
-                        onChange={(e) => setMaxWords(Math.max(1, Math.min(MAX_ALLOWED_WORDS, Number(e.target.value))))}
-                        className="mt-2 w-full accent-teal-500"
-                        aria-label="Max words"
-                      />
+                  {/* Max Words */}
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Max words</p>
+                      <span className="text-xs text-slate-400">{maxWords}</span>
                     </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={MAX_ALLOWED_WORDS}
+                      value={maxWords}
+                      onChange={(e) => setMaxWords(Math.max(1, Math.min(MAX_ALLOWED_WORDS, Number(e.target.value))))}
+                      className="mt-2 w-full accent-teal-500"
+                      aria-label="Max words"
+                    />
+                  </div>
 
-                    <div>
-                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Creativity</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {(['focused', 'balanced', 'wild'] as const).map((mode) => (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => setMagicRandomCreativity(mode)}
-                            className={magicRandomCreativity === mode ? 'btn-compact-primary' : 'btn-compact-ghost'}
-                          >
-                            {mode === 'focused' ? 'Focused' : mode === 'balanced' ? 'Balanced' : 'Wild'}
-                          </button>
-                        ))}
-                      </div>
+                  {/* Creativity Only */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Creativity</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(['focused', 'balanced', 'wild'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setMagicRandomCreativity(mode)}
+                          className={magicRandomCreativity === mode ? 'btn-compact-primary' : 'btn-compact-ghost'}
+                        >
+                          {mode === 'focused' ? 'Focused' : mode === 'balanced' ? 'Balanced' : 'Wild'}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>

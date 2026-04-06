@@ -336,3 +336,21 @@
 - Findings: Prompt Builder had separate Max Words panel and header dropdowns, creating unnecessary UI clutter.
 - Conclusions: Remove top Max Words panel, move preset and style profile dropdowns to the Max Words/Creativity panel for better organization.
 - Actions: Removed Max Words panel from `src/screens/PromptBuilder.tsx`; moved preset and style profile dropdowns from header to Max Words/Creativity panel in `src/screens/Generator.tsx`; updated style profile prop types; validated with `npm run build`.
+
+## 2026-04-06 (Prompt Builder — remove Max Words slider)
+
+- Findings: Max Words slider was redundant on Prompt Builder page since maxWords is passed as a prop from Generator.
+- Conclusions: Remove the Max Words slider from the Prompt Builder controls panel, keeping only Creativity controls.
+- Actions: Removed Max Words slider and grid layout from `src/screens/Generator.tsx` builder tab, leaving only Creativity controls in the panel; validated with `npm run build`.
+
+## 2026-04-06 (Prompt Builder — consolidate Max Words slider to settings panel)
+
+- Findings: Prompt Builder had a separate Max Words panel and a settings panel with preset/style profile/creativity, creating UI duplication.
+- Conclusions: Remove the separate Max Words panel and add the Max Words slider to the existing settings panel.
+- Actions: Removed the first Max Words/Creativity panel from `src/screens/Generator.tsx` builder tab; added Max Words slider to the panel containing preset, style profile, and creativity controls; validated with `npm run build`.
+
+## 2026-04-06 (Prompt Builder — add bottom margin to panels)
+
+- Findings: Panels in Prompt Builder needed more spacing for better visual separation.
+- Conclusions: Add 1rem bottom margin to both the Greylist and settings panels.
+- Actions: Added `mb-4` class (1rem bottom margin) to both panel containers in `src/screens/Generator.tsx` builder tab; validated with `npm run build`.
