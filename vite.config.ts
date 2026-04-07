@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   build: {
+    chunkSizeWarningLimit: 700,
     outDir: 'dist-renderer',
     emptyOutDir: true,
   },
