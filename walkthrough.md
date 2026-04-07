@@ -438,3 +438,9 @@
 - Findings: Switching Generator tabs could appear to do nothing because the settings UI-state hydration effect was re-running and resetting `tab` back to the persisted value.
 - Conclusions: The hydration effect should only run once on mount; its dependencies must not include unstable objects.
 - Actions: Updated `src/screens/Generator.tsx` to remove the unstable `promptImprovement` object from the hydration effect dependency list (depend only on the stable setter functions); validated with `npm run build`.
+
+## 2026-04-07 (Flush debounced UI state saves on navigation)
+
+- Findings: Navigating away from Generator (or Prompt Builder) within the 500ms debounce window could cancel the pending settings save, so returning to the screen rehydrated empty/default state.
+- Conclusions: Debounced persistence must flush the latest UI state on unmount to guarantee navigation doesn’t drop state.
+- Actions: Updated `src/screens/Generator.tsx` and `src/screens/PromptBuilder.tsx` to flush any pending debounced `settings.save*UiState` call during effect cleanup; validated with `npm run build`.

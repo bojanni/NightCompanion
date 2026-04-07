@@ -450,34 +450,36 @@ export default function Generator() {
   useEffect(() => {
     if (!uiStateLoaded) return
 
+    const buildNextState = (): GeneratorPersistedState => ({
+      tab,
+      selectedPreset,
+      maxWords,
+      generatedPrompt,
+      negativePrompt,
+      negativePromptViewTab,
+      negativeImprovementDiff,
+      savedTitle,
+      recommendedModel,
+      recommendedModelReason,
+      recommendedModelMode,
+      advisorBestValue,
+      advisorFastest,
+      supportsNegativePrompt,
+      promptViewTab: promptImprovement.viewTab,
+      improvementDiff: promptImprovement.improvementDiff,
+      quickStartIdea,
+      quickStartCreativity,
+      magicRandomCreativity,
+      quickStartCharacterId,
+      budgetMode,
+    })
+
     if (uiStateSaveTimeoutRef.current) {
       window.clearTimeout(uiStateSaveTimeoutRef.current)
     }
 
     uiStateSaveTimeoutRef.current = window.setTimeout(() => {
-      const nextState: GeneratorPersistedState = {
-        tab,
-        selectedPreset,
-        maxWords,
-        generatedPrompt,
-        negativePrompt,
-        negativePromptViewTab,
-        negativeImprovementDiff,
-        savedTitle,
-        recommendedModel,
-        recommendedModelReason,
-        recommendedModelMode,
-        advisorBestValue,
-        advisorFastest,
-        supportsNegativePrompt,
-        promptViewTab: promptImprovement.viewTab,
-        improvementDiff: promptImprovement.improvementDiff,
-        quickStartIdea,
-        quickStartCreativity,
-        magicRandomCreativity,
-        quickStartCharacterId,
-        budgetMode,
-      }
+      const nextState = buildNextState()
 
       void window.electronAPI.settings.saveGeneratorUiState(nextState)
     }, 500)
@@ -485,6 +487,8 @@ export default function Generator() {
     return () => {
       if (uiStateSaveTimeoutRef.current) {
         window.clearTimeout(uiStateSaveTimeoutRef.current)
+        const nextState = buildNextState()
+        void window.electronAPI.settings.saveGeneratorUiState(nextState)
       }
     }
   }, [

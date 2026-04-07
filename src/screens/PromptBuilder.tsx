@@ -150,6 +150,18 @@ export default function PromptBuilder({
     return () => {
       if (uiStateSaveTimeoutRef.current) {
         window.clearTimeout(uiStateSaveTimeoutRef.current)
+
+        const nextState: PromptBuilderPersistedState = {
+          parts: parts.map((p) => ({ id: p.id, value: p.value })),
+          separator,
+          savedTitle,
+          selectedStyleProfileId,
+          generatedPrompt,
+          generatedPromptViewTab: generatedPromptImprovement.viewTab,
+          generatedImprovementDiff: generatedPromptImprovement.improvementDiff,
+        }
+
+        void window.electronAPI.settings.savePromptBuilderUiState(nextState)
       }
     }
   }, [
