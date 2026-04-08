@@ -42,6 +42,12 @@ export default function PromptCard({ prompt, onEdit, onDelete }: Props) {
               {prompt.model}
             </span>
           )}
+
+          {prompt.stylePreset && (
+            <span className="inline-block mt-1 ml-2 text-[10px] px-1.5 py-0.5 rounded bg-night-700 text-night-200 border border-night-600/60 font-medium tracking-wide">
+              Preset: {prompt.stylePreset}
+            </span>
+          )}
         </div>
 
         {/* Actions — visible on hover */}

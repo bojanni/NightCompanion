@@ -462,3 +462,21 @@
 - Findings: Prompts saved from Generator/Prompt Builder did not persist the selected NightCafe style preset, so the Library couldn’t display which preset was used.
 - Conclusions: Persisting `style_preset` alongside the prompt makes saved prompts more searchable and traceable without changing existing flows.
 - Actions: Added `style_preset` to `prompts` + `prompt_versions` (migration `drizzle/0024_prompt_style_preset.sql` and journal update); wired field through `electron/ipc/prompts.ts` and shared renderer types; updated Generator + embedded Prompt Builder save-to-library to send the preset; displayed the preset on Prompt Library cards and in the prompt details popup; validated with `npm run db:migrate` and `npm run build`.
+
+## 2026-04-08 (Add style preset to PromptForm)
+
+- Findings: Creating/editing prompts from the Library modal (`PromptForm`) didn’t expose the `stylePreset` field, so it couldn’t be set or corrected there.
+- Conclusions: Adding a preset selector + free text input in `PromptForm` keeps Library edits consistent with Generator/Prompt Builder saves.
+- Actions: Updated `src/components/PromptForm.tsx` to load NightCafe presets via `nightcafePresets:list`, added a `Style Preset` field (select + text), restored it when restoring from prompt versions, and submit it via `stylePreset`; validated with `npm run build`.
+
+## 2026-04-08 (Show style preset on cards and lightbox)
+
+- Findings: Even with `stylePreset` persisted, it wasn’t visible in the image lightbox overlay or on prompt cards in all views.
+- Conclusions: Showing the preset near other quick metadata (model/rating) makes it easy to confirm what was used without opening full details.
+- Actions: Updated `src/screens/Library.tsx` lightbox overlay to display a `Preset: ...` pill when available; updated `src/components/PromptCard.tsx` to show the preset pill next to the model; validated with `npm run build`.
+
+## 2026-04-08 (Library pagination/lightbox effect cleanup)
+
+- Findings: ESLint flagged synchronous `setState` calls inside effects in `src/screens/Library.tsx` (page resets and lightbox visibility).
+- Conclusions: Moving page reset/clamping logic into event handlers/derived values and keeping lightbox animation state within open/close handlers avoids unnecessary effect-driven state changes.
+- Actions: Refactored `src/screens/Library.tsx` to remove page reset/clamp effects and drive `lightboxVisible` from `openLightbox`/`closeLightbox`; validated with `npm run build`.

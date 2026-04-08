@@ -4,6 +4,12 @@ import PromptPreview from './PromptPreview'
 import { Check, Star, StarHalf } from 'lucide-react'
 
 type FormData = PromptMutationInput
+
+type NightcafePresetOption = {
+  presetName: string
+  category: string
+  presetPrompt: string
+}
 type ImageDraft = {
   id: string
   url: string
@@ -40,6 +46,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [negativePrompt, setNegativePrompt] = useState(initial?.negativePrompt ?? '')
   const [model, setModel] = useState(initial?.model ?? '')
   const [seed, setSeed] = useState(initial?.seed ?? '')
+  const [stylePreset, setStylePreset] = useState(initial?.stylePreset ?? '')
   const [isTemplate, setIsTemplate] = useState(initial?.isTemplate ?? false)
   const [isFavorite, setIsFavorite] = useState(initial?.isFavorite ?? false)
   const [rating, setRating] = useState<number>(initial?.rating ?? 0)
@@ -100,6 +107,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [modelOptions, setModelOptions] = useState<string[]>([])
+  const [presetOptions, setPresetOptions] = useState<NightcafePresetOption[]>([])
   const [versions, setVersions] = useState<PromptVersion[]>([])
   const [loadingVersions, setLoadingVersions] = useState(false)
   const [styleProfiles, setStyleProfiles] = useState<StyleProfile[]>([])
@@ -112,6 +120,27 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
   useEffect(() => {
     titleRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadNightcafePresets() {
+      const result = await window.electronAPI.nightcafePresets.list()
+      if (ignore || result.error || !result.data) return
+
+      const options = result.data
+        .filter((option) => option.presetName)
+        .sort((a, b) => a.presetName.localeCompare(b.presetName))
+
+      setPresetOptions(options)
+    }
+
+    loadNightcafePresets()
+
+    return () => {
+      ignore = true
+    }
   }, [])
 
   useEffect(() => {
@@ -222,6 +251,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
     })
     setPromptText(version.promptText)
     setNegativePrompt(version.negativePrompt)
+    setStylePreset(version.stylePreset ?? '')
     setModel(version.model)
     setSuggestedModel(version.suggestedModel ?? '')
     setSeed(version.seed ?? '')
@@ -365,6 +395,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
       model: model.trim(),
       suggestedModel: suggestedModel.trim(),
       seed: seed.trim(),
+      stylePreset: stylePreset.trim(),
       isTemplate,
       isFavorite,
       rating: rating || null,
@@ -670,6 +701,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
               </div>
             </div>
 
+            {/* Seed */}
             <div>
               <label className="label">Seed</label>
               <input
@@ -679,6 +711,32 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                 className="input"
                 placeholder="e.g. 123456789"
               />
+            </div>
+
+            <div>
+              <label className="label">Style Preset</label>
+              <div className="flex gap-2">
+                <select
+                  value={presetOptions.some((p) => p.presetName === stylePreset) ? stylePreset : ''}
+                  onChange={(e) => setStylePreset(e.target.value)}
+                  aria-label="Select style preset"
+                  className="w-1/2 input"
+                >
+                  <option value="">— kies preset —</option>
+                  {presetOptions.map((preset) => (
+                    <option key={preset.presetName} value={preset.presetName}>
+                      {preset.presetName}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={stylePreset}
+                  onChange={(e) => setStylePreset(e.target.value)}
+                  className="w-1/2 input"
+                  placeholder="of typ een presetnaam"
+                />
+              </div>
             </div>
 
             <div>

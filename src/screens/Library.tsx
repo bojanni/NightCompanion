@@ -23,6 +23,7 @@ type LightboxItem = {
   promptText: string
   rating: number
   model: string
+  stylePreset: string
 }
 
 function getStarFill(rating: number, starIndex: number) {
@@ -56,6 +57,14 @@ export default function Library() {
   const openLightbox = useCallback((image: LightboxItem) => {
     setLightboxImage(image)
     setLightboxOverlayVisible(true)
+
+    const raf = window.requestAnimationFrame(() => {
+      setLightboxVisible(true)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(raf)
+    }
   }, [])
 
   const closeLightbox = useCallback(() => {
@@ -69,21 +78,6 @@ export default function Library() {
   const closePromptDetails = useCallback(() => {
     setSelectedPrompt(null)
   }, [])
-
-  useEffect(() => {
-    if (!lightboxImage) {
-      setLightboxVisible(false)
-      return
-    }
-
-    const raf = window.requestAnimationFrame(() => {
-      setLightboxVisible(true)
-    })
-
-    return () => {
-      window.cancelAnimationFrame(raf)
-    }
-  }, [lightboxImage])
 
   useEffect(() => {
     if (!lightboxImage || lightboxVisible) return
@@ -136,10 +130,6 @@ export default function Library() {
     const timeout = setTimeout(fetchPrompts, 200)
     return () => clearTimeout(timeout)
   }, [fetchPrompts])
-
-  useEffect(() => {
-    setCurrentPage(0)
-  }, [search, modelFilter, filterType, selectedTag])
 
   const handleCreate = async (data: Parameters<typeof window.electronAPI.prompts.create>[0]) => {
     const result = await window.electronAPI.prompts.create(data)
@@ -223,14 +213,11 @@ export default function Library() {
   }, [prompts, filterType, selectedTag])
 
   const totalPages = Math.max(1, Math.ceil(filteredPrompts.length / PAGE_SIZE))
+  const safeCurrentPage = Math.min(currentPage, totalPages - 1)
   const pagePrompts = useMemo(() => {
-    const start = currentPage * PAGE_SIZE
+    const start = safeCurrentPage * PAGE_SIZE
     return filteredPrompts.slice(start, start + PAGE_SIZE)
-  }, [filteredPrompts, currentPage])
-
-  useEffect(() => {
-    setCurrentPage((prev) => Math.min(prev, totalPages - 1))
-  }, [totalPages])
+  }, [filteredPrompts, safeCurrentPage])
 
   return (
     <div className="flex flex-col h-full">
@@ -252,12 +239,23 @@ export default function Library() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setCurrentPage(0)
+              }}
               placeholder="Search prompts..."
               className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
             />
           </div>
-          <select value={modelFilter} onChange={(e) => setModelFilter(e.target.value)} aria-label="Filter prompts by model" className="input sm:w-56">
+          <select
+            value={modelFilter}
+            onChange={(e) => {
+              setModelFilter(e.target.value)
+              setCurrentPage(0)
+            }}
+            aria-label="Filter prompts by model"
+            className="input sm:w-56"
+          >
             <option value="">Alle modellen</option>
             {allModels.map((m) => (
               <option key={m} value={m}>{m}</option>
@@ -280,7 +278,10 @@ export default function Library() {
           ] as const).map((entry) => (
             <button
               key={entry.id}
-              onClick={() => setFilterType(entry.id)}
+              onClick={() => {
+                setFilterType(entry.id)
+                setCurrentPage(0)
+              }}
               className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${filterType === entry.id ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-slate-900 text-slate-500 hover:text-white border border-slate-800'}`}
             >
               {entry.icon}
@@ -293,7 +294,10 @@ export default function Library() {
       {showTagFilters && allTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mx-8 mb-5 p-4 bg-slate-900 border border-slate-800 rounded-xl no-drag-region">
           <button
-            onClick={() => setSelectedTag(null)}
+            onClick={() => {
+              setSelectedTag(null)
+              setCurrentPage(0)
+            }}
             className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${!selectedTag ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-white'}`}
           >
             All tags
@@ -301,7 +305,10 @@ export default function Library() {
           {allTags.map((tag) => (
             <button
               key={tag}
-              onClick={() => setSelectedTag((prev) => (prev === tag ? null : tag))}
+              onClick={() => {
+                setSelectedTag((prev) => (prev === tag ? null : tag))
+                setCurrentPage(0)
+              }}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${selectedTag === tag ? 'bg-amber-500/10 border-amber-500/40 text-amber-300' : 'bg-slate-800 border-slate-800 text-slate-400 hover:text-white'}`}
             >
               {tag}
@@ -337,11 +344,11 @@ export default function Library() {
                 return (
                   <div
                     key={prompt.id}
-                    className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden"
+                    className={`bg-slate-900 border border-slate-800 rounded-2xl hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group w-full min-w-0 overflow-hidden ${coverImageUrl ? 'flex flex-col md:flex-row' : 'flex flex-col'}`}
                     onClick={() => setSelectedPrompt(prompt)}
                   >
                     {coverImageUrl ? (
-                      <div className="aspect-[16/9] bg-slate-950/60 overflow-hidden border-b border-slate-800/60">
+                      <div className="aspect-[16/9] bg-slate-950/60 overflow-hidden border-b border-slate-800/60 md:border-b-0 md:border-r md:w-56 md:aspect-auto md:min-h-full">
                         <img
                           src={coverImageUrl}
                           alt={prompt.title || 'Prompt image'}
@@ -354,6 +361,7 @@ export default function Library() {
                               promptText: prompt.promptText,
                               rating: prompt.rating ?? 0,
                               model: prompt.model || prompt.suggestedModel || '',
+                              stylePreset: prompt.stylePreset ?? '',
                             })
                           }}
                           onError={(event) => {
@@ -362,157 +370,159 @@ export default function Library() {
                         />
                       </div>
                     ) : null}
-                    <div className="p-5 pb-0">
-                      <div className="flex items-start justify-between mb-2">
+                    <div className="flex flex-1 min-w-0 flex-col">
+                      <div className="p-5 pb-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <button
+                            type="button"
+                            className="flex items-center gap-2 min-w-0 text-left"
+                            onClick={() => setSelectedPrompt(prompt)}
+                            aria-label={`Open details for ${prompt.title || 'prompt'}`}
+                            title="Open details"
+                          >
+                            <h3 className="text-sm font-semibold text-white line-clamp-2">{prompt.title || 'Untitled'}</h3>
+                            {prompt.isTemplate && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
+                                Template
+                              </span>
+                            )}
+                            {/* TODO: Add improved prompt indicator when improvedPrompt field exists */}
+                          </button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void handleCopy(prompt)
+                              }}
+                              className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-emerald-400 rounded-lg transition-colors"
+                              title="Copy"
+                              aria-label="Copy prompt"
+                            >
+                              {copiedId === prompt.id ? <Check size={14} /> : <Copy size={14} />}
+                            </button>
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void handleToggleFavorite(prompt)
+                              }}
+                              className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
+                              title={prompt.isFavorite ? 'Unfavorite' : 'Favorite'}
+                              aria-label={prompt.isFavorite ? 'Unfavorite prompt' : 'Favorite prompt'}
+                            >
+                              <Heart size={14} className={prompt.isFavorite ? 'fill-rose-400 text-rose-400' : ''} />
+                            </button>
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setForm({ mode: 'edit', prompt })
+                              }}
+                              className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-blue-400 rounded-lg transition-colors"
+                              title="Edit"
+                              aria-label="Edit prompt"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setDeleteDialog({ isOpen: true, promptId: prompt.id })
+                              }}
+                              className="p-1.5 hover:bg-red-900/20 text-slate-500 hover:text-red-400 rounded-lg transition-colors"
+                              title="Delete"
+                              aria-label="Delete prompt"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+
                         <button
                           type="button"
-                          className="flex items-center gap-2 min-w-0 text-left"
+                          className="w-full text-left"
                           onClick={() => setSelectedPrompt(prompt)}
                           aria-label={`Open details for ${prompt.title || 'prompt'}`}
                           title="Open details"
                         >
-                          <h3 className="text-sm font-semibold text-white truncate">{prompt.title || 'Untitled'}</h3>
-                          {prompt.isTemplate && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-teal-500/10 text-teal-400 rounded-md flex-shrink-0">
-                              Template
-                            </span>
-                          )}
-                          {/* TODO: Add improved prompt indicator when improvedPrompt field exists */}
-                        </button>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              void handleCopy(prompt)
-                            }}
-                            className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-emerald-400 rounded-lg transition-colors"
-                            title="Copy"
-                            aria-label="Copy prompt"
-                          >
-                            {copiedId === prompt.id ? <Check size={14} /> : <Copy size={14} />}
-                          </button>
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              void handleToggleFavorite(prompt)
-                            }}
-                            className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
-                            title={prompt.isFavorite ? 'Unfavorite' : 'Favorite'}
-                            aria-label={prompt.isFavorite ? 'Unfavorite prompt' : 'Favorite prompt'}
-                          >
-                            <Heart size={14} className={prompt.isFavorite ? 'fill-rose-400 text-rose-400' : ''} />
-                          </button>
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setForm({ mode: 'edit', prompt })
-                            }}
-                            className="p-1.5 hover:bg-slate-800 text-slate-500 hover:text-blue-400 rounded-lg transition-colors"
-                            title="Edit"
-                            aria-label="Edit prompt"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setDeleteDialog({ isOpen: true, promptId: prompt.id })
-                            }}
-                            className="p-1.5 hover:bg-red-900/20 text-slate-500 hover:text-red-400 rounded-lg transition-colors"
-                            title="Delete"
-                            aria-label="Delete prompt"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="w-full text-left"
-                        onClick={() => setSelectedPrompt(prompt)}
-                        aria-label={`Open details for ${prompt.title || 'prompt'}`}
-                        title="Open details"
-                      >
-                        <div className="flex items-center gap-3 text-[10px] text-slate-500 mb-2">
-                          <span>{new Date(prompt.createdAt).toLocaleDateString()}</span>
-                          {prompt.updatedAt !== prompt.createdAt && (
-                            <span>Updated</span>
-                          )}
-                          {prompt.suggestedModel && (
-                            <span className="truncate">Suggested: {prompt.suggestedModel}</span>
-                          )}
-                        </div>
-
-                        {prompt.stylePreset && (
-                          <div className="mb-2 flex flex-wrap gap-1">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-800 border-slate-800 text-slate-300">
-                              Preset: {prompt.stylePreset}
-                            </span>
-                          </div>
-                        )}
-
-                        <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">{preview}</p>
-
-                        <div className="h-12 overflow-hidden mb-4">
-                          <div className="flex flex-wrap gap-1">
-                            {prompt.tags.length > 0 ? (
-                              prompt.tags.slice(0, 8).map((tag) => (
-                                <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-800 border-slate-800 text-slate-400">
-                                  {tag}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
+                          <div className="flex items-center gap-3 text-[10px] text-slate-500 mb-2">
+                            <span>{new Date(prompt.createdAt).toLocaleDateString()}</span>
+                            {prompt.updatedAt !== prompt.createdAt && (
+                              <span>Updated</span>
+                            )}
+                            {prompt.suggestedModel && (
+                              <span className="truncate">Suggested: {prompt.suggestedModel}</span>
                             )}
                           </div>
-                        </div>
-                      </button>
-                    </div>
 
-                    <div className="px-5 pb-5 mt-auto">
-                      <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                        <div className="flex items-center gap-1 mb-2">
-                          {[1, 2, 3, 4, 5].map((value) => (
-                            <div key={value} className="relative w-4 h-4 text-slate-600 hover:text-slate-400">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  void handleSetRating(prompt, value - 0.5)
-                                }}
-                                className="absolute inset-y-0 left-0 w-1/2 z-10"
-                                aria-label={`Set rating ${value - 0.5}`}
-                                title={`Set rating ${value - 0.5}`}
-                              />
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  void handleSetRating(prompt, value)
-                                }}
-                                className="absolute inset-y-0 right-0 w-1/2 z-10"
-                                aria-label={`Set rating ${value}`}
-                                title={`Set rating ${value}`}
-                              />
-                              <div className={`absolute inset-0 pointer-events-none ${((prompt.rating || 0) >= value - 0.5) ? 'text-glow-amber' : 'text-slate-600'}`}>
-                                {getStarFill(prompt.rating || 0, value) === 'full' && <Star size={14} fill="currentColor" />}
-                                {getStarFill(prompt.rating || 0, value) === 'half' && <StarHalf size={14} fill="currentColor" />}
-                                {getStarFill(prompt.rating || 0, value) === 'empty' && <Star size={14} />}
-                              </div>
+                          {prompt.stylePreset && (
+                            <div className="mb-2 flex flex-wrap gap-1">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-800 border-slate-800 text-slate-300">
+                                Preset: {prompt.stylePreset}
+                              </span>
                             </div>
-                          ))}
-                          <span className="text-[10px] text-slate-500 ml-1">{prompt.rating ? prompt.rating.toFixed(1) : '0.0'}</span>
+                          )}
+
+                          <p className="text-xs text-slate-400 mb-3 leading-relaxed line-clamp-3 h-[3.75rem]">{preview}</p>
+
+                          <div className="h-12 overflow-hidden mb-4">
+                            <div className="flex flex-wrap gap-1">
+                              {prompt.tags.length > 0 ? (
+                                prompt.tags.slice(0, 8).map((tag) => (
+                                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full border bg-slate-800 border-slate-800 text-slate-400">
+                                    {tag}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-600 italic py-0.5">No tags</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+
+                      <div className="px-5 pb-5 mt-auto">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                          <div className="flex items-center gap-1 mb-2">
+                            {[1, 2, 3, 4, 5].map((value) => (
+                              <div key={value} className="relative w-4 h-4 text-slate-600 hover:text-slate-400">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    void handleSetRating(prompt, value - 0.5)
+                                  }}
+                                  className="absolute inset-y-0 left-0 w-1/2 z-10"
+                                  aria-label={`Set rating ${value - 0.5}`}
+                                  title={`Set rating ${value - 0.5}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    void handleSetRating(prompt, value)
+                                  }}
+                                  className="absolute inset-y-0 right-0 w-1/2 z-10"
+                                  aria-label={`Set rating ${value}`}
+                                  title={`Set rating ${value}`}
+                                />
+                                <div className={`absolute inset-0 pointer-events-none ${((prompt.rating || 0) >= value - 0.5) ? 'text-glow-amber' : 'text-slate-600'}`}>
+                                  {getStarFill(prompt.rating || 0, value) === 'full' && <Star size={14} fill="currentColor" />}
+                                  {getStarFill(prompt.rating || 0, value) === 'half' && <StarHalf size={14} fill="currentColor" />}
+                                  {getStarFill(prompt.rating || 0, value) === 'empty' && <Star size={14} />}
+                                </div>
+                              </div>
+                            ))}
+                            <span className="text-[10px] text-slate-500 ml-1">{prompt.rating ? prompt.rating.toFixed(1) : '0.0'}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 line-clamp-2">
+                            {prompt.negativePrompt || 'No negative prompt set.'}
+                          </p>
+                          {prompt.model && (
+                            <p className="text-[10px] text-slate-500 mt-2 truncate">{prompt.model}</p>
+                          )}
+                          {prompt.suggestedModel && prompt.suggestedModel !== prompt.model && (
+                            <p className="text-[10px] text-slate-500 mt-1 truncate">Suggested model: {prompt.suggestedModel}</p>
+                          )}
                         </div>
-                        <p className="text-[11px] text-slate-500 line-clamp-2">
-                          {prompt.negativePrompt || 'No negative prompt set.'}
-                        </p>
-                        {prompt.model && (
-                          <p className="text-[10px] text-slate-500 mt-2 truncate">{prompt.model}</p>
-                        )}
-                        {prompt.suggestedModel && prompt.suggestedModel !== prompt.model && (
-                          <p className="text-[10px] text-slate-500 mt-1 truncate">Suggested model: {prompt.suggestedModel}</p>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -599,73 +609,81 @@ export default function Library() {
                       ? selectedPrompt.imagesJson[0].url
                       : selectedPrompt.imageUrl
 
-                    if (!modalCover) return null
-
                     return (
-                      <div className="mt-4 aspect-[16/9] overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60">
-                        <img
-                          src={modalCover}
-                          alt={selectedPrompt.title || 'Prompt image'}
-                          className="h-full w-full object-cover cursor-zoom-in"
-                          onClick={() =>
-                            openLightbox({
-                              url: modalCover,
-                              title: selectedPrompt.title || 'Prompt image',
-                              promptText: selectedPrompt.promptText,
-                              rating: selectedPrompt.rating ?? 0,
-                              model: selectedPrompt.model || selectedPrompt.suggestedModel || '',
-                            })
-                          }
-                        />
+                      <div className={modalCover ? 'mt-4 flex flex-col gap-4 md:flex-row md:items-start md:gap-6' : 'mt-4'}>
+                        {modalCover ? (
+                          <div className="w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60 md:w-72 md:flex-shrink-0">
+                            <div className="aspect-[16/9] md:aspect-auto md:h-full">
+                              <img
+                                src={modalCover}
+                                alt={selectedPrompt.title || 'Prompt image'}
+                                className="h-full w-full object-cover cursor-zoom-in"
+                                onClick={() =>
+                                  openLightbox({
+                                    url: modalCover,
+                                    title: selectedPrompt.title || 'Prompt image',
+                                    promptText: selectedPrompt.promptText,
+                                    rating: selectedPrompt.rating ?? 0,
+                                    model: selectedPrompt.model || selectedPrompt.suggestedModel || '',
+                                    stylePreset: selectedPrompt.stylePreset ?? '',
+                                  })
+                                }
+                              />
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div className="min-w-0 flex-1">
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div>
+                              <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Prompt</p>
+                              <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-200">
+                                {selectedPrompt.promptText}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Negative prompt</p>
+                              <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-400">
+                                {selectedPrompt.negativePrompt || 'No negative prompt set.'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {selectedPrompt.stylePreset && (
+                            <div className="mt-4">
+                              <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Style preset</p>
+                              <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-400">
+                                {selectedPrompt.stylePreset}
+                              </p>
+                            </div>
+                          )}
+
+                          {selectedPrompt.tags?.length > 0 && (
+                            <div className="mt-4">
+                              <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Tags</p>
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {selectedPrompt.tags.map((tag) => (
+                                  <span key={tag} className="tag">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedPrompt.notes && (
+                            <div className="mt-4">
+                              <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Notes</p>
+                              <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-400">
+                                {selectedPrompt.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })()}
 
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Prompt</p>
-                      <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-200">
-                        {selectedPrompt.promptText}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Negative prompt</p>
-                      <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-400">
-                        {selectedPrompt.negativePrompt || 'No negative prompt set.'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {selectedPrompt.stylePreset && (
-                    <div className="mt-4">
-                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Style preset</p>
-                      <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-400">
-                        {selectedPrompt.stylePreset}
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedPrompt.tags?.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Tags</p>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {selectedPrompt.tags.map((tag) => (
-                          <span key={tag} className="tag">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedPrompt.notes && (
-                    <div className="mt-4">
-                      <p className="text-xs font-semibold text-slate-200 uppercase tracking-wide">Notes</p>
-                      <p className="mt-2 whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-400">
-                        {selectedPrompt.notes}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </ModalOverlay>
             )}
@@ -674,17 +692,17 @@ export default function Library() {
               <div className="flex justify-center items-center gap-2 mt-8">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-                  disabled={currentPage === 0}
+                  disabled={safeCurrentPage === 0}
                   className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-500 disabled:opacity-50 hover:bg-slate-800 hover:text-white transition-colors"
                 >
-                  Previous
+                  Prev
                 </button>
-                <span className="text-sm text-slate-500">
-                  {currentPage + 1} / {totalPages}
+                <span className="text-sm text-slate-500 px-3">
+                  {safeCurrentPage + 1} / {totalPages}
                 </span>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={currentPage + 1 >= totalPages}
+                  disabled={safeCurrentPage + 1 >= totalPages}
                   className="px-3 py-1 bg-slate-900 border border-slate-800 rounded-md text-sm text-slate-500 disabled:opacity-50 hover:bg-slate-800 hover:text-white transition-colors"
                 >
                   Next
@@ -797,6 +815,15 @@ export default function Library() {
                   </span>
                 </div>
               </div>
+
+              {lightboxImage.stylePreset && (
+                <div className="mb-3 flex justify-center">
+                  <span className="text-[11px] px-3 py-1 rounded-full border border-white/15 bg-black/35 text-white/85">
+                    Preset: {lightboxImage.stylePreset}
+                  </span>
+                </div>
+              )}
+
               <p className="text-center text-sm leading-relaxed text-white/92 whitespace-pre-wrap">
                 {lightboxImage.promptText}
               </p>
