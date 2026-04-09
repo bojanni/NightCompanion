@@ -470,7 +470,7 @@ export default function Settings() {
             </div>
           )}
 
-          <p className="text-sm font-semibold text-white">Application preferences and diagnostics</p>
+          <p className="pb-6 text-sm font-semibold text-white">Application preferences and diagnostics</p>
         </div>
 
         <section className="p-6 card">
