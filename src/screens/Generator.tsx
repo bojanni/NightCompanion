@@ -64,6 +64,13 @@ function buildDefaultTitle(value: string) {
     .trim()
 }
 
+function splitWords(value: string): string[] {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+}
+
 export default function Generator() {
   const [tab, setTab] = useState<'generator' | 'builder'>('generator')
   const [presetOptions, setPresetOptions] = useState<PresetOption[]>([])
@@ -793,16 +800,33 @@ export default function Generator() {
         return
       }
 
+      const improvedWordLimit = Math.max(1, Math.ceil(maxWords * 1.1))
+      const improvedWords = splitWords(improved)
+      const improvedPromptFinal = improvedWords.length > improvedWordLimit
+        ? improvedWords.slice(0, improvedWordLimit).join(' ')
+        : improved
+
+      if (improvedPromptFinal !== improved) {
+        promptImprovement.setImprovementDiff({
+          originalPrompt: previousPrompt,
+          improvedPrompt: improvedPromptFinal,
+        })
+      }
+
       if (!autoTitleEnabled) {
         setSavedTitle((currentTitle) => {
           const trimmedTitle = currentTitle.trim()
           if (trimmedTitle && trimmedTitle !== buildDefaultTitle(previousPrompt)) return currentTitle
-          return buildDefaultTitle(improved)
+          return buildDefaultTitle(improvedPromptFinal)
         })
       }
 
-      void maybeAutoGenerateTitle(improved, previousPrompt)
-      setStatus('Prompt improved.')
+      void maybeAutoGenerateTitle(improvedPromptFinal, previousPrompt)
+      setStatus(
+        improvedPromptFinal === improved
+          ? 'Prompt improved.'
+          : `Prompt improved and limited to ${improvedWordLimit} words (110% of Max Words).`
+      )
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Error: Failed to improve prompt.')
     }
@@ -1011,6 +1035,7 @@ export default function Generator() {
               supportsNegativePrompt={supportsNegativePrompt}
               improvementAiModel={improvementAiModel}
               hasImprovementAiConfigured={hasImprovementAiConfigured}
+              maxWords={maxWords}
             />
 
             {/* Title and Save Section */}

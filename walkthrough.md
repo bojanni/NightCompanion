@@ -419,6 +419,12 @@
 - Findings: Changing and saving the OpenRouter API key caused repeated "settings.json normalized and rewritten to disk" messages, indicating a normalization loop. The `normalizeStoredSettings` function was directly assigning the `openRouter` object without normalizing it, causing a mismatch between parsed and normalized versions that triggered repeated rewrites.
 - Conclusions: Normalize the `openRouter` object in `normalizeStoredSettings` to prevent the normalization loop.
 - Actions: Updated `electron/ipc/settings.ts` `normalizeStoredSettings` to call `normalizeOpenRouterSettings(input.openRouter)` instead of directly assigning `input.openRouter`. Validated with `npm run build`.
+
+## 2026-04-08 (Settings — fix Windows EPERM when saving API key)
+
+- Findings: Saving OpenRouter API key could still fail on Windows with `EPERM: operation not permitted, rename ...` while writing `settings.json`.
+- Conclusions: Harden atomic settings writes for transient file locks by using unique temp filenames, retrying `rename`, and falling back to direct file write.
+- Actions: Updated `electron/ipc/settings.ts` `atomicWriteSettingsFile` to use a per-write temp file (`.pid.timestamp.tmp`), retry `rename` on `EPERM`/`EACCES`/`EBUSY`, and fallback to `writeFile(settingsPath, contents, 'utf-8')` if rename remains blocked; validated with `npm run build`.
 - Actions: Updated `src/components/PromptForm.tsx` to add `promptSource` to image drafts (stored in `imagesJson`), default to `generated` (with backwards-compat for stored `original`), show an inline checkmark selector per image, and conditionally show “Improved” when `improvedPrompt` is available; validated with `npm run build`.
 
 ## 2026-04-06 (usePromptImprovement shared hook)
@@ -552,3 +558,9 @@
 - Findings: Users needed explicit activation controls on all four AI dashboard panels and wanted latency shown directly under the Active/Inactive status.
 - Conclusions: Activation should only be possible when both provider and model are selected; activation should run a connectivity test first and then persist role enabled state with measured latency.
 - Actions: Updated `src/screens/Settings/Dashboard.tsx` to add `Activate` buttons for Generation/Improvement/Vision/Research & Reasoning, disable activation until provider+model are selected, run activation via probe test, persist `roleRouting.enabled`, and render per-role latency below status badges; validated with `npm run build`.
+
+## 2026-04-13 (Generator final result word count + 110% improvement cap)
+
+- Findings: On the Generator page, improved prompts needed a visible final-result word count and had to be limited so they can only be up to 10% longer than the configured Max Words slider value.
+- Conclusions: Enforce the cap in Generator improvement flow (`ceil(maxWords * 1.1)`) after AI response and show a live final-result count against that cap in the Improvement section.
+- Actions: Updated `src/screens/Generator.tsx` to cap improved prompt text to 110% of `maxWords`, override improvement diff with capped text when needed, and use capped text for auto-title flow/status; updated `src/components/generator/ImprovementSection.tsx` to accept `maxWords` and display `Final Result` word count as `current / cap`; validated with `npm run build`.

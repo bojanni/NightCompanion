@@ -27,6 +27,14 @@ type ImprovementSectionProps = {
   supportsNegativePrompt: boolean | null
   improvementAiModel: string | null
   hasImprovementAiConfigured: boolean
+  maxWords: number
+}
+
+function splitWords(value: string): string[] {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
 }
 
 export default function ImprovementSection({
@@ -52,8 +60,12 @@ export default function ImprovementSection({
   supportsNegativePrompt,
   improvementAiModel,
   hasImprovementAiConfigured,
+  maxWords,
 }: ImprovementSectionProps) {
   const showNegativePromptControls = supportsNegativePrompt !== false
+  const improvedWordLimit = Math.max(1, Math.ceil(maxWords * 1.1))
+  const finalResultWordCount = splitWords(improvementDiff?.improvedPrompt ?? '').length
+  const finalResultWordTone = finalResultWordCount > improvedWordLimit ? 'text-red-400' : 'text-night-400'
 
   return (
     <>
@@ -188,12 +200,22 @@ export default function ImprovementSection({
                 improvedPrompt={improvementDiff.improvedPrompt}
               />
             ) : (
-              <textarea
-                className="textarea mt-3 min-h-32"
-                value={improvementDiff.improvedPrompt}
-                readOnly
-                placeholder="Improved prompt result"
-              />
+              <>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <p className="text-[11px] text-night-400">Final Result</p>
+                  <p className={`text-[11px] ${finalResultWordTone}`}>
+                    {finalResultWordCount}
+                    {' '}
+                    / {improvedWordLimit} words max
+                  </p>
+                </div>
+                <textarea
+                  className="textarea mt-2 min-h-32"
+                  value={improvementDiff.improvedPrompt}
+                  readOnly
+                  placeholder="Improved prompt result"
+                />
+              </>
             )}
           </div>
         )}

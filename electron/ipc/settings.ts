@@ -384,14 +384,32 @@ async function atomicWriteSettingsFile(contents: string) {
   const settingsPath = getSettingsFilePath()
   await mkdir(path.dirname(settingsPath), { recursive: true })
 
-  const tmpPath = `${settingsPath}.tmp`
+  const tmpPath = `${settingsPath}.${process.pid}.${Date.now()}.tmp`
   await writeFile(tmpPath, contents, 'utf-8')
 
   try {
-    await rename(tmpPath, settingsPath)
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      try {
+        await rename(tmpPath, settingsPath)
+        return
+      } catch (error) {
+        const err = error as NodeJS.ErrnoException
+        const isLastAttempt = attempt === 3
+        const isTransientWindowsLock = err.code === 'EPERM' || err.code === 'EACCES' || err.code === 'EBUSY'
+
+        if (!isTransientWindowsLock || isLastAttempt) {
+          throw error
+        }
+
+        await new Promise<void>((resolve) => {
+          setTimeout(() => resolve(), 40 * (attempt + 1))
+        })
+      }
+    }
   } catch {
-    await rm(settingsPath, { force: true })
-    await rename(tmpPath, settingsPath)
+    await writeFile(settingsPath, contents, 'utf-8')
+  } finally {
+    await rm(tmpPath, { force: true })
   }
 }
 
