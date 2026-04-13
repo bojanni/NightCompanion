@@ -18,10 +18,6 @@ interface ProviderOption {
 }
 
 interface DashboardProps {
-  activeGen?: ApiKeyInfo | LocalEndpoint
-  activeImprove?: ApiKeyInfo | LocalEndpoint
-  activeVision?: ApiKeyInfo | LocalEndpoint
-  activeResearch?: ApiKeyInfo | LocalEndpoint
   onConfigure: () => void
   configuredCount: number
   keys: ApiKeyInfo[]
@@ -96,10 +92,6 @@ function matchesRoleCapability(role: DashboardRole, model: ModelOption): boolean
 }
 
 export function Dashboard({
-  activeGen,
-  activeImprove,
-  activeVision,
-  activeResearch,
   onConfigure,
   configuredCount,
   dynamicModels,
@@ -114,6 +106,38 @@ export function Dashboard({
   void getToken
 
   const [testingRole, setTestingRole] = useState<DashboardRole | null>(null)
+  const [activatingRole, setActivatingRole] = useState<DashboardRole | null>(null)
+  const [latencyByRole, setLatencyByRole] = useState<Record<DashboardRole, number | null>>({
+    generation: null,
+    improvement: null,
+    vision: null,
+    general: null,
+  })
+
+  async function probeRoleLatency(role: DashboardRole): Promise<number> {
+    const routing = roleRouting[role]
+    const startedAt = performance.now()
+
+    if (routing.providerId === 'openrouter') {
+      const ping = await window.electronAPI.settings.testOpenRouter()
+      if (ping.error || !ping.data?.ok) {
+        throw new Error(ping.error || 'OpenRouter connection test failed')
+      }
+      return Math.max(1, Math.round(performance.now() - startedAt))
+    }
+
+    const result = await window.electronAPI.ai.testChatCompletion({
+      providerId: routing.providerId,
+      modelId: routing.modelId,
+      role,
+    })
+
+    if (result.error || !result.data?.ok) {
+      throw new Error(result.error || 'Test request failed')
+    }
+
+    return Math.max(1, Math.round(performance.now() - startedAt))
+  }
 
   async function handleTest(role: DashboardRole) {
     const routing = roleRouting[role]
@@ -134,31 +158,10 @@ export function Dashboard({
 
     setTestingRole(role)
     try {
-      if (routing.providerId === 'openrouter') {
-        const ping = await window.electronAPI.settings.testOpenRouter()
-        if (ping.error || !ping.data?.ok) {
-          throw new Error(ping.error || 'OpenRouter connection test failed')
-        }
-
-        notifications.show({
-          message: `OpenRouter connected (${ping.data.modelCount} models available)`,
-          color: 'green',
-        })
-        return
-      }
-
-      const result = await window.electronAPI.ai.testChatCompletion({
-        providerId: routing.providerId,
-        modelId: routing.modelId,
-        role,
-      })
-
-      if (result.error || !result.data?.ok) {
-        throw new Error(result.error || 'Test request failed')
-      }
+      const latencyMs = await probeRoleLatency(role)
 
       notifications.show({
-        message: `Test successful: ${String(result.data.content || '').slice(0, 120)}`,
+        message: `Test successful (${latencyMs} ms)`,
         color: 'green',
       })
     } catch (error) {
@@ -169,6 +172,33 @@ export function Dashboard({
       })
     } finally {
       setTestingRole(null)
+    }
+  }
+
+  async function handleActivate(role: DashboardRole) {
+    const routing = roleRouting[role]
+    if (!routing.providerId || !routing.modelId) {
+      notifications.show({ message: 'Select a provider and model first', color: 'red' })
+      return
+    }
+
+    setActivatingRole(role)
+    try {
+      const latencyMs = await probeRoleLatency(role)
+      onChangeRoleRouting(role, { enabled: true })
+      setLatencyByRole((prev) => ({ ...prev, [role]: latencyMs }))
+      notifications.show({
+        message: `${ROLE_META[role].label} activated (${latencyMs} ms)` ,
+        color: 'green',
+      })
+    } catch (error) {
+      onChangeRoleRouting(role, { enabled: false })
+      notifications.show({
+        message: error instanceof Error ? error.message : 'Activation failed',
+        color: 'red',
+      })
+    } finally {
+      setActivatingRole(null)
     }
   }
 
@@ -211,13 +241,9 @@ export function Dashboard({
             const meta = ROLE_META[role]
             const routing = roleRouting[role]
             const modelOptions = getRoleModelOptions(role, routing.providerId, routing.modelId)
-            const isRoleActive = role === 'generation'
-              ? Boolean(activeGen)
-              : role === 'improvement'
-                ? Boolean(activeImprove)
-                : role === 'vision'
-                  ? Boolean(activeVision)
-                  : Boolean(activeResearch)
+            const canActivate = Boolean(routing.providerId && routing.modelId)
+            const isRoleActive = Boolean(routing.enabled && canActivate)
+            const roleLatency = latencyByRole[role]
 
             return (
               <section key={role} className={`rounded-2xl border p-5 ${meta.cardClass}`}>
@@ -229,12 +255,16 @@ export function Dashboard({
                     {isRoleActive ? (
                       <>
                         <span className="text-[10px] px-2 py-0.5 rounded-md border border-teal-500/40 bg-teal-500/10 text-teal-300 font-semibold uppercase tracking-wide">Active</span>
-                        <div className="text-[11px] text-teal-300 mt-1">● Active</div>
+                        {roleLatency !== null ? (
+                          <div className="text-[11px] text-teal-200 mt-1">Latency: {roleLatency} ms</div>
+                        ) : null}
                       </>
                     ) : (
                       <>
                         <span className="text-[10px] px-2 py-0.5 rounded-md border border-slate-500/40 bg-slate-500/10 text-slate-300 font-semibold uppercase tracking-wide">Inactive</span>
-                        <div className="text-[11px] text-slate-400 mt-1">● Inactive</div>
+                        {roleLatency !== null ? (
+                          <div className="text-[11px] text-slate-300 mt-1">Last latency: {roleLatency} ms</div>
+                        ) : null}
                       </>
                     )}
                   </div>
@@ -250,7 +280,7 @@ export function Dashboard({
                       className="w-full rounded-2xl border border-cyan-500/35 bg-slate-800/90 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400/50"
                       value={routing.providerId}
                       onChange={(event) =>
-                        onChangeRoleRouting(role, { providerId: event.target.value, modelId: '' })
+                        onChangeRoleRouting(role, { providerId: event.target.value, modelId: '', enabled: false })
                       }
                       aria-label={`${meta.label} provider`}
                     >
@@ -270,18 +300,30 @@ export function Dashboard({
                     <label className="block text-[11px] font-medium tracking-widest uppercase text-night-400 mb-1.5">Model</label>
                     <ModelSelector
                       value={routing.modelId}
-                      onChange={(modelId) => onChangeRoleRouting(role, { modelId })}
+                      onChange={(modelId) => {
+                        onChangeRoleRouting(role, { modelId, enabled: false })
+                        setLatencyByRole((prev) => ({ ...prev, [role]: null }))
+                      }}
                       models={modelOptions}
                       placeholder="Select model..."
                       sortMode="cheapest"
                       className="w-full"
                     />
 
-                    <div className="flex justify-end pt-2">
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleActivate(role)}
+                        disabled={activatingRole === role || !canActivate || isRoleActive}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-teal-500/90 text-slate-950 border border-teal-400 hover:bg-teal-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {activatingRole === role ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {isRoleActive ? 'Activated' : 'Activate'}
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleTest(role)}
-                        disabled={testingRole === role || !routing.providerId || !routing.modelId}
+                        disabled={testingRole === role || !canActivate}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800/90 text-night-100 border border-slate-700 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {testingRole === role ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

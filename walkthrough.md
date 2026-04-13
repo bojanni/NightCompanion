@@ -534,3 +534,9 @@
 - Findings: There was no quick way to validate if the selected provider/model per role works from the AI dashboard, and LM Studio sometimes requires an auth header.
 - Conclusions: Add a lightweight per-panel test action that triggers a minimal chat completion using the currently selected provider/model. Store an optional API key for LM Studio and include it as a Bearer header for local requests.
 - Actions: Added optional `apiKey` for LM Studio local endpoint in `src/components/LocalEndpointCard.tsx`, persisted it through local endpoints storage/types (`src/screens/Settings/types.ts`, `src/types/electron.d.ts`, `electron/ipc/settings.ts`), added IPC `ai:testChatCompletion` + preload exposure (`electron/ipc/ai.ts`, `electron/preload.ts`), and added `Test` buttons to all four AI dashboard panels in `src/screens/Settings/Dashboard.tsx`; validated with `npm run build`.
+
+## 2026-04-13 (Activate buttons + per-role latency on AI dashboard)
+
+- Findings: Users needed explicit activation controls on all four AI dashboard panels and wanted latency shown directly under the Active/Inactive status.
+- Conclusions: Activation should only be possible when both provider and model are selected; activation should run a connectivity test first and then persist role enabled state with measured latency.
+- Actions: Updated `src/screens/Settings/Dashboard.tsx` to add `Activate` buttons for Generation/Improvement/Vision/Research & Reasoning, disable activation until provider+model are selected, run activation via probe test, persist `roleRouting.enabled`, and render per-role latency below status badges; validated with `npm run build`.
