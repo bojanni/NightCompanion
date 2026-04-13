@@ -516,3 +516,9 @@
 - Findings: Model preferences chosen in the provider wizard (Vision / Research & Reasoning etc.) were saved to provider meta but not reflected in the AI dashboard model selectors.
 - Conclusions: The AI dashboard uses a separate `roleRouting` state; it must prefer the active provider's role-specific model when the current routed model is missing/invalid.
 - Actions: Updated `src/screens/AIConfig.tsx` to derive preferred model IDs from the active source per role and use them when normalising `roleRouting`; validated with `npm run build`.
+
+## 2026-04-13 (Keep dashboard routing synced to provider preferences)
+
+- Findings: Wizard model preferences and the dashboard routing could drift because the dashboard kept a previously valid model selection even when it differed from provider preferences.
+- Conclusions: When a provider is selected for a role, the dashboard routing should follow that provider's role-specific preferred model to stay consistent with the wizard.
+- Actions: Updated `src/screens/AIConfig.tsx` role routing normalisation to always sync to the provider's preferred model (or a safe fallback) and fixed hook dependencies; validated with `npm run build`.

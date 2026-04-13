@@ -525,6 +525,16 @@ export function AIConfig() {
 
     const fallbackProviderId = providerOptions[0].id
 
+    const findSourceByProviderId = (providerId: string): ApiKeyInfo | LocalEndpoint | undefined => {
+      const cloud = keys.find((key) => key.provider === providerId)
+      if (cloud) return cloud
+
+      const local = localEndpoints.find((endpoint) => getLocalProviderId(endpoint) === providerId)
+      if (local) return local
+
+      return undefined
+    }
+
     setRoleRouting((prev) => {
       const next = { ...prev }
       const roleKeys: DashboardRole[] = ['generation', 'improvement', 'vision', 'general']
@@ -540,7 +550,7 @@ export function AIConfig() {
             ? activeImprove
             : role === 'vision'
               ? activeVision
-              : activeResearch
+              : activeGeneral
 
         const preferredProvider = getSourceProviderId(preferredSource)
 
@@ -550,18 +560,21 @@ export function AIConfig() {
 
         const models = modelsByProvider[providerId] || []
 
-        const preferredModel = getSourceModelId(preferredSource, role)
+        const routedSource = findSourceByProviderId(providerId)
+        const preferredModel = getSourceModelId(routedSource || preferredSource, role)
         const fallbackModel = models[0] || ''
 
-        const modelId = models.includes(current.modelId)
-          ? current.modelId
-          : (models.includes(preferredModel) ? preferredModel : fallbackModel)
+        const nextModelId = models.includes(preferredModel) ? preferredModel : fallbackModel
+        const modelId = models.includes(current.modelId) ? current.modelId : nextModelId
 
-        if (providerId !== current.providerId || modelId !== current.modelId) {
+        const shouldSyncToPreferred = Boolean(nextModelId) && current.modelId !== nextModelId
+        const finalModelId = shouldSyncToPreferred ? nextModelId : modelId
+
+        if (providerId !== current.providerId || finalModelId !== current.modelId) {
           next[role] = {
             ...current,
             providerId,
-            modelId,
+            modelId: finalModelId,
           }
           changed = true
         }
@@ -569,7 +582,7 @@ export function AIConfig() {
 
       return changed ? next : prev
     })
-  }, [providerOptions, modelsByProvider, activeGen, activeImprove, activeVision, activeGeneral])
+  }, [providerOptions, modelsByProvider, activeGen, activeImprove, activeVision, activeGeneral, keys, localEndpoints])
 
   const updateRoleRouting = useCallback((role: DashboardRole, patch: Partial<RoleRouteSelection>) => {
     setRoleRouting((prev) => {
