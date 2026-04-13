@@ -126,8 +126,27 @@ export function Dashboard({
       return
     }
 
+    console.log('[ai-dashboard] testChatCompletion request', {
+      role,
+      providerId: routing.providerId,
+      modelId: routing.modelId,
+    })
+
     setTestingRole(role)
     try {
+      if (routing.providerId === 'openrouter') {
+        const ping = await window.electronAPI.settings.testOpenRouter()
+        if (ping.error || !ping.data?.ok) {
+          throw new Error(ping.error || 'OpenRouter connection test failed')
+        }
+
+        notifications.show({
+          message: `OpenRouter connected (${ping.data.modelCount} models available)`,
+          color: 'green',
+        })
+        return
+      }
+
       const result = await window.electronAPI.ai.testChatCompletion({
         providerId: routing.providerId,
         modelId: routing.modelId,
@@ -143,6 +162,7 @@ export function Dashboard({
         color: 'green',
       })
     } catch (error) {
+      console.warn('[ai-dashboard] testChatCompletion failed', error)
       notifications.show({
         message: error instanceof Error ? error.message : 'Test request failed',
         color: 'red',
