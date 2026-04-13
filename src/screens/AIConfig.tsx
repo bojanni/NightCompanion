@@ -567,9 +567,7 @@ export function AIConfig() {
 
         const nextModelId = models.includes(preferredModel) ? preferredModel : fallbackModel
         const modelId = models.includes(current.modelId) ? current.modelId : nextModelId
-
-        const shouldSyncToPreferred = Boolean(nextModelId) && current.modelId !== nextModelId
-        const finalModelId = shouldSyncToPreferred ? nextModelId : modelId
+        const finalModelId = modelId
 
         if (providerId !== current.providerId || finalModelId !== current.modelId) {
           next[role] = {

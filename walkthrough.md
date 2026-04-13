@@ -564,3 +564,15 @@
 - Findings: On the Generator page, improved prompts needed a visible final-result word count and had to be limited so they can only be up to 10% longer than the configured Max Words slider value.
 - Conclusions: Enforce the cap in Generator improvement flow (`ceil(maxWords * 1.1)`) after AI response and show a live final-result count against that cap in the Improvement section.
 - Actions: Updated `src/screens/Generator.tsx` to cap improved prompt text to 110% of `maxWords`, override improvement diff with capped text when needed, and use capped text for auto-title flow/status; updated `src/components/generator/ImprovementSection.tsx` to accept `maxWords` and display `Final Result` word count as `current / cap`; validated with `npm run build`.
+
+## 2026-04-13 (Persist AI dashboard model selection + protect greylist saves)
+
+- Findings: Role model selections on AI Configuration could revert after navigation/reload, and greylist autosave could overwrite stored entries when load failed.
+- Conclusions: Role routing normalization should keep a valid user-selected model instead of force-syncing to a provider “preferred” model; greylist autosave must be skipped when load errors occur to avoid destructive writes.
+- Actions: Updated `src/screens/AIConfig.tsx` to stop overwriting valid `roleRouting` model selections during normalization; updated `src/screens/Generator.tsx` and `src/screens/Settings.tsx` with `greylistLoadError` guards so failed loads do not trigger overwrite saves; fixed related hook dependencies in `src/screens/Generator.tsx`; validated with `npm run build`.
+
+## 2026-04-13 (Greylist last sync status indicator)
+
+- Findings: Greylist sync state was not visible, making it hard to tell whether changes were loading, saving, saved, or failed.
+- Conclusions: Surface sync state and last successful sync timestamp directly in the greylist UI in both Generator and Settings.
+- Actions: Updated `src/components/generator/GreylistCard.tsx` to accept/render sync status text, updated `src/screens/Generator.tsx` and `src/screens/Settings.tsx` to track `greylistSyncStatus` + `greylistLastSyncedAt` and render human-readable status (`loading/saving/saved/failed`); validated with `npm run build`.

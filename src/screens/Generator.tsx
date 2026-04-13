@@ -85,6 +85,7 @@ export default function Generator() {
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const promptImprovement = usePromptImprovement()
+  const { viewTab: promptImprovementViewTab, improvementDiff: promptImprovementDiff, setViewTab: promptImprovementSetViewTab, setImprovementDiff: promptImprovementSetImprovementDiff } = promptImprovement
   const [generatingNegative, setGeneratingNegative] = useState(false)
   const [improvingNegative, setImprovingNegative] = useState(false)
   const [generatingTitle, setGeneratingTitle] = useState(false)
@@ -103,6 +104,9 @@ export default function Generator() {
   const [greylistInput, setGreylistInput] = useState('')
   const [greylistWeight, setGreylistWeight] = useState<1 | 2 | 3 | 4 | 5>(1)
   const [greylistLoaded, setGreylistLoaded] = useState(false)
+  const [greylistLoadError, setGreylistLoadError] = useState(false)
+  const [greylistSyncStatus, setGreylistSyncStatus] = useState<'loading' | 'saving' | 'saved' | 'error'>('loading')
+  const [greylistLastSyncedAt, setGreylistLastSyncedAt] = useState<string | null>(null)
   const [uiStateLoaded, setUiStateLoaded] = useState(false)
   const uiStateSaveTimeoutRef = useRef<number | null>(null)
   const lastAutoTitlePromptRef = useRef<string | null>(null)
@@ -377,6 +381,21 @@ export default function Generator() {
   const normalizeGreylistWord = (value: string) => value.trim().toLowerCase()
 
   const greylistWords = greylistEntries.map((entry) => entry.word)
+  const formattedGreylistSyncTime = greylistLastSyncedAt
+    ? new Date(greylistLastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : null
+  const greylistSyncStatusText = greylistSyncStatus === 'loading'
+    ? 'Greylist sync: loading...'
+    : greylistSyncStatus === 'saving'
+      ? 'Greylist sync: saving...'
+      : greylistSyncStatus === 'error'
+        ? 'Greylist sync: failed'
+        : `Greylist sync: ${formattedGreylistSyncTime ? `saved at ${formattedGreylistSyncTime}` : 'saved'}`
+  const greylistSyncStatusClassName = greylistSyncStatus === 'error'
+    ? 'text-red-400'
+    : greylistSyncStatus === 'saved'
+      ? 'text-green-400'
+      : 'text-slate-500'
 
   const handleAdviseModel = () => {
     void requestModelAdvice('ai', generatedPrompt)
@@ -539,7 +558,7 @@ export default function Generator() {
       setNegativePrompt(parsed.negativePrompt ?? '')
       setNegativeImprovementDiff(parsed.negativeImprovementDiff ?? null)
       setSavedTitle(parsed.savedTitle ?? '')
-      promptImprovement.setImprovementDiff(parsed.improvementDiff ?? null)
+      promptImprovementSetImprovementDiff(parsed.improvementDiff ?? null)
       setRecommendedModel(parsed.recommendedModel ?? '')
       setRecommendedModelReason(parsed.recommendedModelReason ?? '')
       setRecommendedModelMode(parsed.recommendedModelMode ?? null)
@@ -554,7 +573,7 @@ export default function Generator() {
       setAutoTitleEnabled(parsed.autoTitleEnabled !== false)
 
       const nextPromptViewTab = parsed.promptViewTab === 'diff' && parsed.improvementDiff ? 'diff' : 'final'
-      promptImprovement.setViewTab(nextPromptViewTab)
+      promptImprovementSetViewTab(nextPromptViewTab)
       const nextNegativePromptViewTab = parsed.negativePromptViewTab === 'diff' && parsed.negativeImprovementDiff ? 'diff' : 'final'
       setNegativePromptViewTab(nextNegativePromptViewTab)
     }
@@ -592,7 +611,7 @@ export default function Generator() {
     return () => {
       ignore = true
     }
-  }, [promptImprovement.setImprovementDiff, promptImprovement.setViewTab])
+  }, [promptImprovementSetImprovementDiff, promptImprovementSetViewTab])
 
   useEffect(() => {
     if (!uiStateLoaded) return
@@ -612,8 +631,8 @@ export default function Generator() {
       advisorBestValue,
       advisorFastest,
       supportsNegativePrompt,
-      promptViewTab: promptImprovement.viewTab,
-      improvementDiff: promptImprovement.improvementDiff,
+      promptViewTab: promptImprovementViewTab,
+      improvementDiff: promptImprovementDiff,
       quickStartIdea,
       quickStartCreativity,
       magicRandomCreativity,
@@ -655,13 +674,14 @@ export default function Generator() {
     advisorBestValue,
     advisorFastest,
     supportsNegativePrompt,
-    promptImprovement.viewTab,
-    promptImprovement.improvementDiff,
+    promptImprovementViewTab,
+    promptImprovementDiff,
     quickStartIdea,
     quickStartCreativity,
     magicRandomCreativity,
     quickStartCharacterId,
     budgetMode,
+    autoTitleEnabled,
   ])
 
   useEffect(() => {
@@ -669,12 +689,28 @@ export default function Generator() {
 
     async function loadGreylist() {
       try {
+        setGreylistSyncStatus('loading')
         const result = await window.electronAPI.greylist.get()
-        if (ignore || result.error || !result.data) {
+        if (ignore) {
+          return
+        }
+
+        if (result.error) {
+          setGreylistLoadError(true)
+          setGreylistSyncStatus('error')
           setGreylistEntries(DEFAULT_GREYLIST.map((word) => ({ word, weight: 1 })))
           return
         }
 
+        if (!result.data) {
+          setGreylistLoadError(false)
+          setGreylistEntries(DEFAULT_GREYLIST.map((word) => ({ word, weight: 1 })))
+          return
+        }
+
+        setGreylistLoadError(false)
+        setGreylistSyncStatus('saved')
+        setGreylistLastSyncedAt(new Date().toISOString())
         const loadedEntries = Array.isArray(result.data.entriesJson) && result.data.entriesJson.length > 0
           ? result.data.entriesJson
           : (result.data.words || DEFAULT_GREYLIST).map((word) => ({ word, weight: 1 as const }))
@@ -682,6 +718,8 @@ export default function Generator() {
         setGreylistEntries(loadedEntries)
       } catch (error) {
         console.error('Failed to load greylist:', error)
+        setGreylistLoadError(true)
+        setGreylistSyncStatus('error')
         setGreylistEntries(DEFAULT_GREYLIST.map((word) => ({ word, weight: 1 })))
       } finally {
         if (!ignore) setGreylistLoaded(true)
@@ -701,12 +739,19 @@ export default function Generator() {
     async function saveGreylist() {
       if (ignore) return
       if (!greylistLoaded) return
+      if (greylistLoadError) return
       try {
+        setGreylistSyncStatus('saving')
         await window.electronAPI.greylist.save({
           entriesJson: greylistEntries,
         })
+        if (!ignore) {
+          setGreylistSyncStatus('saved')
+          setGreylistLastSyncedAt(new Date().toISOString())
+        }
       } catch (error) {
         console.error('Failed to save greylist to database:', error)
+        if (!ignore) setGreylistSyncStatus('error')
       }
     }
 
@@ -715,7 +760,7 @@ export default function Generator() {
     return () => {
       ignore = true
     }
-  }, [greylistLoaded, greylistEntries])
+  }, [greylistLoaded, greylistEntries, greylistLoadError])
 
   const handleGenerate = async () => {
     setStatus(null)
@@ -956,6 +1001,8 @@ export default function Generator() {
                 setGreylistWeight={setGreylistWeight}
                 addGreylistWord={addGreylistWord}
                 removeGreylistWord={removeGreylistWord}
+                syncStatusText={greylistSyncStatusText}
+                syncStatusClassName={greylistSyncStatusClassName}
               />
               <div className="card p-5">
                 <div className="flex items-start justify-between gap-3">
@@ -1104,6 +1151,8 @@ export default function Generator() {
                   setGreylistWeight={setGreylistWeight}
                   addGreylistWord={addGreylistWord}
                   removeGreylistWord={removeGreylistWord}
+                  syncStatusText={greylistSyncStatusText}
+                  syncStatusClassName={greylistSyncStatusClassName}
                 />
                 {/* Max Words Slider */}
                 <div className="card p-5 mt-4">

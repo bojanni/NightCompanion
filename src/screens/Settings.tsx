@@ -34,6 +34,25 @@ export default function Settings() {
   const [greylistInput, setGreylistInput] = useState('')
   const [greylistWeight, setGreylistWeight] = useState<1 | 2 | 3 | 4 | 5>(1)
   const [greylistLoaded, setGreylistLoaded] = useState(false)
+  const [greylistLoadError, setGreylistLoadError] = useState(false)
+  const [greylistSyncStatus, setGreylistSyncStatus] = useState<'loading' | 'saving' | 'saved' | 'error'>('loading')
+  const [greylistLastSyncedAt, setGreylistLastSyncedAt] = useState<string | null>(null)
+
+  const formattedGreylistSyncTime = greylistLastSyncedAt
+    ? new Date(greylistLastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : null
+  const greylistSyncStatusText = greylistSyncStatus === 'loading'
+    ? 'Greylist sync: loading...'
+    : greylistSyncStatus === 'saving'
+      ? 'Greylist sync: saving...'
+      : greylistSyncStatus === 'error'
+        ? 'Greylist sync: failed'
+        : `Greylist sync: ${formattedGreylistSyncTime ? `saved at ${formattedGreylistSyncTime}` : 'saved'}`
+  const greylistSyncStatusClassName = greylistSyncStatus === 'error'
+    ? 'text-red-400'
+    : greylistSyncStatus === 'saved'
+      ? 'text-green-400'
+      : 'text-slate-500'
 
   async function handleUsageCurrencyChange(next: 'usd' | 'eur') {
     setUsageCurrency(next)
@@ -119,12 +138,28 @@ export default function Settings() {
 
     async function loadGreylist() {
       try {
+        setGreylistSyncStatus('loading')
         const result = await window.electronAPI.greylist.get()
-        if (ignore || result.error || !result.data) {
+        if (ignore) {
+          return
+        }
+
+        if (result.error) {
+          setGreylistLoadError(true)
+          setGreylistSyncStatus('error')
           setGreylistEntries([])
           return
         }
 
+        if (!result.data) {
+          setGreylistLoadError(false)
+          setGreylistEntries([])
+          return
+        }
+
+        setGreylistLoadError(false)
+        setGreylistSyncStatus('saved')
+        setGreylistLastSyncedAt(new Date().toISOString())
         const loadedEntries = Array.isArray(result.data.entriesJson) && result.data.entriesJson.length > 0
           ? result.data.entriesJson
           : (result.data.words || []).map((word) => ({ word, weight: 1 as const }))
@@ -148,9 +183,15 @@ export default function Settings() {
     async function saveGreylist() {
       if (ignore) return
       if (!greylistLoaded) return
+      if (greylistLoadError) return
+      setGreylistSyncStatus('saving')
       await window.electronAPI.greylist.save({
         entriesJson: greylistEntries,
       })
+      if (!ignore) {
+        setGreylistSyncStatus('saved')
+        setGreylistLastSyncedAt(new Date().toISOString())
+      }
     }
 
     void saveGreylist()
@@ -158,7 +199,7 @@ export default function Settings() {
     return () => {
       ignore = true
     }
-  }, [greylistEntries, greylistLoaded])
+  }, [greylistEntries, greylistLoaded, greylistLoadError])
 
   const normalizeGreylistWord = (value: string) => value.trim().toLowerCase()
 
@@ -390,6 +431,7 @@ export default function Settings() {
               <div>
                 <p className="text-sm font-semibold text-white">Greywords</p>
                 <p className="text-xs text-slate-500">Words the AI should avoid or use with a low probability.</p>
+                <p className={`text-xs mt-1 ${greylistSyncStatusClassName}`}>{greylistSyncStatusText}</p>
               </div>
 
               <div className="p-6 card">

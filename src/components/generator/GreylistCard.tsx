@@ -9,6 +9,8 @@ type GreylistCardProps = {
   setGreylistWeight: (value: 1 | 2 | 3 | 4 | 5) => void
   addGreylistWord: () => void
   removeGreylistWord: (word: string) => void
+  syncStatusText: string
+  syncStatusClassName?: string
 }
 
 const GREYLIST_SUGGESTIONS = [
@@ -35,6 +37,8 @@ export default function GreylistCard({
   setGreylistWeight,
   addGreylistWord,
   removeGreylistWord,
+  syncStatusText,
+  syncStatusClassName,
 }: GreylistCardProps) {
   const normalizeGreylistWord = (value: string) => value.trim().toLowerCase()
 
@@ -107,6 +111,8 @@ export default function GreylistCard({
           <option value={5}>5</option>
         </select>
       </div>
+
+      <p className={`mt-2 text-xs ${syncStatusClassName || 'text-slate-500'}`}>{syncStatusText}</p>
 
       <div className="mt-3 flex flex-wrap gap-2">
         {greylistEntries.length === 0 ? (
