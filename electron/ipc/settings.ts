@@ -310,7 +310,7 @@ function normalizeStoredSettings(input: unknown): StoredSettings {
 
   const normalized: StoredSettings = {}
 
-  if (isRecord(input.openRouter)) normalized.openRouter = input.openRouter
+  if (isRecord(input.openRouter)) normalized.openRouter = normalizeOpenRouterSettings(input.openRouter)
 
   const providerMeta = normalizeProviderMetaMap(input.providerMeta)
   if (providerMeta) normalized.providerMeta = providerMeta
