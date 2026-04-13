@@ -625,6 +625,12 @@ function normalizeBaseUrl(input: string) {
   return input.replace(/\/+$/, '')
 }
 
+function getLocalAuthHeader(endpoint: Record<string, unknown> | undefined): Record<string, string> {
+  const apiKey = endpoint && typeof endpoint.apiKey === 'string' ? endpoint.apiKey.trim() : ''
+  if (!apiKey) return {}
+  return { Authorization: `Bearer ${apiKey}` }
+}
+
 async function appendAiRequestLog(record: Record<string, unknown>) {
   const logPath = getAiRequestLogPath()
   await mkdir(path.dirname(logPath), { recursive: true })
@@ -805,7 +811,7 @@ export function registerAiIpc({
 
       const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getLocalAuthHeader(endpoint) },
         body: JSON.stringify(requestPayload),
       })
 
@@ -1336,6 +1342,7 @@ export function registerAiIpc({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
         },
         body: JSON.stringify(requestPayload),
       })

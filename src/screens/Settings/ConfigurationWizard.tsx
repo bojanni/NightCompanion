@@ -3,9 +3,8 @@ import { ArrowLeft, Check, Cpu } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 
 import { LocalEndpointCard } from '../../components/LocalEndpointCard'
-import { LOCAL_PROVIDERS, type AIRole } from '../../lib/constants'
+import { LOCAL_PROVIDERS } from '../../lib/constants'
 import { PROVIDERS as PROVIDER_LIST } from '../../lib/providers'
-import { syncTaskModel } from '../../hooks/useTaskModels'
 import { ProviderConfigForm } from './ProviderConfigForm'
 import type { ApiKeyInfo, LocalEndpoint, ModelOption } from './types'
 
@@ -19,15 +18,6 @@ interface ConfigurationWizardProps {
   getToken: () => Promise<string>
   dynamicModels: Record<string, ModelOption[]>
   setDynamicModels: React.Dispatch<React.SetStateAction<Record<string, ModelOption[]>>>
-}
-
-function getModelForRole(endpoint: LocalEndpoint | undefined, role: AIRole): string | undefined {
-  if (!endpoint) return undefined
-  if (role === 'generation' && endpoint.model_gen) return endpoint.model_gen
-  if (role === 'improvement' && endpoint.model_improve) return endpoint.model_improve
-  if (role === 'vision' && endpoint.model_vision) return endpoint.model_vision
-  if (role === 'general' && endpoint.model_general) return endpoint.model_general
-  return endpoint.model_name
 }
 
 async function readEndpoints(): Promise<LocalEndpoint[]> {
@@ -45,18 +35,12 @@ async function upsertEndpoint({
   provider,
   name,
   baseUrl,
-  modelGen,
-  modelImprove,
-  modelVision,
-  modelGeneral,
+  apiKey,
 }: {
   provider: string
   name: string
   baseUrl: string
-  modelGen: string
-  modelImprove: string
-  modelVision: string
-  modelGeneral: string
+  apiKey?: string
 }) {
   const endpoints = await readEndpoints()
   const existing = endpoints.find((item) => item.provider === provider)
@@ -66,11 +50,12 @@ async function upsertEndpoint({
     provider,
     name,
     baseUrl,
-    model_name: modelGen,
-    model_gen: modelGen,
-    model_improve: modelImprove,
-    model_vision: modelVision,
-    model_general: modelGeneral,
+    apiKey: typeof apiKey === 'string' && apiKey.trim() ? apiKey.trim() : existing?.apiKey,
+    model_name: existing?.model_name || '',
+    model_gen: existing?.model_gen,
+    model_improve: existing?.model_improve,
+    model_vision: existing?.model_vision,
+    model_general: existing?.model_general,
     is_active: existing?.is_active || false,
     is_active_gen: existing?.is_active_gen || false,
     is_active_improve: existing?.is_active_improve || false,
@@ -86,73 +71,6 @@ async function upsertEndpoint({
 async function removeEndpoint(provider: string) {
   const endpoints = await readEndpoints()
   await writeEndpoints(endpoints.filter((item) => item.provider !== provider))
-}
-
-async function syncDashboardRoleRouting(role: AIRole, providerId: string, modelId: string) {
-  const storedResult = await window.electronAPI.settings.getAiConfigState()
-  if (storedResult.error) {
-    console.warn('[local-providers] Failed to load AI config state:', storedResult.error)
-    return
-  }
-
-  const existing = (storedResult.data?.dashboardRoleRouting || {}) as Record<string, { enabled?: boolean; providerId?: string; modelId?: string }>
-  const current = existing[role] || {}
-
-  const nextRouting = {
-    ...existing,
-    [role]: {
-      enabled: current.enabled ?? true,
-      providerId,
-      modelId,
-    },
-  }
-
-  const savePatch: { dashboardRoleRouting: typeof nextRouting; advisorModelRoute?: unknown } = {
-    dashboardRoleRouting: nextRouting,
-  }
-  if (role === 'general') {
-    savePatch.advisorModelRoute = nextRouting.general
-  }
-
-  const saveResult = await window.electronAPI.settings.saveAiConfigState(savePatch)
-  if (saveResult.error) {
-    console.warn('[local-providers] Failed to persist dashboard role routing:', saveResult.error)
-  }
-}
-
-async function toggleLocalRole(provider: string, role: AIRole) {
-  const endpoints = await readEndpoints()
-
-  const next = endpoints.map((endpoint) => {
-    if (endpoint.provider !== provider)
-      return {
-        ...endpoint,
-        is_active_gen: role === 'generation' ? false : endpoint.is_active_gen,
-        is_active_improve: role === 'improvement' ? false : endpoint.is_active_improve,
-        is_active_vision: role === 'vision' ? false : endpoint.is_active_vision,
-        is_active_general: role === 'general' ? false : endpoint.is_active_general,
-      }
-
-    const isRoleActive = role === 'generation'
-      ? endpoint.is_active_gen
-      : role === 'improvement'
-        ? endpoint.is_active_improve
-        : role === 'vision'
-          ? endpoint.is_active_vision
-          : endpoint.is_active_general
-
-    return {
-      ...endpoint,
-      is_active: true,
-      is_active_gen: role === 'generation' ? !isRoleActive : false,
-      is_active_improve: role === 'improvement' ? !isRoleActive : false,
-      is_active_vision: role === 'vision' ? !isRoleActive : false,
-      is_active_general: role === 'general' ? !isRoleActive : false,
-      updated_at: new Date().toISOString(),
-    }
-  })
-
-  await writeEndpoints(next)
 }
 
 export function ConfigurationWizard({
@@ -218,17 +136,14 @@ export function ConfigurationWizard({
               type={LOCAL_PROVIDERS.OLLAMA}
               endpoint={localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.OLLAMA)}
               actionLoading={actionLoading}
-              onSave={async (url, modelGen, modelImprove, modelVision, modelGeneral) => {
+              onSave={async (url) => {
                 setActionLoading('ollama')
                 try {
                   await upsertEndpoint({
                     provider: LOCAL_PROVIDERS.OLLAMA,
                     name: 'Ollama',
                     baseUrl: url,
-                    modelGen,
-                    modelImprove,
-                    modelVision,
-                    modelGeneral,
+                    apiKey: undefined,
                   })
                   await loadLocalEndpoints()
                   notifications.show({ message: 'Ollama config saved', color: 'green' })
@@ -250,26 +165,6 @@ export function ConfigurationWizard({
                   setActionLoading(null)
                 }
               }}
-              onSetActive={async (role) => {
-                setActionLoading(`ollama-${role}`)
-                try {
-                  const endpoint = localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.OLLAMA)
-                  const model = getModelForRole(endpoint, role)
-
-                  await toggleLocalRole(LOCAL_PROVIDERS.OLLAMA, role)
-                  if (model) {
-                    syncTaskModel(role, LOCAL_PROVIDERS.OLLAMA, model)
-                    await syncDashboardRoleRouting(role, LOCAL_PROVIDERS.OLLAMA, model)
-                  }
-
-                  await loadLocalEndpoints()
-                  await loadKeys()
-                } catch {
-                  notifications.show({ message: 'Failed to toggle', color: 'red' })
-                } finally {
-                  setActionLoading(null)
-                }
-              }}
             />
 
             <LocalEndpointCard
@@ -277,17 +172,14 @@ export function ConfigurationWizard({
               type={LOCAL_PROVIDERS.LMSTUDIO}
               endpoint={localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.LMSTUDIO)}
               actionLoading={actionLoading}
-              onSave={async (url, modelGen, modelImprove, modelVision, modelGeneral) => {
+              onSave={async (url, apiKey) => {
                 setActionLoading('lmstudio')
                 try {
                   await upsertEndpoint({
                     provider: LOCAL_PROVIDERS.LMSTUDIO,
                     name: 'LM Studio',
                     baseUrl: url,
-                    modelGen,
-                    modelImprove,
-                    modelVision,
-                    modelGeneral,
+                    apiKey,
                   })
                   await loadLocalEndpoints()
                   notifications.show({ message: 'LM Studio config saved', color: 'green' })
@@ -305,26 +197,6 @@ export function ConfigurationWizard({
                   notifications.show({ message: 'LM Studio removed', color: 'green' })
                 } catch {
                   notifications.show({ message: 'Failed to remove', color: 'red' })
-                } finally {
-                  setActionLoading(null)
-                }
-              }}
-              onSetActive={async (role) => {
-                setActionLoading(`lmstudio-${role}`)
-                try {
-                  const endpoint = localEndpoints.find((e) => e.provider === LOCAL_PROVIDERS.LMSTUDIO)
-                  const model = getModelForRole(endpoint, role)
-
-                  await toggleLocalRole(LOCAL_PROVIDERS.LMSTUDIO, role)
-                  if (model) {
-                    syncTaskModel(role, LOCAL_PROVIDERS.LMSTUDIO, model)
-                    await syncDashboardRoleRouting(role, LOCAL_PROVIDERS.LMSTUDIO, model)
-                  }
-
-                  await loadLocalEndpoints()
-                  await loadKeys()
-                } catch {
-                  notifications.show({ message: 'Failed to toggle', color: 'red' })
                 } finally {
                   setActionLoading(null)
                 }

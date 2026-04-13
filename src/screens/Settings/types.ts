@@ -20,6 +20,7 @@ export interface LocalEndpoint {
   provider?: string
   name: string
   baseUrl: string
+  apiKey?: string
   model_name: string
   model_gen?: string
   model_improve?: string

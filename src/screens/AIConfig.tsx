@@ -60,6 +60,7 @@ function normalizeLocalEndpoint(input: Partial<LocalEndpoint> & { id?: string; n
     provider: input.provider || undefined,
     name: input.name || 'Local Endpoint',
     baseUrl: input.baseUrl || '',
+    apiKey: typeof input.apiKey === 'string' ? input.apiKey : undefined,
     model_name: modelName,
     model_gen: input.model_gen || modelName,
     model_improve: input.model_improve || modelName,
