@@ -88,6 +88,38 @@ async function removeEndpoint(provider: string) {
   await writeEndpoints(endpoints.filter((item) => item.provider !== provider))
 }
 
+async function syncDashboardRoleRouting(role: AIRole, providerId: string, modelId: string) {
+  const storedResult = await window.electronAPI.settings.getAiConfigState()
+  if (storedResult.error) {
+    console.warn('[local-providers] Failed to load AI config state:', storedResult.error)
+    return
+  }
+
+  const existing = (storedResult.data?.dashboardRoleRouting || {}) as Record<string, { enabled?: boolean; providerId?: string; modelId?: string }>
+  const current = existing[role] || {}
+
+  const nextRouting = {
+    ...existing,
+    [role]: {
+      enabled: current.enabled ?? true,
+      providerId,
+      modelId,
+    },
+  }
+
+  const savePatch: { dashboardRoleRouting: typeof nextRouting; advisorModelRoute?: unknown } = {
+    dashboardRoleRouting: nextRouting,
+  }
+  if (role === 'general') {
+    savePatch.advisorModelRoute = nextRouting.general
+  }
+
+  const saveResult = await window.electronAPI.settings.saveAiConfigState(savePatch)
+  if (saveResult.error) {
+    console.warn('[local-providers] Failed to persist dashboard role routing:', saveResult.error)
+  }
+}
+
 async function toggleLocalRole(provider: string, role: AIRole) {
   const endpoints = await readEndpoints()
 
@@ -95,10 +127,10 @@ async function toggleLocalRole(provider: string, role: AIRole) {
     if (endpoint.provider !== provider)
       return {
         ...endpoint,
-        is_active_gen: false,
-        is_active_improve: false,
-        is_active_vision: false,
-        is_active_general: false,
+        is_active_gen: role === 'generation' ? false : endpoint.is_active_gen,
+        is_active_improve: role === 'improvement' ? false : endpoint.is_active_improve,
+        is_active_vision: role === 'vision' ? false : endpoint.is_active_vision,
+        is_active_general: role === 'general' ? false : endpoint.is_active_general,
       }
 
     const isRoleActive = role === 'generation'
@@ -225,7 +257,10 @@ export function ConfigurationWizard({
                   const model = getModelForRole(endpoint, role)
 
                   await toggleLocalRole(LOCAL_PROVIDERS.OLLAMA, role)
-                  if (model) syncTaskModel(role, LOCAL_PROVIDERS.OLLAMA, model)
+                  if (model) {
+                    syncTaskModel(role, LOCAL_PROVIDERS.OLLAMA, model)
+                    await syncDashboardRoleRouting(role, LOCAL_PROVIDERS.OLLAMA, model)
+                  }
 
                   await loadLocalEndpoints()
                   await loadKeys()
@@ -281,7 +316,10 @@ export function ConfigurationWizard({
                   const model = getModelForRole(endpoint, role)
 
                   await toggleLocalRole(LOCAL_PROVIDERS.LMSTUDIO, role)
-                  if (model) syncTaskModel(role, LOCAL_PROVIDERS.LMSTUDIO, model)
+                  if (model) {
+                    syncTaskModel(role, LOCAL_PROVIDERS.LMSTUDIO, model)
+                    await syncDashboardRoleRouting(role, LOCAL_PROVIDERS.LMSTUDIO, model)
+                  }
 
                   await loadLocalEndpoints()
                   await loadKeys()

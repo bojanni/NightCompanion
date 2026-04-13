@@ -458,7 +458,7 @@ export function AIConfig() {
     [keys, localEndpoints]
   )
 
-  const activeResearch = activeGeneral || activeGen
+  const activeResearch = activeGeneral
   const configuredCount = keys.length + localEndpoints.length
 
   const providerOptions = useMemo<ProviderOption[]>(() => {

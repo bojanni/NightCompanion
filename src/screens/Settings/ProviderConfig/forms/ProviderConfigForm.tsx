@@ -68,6 +68,38 @@ export function ProviderConfigForm({
   const [providerMeta, setProviderMeta] = useState<ProviderMetaStore>(getDefaultProviderMeta(keyInfo?.model_name || 'openai/gpt-4o-mini'))
   const [lastModelsUpdatedAt, setLastModelsUpdatedAt] = useState<string | null>(null)
 
+  const syncDashboardRoleRouting = useCallback(async (role: 'generation' | 'improvement' | 'vision' | 'general', providerId: string, modelId: string) => {
+    const storedResult = await window.electronAPI.settings.getAiConfigState()
+    if (storedResult.error) {
+      console.warn('[provider-config] Failed to load AI config state:', storedResult.error)
+      return
+    }
+
+    const existing = (storedResult.data?.dashboardRoleRouting || {}) as Record<string, { enabled?: boolean; providerId?: string; modelId?: string }>
+    const current = existing[role] || {}
+
+    const nextRouting = {
+      ...existing,
+      [role]: {
+        enabled: current.enabled ?? true,
+        providerId,
+        modelId,
+      },
+    }
+
+    const savePatch: { dashboardRoleRouting: typeof nextRouting; advisorModelRoute?: unknown } = {
+      dashboardRoleRouting: nextRouting,
+    }
+    if (role === 'general') {
+      savePatch.advisorModelRoute = nextRouting.general
+    }
+
+    const saveResult = await window.electronAPI.settings.saveAiConfigState(savePatch)
+    if (saveResult.error) {
+      console.warn('[provider-config] Failed to persist dashboard role routing:', saveResult.error)
+    }
+  }, [])
+
   const lastModelsUpdatedLabel = lastModelsUpdatedAt
     ? new Date(lastModelsUpdatedAt).toLocaleString()
     : null
@@ -274,7 +306,10 @@ export function ProviderConfigForm({
       }
 
       await persistProviderMeta(nextMeta)
-      if (!isActive) syncTaskModel(role, provider.id, currentModel)
+      if (!isActive) {
+        syncTaskModel(role, provider.id, currentModel)
+        await syncDashboardRoleRouting(role, provider.id, currentModel)
+      }
 
       await loadKeys()
       await loadLocalEndpoints()
@@ -290,7 +325,7 @@ export function ProviderConfigForm({
     } finally {
       setActionLoading(null)
     }
-  }, [provider, providerMeta, selectedModelGen, selectedModelImprove, selectedModelVision, selectedModelGeneral, persistProviderMeta, loadKeys, loadLocalEndpoints, setActionLoading])
+  }, [provider, providerMeta, selectedModelGen, selectedModelImprove, selectedModelVision, selectedModelGeneral, persistProviderMeta, loadKeys, loadLocalEndpoints, setActionLoading, syncDashboardRoleRouting])
 
   const handleFetchModels = useCallback(async () => {
     if (!adapter) {
@@ -344,14 +379,26 @@ export function ProviderConfigForm({
 
     await persistProviderMeta(nextMeta)
 
-    if (meta.is_active_gen) syncTaskModel('generation', provider.id, genId)
-    if (meta.is_active_improve) syncTaskModel('improvement', provider.id, improveId)
-    if (meta.is_active_vision) syncTaskModel('vision', provider.id, visionId)
-    if (meta.is_active_general) syncTaskModel('general', provider.id, generalId)
+    if (meta.is_active_gen) {
+      syncTaskModel('generation', provider.id, genId)
+      await syncDashboardRoleRouting('generation', provider.id, genId)
+    }
+    if (meta.is_active_improve) {
+      syncTaskModel('improvement', provider.id, improveId)
+      await syncDashboardRoleRouting('improvement', provider.id, improveId)
+    }
+    if (meta.is_active_vision) {
+      syncTaskModel('vision', provider.id, visionId)
+      await syncDashboardRoleRouting('vision', provider.id, visionId)
+    }
+    if (meta.is_active_general) {
+      syncTaskModel('general', provider.id, generalId)
+      await syncDashboardRoleRouting('general', provider.id, generalId)
+    }
 
     if (!isEditing && keyInfo)
       notifications.show({ message: 'Model preferences updated', color: 'green' })
-  }, [providerMeta, persistProviderMeta, provider.id, isEditing, keyInfo])
+  }, [providerMeta, persistProviderMeta, provider.id, isEditing, keyInfo, syncDashboardRoleRouting])
 
   const handleTestConnection = useCallback(async () => {
     if (!adapter) {
