@@ -1258,7 +1258,10 @@ export function registerAiIpc({
 
       const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
+        },
         body: JSON.stringify(requestPayload),
       })
 
@@ -1588,7 +1591,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†' Configure Providers.` }
       }
 
       requestPayload = {
@@ -1611,6 +1614,7 @@ export function registerAiIpc({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
         },
         body: JSON.stringify(requestPayload),
       })
@@ -1765,7 +1769,7 @@ export function registerAiIpc({
       const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
+        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†' Configure Providers.` }
       }
 
       requestPayload = {
@@ -1788,6 +1792,7 @@ export function registerAiIpc({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
         },
         body: JSON.stringify(requestPayload),
       })
@@ -1966,6 +1971,7 @@ export function registerAiIpc({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
         },
         body: JSON.stringify(requestPayload),
       })
@@ -2069,9 +2075,14 @@ export function registerAiIpc({
       const modelId = typeof genRoute === 'object' && genRoute !== null
         ? String((genRoute as Record<string, unknown>).modelId || '')
         : ''
+      const routeEnabled = typeof genRoute === 'object' && genRoute !== null
+        ? Boolean((genRoute as Record<string, unknown>).enabled ?? true)
+        : false
+      const selectedProviderId = routeEnabled ? providerId : ''
+      const selectedModelId = routeEnabled ? modelId : ''
 
       // Fall back to main OpenRouter settings if no generation route configured
-      if (!providerId || !modelId) {
+      if (!selectedProviderId || !selectedModelId) {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
@@ -2127,15 +2138,15 @@ export function registerAiIpc({
         return { data: { prompt: cleanedPrompt } }
       }
 
-      requestProvider = providerId
-      requestModel = modelId
+      requestProvider = selectedProviderId
+      requestModel = selectedModelId
 
-      if (providerId === 'openrouter') {
+      if (selectedProviderId === 'openrouter') {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
         requestPayload = {
-          model: modelId,
+          model: selectedModelId,
           temperature,
           max_tokens: 2048,
           messages: [
@@ -2175,14 +2186,14 @@ export function registerAiIpc({
       const localEndpoints = Array.isArray(localEndpointsRaw)
         ? (localEndpointsRaw as Array<Record<string, unknown>>)
         : []
-      const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
+      const endpoint = localEndpoints.find((item) => String(item.provider || '') === selectedProviderId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration â†’ Configure Providers.` }
+        return { error: `Local provider "${selectedProviderId}" is not configured. Set its Base URL in AI Configuration â†' Configure Providers.` }
       }
 
       requestPayload = {
-        model: modelId,
+        model: selectedModelId,
         temperature,
         max_tokens: 2048,
         messages: [
@@ -2193,7 +2204,10 @@ export function registerAiIpc({
 
       const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
+        },
         body: JSON.stringify(requestPayload),
       })
 
@@ -2293,12 +2307,17 @@ export function registerAiIpc({
       const modelId = typeof genRoute === 'object' && genRoute !== null
         ? String((genRoute as Record<string, unknown>).modelId || '')
         : ''
+      const routeEnabled = typeof genRoute === 'object' && genRoute !== null
+        ? Boolean((genRoute as Record<string, unknown>).enabled ?? true)
+        : false
+      const selectedProviderId = routeEnabled ? providerId : ''
+      const selectedModelId = routeEnabled ? modelId : ''
 
       // Simple system prompt - no BASE_PERSONA
       const simpleSystemPrompt = `You generate short, simple text for AI art prompt fields. ${LANGUAGE_INSTRUCTION} Output ONLY the requested content. No explanations, no extra text. Keep it brief.`
 
       // Fall back to main OpenRouter settings if no generation route configured
-      if (!providerId || !modelId) {
+      if (!selectedProviderId || !selectedModelId) {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
@@ -2355,15 +2374,15 @@ export function registerAiIpc({
         return { data: { text: resultText } }
       }
 
-      requestProvider = providerId
-      requestModel = modelId
+      requestProvider = selectedProviderId
+      requestModel = selectedModelId
 
-      if (providerId === 'openrouter') {
+      if (selectedProviderId === 'openrouter') {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
         requestPayload = {
-          model: modelId,
+          model: selectedModelId,
           temperature: 0.8,
           max_tokens: 60,
           messages: [
@@ -2401,8 +2420,8 @@ export function registerAiIpc({
         await recordUsageEvent({
           db,
           endpoint: 'generator:simpleGenerate',
-          providerId,
-          modelId,
+          providerId: selectedProviderId,
+          modelId: selectedModelId,
           payload,
           promptText: userPrompt,
           responseText: raw,
@@ -2417,14 +2436,14 @@ export function registerAiIpc({
       const localEndpoints = Array.isArray(localEndpointsRaw)
         ? (localEndpointsRaw as Array<Record<string, unknown>>)
         : []
-      const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
+      const endpoint = localEndpoints.find((item) => String(item.provider || '') === selectedProviderId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration.` }
+        return { error: `Local provider "${selectedProviderId}" is not configured. Set its Base URL in AI Configuration.` }
       }
 
       requestPayload = {
-        model: modelId,
+        model: selectedModelId,
         temperature: 0.8,
         max_tokens: 60,
         messages: [
@@ -2435,7 +2454,10 @@ export function registerAiIpc({
 
       const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getLocalAuthHeader(endpoint),
+        },
         body: JSON.stringify(requestPayload),
       })
 
@@ -2457,8 +2479,8 @@ export function registerAiIpc({
       await recordUsageEvent({
         db,
         endpoint: 'generator:simpleGenerate',
-        providerId,
-        modelId,
+        providerId: selectedProviderId,
+        modelId: selectedModelId,
         payload,
         promptText: userPrompt,
         responseText: raw,
@@ -2575,7 +2597,7 @@ export function registerAiIpc({
 
       userPrompt += ' Output ONLY the final prompt text, no explanations or labels.'
 
-      const systemPrompt = `You are an expert AI Art Prompt Engineer for NightCafe Studio. ${LANGUAGE_INSTRUCTION} 
+      const systemPrompt = `You are an expert AI Art Prompt Engineer for NightCafe Studio. ${LANGUAGE_INSTRUCTION}
 Create detailed, optimized prompts that work well with text-to-image models.
 Blend all elements seamlessly into a flowing description.
 Add rich details (textures, composition, camera angle, atmosphere) while preserving the user's intent.
@@ -2593,9 +2615,14 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       const modelId = typeof genRoute === 'object' && genRoute !== null
         ? String((genRoute as Record<string, unknown>).modelId || '')
         : ''
+      const routeEnabled = typeof genRoute === 'object' && genRoute !== null
+        ? Boolean((genRoute as Record<string, unknown>).enabled ?? true)
+        : false
+      const selectedProviderId = routeEnabled ? providerId : ''
+      const selectedModelId = routeEnabled ? modelId : ''
 
       // Fall back to main OpenRouter settings if no generation route configured
-      if (!providerId || !modelId) {
+      if (!selectedProviderId || !selectedModelId) {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
@@ -2654,15 +2681,15 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         return { data: { prompt: resultPrompt } }
       }
 
-      requestProvider = providerId
-      requestModel = modelId
+      requestProvider = selectedProviderId
+      requestModel = selectedModelId
 
-      if (providerId === 'openrouter') {
+      if (selectedProviderId === 'openrouter') {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
         requestPayload = {
-          model: modelId,
+          model: selectedModelId,
           temperature,
           max_tokens: 2048,
           messages: [
@@ -2696,8 +2723,8 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         await recordUsageEvent({
           db,
           endpoint: 'generator:generatePromptFromFields',
-          providerId,
-          modelId,
+          providerId: selectedProviderId,
+          modelId: selectedModelId,
           payload,
           promptText: userPrompt,
           responseText: prompt,
@@ -2718,14 +2745,14 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       const localEndpoints = Array.isArray(localEndpointsRaw)
         ? (localEndpointsRaw as Array<Record<string, unknown>>)
         : []
-      const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
+      const endpoint = localEndpoints.find((item) => String(item.provider || '') === selectedProviderId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration.` }
+        return { error: `Local provider "${selectedProviderId}" is not configured. Set its Base URL in AI Configuration.` }
       }
 
       requestPayload = {
-        model: modelId,
+        model: selectedModelId,
         temperature,
         max_tokens: 2048,
         messages: [
@@ -2736,7 +2763,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
 
       const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getLocalAuthHeader(endpoint) },
         body: JSON.stringify(requestPayload),
       })
 
@@ -2754,8 +2781,8 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       await recordUsageEvent({
         db,
         endpoint: 'generator:generatePromptFromFields',
-        providerId,
-        modelId,
+        providerId: selectedProviderId,
+        modelId: selectedModelId,
         payload,
         promptText: userPrompt,
         responseText: prompt,
@@ -2860,9 +2887,14 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       const modelId = typeof genRoute === 'object' && genRoute !== null
         ? String((genRoute as Record<string, unknown>).modelId || '')
         : ''
+      const routeEnabled = typeof genRoute === 'object' && genRoute !== null
+        ? Boolean((genRoute as Record<string, unknown>).enabled ?? true)
+        : false
+      const selectedProviderId = routeEnabled ? providerId : ''
+      const selectedModelId = routeEnabled ? modelId : ''
 
       // Fall back to main OpenRouter settings if no generation route configured
-      if (!providerId || !modelId) {
+      if (!selectedProviderId || !selectedModelId) {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
@@ -2934,15 +2966,15 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         return { data: { fields: resultFields } }
       }
 
-      requestProvider = providerId
-      requestModel = modelId
+      requestProvider = selectedProviderId
+      requestModel = selectedModelId
 
-      if (providerId === 'openrouter') {
+      if (selectedProviderId === 'openrouter') {
         const settings = await getOpenRouterSettings()
         if (!settings.apiKey) return { error: 'OpenRouter API key is missing. Add it in Settings first.' }
 
         requestPayload = {
-          model: modelId,
+          model: selectedModelId,
           temperature: 0.8,
           max_tokens: 200,
           messages: [
@@ -2992,8 +3024,8 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         await recordUsageEvent({
           db,
           endpoint: 'generator:fillAllFields',
-          providerId,
-          modelId,
+          providerId: selectedProviderId,
+          modelId: selectedModelId,
           payload,
           promptText: userPrompt,
           responseText: raw,
@@ -3008,14 +3040,14 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       const localEndpoints = Array.isArray(localEndpointsRaw)
         ? (localEndpointsRaw as Array<Record<string, unknown>>)
         : []
-      const endpoint = localEndpoints.find((item) => String(item.provider || '') === providerId)
+      const endpoint = localEndpoints.find((item) => String(item.provider || '') === selectedProviderId)
       const baseUrl = endpoint && typeof endpoint.baseUrl === 'string' ? endpoint.baseUrl : ''
       if (!baseUrl) {
-        return { error: `Local provider "${providerId}" is not configured. Set its Base URL in AI Configuration.` }
+        return { error: `Local provider "${selectedProviderId}" is not configured. Set its Base URL in AI Configuration.` }
       }
 
       requestPayload = {
-        model: modelId,
+        model: selectedModelId,
         temperature: 0.8,
         max_tokens: 200,
         messages: [
@@ -3026,7 +3058,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
 
       const response = await fetch(`${normalizeBaseUrl(baseUrl)}/chat/completions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getLocalAuthHeader(endpoint) },
         body: JSON.stringify(requestPayload),
       })
 

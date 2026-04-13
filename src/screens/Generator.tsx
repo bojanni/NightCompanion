@@ -162,20 +162,46 @@ export default function Generator() {
     let ignore = false
 
     async function loadGenerationModel() {
-      const result = await window.electronAPI.settings.getOpenRouter()
+      const [openRouterResult, aiConfigResult] = await Promise.all([
+        window.electronAPI.settings.getOpenRouter(),
+        window.electronAPI.settings.getAiConfigState(),
+      ])
 
-      if (ignore || result.error || !result.data) {
+      if (ignore || openRouterResult.error || !openRouterResult.data) {
         setGenerationAiModel(null)
         setHasGenerationAiConfigured(false)
+        setOpenRouterApiKeyPresent(false)
         return
       }
 
-      const model = (result.data.model ?? '').trim()
-      const apiKey = (result.data.apiKey ?? '').trim()
+      const fallbackModel = (openRouterResult.data.model ?? '').trim()
+      const openRouterApiKey = (openRouterResult.data.apiKey ?? '').trim()
+      setOpenRouterApiKeyPresent(Boolean(openRouterApiKey))
 
-      setGenerationAiModel(model || null)
-      setHasGenerationAiConfigured(Boolean(model && apiKey))
-      setOpenRouterApiKeyPresent(Boolean(apiKey))
+      const routing = !aiConfigResult.error && aiConfigResult.data
+        ? aiConfigResult.data.dashboardRoleRouting
+        : undefined
+      const generationRoute = typeof routing === 'object' && routing !== null
+        ? (routing as Record<string, unknown>).generation
+        : undefined
+
+      const routeProviderId = typeof generationRoute === 'object' && generationRoute !== null
+        ? String((generationRoute as Record<string, unknown>).providerId || '').trim()
+        : ''
+      const routeModelId = typeof generationRoute === 'object' && generationRoute !== null
+        ? String((generationRoute as Record<string, unknown>).modelId || '').trim()
+        : ''
+      const routeEnabled = typeof generationRoute === 'object' && generationRoute !== null
+        ? Boolean((generationRoute as Record<string, unknown>).enabled ?? true)
+        : false
+
+      const useRoute = Boolean(routeEnabled && routeProviderId && routeModelId)
+      const effectiveProviderId = useRoute ? routeProviderId : 'openrouter'
+      const effectiveModelId = useRoute ? routeModelId : fallbackModel
+      const hasKeyIfNeeded = effectiveProviderId !== 'openrouter' || Boolean(openRouterApiKey)
+
+      setGenerationAiModel(effectiveModelId || null)
+      setHasGenerationAiConfigured(Boolean(effectiveModelId && hasKeyIfNeeded))
     }
 
     void loadGenerationModel()
@@ -227,6 +253,7 @@ export default function Generator() {
     const idea = quickStartIdea.trim()
     if (!idea) return
 
+    setStatus(null)
     setExpandingIdea(true)
 
     try {
@@ -244,7 +271,18 @@ export default function Generator() {
           : undefined,
       })
 
-      if (!result || result.error || !result.data) {
+      if (!result) {
+        setStatus('Error: Generator returned an empty response.')
+        return
+      }
+
+      if (result.error) {
+        setStatus(result.error)
+        return
+      }
+
+      if (!result.data) {
+        setStatus('Error: Generator returned no data.')
         return
       }
 
@@ -261,6 +299,7 @@ export default function Generator() {
       void maybeAutoGenerateTitle(nextPrompt, generatedPrompt)
     } catch (error) {
       console.error('Quick expand failed:', error)
+      setStatus(error instanceof Error ? error.message : 'Quick expansion failed.')
     } finally {
       setExpandingIdea(false)
     }

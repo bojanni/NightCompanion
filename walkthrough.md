@@ -407,6 +407,12 @@
 
 - Findings: Prompt library images need an indicator for which prompt variant was used to generate each image.
 - Conclusions: Add a per-image selector with checkmark-style options (Generated / Improved when available / Custom) and persist the choice in `imagesJson`.
+
+## 2026-04-08 (Generator page — fix generate buttons and model display)
+
+- Findings: Generator page generate buttons weren't working correctly and didn't display the accurate model being used for generation. The generation route (provider and model) wasn't being resolved correctly, and the enabled flag from AI dashboard role routing wasn't being respected.
+- Conclusions: Update Generator.tsx to fetch both OpenRouter settings and AI configuration state, determine effective provider/model based on dashboard role routing's enabled state with fallback to OpenRouter, and enhance error handling. Update electron/ipc/ai.ts generator IPC handlers to respect enabled state of generation routes and include local auth headers.
+- Actions: Updated `src/screens/Generator.tsx` `loadGenerationModel` to fetch OpenRouter settings and AI config state, determine `effectiveProviderId` and `effectiveModelId` based on dashboard role routing's enabled state with fallback to OpenRouter, and update state accordingly. Enhanced `handleQuickExpand` error handling to set status messages for empty responses, error objects, or no data. Updated `electron/ipc/ai.ts` in `generator:quickExpand`, `generator:simpleGenerate`, `generator:generatePromptFromFields`, and `generator:fillAllFields` IPC handlers to read dashboard role routing, determine selected provider/model based on routeEnabled, adjust conditional checks, update requestProvider/requestModel assignments, use selectedProviderId/selectedModelId in recordUsageEvent calls, and add local auth headers to fetch calls for local endpoints. Corrected advisor route selection check in `ai:requestModelAdvice` to use providerId/modelId directly. Removed duplicate declarations in quickExpand handler and added selectedProviderId/selectedModelId aliases in other generator handlers. Validated with `npm run build`.
 - Actions: Updated `src/components/PromptForm.tsx` to add `promptSource` to image drafts (stored in `imagesJson`), default to `generated` (with backwards-compat for stored `original`), show an inline checkmark selector per image, and conditionally show “Improved” when `improvedPrompt` is available; validated with `npm run build`.
 
 ## 2026-04-06 (usePromptImprovement shared hook)
