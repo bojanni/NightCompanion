@@ -528,3 +528,9 @@
 - Findings: After saving the OpenRouter API key, the app could crash with `SyntaxError: Unexpected non-whitespace character after JSON`, indicating `settings.json` had trailing junk / partial writes.
 - Conclusions: Settings persistence must be atomic and readers should salvage valid JSON where possible to prevent hard crashes.
 - Actions: Updated `electron/ipc/settings.ts` to serialize and atomically write `settings.json` via temp file + rename and to salvage JSON on read; hardened `electron/ipc/ai.ts` and `electron/services/storagePaths.ts` to salvage JSON instead of crashing; validated with `npm run build`.
+
+## 2026-04-13 (AI dashboard test buttons + LM Studio optional API key)
+
+- Findings: There was no quick way to validate if the selected provider/model per role works from the AI dashboard, and LM Studio sometimes requires an auth header.
+- Conclusions: Add a lightweight per-panel test action that triggers a minimal chat completion using the currently selected provider/model. Store an optional API key for LM Studio and include it as a Bearer header for local requests.
+- Actions: Added optional `apiKey` for LM Studio local endpoint in `src/components/LocalEndpointCard.tsx`, persisted it through local endpoints storage/types (`src/screens/Settings/types.ts`, `src/types/electron.d.ts`, `electron/ipc/settings.ts`), added IPC `ai:testChatCompletion` + preload exposure (`electron/ipc/ai.ts`, `electron/preload.ts`), and added `Test` buttons to all four AI dashboard panels in `src/screens/Settings/Dashboard.tsx`; validated with `npm run build`.
