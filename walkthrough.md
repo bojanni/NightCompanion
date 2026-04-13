@@ -576,3 +576,9 @@
 - Findings: Greylist sync state was not visible, making it hard to tell whether changes were loading, saving, saved, or failed.
 - Conclusions: Surface sync state and last successful sync timestamp directly in the greylist UI in both Generator and Settings.
 - Actions: Updated `src/components/generator/GreylistCard.tsx` to accept/render sync status text, updated `src/screens/Generator.tsx` and `src/screens/Settings.tsx` to track `greylistSyncStatus` + `greylistLastSyncedAt` and render human-readable status (`loading/saving/saved/failed`); validated with `npm run build`.
+
+## 2026-04-13 (Keep AI routing persistent across app restarts)
+
+- Findings: AI role routing selections could be overwritten during dashboard normalization when provider/model availability changed, causing apparent reset after exit/restart.
+- Conclusions: Normalization should preserve previously saved provider/model for each role unless fields are empty, instead of force-falling back.
+- Actions: Updated `src/screens/AIConfig.tsx` normalization logic to keep existing `providerId`/`modelId` when present and only use preferred/fallback values for empty fields; also removed stale unsupported props passed to `Dashboard` to satisfy type checks; validated with `npm run build`.

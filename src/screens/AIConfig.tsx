@@ -459,7 +459,6 @@ export function AIConfig() {
     [keys, localEndpoints]
   )
 
-  const activeResearch = activeGeneral
   const configuredCount = keys.length + localEndpoints.length
 
   const providerOptions = useMemo<ProviderOption[]>(() => {
@@ -543,7 +542,6 @@ export function AIConfig() {
 
       roleKeys.forEach((role) => {
         const current = next[role]
-        const isProviderValid = providerOptions.some((option) => option.id === current.providerId)
 
         const preferredSource = role === 'generation'
           ? activeGen
@@ -555,9 +553,7 @@ export function AIConfig() {
 
         const preferredProvider = getSourceProviderId(preferredSource)
 
-        const providerId = isProviderValid
-          ? current.providerId
-          : preferredProvider || fallbackProviderId
+        const providerId = current.providerId || preferredProvider || fallbackProviderId
 
         const models = modelsByProvider[providerId] || []
 
@@ -566,7 +562,7 @@ export function AIConfig() {
         const fallbackModel = models[0] || ''
 
         const nextModelId = models.includes(preferredModel) ? preferredModel : fallbackModel
-        const modelId = models.includes(current.modelId) ? current.modelId : nextModelId
+        const modelId = current.modelId || nextModelId
         const finalModelId = modelId
 
         if (providerId !== current.providerId || finalModelId !== current.modelId) {
@@ -617,10 +613,6 @@ export function AIConfig() {
       <div className="w-full min-[1200px]:w-[1200px] min-[1200px]:mx-auto">
         {view === 'dashboard' ? (
           <Dashboard
-            activeGen={activeGen}
-            activeImprove={activeImprove}
-            activeVision={activeVision}
-            activeResearch={activeResearch}
             onConfigure={() => setView('wizard')}
             configuredCount={configuredCount}
             keys={keys}
