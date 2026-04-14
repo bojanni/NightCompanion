@@ -112,8 +112,9 @@ type ModelAdvisorResult = {
   recommendation: ModelAdvisorRecommendation
   alternatives: ModelAdvisorRecommendation[]
   matchedSignals: string[]
-  bestValue?: ModelAdvisorRecommendation
-  fastest?: ModelAdvisorRecommendation
+  cheapPick?: string
+  balancedPick?: string
+  premiumPick?: string
 }
 type GalleryFilters = { search?: string; collectionId?: string | null; minRating?: number; page?: number }
 type CharacterImage = { id: string; url: string; isMain: boolean; createdAt: string }

@@ -83,6 +83,9 @@ type AdvisorResult = {
   matchedSignals: string[]
   bestValue?: AdvisorRecommendation
   fastest?: AdvisorRecommendation
+  cheapPick?: string
+  balancedPick?: string
+  premiumPick?: string
 }
 
 type ScoredAdvisorModel = {
@@ -474,6 +477,36 @@ function getRuleBasedRecommendation(prompt: string, models: AdvisorModelRecord[]
   }
 }
 
+function computeBudgetPicks(prompt: string, models: AdvisorModelRecord[]): { cheapPick: string; balancedPick: string; premiumPick: string } {
+  const scoreFor = (bm: BudgetMode) => {
+    const normalizedPrompt = prompt.trim().toLowerCase()
+    const realismHits = countMatches(normalizedPrompt, REALISM_HINTS)
+    const typographyHits = countMatches(normalizedPrompt, TYPOGRAPHY_HINTS)
+    const artHits = countMatches(normalizedPrompt, ART_HINTS)
+    const weights = normalizeWeights({
+      art: 0.35 + artHits * 0.2,
+      realism: 0.35 + realismHits * 0.25,
+      typography: 0.2 + typographyHits * 0.3,
+      prompting: 0.1,
+    })
+    const sorted = models
+      .filter((model) => model.mediaType === 'image')
+      .map((model) => {
+        const art = parseScore(model.artScore)
+        const realism = parseScore(model.realismScore)
+        const typography = parseScore(model.typographyScore)
+        const prompting = parseScore(model.promptingScore)
+        const costTier = parseCostTier(model.costTier)
+        const quality = art * weights.art + realism * weights.realism + typography * weights.typography + prompting * weights.prompting
+        const penalty = bm === 'cheap' ? (costTier - 1) * 0.6 : bm === 'balanced' ? (costTier - 1) * 0.2 : 0
+        return { modelName: model.modelName, score: quality - penalty }
+      })
+      .sort((a, b) => b.score - a.score)
+    return sorted[0]?.modelName ?? ''
+  }
+  return { cheapPick: scoreFor('cheap'), balancedPick: scoreFor('balanced'), premiumPick: scoreFor('premium') }
+}
+
 function parseAdvisorAiResponse(rawContent: string): Pick<AdvisorResult, 'recommendation' | 'alternatives'> {
   const cleaned = rawContent.trim()
   try {
@@ -776,8 +809,9 @@ export function registerAiIpc({
 
       if (mode === 'rule') {
         const advice = getRuleBasedRecommendation(prompt, models, budgetMode)
-        resultData = advice
-        return { data: advice }
+        const budgetPicks = computeBudgetPicks(prompt, models)
+        resultData = { ...advice, ...budgetPicks }
+        return { data: resultData }
       }
 
       const { providerId, modelId, stored } = await getAdvisorRouteSelection()
@@ -870,11 +904,13 @@ export function registerAiIpc({
         })
 
         const parsed = parseAdvisorAiResponse(raw)
+        const budgetPicksOr = computeBudgetPicks(prompt, models)
         const advice: AdvisorResult = {
           mode: 'ai',
           recommendation: parsed.recommendation,
           alternatives: parsed.alternatives,
           matchedSignals: ['semantic-ai-analysis'],
+          ...budgetPicksOr,
         }
         resultData = advice
         return { data: advice }
@@ -932,11 +968,13 @@ export function registerAiIpc({
       })
 
       const parsed = parseAdvisorAiResponse(raw)
+      const budgetPicksLocal = computeBudgetPicks(prompt, models)
       const advice: AdvisorResult = {
         mode: 'ai',
         recommendation: parsed.recommendation,
         alternatives: parsed.alternatives,
         matchedSignals: ['semantic-ai-analysis'],
+        ...budgetPicksLocal,
       }
       resultData = advice
       return { data: advice }

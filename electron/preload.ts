@@ -141,6 +141,9 @@ export type ModelAdvisorResult = {
   recommendation: ModelAdvisorRecommendation
   alternatives: ModelAdvisorRecommendation[]
   matchedSignals: string[]
+  cheapPick?: string
+  balancedPick?: string
+  premiumPick?: string
 }
 
 export type NightcafePresetOption = {

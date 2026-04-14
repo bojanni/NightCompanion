@@ -50,8 +50,9 @@ type GeneratorPersistedState = {
   recommendedModel?: string
   recommendedModelReason?: string
   recommendedModelMode?: 'rule' | 'ai' | null
-  advisorBestValue?: string
-  advisorFastest?: string
+  advisorCheapPick?: string
+  advisorBalancedPick?: string
+  advisorPremiumPick?: string
   supportsNegativePrompt?: boolean | null
   budgetMode?: BudgetMode
   autoTitleEnabled?: boolean
@@ -95,8 +96,9 @@ export default function Generator() {
   const [recommendedModel, setRecommendedModel] = useState('')
   const [recommendedModelReason, setRecommendedModelReason] = useState('')
   const [recommendedModelMode, setRecommendedModelMode] = useState<'rule' | 'ai' | null>(null)
-  const [advisorBestValue, setAdvisorBestValue] = useState('')
-  const [advisorFastest, setAdvisorFastest] = useState('')
+  const [advisorCheapPick, setAdvisorCheapPick] = useState('')
+  const [advisorBalancedPick, setAdvisorBalancedPick] = useState('')
+  const [advisorPremiumPick, setAdvisorPremiumPick] = useState('')
   const [supportsNegativePrompt, setSupportsNegativePrompt] = useState<boolean | null>(null)
   const [greylistEnabled, setGreylistEnabled] = useState(true)
   const [greylistEntries, setGreylistEntries] = useState<Array<{ word: string; weight: 1 | 2 | 3 | 4 | 5 }>>(
@@ -364,8 +366,9 @@ export default function Generator() {
       setRecommendedModel(result.data.recommendation.modelName)
       setRecommendedModelReason(result.data.recommendation.explanation || '')
       setRecommendedModelMode(mode)
-      setAdvisorBestValue(result.data.bestValue?.modelName || '')
-      setAdvisorFastest(result.data.fastest?.modelName || '')
+      setAdvisorCheapPick(result.data.cheapPick || '')
+      setAdvisorBalancedPick(result.data.balancedPick || '')
+      setAdvisorPremiumPick(result.data.premiumPick || '')
       await fetchModelSupport(result.data.recommendation.modelName)
     } catch (error) {
       console.groupCollapsed('[Get AI Advice] error')
@@ -563,8 +566,9 @@ export default function Generator() {
       setRecommendedModel(parsed.recommendedModel ?? '')
       setRecommendedModelReason(parsed.recommendedModelReason ?? '')
       setRecommendedModelMode(parsed.recommendedModelMode ?? null)
-      setAdvisorBestValue(parsed.advisorBestValue ?? '')
-      setAdvisorFastest(parsed.advisorFastest ?? '')
+      setAdvisorCheapPick(parsed.advisorCheapPick ?? '')
+      setAdvisorBalancedPick(parsed.advisorBalancedPick ?? '')
+      setAdvisorPremiumPick(parsed.advisorPremiumPick ?? '')
       setSupportsNegativePrompt(typeof parsed.supportsNegativePrompt === 'boolean' ? parsed.supportsNegativePrompt : null)
       setQuickStartIdea(parsed.quickStartIdea ?? '')
       setQuickStartCreativity(parsed.quickStartCreativity ?? 'balanced')
@@ -629,8 +633,9 @@ export default function Generator() {
       recommendedModel,
       recommendedModelReason,
       recommendedModelMode,
-      advisorBestValue,
-      advisorFastest,
+      advisorCheapPick,
+      advisorBalancedPick,
+      advisorPremiumPick,
       supportsNegativePrompt,
       promptViewTab: promptImprovementViewTab,
       improvementDiff: promptImprovementDiff,
@@ -672,8 +677,9 @@ export default function Generator() {
     recommendedModel,
     recommendedModelReason,
     recommendedModelMode,
-    advisorBestValue,
-    advisorFastest,
+    advisorCheapPick,
+    advisorBalancedPick,
+    advisorPremiumPick,
     supportsNegativePrompt,
     promptImprovementViewTab,
     promptImprovementDiff,
@@ -1130,10 +1136,9 @@ export default function Generator() {
               setRecommendedModelReason={setRecommendedModelReason}
               recommendedModelMode={recommendedModelMode}
               setRecommendedModelMode={setRecommendedModelMode}
-              advisorBestValue={advisorBestValue}
-              setAdvisorBestValue={setAdvisorBestValue}
-              advisorFastest={advisorFastest}
-              setAdvisorFastest={setAdvisorFastest}
+              advisorCheapPick={advisorCheapPick}
+              advisorBalancedPick={advisorBalancedPick}
+              advisorPremiumPick={advisorPremiumPick}
               supportsNegativePrompt={supportsNegativePrompt}
               setSupportsNegativePrompt={setSupportsNegativePrompt}
               budgetMode={budgetMode}

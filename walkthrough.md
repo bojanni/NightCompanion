@@ -606,3 +606,9 @@
 - Findings: Some AI advice responses provide recommendation text in the explanation but may not populate the structured `modelName`, causing the suggested-model row to appear empty.
 - Conclusions: The UI should parse and display a suggestion fallback from explanation text so the conclusion remains visible.
 - Actions: Updated `src/components/generator/ModelAdvisorCard.tsx` to extract `Recommended/Suggested model: ...` from reasoning as fallback display when `recommendedModel` is empty; kept reasoning collapsed and separate; validated with `npm run build`.
+
+## 2026-04-14 (Model Advisor: reasons only, no thinking process)
+
+- Findings: The advisor still exposed an explicit "thinking process" section, while the desired UI should only show the chosen model and concise reasons.
+- Conclusions: Remove any thinking-process framing and render only a readable reasons list beneath the chosen model.
+- Actions: Updated `src/components/generator/ModelAdvisorCard.tsx` to replace the collapsible "AI thinking process" block with a direct "Reason(s)" list and keep the chosen-model display/fallback logic; validated with `npm run build`.
