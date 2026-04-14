@@ -42,6 +42,24 @@ function buildThinkingLines(reason: string): string[] {
     .map((line) => line.replace(/^[-*•]\s*/, ''))
 }
 
+function extractSuggestedModelFromReason(reason: string): string {
+  const lines = reason
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  for (const line of lines) {
+    const match = line.match(/(?:recommended|suggested)\s+model\s*[:-]\s*(.+)$/i)
+
+    if (match && match[1]) {
+      return match[1].trim()
+    }
+  }
+
+  return ''
+}
+
 export default function ModelAdvisorCard({
   generatedPrompt,
   recommendedModel,
@@ -60,6 +78,8 @@ export default function ModelAdvisorCard({
   improvingNegative,
 }: ModelAdvisorCardProps) {
   const thinkingLines = buildThinkingLines(recommendedModelReason)
+  const parsedSuggestedModel = extractSuggestedModelFromReason(recommendedModelReason)
+  const displaySuggestedModel = recommendedModel || parsedSuggestedModel
 
   return (
     <div className="mt-4 rounded-xl border border-slate-800/60 bg-slate-900/40 p-4">
@@ -91,23 +111,21 @@ export default function ModelAdvisorCard({
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <span className="text-sm text-slate-500">Suggested model</span>
-        <span className="text-2xl font-semibold text-white flex items-center gap-2">{recommendedModel || <Minus className="w-6 h-6 text-slate-500" />}</span>
+        <span className="text-2xl font-semibold text-white flex items-center gap-2">{displaySuggestedModel || <Minus className="w-6 h-6 text-slate-500" />}</span>
       </div>
-      {!recommendedModel && (
+      {!displaySuggestedModel && (
         <p className="mt-1 text-sm text-slate-400">No model advice yet. Generate a prompt and request AI advice.</p>
       )}
 
       {thinkingLines.length > 0 && (
-        <details className="mt-3 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-2">
-          <summary className="cursor-pointer select-none text-xs font-medium text-slate-300">AI thinking process</summary>
-          <div className="mt-2 space-y-2">
+        <div className="mt-3 rounded-lg border border-slate-700/60 bg-slate-900/60 px-3 py-2">
+          <p className="text-xs font-medium text-slate-300">Reason(s)</p>
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-5 text-slate-400">
             {thinkingLines.map((line, index) => (
-              <p key={`${index}-${line}`} className="text-xs leading-5 text-slate-400">
-                {line}
-              </p>
+              <li key={`${index}-${line}`}>{line}</li>
             ))}
-          </div>
-        </details>
+          </ul>
+        </div>
       )}
 
       {/* Model mode indicator */}

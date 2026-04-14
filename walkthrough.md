@@ -600,3 +600,9 @@
 - Findings: AI advice text could mix reasoning and conclusion, making it hard to quickly see the recommended model while still reviewing detailed thinking.
 - Conclusions: Keep the final suggestion visible in the main panel and move reasoning into a collapsible, cleaned-up "thinking process" section.
 - Actions: Updated `src/components/generator/ModelAdvisorCard.tsx` to keep `recommendedModel` prominent, filter conclusion-like lines out of reasoning text, normalize reasoning lines for readability, and render them inside a collapsed `details` block labeled "AI thinking process"; validated with `npm run build`.
+
+## 2026-04-14 (Model Advisor: suggested model fallback)
+
+- Findings: Some AI advice responses provide recommendation text in the explanation but may not populate the structured `modelName`, causing the suggested-model row to appear empty.
+- Conclusions: The UI should parse and display a suggestion fallback from explanation text so the conclusion remains visible.
+- Actions: Updated `src/components/generator/ModelAdvisorCard.tsx` to extract `Recommended/Suggested model: ...` from reasoning as fallback display when `recommendedModel` is empty; kept reasoning collapsed and separate; validated with `npm run build`.
