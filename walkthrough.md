@@ -660,3 +660,15 @@
 - Findings: “Add character” selectie in Magic Quickstart en Magic Random deelde dezelfde state waardoor beide secties altijd synchroon waren.
 - Conclusions: Losse character state per sectie voorkomt ongewenste sync en houdt context-specifieke keuzes intact.
 - Actions: Updated `src/components/generator/QuickstartPanel.tsx` om aparte character pickers te gebruiken voor Quickstart vs Magic Random. Updated `src/screens/Generator.tsx` om `quickstartCharacterId` en `magicRandomCharacterId` apart te beheren en legacy `quickStartCharacterId` te migreren; validated with `npm run build`.
+
+## 2026-04-15 (Magic Random: voorkom “cut-off” prompt)
+
+- Findings: Magic Random output leek soms afgekapt, vooral bij langere prompts (bijv. met preset/character context).
+- Conclusions: Forceer een complete zin-einde in de generatie-instructie en maak de preview hoger/scrollbaar zodat langere output zichtbaar blijft.
+- Actions: Updated `electron/ipc/ai.ts` `generator:magicRandom` prompt-instructie om te eindigen met een complete zin en final full stop. Updated `src/components/generator/QuickstartPanel.tsx` Magic Random preview textarea met meer hoogte en scroll (`rows=6`, `min-h-44`, `overflow-y-auto`); validated with `npm run build`.
+
+## 2026-04-15 (Improve Prompt: voorkom “cut-off” eindes)
+
+- Findings: Improved prompts konden soms mid-zin eindigen wanneer de verbeterde output boven de 110% word-limit kwam en daarna hard werd afgekapt.
+- Conclusions: Laat de model-instructie expliciet eindigen met een volledige zin én zorg dat de client-side word-limit truncatie altijd op een zin-einde eindigt (of een punt toevoegt).
+- Actions: Updated `electron/ipc/ai.ts` `IMPROVE_INSTRUCTION` met “end with a complete sentence and a final full stop”. Updated `src/screens/Generator.tsx` truncatiepad voor improved prompt zodat het resultaat op zin-einde afsluit. Validated with `npm run build`.

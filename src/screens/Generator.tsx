@@ -919,9 +919,23 @@ export default function Generator() {
 
       const improvedWordLimit = Math.max(1, Math.ceil(maxWords * 1.1))
       const improvedWords = splitWords(improved)
-      const improvedPromptFinal = improvedWords.length > improvedWordLimit
-        ? improvedWords.slice(0, improvedWordLimit).join(' ')
-        : improved
+      const improvedPromptFinal = (() => {
+        if (improvedWords.length <= improvedWordLimit) return improved
+
+        const sliced = improvedWords.slice(0, improvedWordLimit).join(' ').trim()
+        if (!sliced) return sliced
+        if (/[.!?]$/.test(sliced)) return sliced
+
+        const lastDot = sliced.lastIndexOf('.')
+        const lastBang = sliced.lastIndexOf('!')
+        const lastQuestion = sliced.lastIndexOf('?')
+        const lastSentenceEnd = Math.max(lastDot, lastBang, lastQuestion)
+        if (lastSentenceEnd >= 0 && lastSentenceEnd >= Math.floor(sliced.length * 0.6)) {
+          return sliced.slice(0, lastSentenceEnd + 1).trim()
+        }
+
+        return `${sliced.replace(/[,:;]+$/, '').trim()}.`
+      })()
 
       if (improvedPromptFinal !== improved) {
         promptImprovement.setImprovementDiff({

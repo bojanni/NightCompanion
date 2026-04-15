@@ -296,7 +296,8 @@ export default function QuickstartPanel({
             value={generatedPrompt}
             readOnly
             aria-label="Generated prompt preview"
-            className="w-full bg-transparent px-4 py-4 text-sm text-slate-300 placeholder-night-500 resize-none min-h-36 focus:outline-none"
+            rows={6}
+            className="w-full bg-transparent px-4 py-4 text-sm text-slate-300 placeholder-night-500 resize-none min-h-44 overflow-y-auto focus:outline-none"
             placeholder="Generated prompt will appear here."
           />
         </div>

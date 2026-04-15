@@ -28,7 +28,7 @@ Construct your prompts using the following elements, blending them seamlessly in
 
 STRICT FORMATTING RULE: Output ONLY the final prompt text. Do NOT use bullet points, line breaks, labels (like 'Subject:'), or introductory/concluding remarks. The output must be a single, flowing descriptive paragraph.`
 
-const IMPROVE_INSTRUCTION = `Analyze the following basic concept and elevate it into a professional, highly detailed prompt following all your persona rules. Expand on missing elements (such as style, lighting, and composition) while strictly preserving the original intent.`
+const IMPROVE_INSTRUCTION = `Analyze the following basic concept and elevate it into a professional, highly detailed prompt following all your persona rules. Expand on missing elements (such as style, lighting, and composition) while strictly preserving the original intent. Write a single paragraph and end with a complete sentence and a final full stop.`
 const IMPROVE_NEGATIVE_INSTRUCTION = `Improve the following negative prompt for AI image generation. Keep it concise, high-signal, comma-separated, and focused on common visual defects and unwanted artifacts. Remove duplicates, keep original intent, and return only the final negative prompt text.`
 const NEGATIVE_PROMPT_INSTRUCTION = `Based on the following positive prompt, generate a concise negative prompt for NightCafe Studio. ${LANGUAGE_INSTRUCTION}
 
@@ -1145,6 +1145,7 @@ export function registerAiIpc({
           creativity === 'wild' ? 'Be experimental and surreal.' : 
           'Balance creativity with clarity.',
         'Pick any surprising subject.',
+        'Write a single paragraph and end with a complete sentence and a final full stop.',
         hasGreylist
           ? `Avoid these words when writing the prompt (or keep their probability very low): ${uniqueGreylistWords.join(', ')}.`
           : '',
