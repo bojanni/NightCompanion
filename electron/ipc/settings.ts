@@ -5,7 +5,20 @@ import { fileURLToPath } from 'url'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { desc } from 'drizzle-orm'
 import * as schema from '../../src/lib/schema'
-import { openRouterModels, promptVersions, prompts } from '../../src/lib/schema'
+import {
+  aiUsageEvents,
+  characters,
+  collections,
+  galleryItems,
+  generationLog,
+  greylistTable,
+  nightcafeModels,
+  nightcafePresets,
+  openRouterModels,
+  promptVersions,
+  prompts,
+  styleProfiles,
+} from '../../src/lib/schema'
 import { getConfiguredNightCompanionFolderPath, getDefaultNightCompanionFolderPath } from '../services/storagePaths'
 
 type Database = ReturnType<typeof drizzle<typeof schema>>
@@ -125,6 +138,12 @@ type LibraryExportSummary = {
   imagesCopied: number
   imagesMissing: number
   imagesSkipped: number
+}
+
+type DatabaseBackupSummary = {
+  exportDirPath: string
+  backupFilePath: string
+  tables: Record<string, number>
 }
 
 type StoredSettings = {
@@ -739,6 +758,55 @@ function buildExportTimestamp() {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
 }
 
+function buildDatabaseBackupPayload(input: {
+  prompts: unknown[]
+  promptVersions: unknown[]
+  styleProfiles: unknown[]
+  generationLog: unknown[]
+  openRouterModels: unknown[]
+  nightcafeModels: unknown[]
+  nightcafePresets: unknown[]
+  aiUsageEvents: unknown[]
+  characters: unknown[]
+  greylist: unknown[]
+  collections: unknown[]
+  galleryItems: unknown[]
+}) {
+  const tableCounts: Record<string, number> = {
+    prompts: input.prompts.length,
+    prompt_versions: input.promptVersions.length,
+    style_profiles: input.styleProfiles.length,
+    generation_log: input.generationLog.length,
+    openrouter_models: input.openRouterModels.length,
+    nightcafe_models: input.nightcafeModels.length,
+    nightcafe_presets: input.nightcafePresets.length,
+    ai_usage_events: input.aiUsageEvents.length,
+    characters: input.characters.length,
+    greylist: input.greylist.length,
+    collections: input.collections.length,
+    gallery_items: input.galleryItems.length,
+  }
+
+  return {
+    exportedAt: new Date().toISOString(),
+    summary: tableCounts,
+    data: {
+      prompts: input.prompts,
+      promptVersions: input.promptVersions,
+      styleProfiles: input.styleProfiles,
+      generationLog: input.generationLog,
+      openRouterModels: input.openRouterModels,
+      nightcafeModels: input.nightcafeModels,
+      nightcafePresets: input.nightcafePresets,
+      aiUsageEvents: input.aiUsageEvents,
+      characters: input.characters,
+      greylist: input.greylist,
+      collections: input.collections,
+      galleryItems: input.galleryItems,
+    },
+  }
+}
+
 export function registerSettingsIpc({
   db,
   onNativeWindowFrameChanged,
@@ -1145,6 +1213,82 @@ export function registerSettingsIpc({
           imagesMissing,
           imagesSkipped,
         } as LibraryExportSummary,
+      }
+    } catch (error) {
+      return { error: String(error) }
+    }
+  })
+
+  ipcMain.handle('settings:backupDatabase', async () => {
+    try {
+      const defaultPath = await getNightCompanionFolderPath()
+      const selection = await dialog.showOpenDialog({
+        title: 'Select export folder for database backup',
+        defaultPath,
+        properties: ['openDirectory', 'createDirectory'],
+      })
+
+      if (selection.canceled || selection.filePaths.length === 0) {
+        return { data: null as DatabaseBackupSummary | null }
+      }
+
+      const selectedDir = selection.filePaths[0]
+      const exportDirPath = path.join(selectedDir, `nightcompanion-db-backup-${buildExportTimestamp()}`)
+      const backupFilePath = path.join(exportDirPath, 'db-backup.json')
+
+      await mkdir(exportDirPath, { recursive: true })
+
+      const [
+        promptRows,
+        versionRows,
+        styleProfileRows,
+        generationLogRows,
+        openRouterModelRows,
+        nightcafeModelRows,
+        nightcafePresetRows,
+        aiUsageEventRows,
+        characterRows,
+        greylistRows,
+        collectionRows,
+        galleryItemRows,
+      ] = await Promise.all([
+        db.select().from(prompts).orderBy(desc(prompts.createdAt)),
+        db.select().from(promptVersions).orderBy(desc(promptVersions.createdAt)),
+        db.select().from(styleProfiles).orderBy(desc(styleProfiles.createdAt)),
+        db.select().from(generationLog).orderBy(desc(generationLog.createdAt)),
+        db.select().from(openRouterModels).orderBy(desc(openRouterModels.updatedAt)),
+        db.select().from(nightcafeModels).orderBy(desc(nightcafeModels.updatedAt)),
+        db.select().from(nightcafePresets).orderBy(desc(nightcafePresets.updatedAt)),
+        db.select().from(aiUsageEvents).orderBy(desc(aiUsageEvents.createdAt)),
+        db.select().from(characters).orderBy(desc(characters.createdAt)),
+        db.select().from(greylistTable).orderBy(desc(greylistTable.createdAt)),
+        db.select().from(collections).orderBy(desc(collections.createdAt)),
+        db.select().from(galleryItems).orderBy(desc(galleryItems.createdAt)),
+      ])
+
+      const payload = buildDatabaseBackupPayload({
+        prompts: promptRows,
+        promptVersions: versionRows,
+        styleProfiles: styleProfileRows,
+        generationLog: generationLogRows,
+        openRouterModels: openRouterModelRows,
+        nightcafeModels: nightcafeModelRows,
+        nightcafePresets: nightcafePresetRows,
+        aiUsageEvents: aiUsageEventRows,
+        characters: characterRows,
+        greylist: greylistRows,
+        collections: collectionRows,
+        galleryItems: galleryItemRows,
+      })
+
+      await writeFile(backupFilePath, JSON.stringify(payload, null, 2), 'utf-8')
+
+      return {
+        data: {
+          exportDirPath,
+          backupFilePath,
+          tables: payload.summary,
+        } satisfies DatabaseBackupSummary,
       }
     } catch (error) {
       return { error: String(error) }

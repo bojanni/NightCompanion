@@ -83,6 +83,11 @@ type LibraryExportSummary = {
   imagesMissing: number
   imagesSkipped: number
 }
+type DatabaseBackupSummary = {
+  exportDirPath: string
+  backupFilePath: string
+  tables: Record<string, number>
+}
 type NightcafeModelOption = {
   modelName: string
   modelType: string
@@ -260,6 +265,7 @@ declare global {
         resetNightCompanionFolderPath(): Promise<IpcResult<string>>
         selectNightCompanionFolderPath(): Promise<IpcResult<string | null>>
         exportPromptsAndImages(input?: { includePrompts?: boolean; includeImages?: boolean }): Promise<IpcResult<LibraryExportSummary | null>>
+        backupDatabase(): Promise<IpcResult<DatabaseBackupSummary | null>>
         getLocalEndpoints(): Promise<IpcResult<LocalEndpointStore[]>>
         saveLocalEndpoints(input: LocalEndpointStore[]): Promise<IpcResult<LocalEndpointStore[]>>
         saveOpenRouter(input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>>

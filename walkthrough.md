@@ -684,3 +684,21 @@
 - Findings: Er was geen centrale exportoptie in Settings om prompts en bijbehorende lokale afbeeldingen in één keer te backuppen.
 - Conclusions: Een Settings-exportactie via IPC met folderpicker, JSON-export en image-copy geeft een veilige, bruikbare backup zonder nieuwe dependencies.
 - Actions: Added `settings:exportPromptsAndImages` in `electron/ipc/settings.ts` met opties `{ includePrompts, includeImages }` (select folder, export `prompts` + `prompt_versions` naar JSON, kopie van lokale `file://`/absolute image paths naar `images/` met samenvatting). Exposed via `electron/preload.ts` en `src/types/electron.d.ts`. Added UI in `src/screens/Settings.tsx` met knoppen voor “prompts + images”, “prompts only” en “images only” en betere foutmelding als de app nog niet herstart is na een update; validated with `npm run build`.
+
+## 2026-04-15 (Settings: database backup)
+
+- Findings: Er ontbrak een eenvoudige backup-optie voor de volledige database vanuit Settings.
+- Conclusions: Een JSON snapshot backup via IPC (folderpicker + export van alle tabellen) biedt een praktische backup zonder externe tooling of dependencies.
+- Actions: Added `settings:backupDatabase` in `electron/ipc/settings.ts` (export alle tabellen naar `db-backup.json`). Exposed via `electron/preload.ts` en `src/types/electron.d.ts`. Added Settings UI knop “Backup database” met statusmelding; validated with `npm run build`.
+
+## 2026-04-15 (Prompt Builder: Magic Fill parsing robuuster)
+
+- Findings: Magic Fill leek te draaien zonder zichtbare updates wanneer het model JSON in onverwachte vorm terugstuurde (bijv. code fences, key aliases of `fields` wrapper).
+- Conclusions: Robuuste response parsing met key-normalisatie en JSON-extractie voorkomt “filled but no visible change” gedrag.
+- Actions: Updated `electron/ipc/ai.ts` `generator:fillAllFields` met één gedeelde parser die JSON (incl. fenced JSON) en line-fallback ondersteunt, aliases/case-insensitive keys normaliseert (`artStyle` -> `style`, `technicalDetails` -> `technical`, etc.) en daarna pas de result fields invult; validated with `npm run build`.
+
+## 2026-04-15 (Settings: Greywords tab opgeschoond + General panel indeling)
+
+- Findings: Greywords tab bevatte niet-verwante instellingen doordat algemene settings/diagnostics onder de tab-layout doorliepen.
+- Conclusions: Houd Greywords tab beperkt tot greywords opties; consolideer alle overige settings op General met aparte panelen voor scanbaarheid.
+- Actions: Updated `src/screens/Settings.tsx` zodat Greywords tab alleen greywords beheer toont; General tab gegroepeerd in losse panels (Usage, Diagnostics, Storage, Export library, Backup database, NightCafe modelcards, Danger zone); validated with `npm run build`.

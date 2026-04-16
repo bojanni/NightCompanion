@@ -106,6 +106,12 @@ export type LibraryExportSummary = {
   imagesSkipped: number
 }
 
+export type DatabaseBackupSummary = {
+  exportDirPath: string
+  backupFilePath: string
+  tables: Record<string, number>
+}
+
 export type NightcafeModelOption = {
   modelName: string
   modelType: string
@@ -366,6 +372,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('settings:selectNightCompanionFolderPath'),
     exportPromptsAndImages: (input?: { includePrompts?: boolean; includeImages?: boolean }): Promise<IpcResult<LibraryExportSummary | null>> =>
       invokeWithFallback('settings:exportPromptsAndImages', input),
+    backupDatabase: (): Promise<IpcResult<DatabaseBackupSummary | null>> =>
+      invokeWithFallback('settings:backupDatabase'),
     getLocalEndpoints: (): Promise<IpcResult<LocalEndpointStore[]>> =>
       invokeWithFallback('settings:getLocalEndpoints'),
     saveLocalEndpoints: (input: LocalEndpointStore[]): Promise<IpcResult<LocalEndpointStore[]>> =>

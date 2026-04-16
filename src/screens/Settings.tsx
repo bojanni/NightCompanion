@@ -28,6 +28,8 @@ export default function Settings() {
   const [nightCompanionFolderMessage, setNightCompanionFolderMessage] = useState<string | null>(null)
   const [exportingLibrary, setExportingLibrary] = useState(false)
   const [exportLibraryMessage, setExportLibraryMessage] = useState<string | null>(null)
+  const [backingUpDatabase, setBackingUpDatabase] = useState(false)
+  const [backupDatabaseMessage, setBackupDatabaseMessage] = useState<string | null>(null)
   const [isRefreshingHf, setIsRefreshingHf] = useState(false)
   const [hfSyncMessage, setHfSyncMessage] = useState<string | null>(null)
   const [hfSyncInfo, setHfSyncInfo] = useState<HfSyncInfo | null>(null)
@@ -340,6 +342,35 @@ export default function Settings() {
     setExportingLibrary(false)
   }
 
+  async function handleBackupDatabase() {
+    setBackingUpDatabase(true)
+    setBackupDatabaseMessage(null)
+
+    const result = await window.electronAPI.settings.backupDatabase()
+
+    if (result.error) {
+      const message = result.error.includes('No handler registered for')
+        ? 'Database backup is not available yet in this running app instance. Please restart NightCompanion and try again.'
+        : result.error
+      setBackupDatabaseMessage(message)
+      notifications.show({ message, color: 'red' })
+      setBackingUpDatabase(false)
+      return
+    }
+
+    if (!result.data) {
+      setBackupDatabaseMessage('Backup cancelled.')
+      setBackingUpDatabase(false)
+      return
+    }
+
+    const totalRows = Object.values(result.data.tables).reduce((sum, value) => sum + value, 0)
+    const message = `Database backup klaar: ${Object.keys(result.data.tables).length} tabellen, ${totalRows} rijen. Bestand: ${result.data.backupFilePath}`
+    setBackupDatabaseMessage(message)
+    notifications.show({ message: 'Database backup gemaakt.', color: 'green' })
+    setBackingUpDatabase(false)
+  }
+
   const formattedLastSyncedAt = (() => {
     if (!hfSyncInfo?.lastSyncedAt) return 'Nog niet gesynchroniseerd'
     const parsed = new Date(hfSyncInfo.lastSyncedAt)
@@ -374,97 +405,311 @@ export default function Settings() {
           </div>
 
           {tab === 'general' && (
-            <div className="pt-6 mt-6 space-y-4 border-t border-slate-800/50">
-            <div>
-              <p className="text-sm font-semibold text-white">Usage</p>
-              <p className="text-xs text-slate-500">Tokens and cost estimation display preferences</p>
-            </div>
-
-            <div className="flex gap-4 justify-between items-center">
-              <div>
-                <p className="text-sm font-semibold text-white">Currency</p>
-                <p className="text-xs text-slate-500">USD is native for OpenRouter pricing; EUR uses a manual exchange rate</p>
-              </div>
-              <div className="flex gap-2 items-center">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    if (!loading) void handleUsageCurrencyChange('usd')
-                  }}
-                  className={`btn-compact ${usageCurrency === 'usd' ? 'btn-compact-primary' : 'btn-compact-ghost'}`}
-                >
-                  USD
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    if (!loading) void handleUsageCurrencyChange('eur')
-                  }}
-                  className={`btn-compact ${usageCurrency === 'eur' ? 'btn-compact-primary' : 'btn-compact-ghost'}`}
-                >
-                  EUR
-                </button>
-              </div>
-            </div>
-
-            {usageCurrency === 'eur' && (
-              <div className="flex gap-4 justify-between items-center">
+            <div className="pt-6 mt-6 space-y-6 border-t border-slate-800/50">
+              <section className="p-6 card space-y-4">
                 <div>
-                  <p className="text-sm font-semibold text-white">EUR rate</p>
-                  <p className="text-xs text-slate-500">1 USD = ? EUR</p>
+                  <p className="text-sm font-semibold text-white">Usage</p>
+                  <p className="text-xs text-slate-500">Tokens and cost estimation display preferences</p>
                 </div>
-                <input
-                  type="text"
-                  aria-label="EUR conversion rate"
-                  title="EUR conversion rate"
-                  placeholder="0.92"
-                  value={eurRate}
-                  onChange={(event) => {
-                    void handleEurRateChange(event.target.value)
-                  }}
-                  className="px-3 py-2 w-28 text-sm rounded-xl border border-slate-800 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                />
-              </div>
-            )}
 
-            <div className="flex gap-4 justify-between items-center">
-              <div>
-                <p className="text-sm font-semibold text-white">Store prompt/response for usage</p>
-                <p className="text-xs text-slate-500">Opt-in: store text to explain which prompt an event belonged to</p>
-              </div>
-              <button
-                type="button"
-                aria-label="Toggle storing prompt/response"
-                title="Toggle storing prompt/response"
-                disabled={loading}
-                onClick={() => {
-                  if (!loading) void handleStorePromptResponseToggle()
-                }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  storeAiPromptResponseForUsage ? 'bg-teal-500' : 'bg-slate-600'
-                } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    storeAiPromptResponseForUsage ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
+                <div className="flex gap-4 justify-between items-center">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Currency</p>
+                    <p className="text-xs text-slate-500">USD is native for OpenRouter pricing; EUR uses a manual exchange rate</p>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        if (!loading) void handleUsageCurrencyChange('usd')
+                      }}
+                      className={`btn-compact ${usageCurrency === 'usd' ? 'btn-compact-primary' : 'btn-compact-ghost'}`}
+                    >
+                      USD
+                    </button>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        if (!loading) void handleUsageCurrencyChange('eur')
+                      }}
+                      className={`btn-compact ${usageCurrency === 'eur' ? 'btn-compact-primary' : 'btn-compact-ghost'}`}
+                    >
+                      EUR
+                    </button>
+                  </div>
+                </div>
+
+                {usageCurrency === 'eur' && (
+                  <div className="flex gap-4 justify-between items-center">
+                    <div>
+                      <p className="text-sm font-semibold text-white">EUR rate</p>
+                      <p className="text-xs text-slate-500">1 USD = ? EUR</p>
+                    </div>
+                    <input
+                      type="text"
+                      aria-label="EUR conversion rate"
+                      title="EUR conversion rate"
+                      placeholder="0.92"
+                      value={eurRate}
+                      onChange={(event) => {
+                        void handleEurRateChange(event.target.value)
+                      }}
+                      className="px-3 py-2 w-28 text-sm rounded-xl border border-slate-800 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-4 justify-between items-center">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Store prompt/response for usage</p>
+                    <p className="text-xs text-slate-500">Opt-in: store text to explain which prompt an event belonged to</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Toggle storing prompt/response"
+                    title="Toggle storing prompt/response"
+                    disabled={loading}
+                    onClick={() => {
+                      if (!loading) void handleStorePromptResponseToggle()
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      storeAiPromptResponseForUsage ? 'bg-teal-500' : 'bg-slate-600'
+                    } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        storeAiPromptResponseForUsage ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </section>
+
+              <section className="p-6 card space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Diagnostics</p>
+                  <p className="text-xs text-slate-500">Application preferences and debugging tools</p>
+                </div>
+
+                <div className="flex gap-4 justify-between items-center">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Native Windows title bar</p>
+                    <p className="text-xs text-slate-500">Gebruik de standaard Windows titelbalk in plaats van de custom frameless balk</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Toggle native Windows title bar"
+                    title="Toggle native Windows title bar"
+                    disabled={loading}
+                    onClick={() => {
+                      if (!loading) void handleNativeWindowFrameToggle()
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      nativeWindowFrameEnabled ? 'bg-teal-500' : 'bg-slate-600'
+                    } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        nativeWindowFrameEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex gap-4 justify-between items-center">
+                  <div>
+                    <p className="text-sm font-semibold text-white">AI API request logging</p>
+                    <p className="text-xs text-slate-500">Log AI request/response payloads to a local JSONL file for debugging</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Toggle AI API request logging"
+                    title="Toggle AI API request logging"
+                    disabled={loading}
+                    onClick={() => {
+                      if (!loading) void handleToggle()
+                    }}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      aiApiRequestLoggingEnabled ? 'bg-teal-500' : 'bg-slate-600'
+                    } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        aiApiRequestLoggingEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </section>
+
+              <section className="p-6 card space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Storage</p>
+                  <p className="text-xs text-slate-500">NightCompanion folder location for managed files</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    type="text"
+                    value={nightCompanionFolderPath}
+                    onChange={(event) => setNightCompanionFolderPath(event.target.value)}
+                    placeholder="Select folder path"
+                    className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-800 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleBrowseNightCompanionFolder()}
+                    className="inline-flex gap-2 justify-center items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    Browse
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingNightCompanionFolderPath || loading}
+                    onClick={() => void handleSaveNightCompanionFolder()}
+                    className="inline-flex gap-2 justify-center items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingNightCompanionFolderPath || loading}
+                    onClick={() => void handleResetNightCompanionFolder()}
+                    className="inline-flex gap-2 justify-center items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Reset default
+                  </button>
+                </div>
+                {nightCompanionFolderMessage && (
+                  <p className="text-xs text-slate-400">{nightCompanionFolderMessage}</p>
+                )}
+              </section>
+
+              <section className="p-6 card space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Export library</p>
+                  <p className="text-xs text-slate-500">Exporteer prompts (incl. versies) en lokale afbeeldingen naar een map.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <button
+                    type="button"
+                    disabled={loading || exportingLibrary}
+                    onClick={() => {
+                      if (!loading && !exportingLibrary) void handleExportPromptsAndImages({ includePrompts: true, includeImages: true })
+                    }}
+                    className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <Download className={`w-3.5 h-3.5 ${exportingLibrary ? 'animate-pulse' : ''}`} />
+                    {exportingLibrary ? 'Exporting...' : 'Export prompts + images'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading || exportingLibrary}
+                    onClick={() => {
+                      if (!loading && !exportingLibrary) void handleExportPromptsAndImages({ includePrompts: true, includeImages: false })
+                    }}
+                    className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <Download className={`w-3.5 h-3.5 ${exportingLibrary ? 'animate-pulse' : ''}`} />
+                    Export prompts only
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loading || exportingLibrary}
+                    onClick={() => {
+                      if (!loading && !exportingLibrary) void handleExportPromptsAndImages({ includePrompts: false, includeImages: true })
+                    }}
+                    className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <Download className={`w-3.5 h-3.5 ${exportingLibrary ? 'animate-pulse' : ''}`} />
+                    Export images only
+                  </button>
+                </div>
+                {exportLibraryMessage && (
+                  <p className="text-xs text-slate-400 break-words">{exportLibraryMessage}</p>
+                )}
+              </section>
+
+              <section className="p-6 card space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Backup database</p>
+                  <p className="text-xs text-slate-500">Maak een JSON snapshot van alle tabellen (geschikt voor backup/restore tooling).</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={loading || backingUpDatabase}
+                  onClick={() => {
+                    if (!loading && !backingUpDatabase) void handleBackupDatabase()
+                  }}
+                  className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Download className={`w-3.5 h-3.5 ${backingUpDatabase ? 'animate-pulse' : ''}`} />
+                  {backingUpDatabase ? 'Backing up...' : 'Backup database'}
+                </button>
+                {backupDatabaseMessage && (
+                  <p className="text-xs text-slate-400 break-words">{backupDatabaseMessage}</p>
+                )}
+              </section>
+
+              <section className="p-6 card space-y-3">
+                <div className="flex gap-4 justify-between items-center">
+                  <div>
+                    <p className="text-sm font-semibold text-white">NightCafe modelcards (Hugging Face)</p>
+                    <p className="text-xs text-slate-500">Refresh extra model metadata: summary, likes, downloads, and update date</p>
+                    <p className="mt-1 text-xs text-slate-400">Laatste sync: {formattedLastSyncedAt}</p>
+                    {hfSyncInfo && (
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        Matched {hfSyncInfo.counts.matched} · Unmatched {hfSyncInfo.counts.unmatched} · Errors {hfSyncInfo.counts.error} · Pending {hfSyncInfo.counts.pending}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isRefreshingHf) void handleRefreshNightCafeHuggingFace()
+                    }}
+                    disabled={isRefreshingHf}
+                    className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingHf ? 'animate-spin' : ''}`} />
+                    Refresh modelcards
+                  </button>
+                </div>
+                {hfSyncMessage && (
+                  <p className="text-xs text-slate-400">{hfSyncMessage}</p>
+                )}
+              </section>
+
+              <section className="p-6 card space-y-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Danger zone</p>
+                  <p className="text-xs text-slate-500">Reset counters and local state</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (!loading) void handleResetUsage()
+                  }}
+                  className="btn-danger"
+                >
+                  Reset usage counters
+                </button>
+              </section>
             </div>
-          </div>
           )}
 
           {tab === 'greywords' && (
-            <div className="pt-6 mt-6 space-y-4 border-t border-slate-800/50">
-              <div>
-                <p className="text-sm font-semibold text-white">Greywords</p>
-                <p className="text-xs text-slate-500">Words the AI should avoid or use with a low probability.</p>
-                <p className={`text-xs mt-1 ${greylistSyncStatusClassName}`}>{greylistSyncStatusText}</p>
-              </div>
+            <div className="pt-6 mt-6 space-y-6 border-t border-slate-800/50">
+              <section className="p-6 card space-y-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Greywords</p>
+                  <p className="text-xs text-slate-500">Words the AI should avoid or use with a low probability.</p>
+                  <p className={`text-xs mt-1 ${greylistSyncStatusClassName}`}>{greylistSyncStatusText}</p>
+                </div>
 
-              <div className="p-6 card">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
                   <input
                     type="text"
@@ -484,7 +729,7 @@ export default function Settings() {
                   </button>
                 </div>
 
-                <div className="flex gap-3 justify-between items-center mt-2">
+                <div className="flex gap-3 justify-between items-center">
                   <p className="text-xs text-slate-500">Weight: 1 = never use · 5 = 5% chance</p>
                   <select
                     value={greylistWeight}
@@ -501,7 +746,7 @@ export default function Settings() {
                   </select>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-4">
+                <div className="flex flex-wrap gap-2">
                   {greylistEntries.length === 0 ? (
                     <p className="text-xs text-slate-500">No greywords stored yet.</p>
                   ) : (
@@ -538,200 +783,10 @@ export default function Settings() {
                     ))
                   )}
                 </div>
-              </div>
+              </section>
             </div>
           )}
-
-          <p className="pb-6 text-sm font-semibold text-white">Application preferences and diagnostics</p>
         </div>
-
-        <section className="p-6 card">
-          <h2 className="mb-4 text-base font-semibold text-white">Diagnostics</h2>
-
-          <div className="flex gap-4 justify-between items-center">
-            <div>
-              <p className="text-sm font-semibold text-white">Native Windows title bar</p>
-              <p className="text-xs text-slate-500">Gebruik de standaard Windows titelbalk in plaats van de custom frameless balk</p>
-            </div>
-            <button
-              type="button"
-              aria-label="Toggle native Windows title bar"
-              title="Toggle native Windows title bar"
-              disabled={loading}
-              onClick={() => {
-                if (!loading) void handleNativeWindowFrameToggle()
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                nativeWindowFrameEnabled ? 'bg-teal-500' : 'bg-slate-600'
-              } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  nativeWindowFrameEnabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex gap-4 justify-between items-center">
-            <div>
-              <p className="text-sm font-semibold text-white">AI API request logging</p>
-              <p className="text-xs text-slate-500">Log AI request/response payloads to a local JSONL file for debugging</p>
-            </div>
-            <button
-              type="button"
-              aria-label="Toggle AI API request logging"
-              title="Toggle AI API request logging"
-              disabled={loading}
-              onClick={() => {
-                if (!loading) void handleToggle()
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                aiApiRequestLoggingEnabled ? 'bg-teal-500' : 'bg-slate-600'
-              } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  aiApiRequestLoggingEnabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="pt-6 mt-6 space-y-3 border-t border-slate-800/50">
-            <div>
-              <p className="text-sm font-semibold text-white">NightCompanion folder location</p>
-              <p className="text-xs text-slate-500">Default: C:\Users\&lt;user&gt;\AppData\Local\NightCompanion</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                type="text"
-                value={nightCompanionFolderPath}
-                onChange={(event) => setNightCompanionFolderPath(event.target.value)}
-                placeholder="Select folder path"
-                className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-800 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-              />
-              <button
-                type="button"
-                onClick={() => void handleBrowseNightCompanionFolder()}
-                className="inline-flex gap-2 justify-center items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500"
-              >
-                <FolderOpen className="w-3.5 h-3.5" />
-                Browse
-              </button>
-              <button
-                type="button"
-                disabled={savingNightCompanionFolderPath || loading}
-                onClick={() => void handleSaveNightCompanionFolder()}
-                className="inline-flex gap-2 justify-center items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                disabled={savingNightCompanionFolderPath || loading}
-                onClick={() => void handleResetNightCompanionFolder()}
-                className="inline-flex gap-2 justify-center items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                Reset default
-              </button>
-            </div>
-            {nightCompanionFolderMessage && (
-              <p className="text-xs text-slate-400">{nightCompanionFolderMessage}</p>
-            )}
-          </div>
-
-          <div className="pt-6 mt-6 space-y-3 border-t border-slate-800/50">
-            <div>
-              <p className="text-sm font-semibold text-white">Export library</p>
-              <p className="text-xs text-slate-500">Exporteer prompts (incl. versies) en lokale afbeeldingen naar een map.</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                disabled={loading || exportingLibrary}
-                onClick={() => {
-                  if (!loading && !exportingLibrary) void handleExportPromptsAndImages({ includePrompts: true, includeImages: true })
-                }}
-                className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Download className={`w-3.5 h-3.5 ${exportingLibrary ? 'animate-pulse' : ''}`} />
-                {exportingLibrary ? 'Exporting...' : 'Export prompts + images'}
-              </button>
-              <button
-                type="button"
-                disabled={loading || exportingLibrary}
-                onClick={() => {
-                  if (!loading && !exportingLibrary) void handleExportPromptsAndImages({ includePrompts: true, includeImages: false })
-                }}
-                className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Download className={`w-3.5 h-3.5 ${exportingLibrary ? 'animate-pulse' : ''}`} />
-                Export prompts only
-              </button>
-              <button
-                type="button"
-                disabled={loading || exportingLibrary}
-                onClick={() => {
-                  if (!loading && !exportingLibrary) void handleExportPromptsAndImages({ includePrompts: false, includeImages: true })
-                }}
-                className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Download className={`w-3.5 h-3.5 ${exportingLibrary ? 'animate-pulse' : ''}`} />
-                Export images only
-              </button>
-            </div>
-            {exportLibraryMessage && (
-              <p className="text-xs text-slate-400 break-words">{exportLibraryMessage}</p>
-            )}
-          </div>
-
-          <div className="pt-6 mt-6 space-y-3 border-t border-slate-800/50">
-            <div className="flex gap-4 justify-between items-center">
-              <div>
-                <p className="text-sm font-semibold text-white">NightCafe modelcards (Hugging Face)</p>
-                <p className="text-xs text-slate-500">Refresh extra model metadata: summary, likes, downloads, and update date</p>
-                <p className="mt-1 text-xs text-slate-400">Laatste sync: {formattedLastSyncedAt}</p>
-                {hfSyncInfo && (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Matched {hfSyncInfo.counts.matched} · Unmatched {hfSyncInfo.counts.unmatched} · Errors {hfSyncInfo.counts.error} · Pending {hfSyncInfo.counts.pending}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isRefreshingHf) void handleRefreshNightCafeHuggingFace()
-                }}
-                disabled={isRefreshingHf}
-                className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingHf ? 'animate-spin' : ''}`} />
-                Refresh modelcards
-              </button>
-            </div>
-            {hfSyncMessage && (
-              <p className="text-xs text-slate-400">{hfSyncMessage}</p>
-            )}
-          </div>
-
-          <div className="pt-6 mt-6 space-y-3 border-t border-slate-800/50">
-            <div>
-              <p className="text-sm font-semibold text-white">Danger zone</p>
-              <p className="text-xs text-slate-500">Reset counters and local state</p>
-            </div>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => {
-                if (!loading) void handleResetUsage()
-              }}
-              className="btn-danger"
-            >
-              Reset usage counters
-            </button>
-          </div>
-        </section>
       </PageContainer>
     </div>
   )

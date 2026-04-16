@@ -2960,6 +2960,109 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
     let errorMessage: string | null = null
 
     try {
+      const parseGeneratedFields = (
+        raw: string,
+        fieldsToGenerate: Array<{ key: string; description: string; maxWords: number }>
+      ): Record<string, string> => {
+        const parsedResult: Record<string, string> = {}
+
+        const normalizeKey = (key: string): string => {
+          const compact = key.toLowerCase().replace(/[^a-z]/g, '')
+          const aliasMap: Record<string, string> = {
+            subject: 'subject',
+            style: 'style',
+            artstyle: 'style',
+            artisticstyle: 'style',
+            lighting: 'lighting',
+            light: 'lighting',
+            mood: 'mood',
+            atmosphere: 'mood',
+            artist: 'artist',
+            artistreference: 'artist',
+            artistreferences: 'artist',
+            technical: 'technical',
+            technicaldetails: 'technical',
+            details: 'technical',
+          }
+          return aliasMap[compact] || compact
+        }
+
+        const limitWords = (value: string, maxWords: number): string => {
+          const words = value.trim().split(/\s+/).filter(Boolean).slice(0, maxWords)
+          return words.join(' ').trim()
+        }
+
+        const normalizeObjectFields = (obj: Record<string, unknown>) => {
+          const valueByKey = new Map<string, string>()
+          for (const [rawKey, rawValue] of Object.entries(obj)) {
+            if (typeof rawValue !== 'string') continue
+            const normalized = normalizeKey(rawKey)
+            if (!normalized) continue
+            valueByKey.set(normalized, rawValue)
+          }
+
+          for (const field of fieldsToGenerate) {
+            const rawValue = valueByKey.get(field.key)
+            if (!rawValue) continue
+            const limited = limitWords(rawValue, field.maxWords)
+            if (limited) parsedResult[field.key] = limited
+          }
+        }
+
+        const attemptParseJson = (text: string): boolean => {
+          const trimmed = text.trim()
+          if (!trimmed) return false
+
+          const directCandidates = [
+            trimmed,
+            trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim(),
+          ]
+
+          const firstBrace = trimmed.indexOf('{')
+          const lastBrace = trimmed.lastIndexOf('}')
+          if (firstBrace >= 0 && lastBrace > firstBrace) {
+            directCandidates.push(trimmed.slice(firstBrace, lastBrace + 1))
+          }
+
+          for (const candidate of directCandidates) {
+            if (!candidate) continue
+            try {
+              const parsed = JSON.parse(candidate) as unknown
+              if (typeof parsed !== 'object' || parsed === null) continue
+
+              if ('fields' in parsed && typeof (parsed as { fields?: unknown }).fields === 'object' && (parsed as { fields?: unknown }).fields !== null) {
+                normalizeObjectFields((parsed as { fields: Record<string, unknown> }).fields)
+              } else {
+                normalizeObjectFields(parsed as Record<string, unknown>)
+              }
+
+              if (Object.keys(parsedResult).length > 0) return true
+            } catch {
+              // Try next candidate
+            }
+          }
+
+          return false
+        }
+
+        if (!attemptParseJson(raw)) {
+          const lines = raw
+            .trim()
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line && !line.startsWith('```'))
+            .map((line) => line.replace(/^[-*]\s*/, '').replace(/^[a-zA-Z_ ]+\s*:\s*/, '').trim())
+            .filter(Boolean)
+
+          for (let i = 0; i < fieldsToGenerate.length && i < lines.length; i++) {
+            const limited = limitWords(lines[i], fieldsToGenerate[i].maxWords)
+            if (limited) parsedResult[fieldsToGenerate[i].key] = limited
+          }
+        }
+
+        return parsedResult
+      }
+
       // Identify empty fields that need generation
       const fieldsToGenerate: Array<{ key: string; description: string; maxWords: number }> = []
       
@@ -3053,24 +3156,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         const raw = extractChatCompletionContent(payload)
         if (!raw) throw new Error('No content returned from OpenRouter.')
 
-        // Parse JSON response
-        try {
-          const parsed = JSON.parse(raw.trim()) as Record<string, string>
-          for (const field of fieldsToGenerate) {
-            if (parsed[field.key]) {
-              // Enforce word limit
-              const words = parsed[field.key].split(/\s+/).slice(0, field.maxWords)
-              resultFields[field.key] = words.join(' ')
-            }
-          }
-        } catch {
-          // Fallback: treat as simple text per field separated by newlines
-          const lines = raw.trim().split('\n').filter(l => l.trim())
-          for (let i = 0; i < fieldsToGenerate.length && i < lines.length; i++) {
-            const words = lines[i].split(/\s+/).slice(0, fieldsToGenerate[i].maxWords)
-            resultFields[fieldsToGenerate[i].key] = words.join(' ')
-          }
-        }
+        Object.assign(resultFields, parseGeneratedFields(raw, fieldsToGenerate))
 
         await recordUsageEvent({
           db,
@@ -3125,21 +3211,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
         const raw = extractChatCompletionContent(payload)
         if (!raw) throw new Error('No content returned from OpenRouter.')
 
-        try {
-          const parsed = JSON.parse(raw.trim()) as Record<string, string>
-          for (const field of fieldsToGenerate) {
-            if (parsed[field.key]) {
-              const words = parsed[field.key].split(/\s+/).slice(0, field.maxWords)
-              resultFields[field.key] = words.join(' ')
-            }
-          }
-        } catch {
-          const lines = raw.trim().split('\n').filter(l => l.trim())
-          for (let i = 0; i < fieldsToGenerate.length && i < lines.length; i++) {
-            const words = lines[i].split(/\s+/).slice(0, fieldsToGenerate[i].maxWords)
-            resultFields[fieldsToGenerate[i].key] = words.join(' ')
-          }
-        }
+        Object.assign(resultFields, parseGeneratedFields(raw, fieldsToGenerate))
 
         await recordUsageEvent({
           db,
@@ -3193,21 +3265,7 @@ Output ONLY the final prompt as a single paragraph. No bullet points, no labels,
       const raw = extractChatCompletionContent(payload)
       if (!raw) throw new Error('No content returned from local provider.')
 
-      try {
-        const parsed = JSON.parse(raw.trim()) as Record<string, string>
-        for (const field of fieldsToGenerate) {
-          if (parsed[field.key]) {
-            const words = parsed[field.key].split(/\s+/).slice(0, field.maxWords)
-            resultFields[field.key] = words.join(' ')
-          }
-        }
-      } catch {
-        const lines = raw.trim().split('\n').filter(l => l.trim())
-        for (let i = 0; i < fieldsToGenerate.length && i < lines.length; i++) {
-          const words = lines[i].split(/\s+/).slice(0, fieldsToGenerate[i].maxWords)
-          resultFields[fieldsToGenerate[i].key] = words.join(' ')
-        }
-      }
+      Object.assign(resultFields, parseGeneratedFields(raw, fieldsToGenerate))
 
       await recordUsageEvent({
         db,
