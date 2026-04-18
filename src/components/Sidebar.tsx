@@ -5,6 +5,7 @@ type NavItem = {
   id: Screen
   label: string
   icon: string
+  iconColorClass: string
   description: string
 }
 
@@ -13,54 +14,63 @@ const NAV_ITEMS: NavItem[] = [
     id: 'dashboard',
     label: 'Dashboard',
     icon: '◬',
+    iconColorClass: 'text-teal-300',
     description: 'Overview & quick actions',
   },
   {
     id: 'generator',
     label: 'Generator',
     icon: '⚡',
+    iconColorClass: 'text-glow-amber',
     description: 'Magic random (AI)',
   },
   {
     id: 'library',
     label: 'Prompt Library',
     icon: '✦',
+    iconColorClass: 'text-glow-soft',
     description: 'Browse & manage prompts',
   },
   {
     id: 'characters',
     label: 'Characters',
     icon: '◉',
+    iconColorClass: 'text-glow-pink',
     description: 'Reference cast sheets',
   },
   {
     id: 'style-profiles',
     label: 'Style Profiles',
     icon: '◈',
+    iconColorClass: 'text-glow-blue',
     description: 'Reusable style presets',
   },
   {
     id: 'gallery',
     label: 'Gallery',
     icon: '▣',
+    iconColorClass: 'text-teal-400',
     description: 'AI-generated media',
   },
   {
     id: 'usage',
     label: 'Usage',
     icon: '◷',
+    iconColorClass: 'text-glow-cyan',
     description: 'Tokens & cost history',
   },
   {
     id: 'settings',
     label: 'Settings',
     icon: '⚙',
+    iconColorClass: 'text-glow-amber',
     description: 'OpenRouter credentials',
   },
   {
     id: 'ai-config',
     label: 'AI Configuration',
     icon: '✧',
+    iconColorClass: 'text-glow-soft',
     description: 'Provider & model routing',
   },
 ]
@@ -105,7 +115,7 @@ export default function Sidebar({ activeScreen, onNavigate }: Props) {
               <div className="flex items-center gap-3">
                 <span
                   className={`text-base transition-colors ${
-                    isActive ? 'text-glow-soft' : 'text-slate-500 group-hover:text-slate-300'
+                    isActive ? item.iconColorClass : `${item.iconColorClass} opacity-70 group-hover:opacity-100`
                   }`}
                 >
                   {item.icon}

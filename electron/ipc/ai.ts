@@ -530,8 +530,17 @@ function computeBudgetPicks(prompt: string, models: AdvisorModelRecord[]): { che
       typography: 0.2 + typographyHits * 0.3,
       prompting: 0.1,
     })
-    const scored = models
+
+    const candidateModels = models
       .filter((model) => model.mediaType === 'image')
+      .filter((model) => {
+        const costTier = parseCostTier(model.costTier)
+        if (bm === 'cheap') return costTier <= 2
+        if (bm === 'balanced') return costTier <= 3
+        return true
+      })
+
+    const scored = candidateModels
       .map((model) => {
         const art = parseScore(model.artScore)
         const realism = parseScore(model.realismScore)
@@ -557,7 +566,7 @@ function computeBudgetPicks(prompt: string, models: AdvisorModelRecord[]): { che
     if (top.typography >= 4) reasons.push('High typography score')
     if (top.prompting >= 4) reasons.push('Prompt-responsive model')
     if (bm === 'cheap' && top.costTier <= 2) reasons.push('Cost-effective')
-    if (bm === 'balanced' && top.costTier === 3) reasons.push('Mid-range cost with good quality')
+    if (bm === 'balanced' && top.costTier <= 3) reasons.push('Mid-range cost with good quality')
     if (bm === 'premium') reasons.push('Premium tier model')
     if (reasons.length === 0) reasons.push(`Best overall fit (cost tier ${top.costTier})`)
 

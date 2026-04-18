@@ -26,6 +26,29 @@ type LightboxItem = {
   stylePreset: string
 }
 
+type LightboxPosition = {
+  promptIndex: number
+  imageIndex: number
+}
+
+function getPromptImageUrls(prompt: Prompt): string[] {
+  const urls: string[] = []
+
+  if (Array.isArray(prompt.imagesJson)) {
+    for (const image of prompt.imagesJson) {
+      const candidate = typeof image?.url === 'string' ? image.url.trim() : ''
+      if (candidate) urls.push(candidate)
+    }
+  }
+
+  const fallback = typeof prompt.imageUrl === 'string' ? prompt.imageUrl.trim() : ''
+  if (fallback && !urls.includes(fallback)) {
+    urls.push(fallback)
+  }
+
+  return urls
+}
+
 function getStarFill(rating: number, starIndex: number) {
   if (rating >= starIndex) return 'full'
   if (rating >= starIndex - 0.5) return 'half'
@@ -48,14 +71,33 @@ export default function Library() {
   const [currentPage, setCurrentPage] = useState(0)
   const [copiedId, setCopiedId] = useState<number | null>(null)
   const [form, setForm] = useState<FormState>({ mode: 'closed' })
-  const [lightboxImage, setLightboxImage] = useState<LightboxItem | null>(null)
+  const [lightboxPosition, setLightboxPosition] = useState<LightboxPosition | null>(null)
   const [lightboxVisible, setLightboxVisible] = useState(false)
   const [lightboxOverlayVisible, setLightboxOverlayVisible] = useState(true)
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; promptId: number | null }>({ isOpen: false, promptId: null })
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
 
-  const openLightbox = useCallback((image: LightboxItem) => {
-    setLightboxImage(image)
+  const allModels = [...new Set(prompts.map((p) => p.model).filter(Boolean))].sort()
+  const allTags = [...new Set(prompts.flatMap((p) => p.tags || []))].sort()
+
+  const filteredPrompts = useMemo(() => {
+    return prompts.filter((prompt) => {
+      if (filterType === 'templates' && !prompt.isTemplate) return false
+      if (filterType === 'favorites' && !prompt.isFavorite) return false
+      if (selectedTag && !prompt.tags.includes(selectedTag)) return false
+      return true
+    })
+  }, [prompts, filterType, selectedTag])
+
+  const openLightbox = useCallback((promptId: number, imageIndex = 0) => {
+    const promptIndex = filteredPrompts.findIndex((prompt) => prompt.id === promptId)
+    if (promptIndex === -1) return
+
+    const promptImages = getPromptImageUrls(filteredPrompts[promptIndex])
+    if (promptImages.length === 0) return
+
+    const clampedIndex = Math.max(0, Math.min(imageIndex, promptImages.length - 1))
+    setLightboxPosition({ promptIndex, imageIndex: clampedIndex })
     setLightboxOverlayVisible(true)
 
     const raf = window.requestAnimationFrame(() => {
@@ -65,7 +107,95 @@ export default function Library() {
     return () => {
       window.cancelAnimationFrame(raf)
     }
-  }, [])
+  }, [filteredPrompts])
+
+  const lightboxImage = useMemo<LightboxItem | null>(() => {
+    if (!lightboxPosition) return null
+
+    const prompt = filteredPrompts[lightboxPosition.promptIndex]
+    if (!prompt) return null
+
+    const promptImages = getPromptImageUrls(prompt)
+    if (promptImages.length === 0) return null
+
+    const currentImage = promptImages[lightboxPosition.imageIndex]
+    if (!currentImage) return null
+
+    return {
+      url: currentImage,
+      title: prompt.title || 'Prompt image',
+      promptText: prompt.promptText,
+      rating: prompt.rating ?? 0,
+      model: prompt.model || prompt.suggestedModel || '',
+      stylePreset: prompt.stylePreset ?? '',
+    }
+  }, [filteredPrompts, lightboxPosition])
+
+  const lightboxImageCount = useMemo(() => {
+    if (!lightboxPosition) return 0
+    const prompt = filteredPrompts[lightboxPosition.promptIndex]
+    if (!prompt) return 0
+    return getPromptImageUrls(prompt).length
+  }, [filteredPrompts, lightboxPosition])
+
+  const goToNextLightboxImage = useCallback(() => {
+    if (!lightboxPosition) return
+    if (filteredPrompts.length === 0) return
+
+    const currentPrompt = filteredPrompts[lightboxPosition.promptIndex]
+    if (!currentPrompt) return
+
+    const currentImages = getPromptImageUrls(currentPrompt)
+    if (currentImages.length === 0) return
+
+    if (lightboxPosition.imageIndex < currentImages.length - 1) {
+      setLightboxPosition({
+        promptIndex: lightboxPosition.promptIndex,
+        imageIndex: lightboxPosition.imageIndex + 1,
+      })
+      return
+    }
+
+    for (let offset = 1; offset <= filteredPrompts.length; offset += 1) {
+      const nextPromptIndex = (lightboxPosition.promptIndex + offset) % filteredPrompts.length
+      const nextPromptImages = getPromptImageUrls(filteredPrompts[nextPromptIndex])
+      if (nextPromptImages.length > 0) {
+        setLightboxPosition({ promptIndex: nextPromptIndex, imageIndex: 0 })
+        return
+      }
+    }
+  }, [filteredPrompts, lightboxPosition])
+
+  const goToPreviousLightboxImage = useCallback(() => {
+    if (!lightboxPosition) return
+    if (filteredPrompts.length === 0) return
+
+    const currentPrompt = filteredPrompts[lightboxPosition.promptIndex]
+    if (!currentPrompt) return
+
+    const currentImages = getPromptImageUrls(currentPrompt)
+    if (currentImages.length === 0) return
+
+    if (lightboxPosition.imageIndex > 0) {
+      setLightboxPosition({
+        promptIndex: lightboxPosition.promptIndex,
+        imageIndex: lightboxPosition.imageIndex - 1,
+      })
+      return
+    }
+
+    for (let offset = 1; offset <= filteredPrompts.length; offset += 1) {
+      const previousPromptIndex = (lightboxPosition.promptIndex - offset + filteredPrompts.length) % filteredPrompts.length
+      const previousPromptImages = getPromptImageUrls(filteredPrompts[previousPromptIndex])
+      if (previousPromptImages.length > 0) {
+        setLightboxPosition({
+          promptIndex: previousPromptIndex,
+          imageIndex: previousPromptImages.length - 1,
+        })
+        return
+      }
+    }
+  }, [filteredPrompts, lightboxPosition])
 
   const closeLightbox = useCallback(() => {
     setLightboxVisible(false)
@@ -83,7 +213,7 @@ export default function Library() {
     if (!lightboxImage || lightboxVisible) return
 
     const timeout = window.setTimeout(() => {
-      setLightboxImage(null)
+      setLightboxPosition(null)
     }, 210)
 
     return () => {
@@ -99,6 +229,16 @@ export default function Library() {
         closeLightbox()
       }
 
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        goToNextLightboxImage()
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        goToPreviousLightboxImage()
+      }
+
       if (event.key.toLowerCase() === 'i') {
         setLightboxOverlayVisible((prev) => !prev)
       }
@@ -109,7 +249,7 @@ export default function Library() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [closeLightbox, lightboxImage])
+  }, [closeLightbox, goToNextLightboxImage, goToPreviousLightboxImage, lightboxImage])
 
   const fetchPrompts = useCallback(async () => {
     setLoading(true)
@@ -199,18 +339,6 @@ export default function Library() {
 
     setPrompts((prev) => prev.map((item) => (item.id === prompt.id ? { ...item, rating: nextRating } : item)))
   }
-
-  const allModels = [...new Set(prompts.map((p) => p.model).filter(Boolean))].sort()
-  const allTags = [...new Set(prompts.flatMap((p) => p.tags || []))].sort()
-
-  const filteredPrompts = useMemo(() => {
-    return prompts.filter((prompt) => {
-      if (filterType === 'templates' && !prompt.isTemplate) return false
-      if (filterType === 'favorites' && !prompt.isFavorite) return false
-      if (selectedTag && !prompt.tags.includes(selectedTag)) return false
-      return true
-    })
-  }, [prompts, filterType, selectedTag])
 
   const totalPages = Math.max(1, Math.ceil(filteredPrompts.length / PAGE_SIZE))
   const safeCurrentPage = Math.min(currentPage, totalPages - 1)
@@ -337,9 +465,8 @@ export default function Library() {
                 const preview = prompt.promptText.length > 170
                   ? `${prompt.promptText.slice(0, 170)}...`
                   : prompt.promptText
-                const coverImageUrl = Array.isArray(prompt.imagesJson) && prompt.imagesJson.length > 0
-                  ? prompt.imagesJson[0].url
-                  : prompt.imageUrl
+                const promptImages = getPromptImageUrls(prompt)
+                const coverImageUrl = promptImages[0] || ''
 
                 return (
                   <div
@@ -355,14 +482,7 @@ export default function Library() {
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02] cursor-zoom-in"
                           onClick={(event) => {
                             event.stopPropagation()
-                            openLightbox({
-                              url: coverImageUrl,
-                              title: prompt.title || 'Prompt image',
-                              promptText: prompt.promptText,
-                              rating: prompt.rating ?? 0,
-                              model: prompt.model || prompt.suggestedModel || '',
-                              stylePreset: prompt.stylePreset ?? '',
-                            })
+                            openLightbox(prompt.id, 0)
                           }}
                           onError={(event) => {
                             ;(event.currentTarget.parentElement as HTMLDivElement | null)?.classList.add('hidden')
@@ -639,14 +759,7 @@ export default function Library() {
                                 alt={selectedPrompt.title || 'Prompt image'}
                                 className="h-full w-full object-cover cursor-zoom-in"
                                 onClick={() =>
-                                  openLightbox({
-                                    url: modalCover,
-                                    title: selectedPrompt.title || 'Prompt image',
-                                    promptText: selectedPrompt.promptText,
-                                    rating: selectedPrompt.rating ?? 0,
-                                    model: selectedPrompt.model || selectedPrompt.suggestedModel || '',
-                                    stylePreset: selectedPrompt.stylePreset ?? '',
-                                  })
+                                  openLightbox(selectedPrompt.id, 0)
                                 }
                               />
                             </div>
@@ -798,6 +911,32 @@ export default function Library() {
             </div>
           )}
 
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              goToPreviousLightboxImage()
+            }}
+            className={`absolute left-4 top-1/2 z-[101] -translate-y-1/2 rounded-full bg-black/50 border border-white/20 px-3 py-2 text-white hover:bg-black/70 transition-all ${lightboxVisible ? 'duration-[320ms]' : 'duration-200'} ease-out ${lightboxVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}
+            aria-label="Previous image"
+            title="Previous image (Left arrow)"
+          >
+            ‹
+          </button>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              goToNextLightboxImage()
+            }}
+            className={`absolute right-4 top-1/2 z-[101] -translate-y-1/2 rounded-full bg-black/50 border border-white/20 px-3 py-2 text-white hover:bg-black/70 transition-all ${lightboxVisible ? 'duration-[320ms]' : 'duration-200'} ease-out ${lightboxVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}
+            aria-label="Next image"
+            title="Next image (Right arrow)"
+          >
+            ›
+          </button>
+
           <img
             src={lightboxImage.url}
             alt={lightboxImage.title}
@@ -815,6 +954,11 @@ export default function Library() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
+                  {lightboxPosition && lightboxImageCount > 1 && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full border border-white/15 bg-black/35 text-white/80">
+                      {lightboxPosition.imageIndex + 1} / {lightboxImageCount}
+                    </span>
+                  )}
                   {/* TODO: Add improved prompt checkmark when improvedPrompt field exists */}
                 </div>
                 <div className="flex items-center justify-center gap-1 text-glow-amber">

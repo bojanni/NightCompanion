@@ -738,3 +738,27 @@
 - Findings: Generated prompts lacked variation due to a prescriptive BASE_PERSONA and hardcoded temperature in improvePrompt. No mode choice was offered to the user.
 - Conclusions: BASE_PERSONA softened to encourage stylistic variety. Three improvement modes added (Expand / Reframe / Intensify) with per-mode temperature and instruction. Mode selector added as pill UI in ImprovementSection.
 - Actions: Updated BASE_PERSONA in `electron/ipc/ai.ts`; added IMPROVE_INSTRUCTIONS and IMPROVE_TEMPERATURES records; extended improvePrompt handler to accept and apply mode; updated IPC types in preload and electron.d.ts; added pill mode selector in ImprovementSection.tsx (positive prompt only, session state).
+
+## 2026-04-18 (Sidebar icon kleuren)
+
+- Findings: Iconen in de linker sidebar hadden een neutrale kleur waardoor navigatie-items minder visueel onderscheid hadden.
+- Conclusions: Per navigatie-item een bestaande accentkleur toepassen geeft snellere scanbaarheid zonder layoutwijzigingen.
+- Actions: Updated `src/components/Sidebar.tsx` met `iconColorClass` per item en actieve/inactieve icon-state op basis van die accentkleur; validated with `npm run build`.
+
+## 2026-04-18 (Prompt Library image gallery in lightbox)
+
+- Findings: In Prompt Library werd bij prompts met meerdere afbeeldingen slechts één coverafbeelding in de lightbox getoond.
+- Conclusions: De lightbox moet als galerij werken per prompt, met doorlopen naar de volgende prompt nadat de laatste afbeelding is bereikt.
+- Actions: Updated `src/screens/Library.tsx` met prompt-image galerijstate (`promptIndex` + `imageIndex`), pijlnavigatie (buttons + keyboard), image counter en automatische doorgang naar de volgende prompt na de laatste afbeelding; validated with `npm run build`.
+
+## 2026-04-18 (Library crash fix: filteredPrompts initialisatie)
+
+- Findings: Prompt Library crashte met `ReferenceError: Cannot access 'filteredPrompts' before initialization` door gebruik van `filteredPrompts` in lightbox callbacks vóór declaratie.
+- Conclusions: Afgeleide filterdata moet vóór lightbox callbacks worden gedeclareerd om TDZ-initialisatiefouten te vermijden.
+- Actions: Reordered `allModels`, `allTags` en `filteredPrompts` declaraties in `src/screens/Library.tsx` zodat callbacks en memo's ze pas na initialisatie gebruiken; validated with `npm run build`.
+
+## 2026-04-18 (Bug fix: computeBudgetPicks altijd hetzelfde model)
+
+- Findings: AI advice gaf voor alle drie de budget-categorieën (cheap/balanced/premium) hetzelfde model (3D Animation Diffusion v10) terug. Oorzaak: computeBudgetPicks filterde niet op costTier vóór de scoring, waardoor een model met hoge quality-score én lage costTier ook de balanced- en premium-categorie won via de zachte penalty (die voor premium altijd 0 is).
+- Conclusions: Harde costTier-filter per budget-modus vóór de .map() zorgt dat cheap alleen costTier ≤ 2 en balanced alleen costTier ≤ 3 overweegt; premium blijft onbeperkt. De zachte penalty-logica blijft als tiebreaker behouden.
+- Actions: electron/ipc/ai.ts — in computeBudgetPicks / scoreFor een candidateModels-filter toegevoegd vóór de scoring-map; de bestaande penalty-logica en sort ongewijzigd gelaten; validated with npm run build.

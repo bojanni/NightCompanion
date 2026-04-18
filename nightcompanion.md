@@ -53,3 +53,6 @@
 - Settings section headings now use the app's orange accent colour for stronger visual grouping.
 - Improve Prompt now uses a refreshed creative persona that enforces British English, single-paragraph output, and more stylistic variation between prompt results.
 - Improve Prompt now offers three positive-prompt variation modes: Expand, Reframe, and Intensify.
+- Left sidebar navigation icons now use accent colours for clearer visual distinction between sections.
+- Prompt Library lightbox now supports image galleries for prompts with multiple images, and continues to the next prompt after the last image.
+- Fixed a Prompt Library crash caused by image gallery initialisation order (`filteredPrompts` reference before initialisation).
