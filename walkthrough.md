@@ -720,3 +720,9 @@
 - Findings: AI Configuration state (OpenRouter, provider-meta, local endpoints en dashboard routing) werd alleen in `settings.json` opgeslagen, terwijl de app al PostgreSQL/Drizzle gebruikt.
 - Conclusions: Een singleton DB-tabel voor AI Configuration maakt opslag consistenter, beter backupbaar en minder afhankelijk van bestandsschrijfacties.
 - Actions: Added `ai_configuration_settings` in `src/lib/schema.ts` plus migration `drizzle/0026_ai_configuration_settings.sql` en journal entry; refactored `electron/ipc/settings.ts` zodat `get/saveOpenRouter`, `get/saveProviderMeta`, `get/saveLocalEndpoints`, `get/saveAiConfigState` en gerelateerde reads DB-first zijn met fallback/migratie vanaf `settings.json`; updated `electron/main.ts` om DB-aware settings readers te gebruiken; uitgebreid `settings:backupDatabase` met `ai_configuration_settings`; validated with `npm run build`.
+
+## 2026-04-18 (Settings headings — orange accent kleur)
+
+- Findings: Sectiekoppen op de Settings-pagina waren nog wit en misten de visuele accentkleur van de app.
+- Conclusions: Gebruik de bestaande amber accentkleur voor settings-sectiekoppen voor betere visuele hiërarchie en design-consistentie.
+- Actions: Updated `src/index.css` `settings-section-title` van `text-white` naar `text-amber-400`; validated with `npm run build`.

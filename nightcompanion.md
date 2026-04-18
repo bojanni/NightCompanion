@@ -50,3 +50,4 @@
 ## 2026-04-18
 
 - Settings section headings are now visually larger than the individual options, so cards are easier to scan.
+- Settings section headings now use the app's orange accent colour for stronger visual grouping.
