@@ -611,7 +611,8 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                                   value={image.customPrompt}
                                   onChange={(e) => updateImage(image.id, {
                                     customPrompt: e.target.value,
-                                    promptSource: e.target.value.trim() ? 'custom' : 'generated',
+                                    // Keep the editor active while users clear/paste content.
+                                    promptSource: 'custom',
                                   })}
                                   className="textarea"
                                   rows={3}

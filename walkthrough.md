@@ -780,3 +780,9 @@
 - Findings: Prompt Library edit-form crashte met `ReferenceError: customPrompt is not defined` in `PromptForm` preview-sectie nadat de globale custom prompt state was verwijderd.
 - Conclusions: Alle resterende verwijzingen naar de verwijderde globale variabele moeten terugvallen op `promptText`.
 - Actions: Updated `src/components/PromptForm.tsx` `PromptPreview` props (`promptText` en `saveDisabled`) om alleen `promptText` te gebruiken; validated with `npm run build`.
+
+## 2026-04-18 (Hotfix: image custom prompt field closes during edit)
+
+- Findings: In Prompt Library edit-form sloot het image-level `Custom Prompt` veld direct wanneer de inhoud tijdelijk leeg werd gemaakt (Delete/Backspace) en kon dit ook optreden tijdens plakacties met Ctrl+V.
+- Conclusions: Het veld mag tijdens bewerken niet automatisch terugschakelen naar `generated`; alleen de expliciete toggle-knop mag de mode wisselen.
+- Actions: Updated `src/components/PromptForm.tsx` textarea `onChange` voor image custom prompts zodat `promptSource` tijdens input altijd `custom` blijft; validated with `npm run build`.
