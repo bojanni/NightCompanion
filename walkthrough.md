@@ -289,6 +289,12 @@
 - Conclusions: Increase image max height to the viewport-safe limit while keeping `object-contain`, and add an explicit `Copy Prompt` action within the lightbox overlay.
 - Actions: Updated `src/screens/Library.tsx` to use `max-h-[calc(100vh-2rem)]` / `max-w-[calc(100vw-2rem)]` for the lightbox image (aspect ratio preserved), and added a lightbox-level `Copy Prompt` button with copied state + toast feedback; validated with `npm run build`.
 
+## 2026-04-19 (Prompt Library lightbox — force top layer)
+
+- Findings: The lightbox could render behind other overlays because its z-index was lower than the Prompt Details modal overlay.
+- Conclusions: Increase the lightbox root z-index so it consistently sits above all current in-screen overlays.
+- Actions: Updated `src/screens/Library.tsx` lightbox container from `z-[100]` to `z-[220]`; validated with `npm run build`.
+
 ## 2026-04-18 (Settings — stronger section headings)
 
 - Findings: Settings section headings used the same `text-sm` sizing as the option labels inside each card, which made sections harder to distinguish.
