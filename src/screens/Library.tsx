@@ -101,6 +101,7 @@ export default function Library() {
   const [lightboxPosition, setLightboxPosition] = useState<LightboxPosition | null>(null)
   const [lightboxVisible, setLightboxVisible] = useState(false)
   const [lightboxOverlayVisible, setLightboxOverlayVisible] = useState(true)
+  const [lightboxPromptCopied, setLightboxPromptCopied] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; promptId: number | null }>({ isOpen: false, promptId: null })
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
 
@@ -126,6 +127,7 @@ export default function Library() {
     const clampedIndex = Math.max(0, Math.min(imageIndex, promptImages.length - 1))
     setLightboxPosition({ promptIndex, imageIndex: clampedIndex })
     setLightboxOverlayVisible(true)
+    setLightboxPromptCopied(false)
 
     const raf = window.requestAnimationFrame(() => {
       setLightboxVisible(true)
@@ -227,6 +229,7 @@ export default function Library() {
 
   const closeLightbox = useCallback(() => {
     setLightboxVisible(false)
+    setLightboxPromptCopied(false)
   }, [])
 
   const toggleLightboxOverlay = useCallback(() => {
@@ -339,6 +342,22 @@ export default function Library() {
     setCopiedId(prompt.id)
     setTimeout(() => setCopiedId(null), 1500)
   }
+
+  const handleCopyLightboxPrompt = useCallback(async () => {
+    if (!lightboxImage?.promptText?.trim()) {
+      notifications.show({ message: 'No prompt text to copy.', color: 'yellow' })
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(lightboxImage.promptText)
+      setLightboxPromptCopied(true)
+      window.setTimeout(() => setLightboxPromptCopied(false), 1500)
+      notifications.show({ message: 'Prompt copied', color: 'green' })
+    } catch {
+      notifications.show({ message: 'Failed to copy prompt', color: 'red' })
+    }
+  }, [lightboxImage])
 
   const handleToggleFavorite = async (prompt: Prompt) => {
     const result = await window.electronAPI.prompts.update(prompt.id, {
@@ -978,7 +997,7 @@ export default function Library() {
             src={lightboxImage.url}
             alt={lightboxImage.title}
             onClick={(event) => event.stopPropagation()}
-            className={`relative z-[101] max-w-[96vw] max-h-[94vh] object-contain rounded-2xl shadow-2xl transition-all will-change-transform ${lightboxVisible ? 'duration-[320ms]' : 'duration-200'} ease-[cubic-bezier(0.22,1,0.36,1)] ${lightboxVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
+            className={`relative z-[101] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] object-contain rounded-2xl shadow-2xl transition-all will-change-transform ${lightboxVisible ? 'duration-[320ms]' : 'duration-200'} ease-[cubic-bezier(0.22,1,0.36,1)] ${lightboxVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
           />
 
           <div
@@ -988,7 +1007,7 @@ export default function Library() {
               className="pointer-events-auto w-full max-w-3xl rounded-[28px] border border-white/15 bg-black/45 px-5 py-4 text-white shadow-2xl backdrop-blur-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 gap-3">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-white">{lightboxImage.title}</h3>
                   {lightboxPosition && lightboxImageCount > 1 && (
@@ -998,7 +1017,18 @@ export default function Library() {
                   )}
                   {/* TODO: Add improved prompt checkmark when improvedPrompt field exists */}
                 </div>
-                <div className="flex items-center justify-center gap-1 text-glow-amber">
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyLightboxPrompt()}
+                    className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs text-white/90 hover:bg-black/55 transition-colors"
+                    aria-label="Copy prompt"
+                    title="Copy prompt"
+                  >
+                    {lightboxPromptCopied ? <Check size={13} /> : <Copy size={13} />}
+                    {lightboxPromptCopied ? 'Copied' : 'Copy Prompt'}
+                  </button>
+                  <div className="flex items-center justify-center gap-1 text-glow-amber">
                   {[1, 2, 3, 4, 5].map((value) => {
                     const fill = getStarFill(lightboxImage.rating, value)
 
@@ -1015,6 +1045,7 @@ export default function Library() {
                   <span className="ml-2 text-sm font-medium text-white/90">
                     {lightboxImage.rating > 0 ? lightboxImage.rating.toFixed(1) : '0.0'} / 5.0
                   </span>
+                  </div>
                 </div>
               </div>
 

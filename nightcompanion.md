@@ -67,3 +67,5 @@
 - Generator now includes a `Save mode` option to choose between saving the original prompt only, or saving the improved prompt while retaining the original prompt context.
 - On the Generator page, `Generate Title (AI)` is now positioned before the save-mode dropdown for a more logical save workflow.
 - Saving to Prompt Library now blocks duplicate prompts by comparing normalized prompt text, even when the title is different.
+- Prompt Library lightbox now displays the image at the maximum available viewport height while preserving aspect ratio.
+- Prompt Library lightbox now includes a `Copy Prompt` button directly in the overlay card.

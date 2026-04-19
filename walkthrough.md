@@ -283,6 +283,12 @@
 - Conclusions: Duplicate detection should compare normalized prompt text only, independent from title.
 - Actions: Updated `src/screens/Generator.tsx` duplicate pre-check to compare normalized prompt text only; added IPC guard in `electron/ipc/prompts.ts` `prompts:create` to reject duplicate prompt text globally and return a clear error; validated with `npm run build`.
 
+## 2026-04-19 (Prompt Library lightbox — max image height + copy button)
+
+- Findings: In the Prompt Library lightbox, the displayed image did not use the full available viewport height and there was no direct copy action for the shown prompt text.
+- Conclusions: Increase image max height to the viewport-safe limit while keeping `object-contain`, and add an explicit `Copy Prompt` action within the lightbox overlay.
+- Actions: Updated `src/screens/Library.tsx` to use `max-h-[calc(100vh-2rem)]` / `max-w-[calc(100vw-2rem)]` for the lightbox image (aspect ratio preserved), and added a lightbox-level `Copy Prompt` button with copied state + toast feedback; validated with `npm run build`.
+
 ## 2026-04-18 (Settings — stronger section headings)
 
 - Findings: Settings section headings used the same `text-sm` sizing as the option labels inside each card, which made sections harder to distinguish.
