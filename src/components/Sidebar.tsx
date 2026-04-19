@@ -112,15 +112,15 @@ export default function Sidebar({ activeScreen, onNavigate }: Props) {
                 }
               `}
             >
-              <div className="flex items-center gap-3">
+              <div className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-3">
                 <span
                   className={`text-base transition-colors ${
                     isActive ? item.iconColorClass : `${item.iconColorClass} opacity-70 group-hover:opacity-100`
-                  }`}
+                  } flex h-6 w-6 items-center justify-center text-center leading-none`}
                 >
                   {item.icon}
                 </span>
-                <div>
+                <div className="min-w-0">
                   <div
                     className={`text-sm font-medium leading-none mb-0.5 ${
                       isActive ? 'text-white' : 'text-slate-300 group-hover:text-white'

@@ -259,6 +259,12 @@
 - Conclusions: Copy the improved prompt when available, otherwise fall back to the current generated prompt.
 - Actions: Updated `src/screens/Generator.tsx` to add a `handleCopyImprovedPrompt` helper and render a `Copy Prompt` button next to `Improve Prompt` in the Improve section; validated with `npm run build`.
 
+## 2026-04-19 (Sidebar — align left menu items)
+
+- Findings: Navigation labels in the left sidebar could appear visually offset because icon glyph widths vary between symbols.
+- Conclusions: A fixed icon column with a constrained text column keeps every menu row aligned regardless of icon shape.
+- Actions: Updated `src/components/Sidebar.tsx` to use a two-column grid (`icon + text`) with a fixed icon container and `min-w-0` text block for consistent alignment; validated with `npm run build`.
+
 ## 2026-04-18 (Settings — stronger section headings)
 
 - Findings: Settings section headings used the same `text-sm` sizing as the option labels inside each card, which made sections harder to distinguish.

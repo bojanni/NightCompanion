@@ -60,3 +60,7 @@
 - When an image-level custom prompt is enabled, that custom text is shown in the Prompt Library lightbox and a `Custom` label appears as an overlay in the top-left corner of the image.
 - The image-level `Custom Prompt` field now stays open while editing, including when temporarily clearing text or pasting with Ctrl+V.
 - Prompt Library lightbox now shows `Used model` from the selected uploaded image metadata, and keeps this label visually in front of the image.
+
+## 2026-04-19
+
+- Left sidebar menu items now use a fixed icon column and aligned text column, so labels and descriptions line up consistently across all navigation rows.
