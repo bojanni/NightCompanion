@@ -89,4 +89,4 @@
 - Settings now uses language-aware success/error status messages for Hugging Face sync, folder save/reset, export, and backup feedback.
 - Main page headers and primary labels now switch language live across Generator, Usage, Style Profiles, Gallery, Characters, Settings, and AI Configuration.
 - Dashboard `Top Characters` now uses fixed max-height image tiles with character name and description as overlay text.
-- Dashboard `Recent Prompts` and `Top Characters` cards now use equal width for balanced layout.
+- Dashboard row layout now uses a 2/3 vs 1/3 split: `Recent Prompts` takes two columns and `Top Characters` takes one column on wide screens.

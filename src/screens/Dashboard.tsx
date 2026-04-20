@@ -214,8 +214,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-              <div className="p-6 card">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+              <div className="p-6 xl:col-span-2 card">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-white">{t('dashboard.recentPrompts')}</h2>
                   <button onClick={() => onNavigate('library')} className="text-sm text-glow-blue hover:underline">

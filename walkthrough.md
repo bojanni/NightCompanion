@@ -907,8 +907,8 @@
 - Conclusions: Een compacte tile met vaste/maximale hoogte en een bottom gradient-overlay maakt de character-afbeelding visueel leidend en houdt naam/beschrijving leesbaar.
 - Actions: Updated `src/screens/Dashboard.tsx` zodat `Top Characters` items renderen als `h-28 max-h-28` image tiles met naam + beschrijving als overlay; updated `nightcompanion.md`; validated with `npm run build`.
 
-## 2026-04-21 (Dashboard: equal-width Recent Prompts and Top Characters)
+## 2026-04-21 (Dashboard: Top Characters 1/3 width)
 
-- Findings: Op dashboard had `Recent Prompts` een bredere kolom dan `Top Characters`, waardoor de cardbalans ongelijk was.
-- Conclusions: Een 2-koloms grid op xl-breekpunt geeft beide kaarten identieke breedte en een rustiger, symmetrische layout.
-- Actions: Updated `src/screens/Dashboard.tsx` van `xl:grid-cols-3` + `xl:col-span-2` naar `xl:grid-cols-2` zonder col-span override; updated `nightcompanion.md`; validated with `npm run build`.
+- Findings: De gewenste verdeling is dat `Top Characters` 1/3 van de rij inneemt (en `Recent Prompts` 2/3), in plaats van gelijke breedte.
+- Conclusions: Een `xl:grid-cols-3` layout met `Recent Prompts` op `xl:col-span-2` en `Top Characters` op één kolom levert exact de 2/3-1/3 verhouding.
+- Actions: Updated `src/screens/Dashboard.tsx` van `xl:grid-cols-2` terug naar `xl:grid-cols-3` en `Recent Prompts` naar `xl:col-span-2`; updated `nightcompanion.md`; validated with `npm run build`.
