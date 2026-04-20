@@ -95,47 +95,47 @@ export default function App() {
         <main className="flex-1 overflow-hidden">
           <div className="animate-fade-in h-full">
             {screen === 'dashboard' && (
-              <ScreenErrorBoundary screenName="Dashboard">
+              <ScreenErrorBoundary screenName="Dashboard" language={language}>
                 <Dashboard onNavigate={handleNavigate} />
               </ScreenErrorBoundary>
             )}
             {screen === 'ai-config' && (
-              <ScreenErrorBoundary screenName="AI Config">
+              <ScreenErrorBoundary screenName="AI Config" language={language}>
                 <AIConfig />
               </ScreenErrorBoundary>
             )}
             {screen === 'library' && (
-              <ScreenErrorBoundary screenName="Library">
+              <ScreenErrorBoundary screenName="Library" language={language}>
                 <Library />
               </ScreenErrorBoundary>
             )}
             {screen === 'characters' && (
-              <ScreenErrorBoundary screenName="Characters">
+              <ScreenErrorBoundary screenName="Characters" language={language}>
                 <Characters />
               </ScreenErrorBoundary>
             )}
             {screen === 'style-profiles' && (
-              <ScreenErrorBoundary screenName="Style Profiles">
+              <ScreenErrorBoundary screenName="Style Profiles" language={language}>
                 <StyleProfiles />
               </ScreenErrorBoundary>
             )}
             {screen === 'generator' && (
-              <ScreenErrorBoundary screenName="Generator">
+              <ScreenErrorBoundary screenName="Generator" language={language}>
                 <Generator />
               </ScreenErrorBoundary>
             )}
             {screen === 'gallery' && (
-              <ScreenErrorBoundary screenName="Gallery">
+              <ScreenErrorBoundary screenName="Gallery" language={language}>
                 <Gallery initialImageId={screenParams?.imageId as string | undefined} />
               </ScreenErrorBoundary>
             )}
             {screen === 'usage' && (
-              <ScreenErrorBoundary screenName="Usage">
+              <ScreenErrorBoundary screenName="Usage" language={language}>
                 <Usage />
               </ScreenErrorBoundary>
             )}
             {screen === 'settings' && (
-              <ScreenErrorBoundary screenName="Settings">
+              <ScreenErrorBoundary screenName="Settings" language={language}>
                 <Settings />
               </ScreenErrorBoundary>
             )}

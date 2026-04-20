@@ -85,3 +85,5 @@
 - English is now the default UI language.
 - Dutch translations were added for the left sidebar and key Prompt Library actions/messages.
 - A language switcher (`English` / `Nederlands`) was added to the left sidebar and the chosen language is persisted.
+- Dashboard and shared screen error fallback now also follow the selected app language.
+- Settings now uses language-aware success/error status messages for Hugging Face sync, folder save/reset, export, and backup feedback.

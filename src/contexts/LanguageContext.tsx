@@ -38,6 +38,27 @@ export type TranslationKey =
   | 'library.deleteMessage'
   | 'library.deleteConfirm'
   | 'library.deleteCancel'
+  | 'dashboard.subtitle'
+  | 'dashboard.recentPrompts'
+  | 'dashboard.topCharacters'
+  | 'dashboard.recentImages'
+  | 'dashboard.viewAll'
+  | 'dashboard.emptyPrompts'
+  | 'dashboard.emptyCharacters'
+  | 'dashboard.emptyCharacterDescription'
+  | 'dashboard.emptyImages'
+  | 'screenError.message'
+  | 'screenError.retry'
+  | 'settings.hfSyncFailed'
+  | 'settings.hfSyncDone'
+  | 'settings.folderSaveFailed'
+  | 'settings.folderSaved'
+  | 'settings.folderResetFailed'
+  | 'settings.folderResetDone'
+  | 'settings.exportDoneToast'
+  | 'settings.backupDoneToast'
+  | 'settings.notYetSynced'
+  | 'settings.unknown'
 
 type TranslationMap = Record<TranslationKey, string>
 
@@ -78,6 +99,27 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'library.deleteMessage': 'Are you sure you want to delete this prompt?',
     'library.deleteConfirm': 'Delete',
     'library.deleteCancel': 'Cancel',
+    'dashboard.subtitle': 'Quick overview of your prompts, characters, and results.',
+    'dashboard.recentPrompts': 'Recent Prompts',
+    'dashboard.topCharacters': 'Top Characters',
+    'dashboard.recentImages': 'Recent Images',
+    'dashboard.viewAll': 'View all',
+    'dashboard.emptyPrompts': 'No prompts saved yet.',
+    'dashboard.emptyCharacters': 'No characters added yet.',
+    'dashboard.emptyCharacterDescription': 'No description',
+    'dashboard.emptyImages': 'No images saved yet.',
+    'screenError.message': 'An unexpected error occurred in this screen.',
+    'screenError.retry': 'Try again',
+    'settings.hfSyncFailed': 'Hugging Face model card sync failed.',
+    'settings.hfSyncDone': 'Sync complete: processed {{processed}}/{{total}}, matched {{matched}}, unmatched {{unmatched}}, failed {{failed}}.',
+    'settings.folderSaveFailed': 'Failed to save folder path.',
+    'settings.folderSaved': 'NightCompanion folder location saved.',
+    'settings.folderResetFailed': 'Failed to reset to default location.',
+    'settings.folderResetDone': 'NightCompanion folder reset to default location.',
+    'settings.exportDoneToast': 'Prompts and images exported.',
+    'settings.backupDoneToast': 'Database backup created.',
+    'settings.notYetSynced': 'Not synced yet',
+    'settings.unknown': 'Unknown',
   },
   nl: {
     'sidebar.logoSub': 'NightCafe Studio',
@@ -115,6 +157,27 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'library.deleteMessage': 'Weet u zeker dat u deze prompt wilt verwijderen?',
     'library.deleteConfirm': 'Verwijderen',
     'library.deleteCancel': 'Annuleren',
+    'dashboard.subtitle': 'Snel overzicht van je prompts, karakters en resultaten.',
+    'dashboard.recentPrompts': 'Recente prompts',
+    'dashboard.topCharacters': 'Topkarakters',
+    'dashboard.recentImages': 'Recente afbeeldingen',
+    'dashboard.viewAll': 'Bekijk alles',
+    'dashboard.emptyPrompts': 'Nog geen prompts opgeslagen.',
+    'dashboard.emptyCharacters': 'Nog geen karakters toegevoegd.',
+    'dashboard.emptyCharacterDescription': 'Geen beschrijving',
+    'dashboard.emptyImages': 'Nog geen afbeeldingen opgeslagen.',
+    'screenError.message': 'Er is een onverwachte fout opgetreden in dit scherm.',
+    'screenError.retry': 'Probeer opnieuw',
+    'settings.hfSyncFailed': 'Hugging Face modelcards synchronisatie mislukt.',
+    'settings.hfSyncDone': 'Synchronisatie klaar: verwerkt {{processed}}/{{total}}, matched {{matched}}, unmatched {{unmatched}}, mislukt {{failed}}.',
+    'settings.folderSaveFailed': 'Opslaan van folderpad is mislukt.',
+    'settings.folderSaved': 'NightCompanion maplocatie opgeslagen.',
+    'settings.folderResetFailed': 'Reset naar standaardlocatie is mislukt.',
+    'settings.folderResetDone': 'NightCompanion map teruggezet naar standaardlocatie.',
+    'settings.exportDoneToast': 'Prompts en afbeeldingen geexporteerd.',
+    'settings.backupDoneToast': 'Database-backup gemaakt.',
+    'settings.notYetSynced': 'Nog niet gesynchroniseerd',
+    'settings.unknown': 'Onbekend',
   },
 }
 

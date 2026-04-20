@@ -888,3 +888,9 @@
 - Findings: De UI bevatte gemixte Engelse en Nederlandse teksten zonder centrale taalkeuze, wat inconsistent gedrag gaf.
 - Conclusions: Engels moet de standaardtaal zijn met optionele Nederlandse vertaling, beheerd via een centrale language-context en opgeslagen in bestaande `aiConfig` settings-state.
 - Actions: Added `src/contexts/LanguageContext.tsx` (English default, Dutch translations), extended `AiConfigStateStore` met `appLanguage` in `electron/ipc/settings.ts`, `electron/preload.ts` en `src/types/electron.d.ts`, wired persistence/loading in `src/App.tsx`, added `English`/`Nederlands` switcher in `src/components/Sidebar.tsx`, and localized mixed Library UI strings/toasts in `src/screens/Library.tsx`; updated `nightcompanion.md`; validated with `npm run build`.
+
+## 2026-04-21 (Language rollout: broader app coverage)
+
+- Findings: Na de eerste i18n-stap bleven nog gemixte NL/EN UI-teksten zichtbaar in Dashboard, ScreenErrorBoundary en Settings-status/toastteksten.
+- Conclusions: Voor een consistente app-brede default naar Engels moeten ook deze resterende tekstbronnen taalafhankelijk worden gemaakt op basis van dezelfde `appLanguage` state.
+- Actions: Updated `src/contexts/LanguageContext.tsx` met extra keys, localized `src/screens/Dashboard.tsx`, made `src/components/ScreenErrorBoundary.tsx` language-aware via prop vanuit `src/App.tsx`, and localized remaining mixed Settings feedback messages in `src/screens/Settings.tsx`; updated `nightcompanion.md`; validated with `npm run build`.

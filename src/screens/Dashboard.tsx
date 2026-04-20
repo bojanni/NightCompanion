@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { GalleryItem, Prompt, Screen } from '../types'
 import { subscribeDashboardCacheInvalidation } from '../lib/cacheEvents'
 import DashboardSkeleton from '../components/skeletons/DashboardSkeleton'
+import { useLanguage } from '../contexts/LanguageContext'
 
 interface CharacterDashboardItem {
   id: string
@@ -33,6 +34,7 @@ const DASHBOARD_CACHE_STALE_MS = 60_000
 let dashboardCache: DashboardCache | null = null
 
 export default function Dashboard({ onNavigate }: DashboardProps) {
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats>({
     promptCount: 0,
@@ -184,7 +186,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         className="px-8 pt-8 pb-5 no-drag-region"
       >
         <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
-        <p className="mt-1 text-sm text-night-400">Snel overzicht van je prompts, characters en resultaten.</p>
+        <p className="mt-1 text-sm text-night-400">{t('dashboard.subtitle')}</p>
       </div>
 
       <div
@@ -215,14 +217,14 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
               <div className="p-6 xl:col-span-2 card">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-white">Recente Prompts</h2>
+                  <h2 className="text-lg font-semibold text-white">{t('dashboard.recentPrompts')}</h2>
                   <button onClick={() => onNavigate('library')} className="text-sm text-glow-blue hover:underline">
-                    Bekijk alles
+                    {t('dashboard.viewAll')}
                   </button>
                 </div>
 
                 {recentPrompts.length === 0 ? (
-                  <div className="py-10 text-center text-night-500">Nog geen prompts opgeslagen.</div>
+                  <div className="py-10 text-center text-night-500">{t('dashboard.emptyPrompts')}</div>
                 ) : (
                   <div className="space-y-3">
                     {recentPrompts.map((prompt) => (
@@ -243,14 +245,14 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
               <div className="p-6 card">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-white">Top Characters</h2>
+                  <h2 className="text-lg font-semibold text-white">{t('dashboard.topCharacters')}</h2>
                   <button onClick={() => onNavigate('characters')} className="text-sm text-glow-blue hover:underline">
-                    Bekijk alles
+                    {t('dashboard.viewAll')}
                   </button>
                 </div>
 
                 {topCharacters.length === 0 ? (
-                  <div className="py-10 text-center text-night-500">Nog geen characters toegevoegd.</div>
+                  <div className="py-10 text-center text-night-500">{t('dashboard.emptyCharacters')}</div>
                 ) : (
                   <div className="space-y-3">
                     {topCharacters.map((character) => {
@@ -269,7 +271,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                           )}
                           <div className="min-w-0">
                             <h3 className="text-sm font-medium text-white truncate">{character.name}</h3>
-                            <p className="text-xs truncate text-night-400">{character.description || 'Geen beschrijving'}</p>
+                            <p className="text-xs truncate text-night-400">{character.description || t('dashboard.emptyCharacterDescription')}</p>
                           </div>
                         </button>
                       )
@@ -281,14 +283,14 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
             <div className="p-6 card">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-white">Recente Afbeeldingen</h2>
+                <h2 className="text-lg font-semibold text-white">{t('dashboard.recentImages')}</h2>
                 <button onClick={() => onNavigate('gallery')} className="text-sm text-glow-blue hover:underline">
-                  Bekijk alles
+                  {t('dashboard.viewAll')}
                 </button>
               </div>
 
               {recentImages.length === 0 ? (
-                <div className="py-10 text-center text-night-500">Nog geen afbeeldingen opgeslagen.</div>
+                <div className="py-10 text-center text-night-500">{t('dashboard.emptyImages')}</div>
               ) : (
                 <div className="flex overflow-x-auto gap-3 pb-2">
                   {recentImages.map((item) => (

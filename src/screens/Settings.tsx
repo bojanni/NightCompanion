@@ -3,6 +3,7 @@ import { Download, FolderOpen, RefreshCw, Settings as SettingsIcon } from 'lucid
 import { notifications } from '@mantine/notifications'
 
 import { PageContainer } from '../components/PageContainer'
+import { useLanguage } from '../contexts/LanguageContext'
 
 type HfSyncInfo = {
   lastSyncedAt: string | Date | null
@@ -16,6 +17,7 @@ type HfSyncInfo = {
 }
 
 export default function Settings() {
+  const { language, t } = useLanguage()
   const [tab, setTab] = useState<'general' | 'greywords'>('general')
   const [loading, setLoading] = useState(true)
   const [aiApiRequestLoggingEnabled, setAiApiRequestLoggingEnabled] = useState(false)
@@ -247,13 +249,15 @@ export default function Settings() {
 
     const result = await window.electronAPI.nightcafeModels.refreshHuggingFace({ force: true })
     if (result.error || !result.data) {
-      setHfSyncMessage(result.error || 'Hugging Face modelcard sync mislukt.')
+      setHfSyncMessage(result.error || t('settings.hfSyncFailed'))
       setIsRefreshingHf(false)
       return
     }
 
     setHfSyncMessage(
-      `Sync klaar: verwerkt ${result.data.processed}/${result.data.total}, matched ${result.data.matched}, unmatched ${result.data.unmatched}, failed ${result.data.failed}.`
+      language === 'nl'
+        ? `Synchronisatie klaar: verwerkt ${result.data.processed}/${result.data.total}, matched ${result.data.matched}, unmatched ${result.data.unmatched}, mislukt ${result.data.failed}.`
+        : `Sync complete: processed ${result.data.processed}/${result.data.total}, matched ${result.data.matched}, unmatched ${result.data.unmatched}, failed ${result.data.failed}.`
     )
     await loadHuggingFaceSyncInfo()
     setIsRefreshingHf(false)
@@ -284,13 +288,13 @@ export default function Settings() {
     const result = await window.electronAPI.settings.saveNightCompanionFolderPath(nextPath)
 
     if (result.error || !result.data) {
-      setNightCompanionFolderMessage(result.error || 'Opslaan van folderpad is mislukt.')
+      setNightCompanionFolderMessage(result.error || t('settings.folderSaveFailed'))
       setSavingNightCompanionFolderPath(false)
       return
     }
 
     setNightCompanionFolderPath(result.data)
-    setNightCompanionFolderMessage('NightCompanion folder location opgeslagen.')
+    setNightCompanionFolderMessage(t('settings.folderSaved'))
     setSavingNightCompanionFolderPath(false)
   }
 
@@ -304,13 +308,13 @@ export default function Settings() {
     const result = await window.electronAPI.settings.resetNightCompanionFolderPath()
 
     if (result.error || !result.data) {
-      setNightCompanionFolderMessage(result.error || 'Reset naar standaardlocatie is mislukt.')
+      setNightCompanionFolderMessage(result.error || t('settings.folderResetFailed'))
       setSavingNightCompanionFolderPath(false)
       return
     }
 
     setNightCompanionFolderPath(result.data)
-    setNightCompanionFolderMessage('NightCompanion folder teruggezet naar standaardlocatie.')
+    setNightCompanionFolderMessage(t('settings.folderResetDone'))
     setSavingNightCompanionFolderPath(false)
   }
 
@@ -338,7 +342,7 @@ export default function Settings() {
 
     const message = `Export klaar: ${result.data.promptsCount} prompts, ${result.data.promptVersionsCount} versies, ${result.data.imagesCopied} afbeeldingen gekopieerd. Bestand: ${result.data.exportFilePath}`
     setExportLibraryMessage(message)
-    notifications.show({ message: 'Prompts en afbeeldingen geëxporteerd.', color: 'green' })
+    notifications.show({ message: t('settings.exportDoneToast'), color: 'green' })
     setExportingLibrary(false)
   }
 
@@ -367,14 +371,14 @@ export default function Settings() {
     const totalRows = Object.values(result.data.tables).reduce((sum, value) => sum + value, 0)
     const message = `Database backup klaar: ${Object.keys(result.data.tables).length} tabellen, ${totalRows} rijen. Bestand: ${result.data.backupFilePath}`
     setBackupDatabaseMessage(message)
-    notifications.show({ message: 'Database backup gemaakt.', color: 'green' })
+    notifications.show({ message: t('settings.backupDoneToast'), color: 'green' })
     setBackingUpDatabase(false)
   }
 
   const formattedLastSyncedAt = (() => {
-    if (!hfSyncInfo?.lastSyncedAt) return 'Nog niet gesynchroniseerd'
+    if (!hfSyncInfo?.lastSyncedAt) return t('settings.notYetSynced')
     const parsed = new Date(hfSyncInfo.lastSyncedAt)
-    if (Number.isNaN(parsed.getTime())) return 'Onbekend'
+    if (Number.isNaN(parsed.getTime())) return t('settings.unknown')
     return `${parsed.toLocaleDateString()} ${parsed.toLocaleTimeString()}`
   })()
 
