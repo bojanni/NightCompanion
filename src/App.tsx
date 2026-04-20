@@ -66,13 +66,17 @@ export default function App() {
   const handleLanguageChange = async (nextLanguage: AppLanguage) => {
     setLanguage(nextLanguage)
 
-    const current = await window.electronAPI.settings.getAiConfigState()
-    if (current.error) return
+    try {
+      const current = await window.electronAPI.settings.getAiConfigState()
+      if (current.error) return
 
-    await window.electronAPI.settings.saveAiConfigState({
-      ...current.data,
-      appLanguage: nextLanguage,
-    })
+      await window.electronAPI.settings.saveAiConfigState({
+        ...current.data,
+        appLanguage: nextLanguage,
+      })
+    } catch (error) {
+      console.warn('[app] Failed to persist app language preference:', error)
+    }
   }
 
   const handleNavigate = (newScreen: Screen, params?: Record<string, unknown>) => {
