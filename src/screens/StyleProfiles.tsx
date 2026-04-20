@@ -3,11 +3,13 @@ import type { StyleProfile, NewStyleProfile } from '../types'
 import { invalidateDashboardCache } from '../lib/cacheEvents'
 import StyleProfilesSkeleton from '../components/skeletons/StyleProfilesSkeleton'
 import { PageContainer } from '../components/PageContainer'
+import { useLanguage } from '../contexts/LanguageContext'
 
 type ProfileFormData = Omit<NewStyleProfile, 'createdAt' | 'updatedAt'>
 type FormState = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; profile: StyleProfile }
 
 export default function StyleProfiles() {
+  const { t } = useLanguage()
   const [profiles, setProfiles] = useState<StyleProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState<FormState>({ mode: 'closed' })
@@ -49,12 +51,12 @@ export default function StyleProfiles() {
       <div className="flex items-center justify-between px-8 pt-8 pb-5 no-drag-region">
         <PageContainer className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-white tracking-tight">Style Profiles</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Reusable style presets for NightCafe</p>
+            <h1 className="text-2xl font-semibold text-white tracking-tight">{t('styleProfiles.title')}</h1>
+            <p className="text-sm text-slate-500 mt-0.5">{t('styleProfiles.subtitle')}</p>
           </div>
           <button onClick={() => setForm({ mode: 'create' })} className="btn-primary">
             <span className="text-lg leading-none">+</span>
-            New Profile
+            {t('styleProfiles.newProfile')}
           </button>
         </PageContainer>
       </div>

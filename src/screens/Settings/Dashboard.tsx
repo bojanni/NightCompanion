@@ -3,6 +3,7 @@ import { BookOpen, Eye, Loader2, Settings, Sparkles, Wand2 } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 import ModelSelector from '../../components/ModelSelector'
 import type { ApiKeyInfo, LocalEndpoint, ModelOption } from './types'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 type DashboardRole = 'generation' | 'improvement' | 'vision' | 'general'
 
@@ -102,6 +103,7 @@ export function Dashboard({
   roleRouting,
   onChangeRoleRouting,
 }: DashboardProps) {
+  const { t } = useLanguage()
   void setDynamicModels
   void getToken
 
@@ -232,8 +234,8 @@ export function Dashboard({
   return (
     <div className="max-w-6xl space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold text-white tracking-tight">AI Configuration</h1>
-        <p className="text-sm text-night-400 mt-1">Choose which AI model handles each task</p>
+        <h1 className="text-3xl font-semibold text-white tracking-tight">{t('aiConfig.title')}</h1>
+        <p className="text-sm text-night-400 mt-1">{t('aiConfig.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

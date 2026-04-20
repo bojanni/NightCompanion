@@ -6,6 +6,7 @@ import { invalidateDashboardCache } from '../lib/cacheEvents'
 import CharacterCard from '../components/characters/CharacterCard'
 import CharacterFormModal from '../components/characters/CharacterFormModal'
 import type { CharacterDetail, CharacterImage, CharacterRecord } from '../components/characters/types'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const PAGE_SIZE = 12
 const STORAGE_KEY = 'nightcompanion.characters'
@@ -16,6 +17,7 @@ type EditorState =
   | { mode: 'edit'; characterId: string }
 
 export default function Characters() {
+  const { t } = useLanguage()
   const [characters, setCharacters] = useState<CharacterRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -311,9 +313,9 @@ export default function Characters() {
         className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 pt-8 pb-5 no-drag-region"
       >
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">Characters</h1>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">{t('characters.title')}</h1>
           <p className="text-sm text-night-400 mt-0.5">
-            Build reusable character cards with traits and reference images.
+            {t('characters.subtitle')}
           </p>
         </div>
 
@@ -322,7 +324,7 @@ export default function Characters() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-night-500" />
             <input
               type="text"
-              placeholder="Search characters..."
+              placeholder={t('characters.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-4 py-2.5 bg-night-900 border border-night-700 rounded-xl text-sm text-white placeholder-night-500 focus:outline-none focus:ring-2 focus:ring-glow-purple/40"
@@ -330,7 +332,7 @@ export default function Characters() {
           </div>
           <button onClick={openCreateEditor} className="btn-primary">
             <Plus className="w-4 h-4" />
-            New Character
+            {t('characters.newCharacter')}
           </button>
         </div>
       </div>
@@ -344,13 +346,13 @@ export default function Characters() {
           </div>
         ) : pageItems.length === 0 ? (
           <div className="text-center py-24 card border-dashed">
-            <h3 className="text-lg font-medium text-night-200">No characters yet</h3>
+            <h3 className="text-lg font-medium text-night-200">{t('characters.emptyTitle')}</h3>
             <p className="text-sm text-night-500 mt-2 mb-6">
-              Create your first character profile to reuse in prompts.
+              {t('characters.emptySubtitle')}
             </p>
             <button onClick={openCreateEditor} className="btn-primary">
               <Plus className="w-4 h-4" />
-              Add character
+              {t('characters.emptyAdd')}
             </button>
           </div>
         ) : (

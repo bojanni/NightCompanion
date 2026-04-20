@@ -87,3 +87,4 @@
 - A language switcher (`English` / `Nederlands`) was added to the left sidebar and the chosen language is persisted.
 - Dashboard and shared screen error fallback now also follow the selected app language.
 - Settings now uses language-aware success/error status messages for Hugging Face sync, folder save/reset, export, and backup feedback.
+- Main page headers and primary labels now switch language live across Generator, Usage, Style Profiles, Gallery, Characters, Settings, and AI Configuration.

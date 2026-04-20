@@ -8,6 +8,7 @@ import ModelAdvisorCard from '../components/generator/ModelAdvisorCard'
 import TitleSaveSection from '../components/generator/TitleSaveSection'
 import GreylistCard from '../components/generator/GreylistCard'
 import { usePromptImprovement } from '../hooks/usePromptImprovement'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const DEFAULT_GREYLIST = ['jellyfish', 'neon', 'cyber']
 const DEFAULT_TITLE_MAX_LENGTH = 140
@@ -90,6 +91,7 @@ function normalizePromptForDuplicateCheck(value: string): string {
 }
 
 export default function Generator() {
+  const { t } = useLanguage()
   const [tab, setTab] = useState<'generator' | 'builder'>('generator')
   const [presetOptions, setPresetOptions] = useState<PresetOption[]>([])
   const [quickstartPreset, setQuickstartPreset] = useState('')
@@ -1091,21 +1093,21 @@ export default function Generator() {
   return (
     <div className="no-drag-region h-full overflow-y-auto px-8 pt-8 pb-10">
       <PageContainer>
-        <h1 className="text-2xl font-semibold text-white tracking-tight">Generator</h1>
-        <p className="text-sm text-slate-500 mt-1">Generate prompts with AI or build them modularly in one place.</p>
+        <h1 className="text-2xl font-semibold text-white tracking-tight">{t('generator.title')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('generator.subtitle')}</p>
 
         <div className="mt-5 inline-flex rounded-xl border border-slate-700/50 bg-slate-900/40 p-1">
           <button
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${tab === 'generator' ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             onClick={() => setTab('generator')}
           >
-            Quickstart
+            {t('generator.tabQuickstart')}
           </button>
           <button
             className={`px-4 py-2 rounded-lg text-sm transition-colors ${tab === 'builder' ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             onClick={() => setTab('builder')}
           >
-            Prompt Builder
+            {t('generator.tabBuilder')}
           </button>
         </div>
 

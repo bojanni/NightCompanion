@@ -59,6 +59,30 @@ export type TranslationKey =
   | 'settings.backupDoneToast'
   | 'settings.notYetSynced'
   | 'settings.unknown'
+  | 'settings.pageTitle'
+  | 'settings.tabGeneral'
+  | 'settings.tabGreywords'
+  | 'generator.title'
+  | 'generator.subtitle'
+  | 'generator.tabQuickstart'
+  | 'generator.tabBuilder'
+  | 'usage.title'
+  | 'usage.subtitle'
+  | 'styleProfiles.title'
+  | 'styleProfiles.subtitle'
+  | 'styleProfiles.newProfile'
+  | 'gallery.title'
+  | 'gallery.newCollection'
+  | 'gallery.export'
+  | 'characters.title'
+  | 'characters.subtitle'
+  | 'characters.searchPlaceholder'
+  | 'characters.newCharacter'
+  | 'characters.emptyTitle'
+  | 'characters.emptySubtitle'
+  | 'characters.emptyAdd'
+  | 'aiConfig.title'
+  | 'aiConfig.subtitle'
 
 type TranslationMap = Record<TranslationKey, string>
 
@@ -120,6 +144,30 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'settings.backupDoneToast': 'Database backup created.',
     'settings.notYetSynced': 'Not synced yet',
     'settings.unknown': 'Unknown',
+    'settings.pageTitle': 'Settings',
+    'settings.tabGeneral': 'General',
+    'settings.tabGreywords': 'Greywords',
+    'generator.title': 'Generator',
+    'generator.subtitle': 'Generate prompts with AI or build them modularly in one place.',
+    'generator.tabQuickstart': 'Quickstart',
+    'generator.tabBuilder': 'Prompt Builder',
+    'usage.title': 'Usage',
+    'usage.subtitle': 'Tokens and estimated costs',
+    'styleProfiles.title': 'Style Profiles',
+    'styleProfiles.subtitle': 'Reusable style presets for NightCafe',
+    'styleProfiles.newProfile': 'New Profile',
+    'gallery.title': 'Gallery',
+    'gallery.newCollection': 'New Collection',
+    'gallery.export': 'Export',
+    'characters.title': 'Characters',
+    'characters.subtitle': 'Build reusable character cards with traits and reference images.',
+    'characters.searchPlaceholder': 'Search characters...',
+    'characters.newCharacter': 'New Character',
+    'characters.emptyTitle': 'No characters yet',
+    'characters.emptySubtitle': 'Create your first character profile to reuse in prompts.',
+    'characters.emptyAdd': 'Add character',
+    'aiConfig.title': 'AI Configuration',
+    'aiConfig.subtitle': 'Choose which AI model handles each task',
   },
   nl: {
     'sidebar.logoSub': 'NightCafe Studio',
@@ -178,6 +226,30 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'settings.backupDoneToast': 'Database-backup gemaakt.',
     'settings.notYetSynced': 'Nog niet gesynchroniseerd',
     'settings.unknown': 'Onbekend',
+    'settings.pageTitle': 'Instellingen',
+    'settings.tabGeneral': 'Algemeen',
+    'settings.tabGreywords': 'Grijswoorden',
+    'generator.title': 'Generator',
+    'generator.subtitle': 'Genereer prompts met AI of bouw ze modulair op één plek.',
+    'generator.tabQuickstart': 'Snelle start',
+    'generator.tabBuilder': 'Promptbouwer',
+    'usage.title': 'Verbruik',
+    'usage.subtitle': 'Tokens en geschatte kosten',
+    'styleProfiles.title': 'Stijlprofielen',
+    'styleProfiles.subtitle': 'Herbruikbare stijlpresets voor NightCafe',
+    'styleProfiles.newProfile': 'Nieuw profiel',
+    'gallery.title': 'Galerij',
+    'gallery.newCollection': 'Nieuwe collectie',
+    'gallery.export': 'Exporteren',
+    'characters.title': 'Karakters',
+    'characters.subtitle': 'Bouw herbruikbare karakterkaarten met eigenschappen en referentie-afbeeldingen.',
+    'characters.searchPlaceholder': 'Zoek karakters...',
+    'characters.newCharacter': 'Nieuw karakter',
+    'characters.emptyTitle': 'Nog geen karakters',
+    'characters.emptySubtitle': 'Maak je eerste karakterprofiel om te hergebruiken in prompts.',
+    'characters.emptyAdd': 'Karakter toevoegen',
+    'aiConfig.title': 'AI-configuratie',
+    'aiConfig.subtitle': 'Kies welk AI-model elke taak afhandelt',
   },
 }
 

@@ -894,3 +894,9 @@
 - Findings: Na de eerste i18n-stap bleven nog gemixte NL/EN UI-teksten zichtbaar in Dashboard, ScreenErrorBoundary en Settings-status/toastteksten.
 - Conclusions: Voor een consistente app-brede default naar Engels moeten ook deze resterende tekstbronnen taalafhankelijk worden gemaakt op basis van dezelfde `appLanguage` state.
 - Actions: Updated `src/contexts/LanguageContext.tsx` met extra keys, localized `src/screens/Dashboard.tsx`, made `src/components/ScreenErrorBoundary.tsx` language-aware via prop vanuit `src/App.tsx`, and localized remaining mixed Settings feedback messages in `src/screens/Settings.tsx`; updated `nightcompanion.md`; validated with `npm run build`.
+
+## 2026-04-21 (Language switcher: page text now changes visibly)
+
+- Findings: Gebruikersfeedback gaf aan dat de taal van pagina's niet zichtbaar wijzigde via de sidebar-switcher, omdat meerdere schermen nog statische headers/labels gebruikten.
+- Conclusions: Naast context/persistence moet ook de zichtbare page chrome (titels, subtitels en primaire labels) op alle hoofdschermen aan de language context worden gekoppeld.
+- Actions: Extended translation keys in `src/contexts/LanguageContext.tsx`; localized primary page text in `src/screens/Generator.tsx`, `src/screens/Usage.tsx`, `src/screens/StyleProfiles.tsx`, `src/screens/Gallery.tsx`, `src/screens/Characters.tsx`, `src/screens/Settings.tsx`, and `src/screens/Settings/Dashboard.tsx`; updated `nightcompanion.md`; validated with `npm run build`.

@@ -22,6 +22,7 @@ import GridDensitySelector from '../components/GridDensitySelector'
 import GalleryLightbox from '../components/GalleryLightbox'
 import type { GalleryItem, Prompt } from '../lib/schema'
 import { invalidateDashboardCache } from '../lib/cacheEvents'
+import { useLanguage } from '../contexts/LanguageContext'
 
 type DisplaySettings = {
   title: boolean
@@ -44,6 +45,7 @@ interface GalleryProps {
 }
 
 export default function Gallery({ initialImageId }: GalleryProps) {
+  const { t } = useLanguage()
   const state = useGalleryState()
   const [promptOptions, setPromptOptions] = useState<Prompt[]>([])
   const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(loadDisplaySettings)
@@ -237,7 +239,7 @@ export default function Gallery({ initialImageId }: GalleryProps) {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-6 pb-2">
-        <h1 className="text-2xl font-bold text-white">Gallery</h1>
+        <h1 className="text-2xl font-bold text-white">{t('gallery.title')}</h1>
         <p className="text-night-400 text-sm mt-1">
           {state.totalCount} item{state.totalCount !== 1 ? 's' : ''}
         </p>
@@ -251,7 +253,7 @@ export default function Gallery({ initialImageId }: GalleryProps) {
           className="btn btn-ghost text-sm flex items-center gap-1.5"
         >
           <FolderPlus className="w-4 h-4" />
-          New Collection
+          {t('gallery.newCollection')}
         </button>
         <button
           type="button"
@@ -259,7 +261,7 @@ export default function Gallery({ initialImageId }: GalleryProps) {
           className="btn btn-ghost text-sm flex items-center gap-1.5 disabled:opacity-40"
         >
           <Download className="w-4 h-4" />
-          Export
+          {t('gallery.export')}
         </button>
         <button
           type="button"

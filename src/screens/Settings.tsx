@@ -388,7 +388,7 @@ export default function Settings() {
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <SettingsIcon className="w-6 h-6 text-white" />
-            <h1 className="text-2xl font-bold text-white">Settings</h1>
+            <h1 className="text-2xl font-bold text-white">{t('settings.pageTitle')}</h1>
           </div>
 
           <div className="inline-flex p-1 mt-4 rounded-xl border border-slate-700/50 bg-slate-900/40">
@@ -397,14 +397,14 @@ export default function Settings() {
               className={`px-4 py-2 rounded-lg text-sm transition-colors ${tab === 'general' ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
               onClick={() => setTab('general')}
             >
-              General
+              {t('settings.tabGeneral')}
             </button>
             <button
               type="button"
               className={`px-4 py-2 rounded-lg text-sm transition-colors ${tab === 'greywords' ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
               onClick={() => setTab('greywords')}
             >
-              Greywords
+              {t('settings.tabGreywords')}
             </button>
           </div>
 

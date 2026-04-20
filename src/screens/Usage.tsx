@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { notifications } from '@mantine/notifications'
 import { PageContainer } from '../components/PageContainer'
+import { useLanguage } from '../contexts/LanguageContext'
 
 type UsageTotals = {
   calls: number
@@ -46,6 +47,7 @@ export default function Usage() {
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(30)
   const [rows, setRows] = useState<DailyRow[]>([])
+    const { t } = useLanguage()
   const [breakdown, setBreakdown] = useState<UsageBreakdown | null>(null)
   const [currency, setCurrency] = useState<'usd' | 'eur'>('usd')
   const [eurRate, setEurRate] = useState<number>(1)
@@ -127,8 +129,8 @@ export default function Usage() {
       <PageContainer className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Usage</h1>
-            <p className="text-sm text-slate-500">Tokens and estimated costs</p>
+            <h1 className="text-2xl font-bold text-white">{t('usage.title')}</h1>
+            <p className="text-sm text-slate-500">{t('usage.subtitle')}</p>
           </div>
 
           <div className="flex items-center gap-2">
