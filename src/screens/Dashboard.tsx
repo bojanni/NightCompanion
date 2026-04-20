@@ -214,8 +214,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-              <div className="p-6 xl:col-span-2 card">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <div className="p-6 card">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-white">{t('dashboard.recentPrompts')}</h2>
                   <button onClick={() => onNavigate('library')} className="text-sm text-glow-blue hover:underline">
@@ -254,7 +254,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                 {topCharacters.length === 0 ? (
                   <div className="py-10 text-center text-night-500">{t('dashboard.emptyCharacters')}</div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
                     {topCharacters.map((character) => {
                       const mainImage = character.images.find((image) => image.isMain)?.url || character.images[0]?.url
 
@@ -262,16 +262,15 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                         <button
                           key={character.id}
                           onClick={() => onNavigate('characters')}
-                          className="relative w-full h-28 max-h-28 overflow-hidden rounded-xl border border-night-700/60 bg-night-900/50 text-left transition-colors hover:border-night-500/70"
+                          className="relative w-full overflow-hidden rounded-xl border border-night-700/60 bg-night-900/50 text-left transition-colors hover:border-night-500/70"
+                          style={{ aspectRatio: '2/3' }}
                         >
                           {mainImage ? (
                             <img src={mainImage} alt={character.name} className="absolute inset-0 w-full h-full object-cover" />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center bg-night-800 text-night-500">◉</div>
                           )}
-
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
-
                           <div className="absolute inset-x-0 bottom-0 p-3 min-w-0">
                             <h3 className="text-sm font-semibold text-white truncate">{character.name}</h3>
                             <p className="text-xs text-night-200/90 truncate">
