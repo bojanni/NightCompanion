@@ -858,3 +858,21 @@
 - Findings: `nightcompanion.md` startte met een `##`-heading, waardoor markdownlint regel MD041 (`first-line-h1`) faalde.
 - Conclusions: Een expliciete eerste-regel H1 voorkomt lintfouten en maakt documentstructuur consistenter.
 - Actions: Updated `nightcompanion.md` door bovenaan `# NightCompanion` toe te voegen; validated with `npm run build`.
+
+## 2026-04-20 (Migration type update: VARCHAR2)
+
+- Findings: In `drizzle/0000_thankful_quentin_quire.sql` stonden kolommen met `varchar` terwijl de gewenste datatype-notatie `VARCHAR2` is.
+- Conclusions: Voor deze migratie moeten alle `varchar(...)` definities uniform naar `VARCHAR2(...)` worden gezet.
+- Actions: Updated `drizzle/0000_thankful_quentin_quire.sql` door `title`, `model`, `name` en `preferred_model` van `varchar` naar `VARCHAR2` te wijzigen; validated with `npm run build`.
+
+## 2026-04-20 (Lint fix: merge duplicate electron imports)
+
+- Findings: `electron/ipc/ai.ts` importeerde `electron` meerdere keren (`import { ipcMain } ...` en `import { app } ...`), wat lintregel `typescript:S3863` triggert.
+- Conclusions: Imports vanuit hetzelfde modulepad moeten samengevoegd worden in een enkele import-declaratie.
+- Actions: Updated `electron/ipc/ai.ts` naar `import { app, ipcMain } from 'electron'`; validated with `npm run build`.
+
+## 2026-04-20 (Library: improved prompt indicator)
+
+- Findings: In `src/screens/Library.tsx` ontbraken visuele indicators voor prompts die via de improve-flow zijn opgeslagen, ondanks bestaande TODO-markers.
+- Conclusions: Een compacte `Improved` badge op zowel kaartniveau als in de lightbox-header maakt meteen zichtbaar dat een prompt verbeterde inhoud heeft.
+- Actions: Added `hasImprovedPrompt(...)` helper in `src/screens/Library.tsx`, wired `isImprovedPrompt` into `lightboxImage`, and rendered `Improved` badges in card and lightbox title rows; updated `nightcompanion.md`; validated with `npm run build`.

@@ -12,11 +12,11 @@ CREATE TABLE "generation_log" (
 --> statement-breakpoint
 CREATE TABLE "prompts" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"title" varchar(255) NOT NULL,
+	"title" VARCHAR2(255) NOT NULL,
 	"prompt_text" text NOT NULL,
 	"negative_prompt" text DEFAULT '',
 	"tags" text[] DEFAULT '{}' NOT NULL,
-	"model" varchar(100) DEFAULT '' NOT NULL,
+	"model" VARCHAR2(100) DEFAULT '' NOT NULL,
 	"notes" text DEFAULT '',
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
@@ -24,9 +24,9 @@ CREATE TABLE "prompts" (
 --> statement-breakpoint
 CREATE TABLE "style_profiles" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"name" varchar(255) NOT NULL,
+	"name" VARCHAR2(255) NOT NULL,
 	"base_prompt_snippet" text DEFAULT '' NOT NULL,
-	"preferred_model" varchar(100) DEFAULT '' NOT NULL,
+	"preferred_model" VARCHAR2(100) DEFAULT '' NOT NULL,
 	"common_negative_prompts" text DEFAULT '' NOT NULL,
 	"notes" text DEFAULT '',
 	"created_at" timestamp DEFAULT now() NOT NULL,

@@ -25,6 +25,7 @@ type LightboxItem = {
   model: string
   stylePreset: string
   isCustomPrompt: boolean
+  isImprovedPrompt: boolean
 }
 
 type PromptImageView = {
@@ -84,6 +85,15 @@ function getStarFill(rating: number, starIndex: number) {
 
 function isSameRating(left: number, right: number) {
   return Math.abs(left - right) < 0.001
+}
+
+function hasImprovedPrompt(prompt: Prompt): boolean {
+  const explicitImproved = (prompt as Prompt & { improvedPrompt?: string | null }).improvedPrompt
+  if (typeof explicitImproved === 'string' && explicitImproved.trim()) return true
+
+  const originalPrompt = typeof prompt.originalPrompt === 'string' ? prompt.originalPrompt.trim() : ''
+  const currentPrompt = typeof prompt.promptText === 'string' ? prompt.promptText.trim() : ''
+  return Boolean(originalPrompt) && originalPrompt !== currentPrompt
 }
 
 export default function Library() {
@@ -158,6 +168,7 @@ export default function Library() {
       model: currentImage.model || prompt.model || prompt.suggestedModel || '',
       stylePreset: prompt.stylePreset ?? '',
       isCustomPrompt: Boolean(currentImage.customPrompt) || currentImage.promptSource === 'custom',
+      isImprovedPrompt: hasImprovedPrompt(prompt),
     }
   }, [filteredPrompts, lightboxPosition])
 
@@ -552,7 +563,12 @@ export default function Library() {
                               Template
                             </span>
                           )}
-                          {/* TODO: Add improved prompt indicator when improvedPrompt field exists */}
+                          {hasImprovedPrompt(prompt) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 bg-emerald-500/10 text-emerald-300 rounded-md border border-emerald-500/30 flex-shrink-0">
+                              <Check size={11} />
+                              Improved
+                            </span>
+                          )}
                         </button>
 
                         <div className="mt-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1015,7 +1031,12 @@ export default function Library() {
                       {lightboxPosition.imageIndex + 1} / {lightboxImageCount}
                     </span>
                   )}
-                  {/* TODO: Add improved prompt checkmark when improvedPrompt field exists */}
+                  {lightboxImage.isImprovedPrompt && (
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 text-emerald-100">
+                      <Check size={12} />
+                      Improved
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center justify-center gap-3">
                   <button

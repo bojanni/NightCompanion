@@ -1,5 +1,4 @@
-import { ipcMain } from 'electron'
-import { app } from 'electron'
+import { app, ipcMain } from 'electron'
 import path from 'path'
 import { appendFile, mkdir, readFile } from 'fs/promises'
 import { drizzle } from 'drizzle-orm/postgres-js'

@@ -73,3 +73,8 @@
 - Prompt Library lightbox now includes a `Copy Prompt` button directly in the overlay card.
 - Prompt Library lightbox now always renders in front of other overlays and modals.
 - Prompt Library lightbox copy action is now icon-only and uses tooltip text (`Copy prompt` / `Copied`).
+
+## 2026-04-20
+
+- Prompt Library cards now show an `Improved` indicator when a prompt has improved content metadata.
+- Prompt Library lightbox title row now also shows an `Improved` indicator for improved prompts.
