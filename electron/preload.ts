@@ -54,6 +54,7 @@ export type AiConfigStateStore = {
   advisorModelRoute?: unknown
   aiApiRequestLoggingEnabled?: boolean
   nativeWindowFrameEnabled?: boolean
+  appLanguage?: 'en' | 'nl'
   nightCompanionFolderPath?: string
   usageCurrency?: 'usd' | 'eur'
   eurRate?: number

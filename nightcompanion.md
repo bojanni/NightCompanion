@@ -79,3 +79,9 @@
 - Prompt Library cards now show an `Improved` indicator when a prompt has improved content metadata.
 - Prompt Library lightbox title row now also shows an `Improved` indicator for improved prompts.
 - De volledige applicatie-menubalk is hersteld; naast `Edit` zijn nu ook de overige standaardmenu's weer zichtbaar.
+
+## 2026-04-21
+
+- English is now the default UI language.
+- Dutch translations were added for the left sidebar and key Prompt Library actions/messages.
+- A language switcher (`English` / `Nederlands`) was added to the left sidebar and the chosen language is persisted.

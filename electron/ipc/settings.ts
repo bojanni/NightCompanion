@@ -49,6 +49,7 @@ type AiConfigStateStore = {
   advisorModelRoute?: unknown
   aiApiRequestLoggingEnabled?: boolean
   nativeWindowFrameEnabled?: boolean
+  appLanguage?: 'en' | 'nl'
   nightCompanionFolderPath?: string
   usageCurrency?: 'usd' | 'eur'
   eurRate?: number
@@ -341,6 +342,9 @@ function normalizeAiConfigState(input: unknown): AiConfigStateStore | undefined 
   }
   if (typeof input.nativeWindowFrameEnabled === 'boolean') {
     normalized.nativeWindowFrameEnabled = input.nativeWindowFrameEnabled
+  }
+  if (input.appLanguage === 'en' || input.appLanguage === 'nl') {
+    normalized.appLanguage = input.appLanguage
   }
   if (typeof input.nightCompanionFolderPath === 'string') {
     normalized.nightCompanionFolderPath = input.nightCompanionFolderPath.trim()

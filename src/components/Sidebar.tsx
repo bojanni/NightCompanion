@@ -1,5 +1,7 @@
 import type { Screen } from '../types'
 import TokenCostWidget from './TokenCostWidget'
+import { useLanguage } from '../contexts/LanguageContext'
+import type { TranslationKey } from '../contexts/LanguageContext'
 
 type NavItem = {
   id: Screen
@@ -9,71 +11,73 @@ type NavItem = {
   description: string
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: '◬',
-    iconColorClass: 'text-teal-300',
-    description: 'Overview & quick actions',
-  },
-  {
-    id: 'generator',
-    label: 'Generator',
-    icon: '⚡',
-    iconColorClass: 'text-glow-amber',
-    description: 'Magic random (AI)',
-  },
-  {
-    id: 'library',
-    label: 'Prompt Library',
-    icon: '✦',
-    iconColorClass: 'text-glow-soft',
-    description: 'Browse & manage prompts',
-  },
-  {
-    id: 'characters',
-    label: 'Characters',
-    icon: '◉',
-    iconColorClass: 'text-glow-pink',
-    description: 'Reference cast sheets',
-  },
-  {
-    id: 'style-profiles',
-    label: 'Style Profiles',
-    icon: '◈',
-    iconColorClass: 'text-glow-blue',
-    description: 'Reusable style presets',
-  },
-  {
-    id: 'gallery',
-    label: 'Gallery',
-    icon: '▣',
-    iconColorClass: 'text-teal-400',
-    description: 'AI-generated media',
-  },
-  {
-    id: 'usage',
-    label: 'Usage',
-    icon: '◷',
-    iconColorClass: 'text-glow-cyan',
-    description: 'Tokens & cost history',
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: '⚙',
-    iconColorClass: 'text-glow-amber',
-    description: 'OpenRouter credentials',
-  },
-  {
-    id: 'ai-config',
-    label: 'AI Configuration',
-    icon: '✧',
-    iconColorClass: 'text-glow-soft',
-    description: 'Provider & model routing',
-  },
-]
+function getNavItems(t: (key: TranslationKey) => string): NavItem[] {
+  return [
+    {
+      id: 'dashboard',
+      label: t('sidebar.nav.dashboard.label'),
+      icon: '◬',
+      iconColorClass: 'text-teal-300',
+      description: t('sidebar.nav.dashboard.description'),
+    },
+    {
+      id: 'generator',
+      label: t('sidebar.nav.generator.label'),
+      icon: '⚡',
+      iconColorClass: 'text-glow-amber',
+      description: t('sidebar.nav.generator.description'),
+    },
+    {
+      id: 'library',
+      label: t('sidebar.nav.library.label'),
+      icon: '✦',
+      iconColorClass: 'text-glow-soft',
+      description: t('sidebar.nav.library.description'),
+    },
+    {
+      id: 'characters',
+      label: t('sidebar.nav.characters.label'),
+      icon: '◉',
+      iconColorClass: 'text-glow-pink',
+      description: t('sidebar.nav.characters.description'),
+    },
+    {
+      id: 'style-profiles',
+      label: t('sidebar.nav.styleProfiles.label'),
+      icon: '◈',
+      iconColorClass: 'text-glow-blue',
+      description: t('sidebar.nav.styleProfiles.description'),
+    },
+    {
+      id: 'gallery',
+      label: t('sidebar.nav.gallery.label'),
+      icon: '▣',
+      iconColorClass: 'text-teal-400',
+      description: t('sidebar.nav.gallery.description'),
+    },
+    {
+      id: 'usage',
+      label: t('sidebar.nav.usage.label'),
+      icon: '◷',
+      iconColorClass: 'text-glow-cyan',
+      description: t('sidebar.nav.usage.description'),
+    },
+    {
+      id: 'settings',
+      label: t('sidebar.nav.settings.label'),
+      icon: '⚙',
+      iconColorClass: 'text-glow-amber',
+      description: t('sidebar.nav.settings.description'),
+    },
+    {
+      id: 'ai-config',
+      label: t('sidebar.nav.aiConfig.label'),
+      icon: '✧',
+      iconColorClass: 'text-glow-soft',
+      description: t('sidebar.nav.aiConfig.description'),
+    },
+  ]
+}
 
 type Props = {
   activeScreen: Screen
@@ -81,6 +85,9 @@ type Props = {
 }
 
 export default function Sidebar({ activeScreen, onNavigate }: Props) {
+  const { language, setLanguage, t } = useLanguage()
+  const navItems = getNavItems(t)
+
   return (
     <aside className="w-[270px] flex-shrink-0 flex flex-col bg-gradient-sidebar border-r border-slate-900/50 pt-10">
       {/* Logo */}
@@ -91,14 +98,14 @@ export default function Sidebar({ activeScreen, onNavigate }: Props) {
           </div>
           <div>
             <div className="text-sm font-semibold text-white tracking-wide">NightCompanion</div>
-            <div className="text-[10px] text-slate-500 tracking-wider uppercase">NightCafe Studio</div>
+            <div className="text-[10px] text-slate-500 tracking-wider uppercase">{t('sidebar.logoSub')}</div>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 space-y-1 pb-4">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const isActive = item.id === activeScreen
           return (
             <button
@@ -138,6 +145,25 @@ export default function Sidebar({ activeScreen, onNavigate }: Props) {
 
       {/* Footer */}
       <div className="px-5 py-5 border-t border-slate-900/50 space-y-4">
+        <div>
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">{t('sidebar.language.title')}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`rounded-lg border px-2 py-1.5 text-[11px] transition-colors ${language === 'en' ? 'border-glow-blue/40 bg-glow-blue/15 text-white' : 'border-slate-800 bg-slate-900/70 text-slate-400 hover:text-white'}`}
+            >
+              {t('sidebar.language.english')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLanguage('nl')}
+              className={`rounded-lg border px-2 py-1.5 text-[11px] transition-colors ${language === 'nl' ? 'border-glow-blue/40 bg-glow-blue/15 text-white' : 'border-slate-800 bg-slate-900/70 text-slate-400 hover:text-white'}`}
+            >
+              {t('sidebar.language.dutch')}
+            </button>
+          </div>
+        </div>
         <TokenCostWidget onNavigate={onNavigate} />
         <div className="text-[10px] text-slate-600 text-center tracking-wide">
           NightCompanion v0.1

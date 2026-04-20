@@ -882,3 +882,9 @@
 - Findings: In `electron/main.ts` stond een minimale menubalk met alleen `Edit`, waardoor de overige standaardmenu's niet zichtbaar waren.
 - Conclusions: Een platform-standaard menu-template (`fileMenu`, `editMenu`, `viewMenu`, `windowMenu`, plus `appMenu` op macOS) herstelt de verwachte menubalk zonder custom onderhoud.
 - Actions: Updated `electron/main.ts` met een volledige `Menu.buildFromTemplate(...)` configuratie in plaats van Edit-only; updated `nightcompanion.md`; validated with `npm run build`.
+
+## 2026-04-21 (UI language standardization + sidebar switcher)
+
+- Findings: De UI bevatte gemixte Engelse en Nederlandse teksten zonder centrale taalkeuze, wat inconsistent gedrag gaf.
+- Conclusions: Engels moet de standaardtaal zijn met optionele Nederlandse vertaling, beheerd via een centrale language-context en opgeslagen in bestaande `aiConfig` settings-state.
+- Actions: Added `src/contexts/LanguageContext.tsx` (English default, Dutch translations), extended `AiConfigStateStore` met `appLanguage` in `electron/ipc/settings.ts`, `electron/preload.ts` en `src/types/electron.d.ts`, wired persistence/loading in `src/App.tsx`, added `English`/`Nederlands` switcher in `src/components/Sidebar.tsx`, and localized mixed Library UI strings/toasts in `src/screens/Library.tsx`; updated `nightcompanion.md`; validated with `npm run build`.

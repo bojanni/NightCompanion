@@ -4,6 +4,7 @@ import PromptForm from '../components/PromptForm'
 import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2, X } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { useLanguage } from '../contexts/LanguageContext'
 
 import { invalidateDashboardCache } from '../lib/cacheEvents'
 import LibrarySkeleton from '../components/skeletons/LibrarySkeleton'
@@ -97,6 +98,7 @@ function hasImprovedPrompt(prompt: Prompt): boolean {
 }
 
 export default function Library() {
+  const { t } = useLanguage()
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -345,7 +347,7 @@ export default function Library() {
     if (form.mode === 'edit' && form.prompt.id === id) {
       setForm({ mode: 'closed' })
     }
-    notifications.show({ message: 'Prompt verwijderd', color: 'green' })
+    notifications.show({ message: t('library.promptDeleted'), color: 'green' })
   }
 
   const handleCopy = async (prompt: Prompt) => {
@@ -356,7 +358,7 @@ export default function Library() {
 
   const handleCopyLightboxPrompt = useCallback(async () => {
     if (!lightboxImage?.promptText?.trim()) {
-      notifications.show({ message: 'No prompt text to copy.', color: 'yellow' })
+      notifications.show({ message: t('library.noPromptTextToCopy'), color: 'yellow' })
       return
     }
 
@@ -364,11 +366,11 @@ export default function Library() {
       await navigator.clipboard.writeText(lightboxImage.promptText)
       setLightboxPromptCopied(true)
       window.setTimeout(() => setLightboxPromptCopied(false), 1500)
-      notifications.show({ message: 'Prompt copied', color: 'green' })
+      notifications.show({ message: t('library.promptCopied'), color: 'green' })
     } catch {
-      notifications.show({ message: 'Failed to copy prompt', color: 'red' })
+      notifications.show({ message: t('library.promptCopyFailed'), color: 'red' })
     }
-  }, [lightboxImage])
+  }, [lightboxImage, t])
 
   const handleToggleFavorite = async (prompt: Prompt) => {
     const result = await window.electronAPI.prompts.update(prompt.id, {
@@ -409,11 +411,11 @@ export default function Library() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-8 pt-8 pb-5 no-drag-region">
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">Prompt Library</h1>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">{t('library.title')}</h1>
           <p className="text-sm text-slate-500 mt-0.5">{filteredPrompts.length} prompt{filteredPrompts.length !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setForm({ mode: 'create' })} className="btn-primary"><Plus size={16} /> New Prompt</button>
+          <button onClick={() => setForm({ mode: 'create' })} className="btn-primary"><Plus size={16} /> {t('library.newPrompt')}</button>
         </div>
       </div>
 
@@ -429,7 +431,7 @@ export default function Library() {
                 setSearch(e.target.value)
                 setCurrentPage(0)
               }}
-              placeholder="Search prompts..."
+              placeholder={t('library.searchPlaceholder')}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 text-sm"
             />
           </div>
@@ -442,7 +444,7 @@ export default function Library() {
             aria-label="Filter prompts by model"
             className="input sm:w-56"
           >
-            <option value="">Alle modellen</option>
+            <option value="">{t('library.modelFilterAll')}</option>
             {allModels.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
@@ -1086,10 +1088,10 @@ export default function Library() {
       )}
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        title="Prompt Verwijderen"
-        message="Weet u zeker dat u deze prompt wilt verwijderen?"
-        confirmLabel="Verwijderen"
-        cancelLabel="Annuleren"
+        title={t('library.deleteTitle')}
+        message={t('library.deleteMessage')}
+        confirmLabel={t('library.deleteConfirm')}
+        cancelLabel={t('library.deleteCancel')}
         type="warning"
         onConfirm={async () => {
           if (deleteDialog.promptId) {
