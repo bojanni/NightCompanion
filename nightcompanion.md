@@ -1,3 +1,5 @@
+# NightCompanion
+
 ## 2026-03-15
 
 - De Prompt Library lightbox toont nu optioneel extra afbeeldingscontext: onderaan de prompttekst met sterwaardering en rechtsboven het gebruikte model.

@@ -744,8 +744,12 @@ async function readStoredSettings(): Promise<{ openRouter?: Partial<OpenRouterSe
   }
 }
 
-function normalizeBaseUrl(input: string) {
-  return input.replace(/\/+$/, '')
+function normalizeBaseUrl(input: string): string {
+  let end = input.length
+  while (end > 0 && input.charCodeAt(end - 1) === 47) {
+    end -= 1
+  }
+  return input.slice(0, end)
 }
 
 function getLocalAuthHeader(endpoint: Record<string, unknown> | undefined): Record<string, string> {

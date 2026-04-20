@@ -834,3 +834,27 @@
 - Findings: In de Prompt Library lightbox werd `Used model` getoond op basis van prompt-level modeldata, niet op basis van de geselecteerde afbeelding. Daarnaast kon de model-overlay visueel achter de lightbox-afbeelding vallen door gelijke z-index.
 - Conclusions: `Used model` moet primair uit image-level metadata (`imagesJson[].model`) komen, met prompt-level fallback voor oudere records. De model-overlay moet een hogere z-index hebben dan de lightbox-afbeelding.
 - Actions: Updated `src/screens/Library.tsx` door `getPromptImages` uit te breiden met `model`, `lightboxImage.model` te koppelen aan de geselecteerde afbeelding, en de `Used model` overlay naar `z-[103]` te verhogen; validated with `npm run build`.
+
+## 2026-04-20 (Security hardening: linear normalizeBaseUrl)
+
+- Findings: `normalizeBaseUrl` gebruikte een regex (`/\/+$/`) om trailing slashes te verwijderen. Dit patroon werd gemarkeerd als potentieel kwetsbaar voor super-lineaire runtime/backtracking in ongunstige gevallen.
+- Conclusions: Een expliciete karakter-scan vanaf het stringeinde verwijdert trailing slashes in gegarandeerd lineaire tijd zonder regex-engine/backtracking.
+- Actions: Updated `electron/ipc/ai.ts` door `normalizeBaseUrl` te herschrijven naar een `while`-lus met `charCodeAt(... ) === 47` en `slice`; validated with `npm run build`.
+
+## 2026-04-20 (TypeScript 6 baseUrl deprecation warning)
+
+- Findings: TypeScript meldt dat `baseUrl` gedeprecieerd is en in TypeScript 7.0 stopt met werken zonder expliciete deprecation handling.
+- Conclusions: De aanbevolen project-brede mitigatie is `ignoreDeprecations: "6.0"` in compilerOptions, zodat huidige alias-configuratie intact blijft tijdens migratieplanning.
+- Actions: Updated `tsconfig.json` met `"ignoreDeprecations": "6.0"` naast bestaande `baseUrl`/`paths`; validated with `npm run build`.
+
+## 2026-04-20 (Electron TS config: consistent file name casing)
+
+- Findings: `tsconfig.electron.json` miste `forceConsistentCasingInFileNames`, wat op mixed-OS teams import-padproblemen kan verbergen.
+- Conclusions: Deze compiler-optie moet expliciet aan staan voor stabiele casing-validatie over Windows/macOS/Linux.
+- Actions: Updated `tsconfig.electron.json` door `"forceConsistentCasingInFileNames": true` toe te voegen onder `compilerOptions`; validated with `npm run build`.
+
+## 2026-04-20 (Docs lint: MD041 top-level heading)
+
+- Findings: `nightcompanion.md` startte met een `##`-heading, waardoor markdownlint regel MD041 (`first-line-h1`) faalde.
+- Conclusions: Een expliciete eerste-regel H1 voorkomt lintfouten en maakt documentstructuur consistenter.
+- Actions: Updated `nightcompanion.md` door bovenaan `# NightCompanion` toe te voegen; validated with `npm run build`.
