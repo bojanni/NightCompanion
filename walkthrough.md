@@ -960,10 +960,3 @@
 - Findings: `Used model` in the Gallery lightbox could show a connected-prompt fallback instead of the model attached to the shown image item, and prompt controls were positioned away from the title.
 - Conclusions: `Used model` must come directly from the current image item metadata, and prompt toggle/copy controls should be placed directly below the title for clearer hierarchy.
 - Actions: Updated `src/components/GalleryLightbox.tsx` to derive `usedModel` only from `currentItem.model` and moved prompt controls under the title within the centered overlay card; validated with `npm run build`.
-
-## 2026-04-21 (Prompt Library — Media tab uses GalleryLightbox layout)
-
-- Findings: The Media tab in the Prompt Library screen rendered the full embedded <Gallery> component (with its own action bar, filter bar, collection pills and separate lightbox), creating an inconsistent experience vs. the Prompts tab which has an integrated card grid and custom lightbox.
-- Conclusions: Remove the embedded Gallery delegation; load gallery items directly in Library state; render a matching card grid and share the GalleryLightbox component so both tabs feel unified.
-- Actions: Removed Gallery import from Library.tsx; added GalleryLightbox, MediaRenderer, GalleryItem, and ImageIcon imports; added galleryItems, galleryLoading, galleryLbIndex, galleryLbOpen state; added effects to load items via window.electronAPI.gallery.list({}) when iew === 'media' and to open the lightbox to initialImageId when items load; replaced <Gallery embedded> with a card grid (loading/empty/grid states using MediaRenderer); added <GalleryLightbox> with rating-update callback; updated subtitle to show item count; also swapped header button order (New Prompt before Prompts/Media toggle); validated with 
-pm run build.

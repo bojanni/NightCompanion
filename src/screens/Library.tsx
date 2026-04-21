@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { Prompt, GalleryItem } from '../types'
+import type { Prompt } from '../types'
 import PromptForm from '../components/PromptForm'
-import GalleryLightbox from '../components/GalleryLightbox'
-import MediaRenderer from '../components/MediaRenderer'
-import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, ImageIcon, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2, X } from 'lucide-react'
+import Gallery from './Gallery'
+import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2, X } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -129,12 +128,6 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
   const [lightboxPromptCopied, setLightboxPromptCopied] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; promptId: number | null }>({ isOpen: false, promptId: null })
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
-
-  // Media tab state
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
-  const [galleryLoading, setGalleryLoading] = useState(false)
-  const [galleryLbIndex, setGalleryLbIndex] = useState(0)
-  const [galleryLbOpen, setGalleryLbOpen] = useState(false)
 
   const allModels = [...new Set(prompts.map((p) => p.model).filter(Boolean))].sort()
   const allTags = [...new Set(prompts.flatMap((p) => p.tags || []))].sort()
@@ -314,36 +307,6 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
     }
   }, [closeLightbox, goToNextLightboxImage, goToPreviousLightboxImage, lightboxImage])
 
-  // Load gallery items when media tab is active
-  useEffect(() => {
-    if (view !== 'media') return
-    let ignore = false
-    setGalleryLoading(true)
-    void window.electronAPI.gallery.list({}).then((result) => {
-      if (ignore) return
-      setGalleryLoading(false)
-      if (!result.error && result.data) setGalleryItems(result.data.items)
-    })
-    return () => { ignore = true }
-  }, [view])
-
-  // Open lightbox to initialImageId when media items load
-  useEffect(() => {
-    if (!initialImageId || view !== 'media' || galleryItems.length === 0) return
-    const idx = galleryItems.findIndex((i) => i.id === initialImageId)
-    if (idx >= 0) {
-      setGalleryLbIndex(idx)
-      setGalleryLbOpen(true)
-    }
-  }, [initialImageId, galleryItems, view])
-
-  const handleGalleryUpdateRating = useCallback(async (item: GalleryItem, rating: number) => {
-    const result = await window.electronAPI.gallery.updateItem(item.id, { rating })
-    if (!result.error) {
-      setGalleryItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)))
-    }
-  }, [])
-
   const fetchPrompts = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -468,7 +431,7 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
           <p className="text-sm text-slate-500 mt-0.5">
             {view === 'prompts'
               ? `${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`
-              : `${galleryItems.length} item${galleryItems.length !== 1 ? 's' : ''}`}
+              : t('gallery.title')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -587,42 +550,7 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
         className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region"
       >
         {view === 'media' ? (
-          galleryLoading ? (
-            <div className="flex items-center justify-center h-48">
-              <div className="text-slate-500 text-sm">Loading...</div>
-            </div>
-          ) : galleryItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700/50 flex items-center justify-center mb-4">
-                <ImageIcon size={28} className="text-slate-500" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-300 mb-1">No media yet</h3>
-              <p className="text-sm text-slate-500 max-w-sm">Add images or videos via the Gallery screen.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
-              {galleryItems.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer"
-                  onClick={() => { setGalleryLbIndex(idx); setGalleryLbOpen(true) }}
-                >
-                  {(item.imageUrl || item.videoUrl) ? (
-                    <div className="aspect-[16/9] bg-slate-950/60 overflow-hidden">
-                      <MediaRenderer
-                        item={item}
-                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                      />
-                    </div>
-                  ) : null}
-                  <div className="p-4">
-                    {item.title && <h3 className="text-sm font-semibold text-white truncate">{item.title}</h3>}
-                    {item.model && <p className="text-xs text-slate-500 mt-1 truncate">{item.model}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
+          <Gallery embedded initialImageId={initialImageId} />
         ) : (
           <>
         {error && (
@@ -1221,16 +1149,6 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
           onCancel={() => setDeleteDialog({ isOpen: false, promptId: null })}
         />
       )}
-
-      {/* Media tab lightbox */}
-      <GalleryLightbox
-        images={galleryItems}
-        initialIndex={galleryLbIndex}
-        isOpen={galleryLbOpen}
-        onClose={() => setGalleryLbOpen(false)}
-        onUpdateRating={handleGalleryUpdateRating}
-        displaySettings={{ title: true, rating: true, prompt: true, model: true }}
-      />
     </div>
   )
 }
