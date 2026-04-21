@@ -415,7 +415,6 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                      {/* Hover actions */}
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
@@ -441,7 +440,6 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
                         </button>
                       </div>
 
-                      {/* Collection indicator */}
                       {item.collectionId && (
                         <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <CollectionDot color={collectionColorMap.get(item.collectionId) ?? '#6366f1'} />
