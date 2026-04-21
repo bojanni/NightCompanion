@@ -288,7 +288,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
             <div className="p-6 card">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-semibold text-white">{t('dashboard.recentImages')}</h2>
-                <button onClick={() => onNavigate('library', { view: 'media' })} className="text-sm text-glow-blue hover:underline">
+                <button onClick={() => onNavigate('gallery')} className="text-sm text-glow-blue hover:underline">
                   {t('dashboard.viewAll')}
                 </button>
               </div>
@@ -301,7 +301,7 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     <button
                       key={item.id}
                       type="button"
-                      onClick={() => onNavigate('library', { view: 'media', imageId: item.id })}
+                      onClick={() => onNavigate('gallery', { imageId: item.id })}
                       className="flex-shrink-0 w-[300px]"
                       title={item.title || undefined}
                       aria-label={item.title ? `Open media library: ${item.title}` : 'Open media library'}

@@ -960,3 +960,16 @@
 - Findings: `Used model` in the Gallery lightbox could show a connected-prompt fallback instead of the model attached to the shown image item, and prompt controls were positioned away from the title.
 - Conclusions: `Used model` must come directly from the current image item metadata, and prompt toggle/copy controls should be placed directly below the title for clearer hierarchy.
 - Actions: Updated `src/components/GalleryLightbox.tsx` to derive `usedModel` only from `currentItem.model` and moved prompt controls under the title within the centered overlay card; validated with `npm run build`.
+
+## 2026-04-21 (Prompt Library — media tab uses shared GalleryLightbox)
+
+- Findings: The Prompt Library media tab used embedded Gallery chrome and lightbox flow, which differed from the prompt-tab experience and felt inconsistent.
+- Conclusions: Render media directly in Library with local gallery state and open the shared GalleryLightbox component from media cards to align interaction and layout.
+- Actions: Updated src/screens/Library.tsx to replace embedded <Gallery> with a media grid (MediaRenderer), added media-tab gallery loading via gallery:list, initial-image handoff handling, shared GalleryLightbox open state/index, rating updates through gallery:updateItem, and media item-count subtitle; validated with 
+pm run build.
+
+## 2026-04-21 (Prompt Library — remove Media tab)
+
+- Findings: Prompt Library mixed two concerns (prompt management and media browsing) via a Prompts/Media tab switch, and the Media flow required extra state and routing glue in App and Dashboard.
+- Conclusions: Remove the Media tab from Prompt Library entirely and route image browsing directly to the dedicated Gallery screen.
+- Actions: Removed all media-tab state, UI, and lightbox wiring from src/screens/Library.tsx; simplified Library header and content to prompts-only; updated src/App.tsx to render Gallery as its own screen and removed gallery-to-library remapping; updated Dashboard recent-images navigation to open Gallery directly (with imageId deep-link); removed the obsolete library.viewMedia translation key from src/contexts/LanguageContext.tsx; validated with npm run build.

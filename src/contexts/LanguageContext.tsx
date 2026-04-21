@@ -31,7 +31,6 @@ export type TranslationKey =
   | 'library.searchPlaceholder'
   | 'library.modelFilterAll'
   | 'library.viewPrompts'
-  | 'library.viewMedia'
   | 'library.promptDeleted'
   | 'library.noPromptTextToCopy'
   | 'library.promptCopied'
@@ -118,7 +117,6 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'library.searchPlaceholder': 'Search prompts...',
     'library.modelFilterAll': 'All models',
     'library.viewPrompts': 'Prompts',
-    'library.viewMedia': 'Media',
     'library.promptDeleted': 'Prompt deleted',
     'library.noPromptTextToCopy': 'No prompt text to copy.',
     'library.promptCopied': 'Prompt copied',
@@ -202,7 +200,6 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'library.searchPlaceholder': 'Zoek prompts...',
     'library.modelFilterAll': 'Alle modellen',
     'library.viewPrompts': 'Prompts',
-    'library.viewMedia': 'Media',
     'library.promptDeleted': 'Prompt verwijderd',
     'library.noPromptTextToCopy': 'Geen prompttekst om te kopieren.',
     'library.promptCopied': 'Prompt gekopieerd',

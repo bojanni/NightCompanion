@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Prompt } from '../types'
 import PromptForm from '../components/PromptForm'
-import Gallery from './Gallery'
 import { BookTemplate, Check, Copy, Edit3, Eye, EyeOff, Filter, Heart, Plus, Search, SlidersHorizontal, Star, StarHalf, Trash2, X } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -41,13 +40,6 @@ type PromptImageView = {
 type LightboxPosition = {
   promptIndex: number
   imageIndex: number
-}
-
-type LibraryView = 'prompts' | 'media'
-
-type LibraryProps = {
-  initialView?: LibraryView
-  initialImageId?: string
 }
 
 function getPromptImages(prompt: Prompt): PromptImageView[] {
@@ -108,9 +100,8 @@ function hasImprovedPrompt(prompt: Prompt): boolean {
   return Boolean(originalPrompt) && originalPrompt !== currentPrompt
 }
 
-export default function Library({ initialView = 'prompts', initialImageId }: LibraryProps) {
+export default function Library() {
   const { t } = useLanguage()
-  const [view, setView] = useState<LibraryView>(initialView)
   const [prompts, setPrompts] = useState<Prompt[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -419,45 +410,21 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
     return filteredPrompts.slice(start, start + PAGE_SIZE)
   }, [filteredPrompts, safeCurrentPage])
 
-  useEffect(() => {
-    setView(initialView)
-  }, [initialView])
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-8 pt-8 pb-5 no-drag-region">
         <div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">{t('library.title')}</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            {view === 'prompts'
-              ? `${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`
-              : t('gallery.title')}
+            {`${filteredPrompts.length} prompt${filteredPrompts.length !== 1 ? 's' : ''}`}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {view === 'prompts' && (
-            <button onClick={() => setForm({ mode: 'create' })} className="btn-primary"><Plus size={16} /> {t('library.newPrompt')}</button>
-          )}
-          <div className="inline-flex rounded-xl border border-slate-700/50 bg-slate-900/40 p-1">
-            {([
-              { id: 'prompts', label: t('library.viewPrompts') },
-              { id: 'media', label: t('library.viewMedia') },
-            ] as const).map((entry) => (
-              <button
-                key={entry.id}
-                type="button"
-                onClick={() => setView(entry.id)}
-                className={`px-4 py-2 rounded-lg text-sm transition-colors ${view === entry.id ? 'bg-glow-purple text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-              >
-                {entry.label}
-              </button>
-            ))}
-          </div>
+          <button onClick={() => setForm({ mode: 'create' })} className="btn-primary"><Plus size={16} /> {t('library.newPrompt')}</button>
         </div>
       </div>
 
-      {view === 'prompts' && (
-        <>
+      <>
           <div
             className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-slate-900/40 mx-8 p-4 rounded-2xl border border-slate-800/50 mb-5 no-drag-region"
           >
@@ -543,16 +510,11 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
               ))}
             </div>
           )}
-        </>
-      )}
+      </>
 
       <div
         className="flex-1 overflow-y-auto px-8 pb-8 no-drag-region"
       >
-        {view === 'media' ? (
-          <Gallery embedded initialImageId={initialImageId} />
-        ) : (
-          <>
         {error && (
           <div className="mb-4 px-4 py-3 rounded-lg bg-red-950/50 border border-red-800/50 text-red-300 text-sm">
             {error}
@@ -952,13 +914,11 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
                 </button>
               </div>
             )}
-          </>
-        )}
-          </>
+        </>
         )}
       </div>
 
-      {view === 'prompts' && form.mode !== 'closed' && (
+      {form.mode !== 'closed' && (
         <PromptForm
           initial={form.mode === 'edit' ? form.prompt : undefined}
           onSubmit={(data) =>
@@ -970,7 +930,7 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
         />
       )}
 
-      {view === 'prompts' && lightboxImage && (
+      {lightboxImage && (
         <div
           className="fixed inset-0 z-[220] flex items-center justify-center p-4"
           onClick={closeLightbox}
@@ -1132,23 +1092,21 @@ export default function Library({ initialView = 'prompts', initialImageId }: Lib
           </div>
         </div>
       )}
-      {view === 'prompts' && (
-        <ConfirmDialog
-          isOpen={deleteDialog.isOpen}
-          title={t('library.deleteTitle')}
-          message={t('library.deleteMessage')}
-          confirmLabel={t('library.deleteConfirm')}
-          cancelLabel={t('library.deleteCancel')}
-          type="warning"
-          onConfirm={async () => {
-            if (deleteDialog.promptId) {
-              await handleDelete(deleteDialog.promptId)
-            }
-            setDeleteDialog({ isOpen: false, promptId: null })
-          }}
-          onCancel={() => setDeleteDialog({ isOpen: false, promptId: null })}
-        />
-      )}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title={t('library.deleteTitle')}
+        message={t('library.deleteMessage')}
+        confirmLabel={t('library.deleteConfirm')}
+        cancelLabel={t('library.deleteCancel')}
+        type="warning"
+        onConfirm={async () => {
+          if (deleteDialog.promptId) {
+            await handleDelete(deleteDialog.promptId)
+          }
+          setDeleteDialog({ isOpen: false, promptId: null })
+        }}
+        onCancel={() => setDeleteDialog({ isOpen: false, promptId: null })}
+      />
     </div>
   )
 }
