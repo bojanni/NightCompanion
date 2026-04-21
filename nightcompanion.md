@@ -93,3 +93,7 @@
 - Generator model advice now stays empty until you explicitly request it, and AI advice can now populate the cheap, balanced, and premium recommendation cards instead of always showing the same default rule picks.
 - Prompt Library prompt edit form no longer has a global Style Preset field; style presets are now attached per uploaded image in the image metadata block.
 - Prompt Library lightbox controls and overlay cards now render above the image layer consistently, and the image counter pill was widened so values like `3 / 3` remain readable.
+- Prompt Library cards now show cover-image metadata in the footer (`Used model` and `Preset`) and no longer show the negative prompt message in that footer panel.
+- Gallery lightbox now maximises image display area while preserving aspect ratio, shows title + used model + used style preset in metadata, and uses a dedicated prompt toggle panel instead of the previous inline prompt section.
+- Gallery lightbox now reads `Used model` strictly from the shown image item metadata (not connected-prompt fallbacks).
+- Gallery lightbox info is now rendered in a centered overlay card (Prompt Library style), while media keeps full-fit `object-contain` behavior so nothing is cropped and the prompt controls sit directly below the title.

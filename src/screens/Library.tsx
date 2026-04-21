@@ -530,6 +530,8 @@ export default function Library() {
                   : prompt.promptText
                 const promptImages = getPromptImages(prompt)
                 const coverImageUrl = promptImages[0]?.url || ''
+                const coverImageModel = promptImages[0]?.model || prompt.model || prompt.suggestedModel || ''
+                const coverImagePreset = promptImages[0]?.stylePreset || (prompt.stylePreset ?? '')
 
                 return (
                   <div
@@ -700,14 +702,11 @@ export default function Library() {
                             ))}
                             <span className="text-[10px] text-slate-500 ml-1">{prompt.rating ? prompt.rating.toFixed(1) : '0.0'}</span>
                           </div>
-                          <p className="text-[11px] text-slate-500 line-clamp-2">
-                            {prompt.negativePrompt || 'No negative prompt set.'}
-                          </p>
-                          {prompt.model && (
-                            <p className="text-[10px] text-slate-500 mt-2 truncate">{prompt.model}</p>
+                          {coverImageModel && (
+                            <p className="text-[10px] text-slate-500 mt-2 truncate">Used model: {coverImageModel}</p>
                           )}
-                          {prompt.suggestedModel && prompt.suggestedModel !== prompt.model && (
-                            <p className="text-[10px] text-slate-500 mt-1 truncate">Suggested model: {prompt.suggestedModel}</p>
+                          {coverImagePreset && (
+                            <p className="text-[10px] text-slate-500 mt-1 truncate">Preset: {coverImagePreset}</p>
                           )}
                         </div>
                       </div>

@@ -930,3 +930,27 @@
 - Findings: Some lightbox UI controls could visually end up behind/on the same layer as the main image, and the image counter pill could render cramped for values like `3 / 3`.
 - Conclusions: Keep the main image on a lower z-layer and raise all interactive/overlay UI layers consistently; make the counter pill wider with non-wrapping, tabular numerals.
 - Actions: Updated `src/screens/Library.tsx` lightbox z-index assignments so controls/overlay cards render in front of the image, lowered the main image layer, and widened the counter pill with `min-w`, `whitespace-nowrap`, and `tabular-nums`; validated with `npm run build`.
+
+## 2026-04-21 (Prompt Library cards: cover-image model and preset)
+
+- Findings: The card footer in Prompt Library still showed the negative prompt snippet, while users need quick access to metadata tied to the shown cover image.
+- Conclusions: Replace the footer negative prompt line with image-level metadata and source values from the cover image (`imagesJson[0]`) with prompt-level fallback for older records.
+- Actions: Updated `src/screens/Library.tsx` to remove the negative prompt/footer message and render `Used model` plus `Preset` from the current cover image metadata (fallback to prompt-level fields); validated with `npm run build`.
+
+## 2026-04-21 (Gallery lightbox: larger media viewport + prompt toggle panel)
+
+- Findings: Gallery lightbox media area was constrained (`~70vh`) and prompt text was rendered in an inline section that competed with metadata layout.
+- Conclusions: Increase usable media space to near-viewport maximum while preserving aspect ratio; keep title/model/preset visible in metadata and move prompt into a dedicated toggle panel.
+- Actions: Updated `src/components/GalleryLightbox.tsx` to use dynamic near-viewport max-height classes with `object-contain`, derive and render `Used model` + `Used preset` from the shown item/connected prompt metadata, and replace the old inline prompt block with a dedicated toggleable prompt panel; updated `src/screens/Gallery.tsx` to pass `promptOptions` into the lightbox for connected-prompt metadata lookup; validated with `npm run build`.
+
+## 2026-04-21 (Gallery lightbox: centered info card + strict no-crop media fit)
+
+- Findings: The Gallery lightbox metadata remained at the bottom flow area instead of a centered overlay (Prompt Library style), and media sizing needed to prioritize maximum fit without any cropping.
+- Conclusions: Render metadata/prompt controls in a centered overlay card and keep media constrained with full-fit `object-contain` sizing (`max-h/max-w`) so nothing is cut off.
+- Actions: Updated `src/components/GalleryLightbox.tsx` to place title/rating/model/preset/date and prompt controls inside a centered bottom overlay card, while setting media container sizing to full available viewport area with `object-contain` and no crop behavior; validated with `npm run build`.
+
+## 2026-04-21 (Gallery lightbox: correct image model source + prompt under title)
+
+- Findings: `Used model` in the Gallery lightbox could show a connected-prompt fallback instead of the model attached to the shown image item, and prompt controls were positioned away from the title.
+- Conclusions: `Used model` must come directly from the current image item metadata, and prompt toggle/copy controls should be placed directly below the title for clearer hierarchy.
+- Actions: Updated `src/components/GalleryLightbox.tsx` to derive `usedModel` only from `currentItem.model` and moved prompt controls under the title within the centered overlay card; validated with `npm run build`.

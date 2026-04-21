@@ -725,6 +725,7 @@ export default function Gallery({ initialImageId }: GalleryProps) {
       <GalleryLightbox
         key={`${initialImageId || 'none'}:${state.lightboxImage?.id || 'closed'}`}
         images={state.items}
+        promptOptions={promptOptions}
         initialIndex={lightboxIndex}
         isOpen={!!state.lightboxImage}
         onClose={closeLightbox}

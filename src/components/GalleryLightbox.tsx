@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 import type { GalleryItem } from '../lib/schema'
+import type { Prompt } from '../lib/schema'
 import MediaRenderer from './MediaRenderer'
 import StarRating from './StarRating'
 
@@ -28,6 +29,7 @@ type DisplaySettings = {
 
 type GalleryLightboxProps = {
   images: GalleryItem[]
+  promptOptions?: Prompt[]
   initialIndex: number
   isOpen: boolean
   onClose: () => void
@@ -56,6 +58,7 @@ function BlurredBackground({ src }: { src: string }) {
 
 export default function GalleryLightbox({
   images,
+  promptOptions = [],
   initialIndex,
   isOpen,
   onClose,
@@ -71,11 +74,19 @@ export default function GalleryLightbox({
   const [playing, setPlaying] = useState(autoPlay)
   const [zenMode, setZenMode] = useState(() => localStorage.getItem('galleryZenMode') === 'true')
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [promptExpanded, setPromptExpanded] = useState(false)
+  const [promptVisible, setPromptVisible] = useState(false)
   const thumbStripRef = useRef<HTMLDivElement>(null)
   const slideshowRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const currentItem = images[currentIndex]
+  const connectedPromptId = typeof currentItem?.metadata?.connectedPromptId === 'number'
+    ? currentItem.metadata.connectedPromptId
+    : null
+  const connectedPrompt = connectedPromptId === null
+    ? undefined
+    : promptOptions.find((prompt) => prompt.id === connectedPromptId)
+  const usedModel = typeof currentItem?.model === 'string' ? currentItem.model.trim() : ''
+  const usedStylePreset = connectedPrompt?.stylePreset || ''
 
   const goNext = useCallback(() => {
     if (images.length <= 0) return
@@ -134,6 +145,10 @@ export default function GalleryLightbox({
     if (activeThumb) {
       activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
+  }, [currentIndex])
+
+  useEffect(() => {
+    setPromptVisible(false)
   }, [currentIndex])
 
   // Zen mode persistence
@@ -254,12 +269,12 @@ export default function GalleryLightbox({
         </button>
 
         {/* Image/video */}
-        <div className="max-h-[70vh] max-w-full flex items-center justify-center">
+        <div className="h-full w-full max-w-full flex items-center justify-center">
           <MediaRenderer
             item={currentItem}
             autoPlay={currentItem.mediaType === 'video'}
             controls={currentItem.mediaType === 'video'}
-            className="max-h-[70vh] object-contain rounded-lg"
+            className="h-full max-h-full w-full max-w-full object-contain rounded-lg"
           />
         </div>
 
@@ -274,59 +289,62 @@ export default function GalleryLightbox({
         </button>
       </div>
 
-      {/* Info panel */}
       {!zenMode && (
-        <div className="relative z-10 px-6 py-3 space-y-2">
-          <div className="flex items-center gap-4 flex-wrap">
-            {displaySettings.title && currentItem.title && (
-              <h3 className="text-white font-medium text-sm">{currentItem.title}</h3>
-            )}
-            {displaySettings.rating && (
-              <StarRating
-                rating={currentItem.rating ?? 0}
-                onChange={onUpdateRating ? (r) => onUpdateRating(currentItem, r) : undefined}
-                readonly={!onUpdateRating}
-                size={16}
-              />
-            )}
-            {displaySettings.model && currentItem.model && (
-              <span className="text-night-500 text-xs">{currentItem.model}</span>
-            )}
-            {currentItem.createdAt && (
-              <span className="text-night-600 text-xs">
-                {new Date(currentItem.createdAt).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-
-          {displaySettings.prompt && currentItem.promptUsed && (
-            <div className="flex items-start gap-2">
-              <button
-                type="button"
-                aria-label="Toggle prompt"
-                onClick={() => setPromptExpanded((p) => !p)}
-                className="text-night-400 hover:text-white transition-colors flex items-center gap-1 text-xs shrink-0"
-              >
-                {promptExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                Prompt
-              </button>
-              {promptExpanded && (
-                <div className="flex-1 flex items-start gap-2">
-                  <p className="text-night-300 text-xs leading-relaxed flex-1">
-                    {currentItem.promptUsed}
-                  </p>
-                  <button
-                    type="button"
-                    aria-label="Copy prompt"
-                    onClick={() => void handleCopyPrompt()}
-                    className="btn-ghost p-1 shrink-0"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </button>
+        <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30 flex justify-center">
+          <div className="pointer-events-auto w-full max-w-3xl rounded-[28px] border border-white/15 bg-black/45 px-5 py-4 text-white shadow-2xl backdrop-blur-2xl">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0 flex-1">
+                {displaySettings.title && currentItem.title && (
+                  <h3 className="text-lg font-semibold text-white truncate">{currentItem.title}</h3>
+                )}
+                {displaySettings.prompt && currentItem.promptUsed && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label={promptVisible ? 'Hide prompt' : 'Show prompt'}
+                      onClick={() => setPromptVisible((visible) => !visible)}
+                      className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-xs text-white hover:bg-black/55 transition-colors"
+                    >
+                      {promptVisible ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      Prompt
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Copy prompt"
+                      onClick={() => void handleCopyPrompt()}
+                      className="inline-flex items-center justify-center rounded-full border border-white/20 bg-black/35 p-2 text-white/90 hover:bg-black/55 transition-colors"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {displaySettings.rating && (
+                <div className="shrink-0 pt-0.5">
+                  <StarRating
+                    rating={currentItem.rating ?? 0}
+                    onChange={onUpdateRating ? (r) => onUpdateRating(currentItem, r) : undefined}
+                    readonly={!onUpdateRating}
+                    size={16}
+                  />
                 </div>
               )}
             </div>
-          )}
+
+            <div className="flex items-center justify-center gap-4 flex-wrap text-xs text-white/80">
+              {displaySettings.model && usedModel && <span>Used model: {usedModel}</span>}
+              {usedStylePreset && <span>Used preset: {usedStylePreset}</span>}
+              {currentItem.createdAt && <span>{new Date(currentItem.createdAt).toLocaleDateString()}</span>}
+            </div>
+
+            {displaySettings.prompt && currentItem.promptUsed && promptVisible && (
+              <div className="mt-3 rounded-xl border border-white/15 bg-black/25 p-3 max-h-[30vh] overflow-y-auto">
+                <p className="text-xs leading-relaxed text-white/90 whitespace-pre-wrap">
+                  {currentItem.promptUsed}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
