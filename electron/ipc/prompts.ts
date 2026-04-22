@@ -17,6 +17,9 @@ type PromptImageMutationInput = {
   url?: string
   dataUrl?: string | null
   fileName?: string | null
+  startImageUrl?: string
+  startImageDataUrl?: string | null
+  startImageFileName?: string | null
   note?: string
   model?: string
   seed?: string
@@ -33,6 +36,7 @@ type PromptImageMutationInput = {
 type PromptImageRow = {
   id: string
   url: string
+  startImageUrl?: string
   note: string
   model: string
   seed: string
@@ -153,6 +157,7 @@ async function resolvePromptImage(currentImageUrl: string, data: PromptMutationI
 function normalisePromptImageRow(input: {
   id?: string
   url: string
+  startImageUrl?: string
   note?: string
   model?: string
   seed?: string
@@ -175,6 +180,7 @@ function normalisePromptImageRow(input: {
   return {
     id: input.id?.trim() || randomUUID(),
     url: input.url.trim(),
+    startImageUrl: (input.startImageUrl ?? '').trim(),
     note: (input.note ?? '').trim(),
     model: (input.model ?? '').trim(),
     seed: (input.seed ?? '').trim(),
@@ -211,10 +217,16 @@ async function resolvePromptImages(
     for (const image of data.images) {
       const rawDataUrl = typeof image.dataUrl === 'string' ? image.dataUrl.trim() : ''
       const rawUrl = typeof image.url === 'string' ? image.url.trim() : ''
+      const rawStartImageDataUrl = typeof image.startImageDataUrl === 'string' ? image.startImageDataUrl.trim() : ''
+      const rawStartImageUrl = typeof image.startImageUrl === 'string' ? image.startImageUrl.trim() : ''
 
       const url = rawDataUrl
         ? await savePromptMediaDataUrl(rawDataUrl, image.fileName ?? undefined)
         : rawUrl
+
+      const startImageUrl = rawStartImageDataUrl
+        ? await savePromptMediaDataUrl(rawStartImageDataUrl, image.startImageFileName ?? undefined)
+        : rawStartImageUrl
 
       if (!url) continue
 
@@ -226,6 +238,7 @@ async function resolvePromptImages(
         normalisePromptImageRow({
           id: image.id,
           url,
+          startImageUrl,
           note: image.note,
           model: image.model,
           seed: image.seed,
@@ -571,9 +584,11 @@ export function registerPromptsIpc({ db }: { db: Database }) {
       const localImageUrls = [...new Set([
         current?.imageUrl,
         ...(Array.isArray(current?.imagesJson) ? current.imagesJson.map((image) => image.url) : []),
+        ...(Array.isArray(current?.imagesJson) ? current.imagesJson.map((image) => image.startImageUrl) : []),
         ...versions.map((version) => version.imageUrl),
         ...versions.flatMap((version) => (Array.isArray(version.imagesJson) ? version.imagesJson.map((image) => image.url) : [])),
-      ].filter((value): value is string => Boolean(value) && value.startsWith('file:')))]
+        ...versions.flatMap((version) => (Array.isArray(version.imagesJson) ? version.imagesJson.map((image) => image.startImageUrl) : [])),
+      ].filter((value): value is string => typeof value === 'string' && value.startsWith('file:')))]
 
       if (localImageUrls.length > 0) {
         await Promise.all(localImageUrls.map(deletePromptImageFile))

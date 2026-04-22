@@ -24,6 +24,7 @@ export const prompts = pgTable(
     imagesJson: jsonb('images_json').$type<Array<{
       id: string
       url: string
+      startImageUrl?: string
       note: string
       model: string
       seed: string
@@ -71,6 +72,7 @@ export const promptVersions = pgTable(
     imagesJson: jsonb('images_json').$type<Array<{
       id: string
       url: string
+      startImageUrl?: string
       note: string
       model: string
       seed: string

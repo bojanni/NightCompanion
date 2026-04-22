@@ -128,6 +128,7 @@ type OpenRouterModel = {
 type PromptImageJsonItem = {
   id?: string
   url?: string
+  startImageUrl?: string
   note?: string
   model?: string
   seed?: string

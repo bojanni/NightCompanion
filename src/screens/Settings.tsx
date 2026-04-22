@@ -34,6 +34,7 @@ export default function Settings() {
   const [backupDatabaseMessage, setBackupDatabaseMessage] = useState<string | null>(null)
   const [backfillingPromptMedia, setBackfillingPromptMedia] = useState(false)
   const [backfillPromptMediaMessage, setBackfillPromptMediaMessage] = useState<string | null>(null)
+  const [backfillCompletedSuccessfully, setBackfillCompletedSuccessfully] = useState(false)
   const [isRefreshingHf, setIsRefreshingHf] = useState(false)
   const [hfSyncMessage, setHfSyncMessage] = useState<string | null>(null)
   const [hfSyncInfo, setHfSyncInfo] = useState<HfSyncInfo | null>(null)
@@ -398,6 +399,7 @@ export default function Settings() {
     setBackfillPromptMediaMessage(message)
     notifications.show({ message: 'Prompt media backfill complete.', color: 'green' })
     setBackfillingPromptMedia(false)
+    setBackfillCompletedSuccessfully(true)
   }
 
   const formattedLastSyncedAt = (() => {
@@ -682,26 +684,28 @@ export default function Settings() {
                 )}
               </section>
 
-              <section className="p-6 card space-y-3">
-                <div>
-                  <p className="settings-section-title">Prompt media backfill (one-time)</p>
-                  <p className="text-xs text-slate-500">Sync existing prompt imagesJson media into Media gallery items without opening/saving each prompt manually.</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={loading || backfillingPromptMedia}
-                  onClick={() => {
-                    if (!loading && !backfillingPromptMedia) void handleBackfillPromptMediaToGallery()
-                  }}
-                  className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${backfillingPromptMedia ? 'animate-spin' : ''}`} />
-                  {backfillingPromptMedia ? 'Backfilling...' : 'Backfill prompt media to gallery'}
-                </button>
-                {backfillPromptMediaMessage && (
-                  <p className="text-xs text-slate-400 break-words">{backfillPromptMediaMessage}</p>
-                )}
-              </section>
+              {!backfillCompletedSuccessfully && (
+                <section className="p-6 card space-y-3">
+                  <div>
+                    <p className="settings-section-title">Prompt media backfill (one-time)</p>
+                    <p className="text-xs text-slate-500">Sync existing prompt imagesJson media into Media gallery items without opening/saving each prompt manually.</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={loading || backfillingPromptMedia}
+                    onClick={() => {
+                      if (!loading && !backfillingPromptMedia) void handleBackfillPromptMediaToGallery()
+                    }}
+                    className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${backfillingPromptMedia ? 'animate-spin' : ''}`} />
+                    {backfillingPromptMedia ? 'Backfilling...' : 'Backfill prompt media to gallery'}
+                  </button>
+                  {backfillPromptMediaMessage && (
+                    <p className="text-xs text-slate-400 break-words">{backfillPromptMediaMessage}</p>
+                  )}
+                </section>
+              )}
 
               <section className="p-6 card space-y-3">
                 <div className="flex gap-4 justify-between items-center">

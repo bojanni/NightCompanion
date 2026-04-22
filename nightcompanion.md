@@ -107,3 +107,5 @@
 - Media tab supports the existing gallery grid-density options and independent media collections for organising images/videos.
 - Prompt-linked media now keeps collection assignment when prompt data is resynchronised.
 - Settings now includes a one-time `Backfill prompt media to gallery` action to sync existing prompt `imagesJson` entries into Media gallery items without manually re-saving each prompt.
+- Generator `Auto-title` now runs automatically only once after the first prompt generation, then turns off so later title generation is manual.
+- Prompt Library media items now support a per-item `Start Image` upload, and these start images are stored as media metadata only (they do not appear as separate items in Prompt/Media gallery lightboxes).

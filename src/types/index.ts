@@ -6,6 +6,9 @@ export type PromptImageMutationInput = {
   url?: string
   dataUrl?: string | null
   fileName?: string | null
+  startImageUrl?: string
+  startImageDataUrl?: string | null
+  startImageFileName?: string | null
   note?: string
   model?: string
   seed?: string

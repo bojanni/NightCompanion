@@ -15,6 +15,9 @@ type ImageDraft = {
   url: string
   dataUrl: string | null
   fileName: string | null
+  startImageUrl: string
+  startImageDataUrl: string | null
+  startImageFileName: string | null
   note: string
   model: string
   seed: string
@@ -85,6 +88,11 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         url: image.url,
         dataUrl: null,
         fileName: null,
+        startImageUrl: typeof (image as unknown as { startImageUrl?: unknown }).startImageUrl === 'string'
+          ? String((image as unknown as { startImageUrl: string }).startImageUrl)
+          : '',
+        startImageDataUrl: null,
+        startImageFileName: null,
         note: image.note ?? '',
         model: image.model ?? '',
         seed: image.seed ?? '',
@@ -132,6 +140,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         url: initial.imageUrl,
         dataUrl: null,
         fileName: null,
+        startImageUrl: '',
+        startImageDataUrl: null,
+        startImageFileName: null,
         note: '',
         model: initial.model ?? '',
         seed: initial.seed ?? '',
@@ -264,6 +275,11 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           url: image.url,
           dataUrl: null,
           fileName: null,
+          startImageUrl: typeof (image as unknown as { startImageUrl?: unknown }).startImageUrl === 'string'
+            ? String((image as unknown as { startImageUrl: string }).startImageUrl)
+            : '',
+          startImageDataUrl: null,
+          startImageFileName: null,
           note: image.note ?? '',
           model: image.model ?? '',
           seed: image.seed ?? '',
@@ -312,6 +328,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           url: version.imageUrl,
           dataUrl: null,
           fileName: null,
+          startImageUrl: '',
+          startImageDataUrl: null,
+          startImageFileName: null,
           note: '',
           model: version.model ?? '',
           seed: version.seed ?? '',
@@ -409,6 +428,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           url: '',
           dataUrl,
           fileName: file.name,
+          startImageUrl: '',
+          startImageDataUrl: null,
+          startImageFileName: null,
           note: '',
           model: model.trim(),
           seed: seed.trim(),
@@ -436,6 +458,35 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
   const removeImage = (id: string) => {
     setImages((prev) => prev.filter((img) => img.id !== id))
+  }
+
+  const handleStartImageSelect = async (imageId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+
+    setReadingImages(true)
+    setError(null)
+
+    try {
+      const startImageDataUrl = await readFileAsDataUrl(selectedFile)
+      updateImage(imageId, {
+        startImageDataUrl,
+        startImageFileName: selectedFile.name,
+      })
+    } catch {
+      setError('Could not read start image file.')
+    } finally {
+      setReadingImages(false)
+      e.target.value = ''
+    }
+  }
+
+  const clearStartImage = (imageId: string) => {
+    updateImage(imageId, {
+      startImageUrl: '',
+      startImageDataUrl: null,
+      startImageFileName: null,
+    })
   }
 
   const updateImage = (id: string, patch: Partial<Omit<ImageDraft, 'id'>>) => {
@@ -491,6 +542,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         url: image.url,
         dataUrl: image.dataUrl,
         fileName: image.fileName,
+        startImageUrl: image.startImageUrl,
+        startImageDataUrl: image.startImageDataUrl,
+        startImageFileName: image.startImageFileName,
         note: image.note,
         model: image.model,
         seed: image.seed,
@@ -624,6 +678,57 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                               rows={2}
                               placeholder="Optional note about this image…"
                             />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="label !mb-0">Start Image</label>
+                              <span className="text-[10px] text-slate-500">not shown in gallery/lightbox</span>
+                            </div>
+                            {(image.startImageDataUrl || image.startImageUrl) ? (
+                              <div className="space-y-2">
+                                <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60">
+                                  <img
+                                    src={image.startImageDataUrl || image.startImageUrl}
+                                    alt="Start image preview"
+                                    className="object-cover w-full h-40"
+                                  />
+                                </div>
+                                <div className="flex gap-2">
+                                  <label className="btn-ghost border border-slate-700/50 px-2.5 py-1 text-[11px] cursor-pointer">
+                                    Replace start image
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(event) => {
+                                        void handleStartImageSelect(image.id, event)
+                                      }}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => clearStartImage(image.id)}
+                                    className="btn-ghost border border-red-900/50 px-2.5 py-1 text-[11px] text-red-300 hover:text-red-200"
+                                    disabled={readingImages}
+                                  >
+                                    Remove start image
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="inline-flex px-3 py-2 text-xs rounded-lg border border-dashed cursor-pointer text-slate-300 border-slate-700/80 bg-slate-900/30 hover:border-amber-500/40 hover:bg-slate-900/50">
+                                Upload start image
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) => {
+                                    void handleStartImageSelect(image.id, event)
+                                  }}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
                           </div>
 
                           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">

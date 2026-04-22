@@ -984,3 +984,15 @@
 - Findings: Existing prompts that already had `imagesJson` media before the new prompt->gallery sync would not appear in the Media tab until each prompt was opened and re-saved.
 - Conclusions: Add an explicit one-time maintenance action in Settings that scans all prompts and idempotently upserts prompt-linked media rows into `gallery_items`.
 - Actions: Added `settings:backfillPromptMediaToGallery` in `electron/ipc/settings.ts` with summary output (`scanned/inserted/updated/removed`), prompt media normalization (including legacy `imageUrl` fallback), and prompt-linked metadata tagging; exposed the action in `electron/preload.ts` and `src/types/electron.d.ts`; added a confirm-backed `Backfill prompt media to gallery` button and result messaging in `src/screens/Settings.tsx`; validated with `npm run build`.
+
+## 2026-04-22 (Generator auto-title runs once)
+
+- Findings: On the Generator page, auto-title could keep regenerating titles on every new/improved prompt while enabled, which made later title updates automatic instead of deliberate.
+- Conclusions: Auto-title should run only once, right after the first generated prompt, then switch off so subsequent title generation is manual via the title button.
+- Actions: Updated `src/screens/Generator.tsx` to allow a single automatic title generation, disable auto-title after that successful run, and remove automatic title generation from prompt improvement; validated with `npm run build`.
+
+## 2026-04-22 (Prompt media start images stay out of galleries)
+
+- Findings: Start/reference images uploaded in Prompt Library should be stored with the prompt media item, but must never appear as gallery media cards or lightbox items in Prompt Library/Media.
+- Conclusions: Treat start images as metadata (`startImageUrl`) attached to a prompt media entry rather than standalone gallery media.
+- Actions: Updated `src/components/PromptForm.tsx` to add per-media `Start Image` upload/replace/remove UI and submit `startImageUrl`/`startImageDataUrl` metadata; updated prompt image types in `src/types/index.ts`, `src/types/electron.d.ts`, `electron/preload.ts`, `electron/ipc/prompts.ts`, `src/lib/schema.ts`, and `electron/ipc/settings.ts`; updated `electron/ipc/prompts.ts` to persist start image files and clean them up on prompt delete; validated with `npm run build`.

@@ -134,6 +134,7 @@ export default function Generator() {
   const [uiStateLoaded, setUiStateLoaded] = useState(false)
   const uiStateSaveTimeoutRef = useRef<number | null>(null)
   const lastAutoTitlePromptRef = useRef<string | null>(null)
+  const autoTitleUsedOnceRef = useRef(false)
 
   const [quickStartIdea, setQuickStartIdea] = useState('')
   const [quickStartCreativity, setQuickStartCreativity] = useState<CreativityLevel>('balanced')
@@ -190,6 +191,7 @@ export default function Generator() {
 
   const maybeAutoGenerateTitle = async (nextPrompt: string, previousPrompt: string) => {
     if (!autoTitleEnabled) return
+    if (autoTitleUsedOnceRef.current) return
 
     const trimmedTitle = savedTitle.trim()
     const canOverwrite = !trimmedTitle || lastAutoTitlePromptRef.current === previousPrompt
@@ -200,7 +202,9 @@ export default function Generator() {
       const result = await window.electronAPI.generator.generateTitle({ prompt: nextPrompt })
       if (result.error || !result.data?.title) return
       lastAutoTitlePromptRef.current = nextPrompt
+      autoTitleUsedOnceRef.current = true
       setSavedTitle(result.data.title)
+      setAutoTitleEnabled(false)
     } finally {
       setGeneratingTitle(false)
     }
@@ -972,7 +976,6 @@ export default function Generator() {
         })
       }
 
-      void maybeAutoGenerateTitle(improvedPromptFinal, previousPrompt)
       setStatus(
         improvedPromptFinal === improved
           ? 'Prompt improved.'
