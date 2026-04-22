@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './screens/Dashboard'
 import AIConfig from './screens/AIConfig'
 import Library from './screens/Library'
+import Media from './screens/Media'
 import Gallery from './screens/Gallery'
 import Characters from './screens/Characters'
 import StyleProfiles from './screens/StyleProfiles'
@@ -107,6 +108,11 @@ export default function App() {
             {screen === 'library' && (
               <ScreenErrorBoundary screenName="Library" language={language}>
                 <Library />
+              </ScreenErrorBoundary>
+            )}
+            {screen === 'media' && (
+              <ScreenErrorBoundary screenName="Media" language={language}>
+                <Media />
               </ScreenErrorBoundary>
             )}
             {screen === 'gallery' && (

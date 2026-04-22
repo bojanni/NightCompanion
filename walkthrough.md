@@ -961,15 +961,26 @@
 - Conclusions: `Used model` must come directly from the current image item metadata, and prompt toggle/copy controls should be placed directly below the title for clearer hierarchy.
 - Actions: Updated `src/components/GalleryLightbox.tsx` to derive `usedModel` only from `currentItem.model` and moved prompt controls under the title within the centered overlay card; validated with `npm run build`.
 
-## 2026-04-21 (Prompt Library � media tab uses shared GalleryLightbox)
+## 2026-04-21 (Prompt Library media tab uses shared GalleryLightbox)
 
 - Findings: The Prompt Library media tab used embedded Gallery chrome and lightbox flow, which differed from the prompt-tab experience and felt inconsistent.
 - Conclusions: Render media directly in Library with local gallery state and open the shared GalleryLightbox component from media cards to align interaction and layout.
-- Actions: Updated src/screens/Library.tsx to replace embedded <Gallery> with a media grid (MediaRenderer), added media-tab gallery loading via gallery:list, initial-image handoff handling, shared GalleryLightbox open state/index, rating updates through gallery:updateItem, and media item-count subtitle; validated with 
-pm run build.
+- Actions: Updated `src/screens/Library.tsx` to replace embedded Gallery rendering with a media grid (`MediaRenderer`), added media-tab gallery loading via `gallery:list`, initial-image handoff handling, shared `GalleryLightbox` open state/index, rating updates through `gallery:updateItem`, and media item-count subtitle; validated with `npm run build`.
 
 ## 2026-04-21 (Prompt Library � remove Media tab)
 
 - Findings: Prompt Library mixed two concerns (prompt management and media browsing) via a Prompts/Media tab switch, and the Media flow required extra state and routing glue in App and Dashboard.
 - Conclusions: Remove the Media tab from Prompt Library entirely and route image browsing directly to the dedicated Gallery screen.
 - Actions: Removed all media-tab state, UI, and lightbox wiring from src/screens/Library.tsx; simplified Library header and content to prompts-only; updated src/App.tsx to render Gallery as its own screen and removed gallery-to-library remapping; updated Dashboard recent-images navigation to open Gallery directly (with imageId deep-link); removed the obsolete library.viewMedia translation key from src/contexts/LanguageContext.tsx; validated with npm run build.
+
+## 2026-04-22 (Media tab + prompt media sync and lightbox metadata)
+
+- Findings: Prompt Library upload media stayed prompt-local and image-focused, while the requested Media tab needed a unified gallery for prompt uploads (images and videos), grid options, collections, and lightbox metadata sourced from prompt form data.
+- Conclusions: Reuse the existing gallery and lightbox infrastructure, add a new top-level Media destination, extend prompt media payloads to include videos, and sync prompt media into `gallery_items` with prompt-link metadata so the Media tab can query prompt-linked items directly.
+- Actions: Added a new Media screen route/nav (`src/screens/Media.tsx`, `src/App.tsx`, `src/components/Sidebar.tsx`, `src/types/index.ts`, `src/contexts/LanguageContext.tsx`); parameterized `src/screens/Gallery.tsx` + `src/hooks/useGalleryState.ts` for prompt-only mode and per-screen grid/display preferences; extended prompt media types across renderer/preload/electron (`src/types/index.ts`, `src/types/electron.d.ts`, `electron/preload.ts`, `src/lib/schema.ts`); updated `src/components/PromptForm.tsx` to upload and preview mixed prompt media (image/video) and submit media metadata; updated `electron/ipc/prompts.ts` to save image/video data URLs, sync prompt-linked entries into `gallery_items`, preserve collection assignments, and remove linked gallery items on prompt delete; updated `electron/ipc/gallery.ts` with a `promptOnly` filter; validated with `npm run build`.
+
+## 2026-04-22 (One-time prompt media backfill action)
+
+- Findings: Existing prompts that already had `imagesJson` media before the new prompt->gallery sync would not appear in the Media tab until each prompt was opened and re-saved.
+- Conclusions: Add an explicit one-time maintenance action in Settings that scans all prompts and idempotently upserts prompt-linked media rows into `gallery_items`.
+- Actions: Added `settings:backfillPromptMediaToGallery` in `electron/ipc/settings.ts` with summary output (`scanned/inserted/updated/removed`), prompt media normalization (including legacy `imageUrl` fallback), and prompt-linked metadata tagging; exposed the action in `electron/preload.ts` and `src/types/electron.d.ts`; added a confirm-backed `Backfill prompt media to gallery` button and result messaging in `src/screens/Settings.tsx`; validated with `npm run build`.

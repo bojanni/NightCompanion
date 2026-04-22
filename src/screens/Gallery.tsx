@@ -23,6 +23,7 @@ import GalleryLightbox from '../components/GalleryLightbox'
 import type { GalleryItem, Prompt } from '../lib/schema'
 import { invalidateDashboardCache } from '../lib/cacheEvents'
 import { useLanguage } from '../contexts/LanguageContext'
+import type { TranslationKey } from '../contexts/LanguageContext'
 
 type DisplaySettings = {
   title: boolean
@@ -32,9 +33,9 @@ type DisplaySettings = {
 
 const DEFAULT_DISPLAY: DisplaySettings = { title: true, rating: true, model: true }
 
-function loadDisplaySettings(): DisplaySettings {
+function loadDisplaySettings(storageKey: string): DisplaySettings {
   try {
-    const stored = localStorage.getItem('galleryDisplaySettings')
+    const stored = localStorage.getItem(storageKey)
     if (stored) return JSON.parse(stored) as DisplaySettings
   } catch { /* ignore */ }
   return DEFAULT_DISPLAY
@@ -43,13 +44,23 @@ function loadDisplaySettings(): DisplaySettings {
 interface GalleryProps {
   initialImageId?: string
   embedded?: boolean
+  promptOnly?: boolean
+  titleKey?: TranslationKey
+  gridStorageKey?: string
 }
 
-export default function Gallery({ initialImageId, embedded = false }: GalleryProps) {
+export default function Gallery({
+  initialImageId,
+  embedded = false,
+  promptOnly = false,
+  titleKey = 'gallery.title',
+  gridStorageKey = 'galleryGridDensity',
+}: GalleryProps) {
   const { t } = useLanguage()
-  const state = useGalleryState()
+  const state = useGalleryState({ promptOnly })
   const [promptOptions, setPromptOptions] = useState<Prompt[]>([])
-  const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(loadDisplaySettings)
+  const displaySettingsStorageKey = promptOnly ? 'mediaDisplaySettings' : 'galleryDisplaySettings'
+  const [displaySettings, setDisplaySettings] = useState<DisplaySettings>(() => loadDisplaySettings(displaySettingsStorageKey))
   const [showDisplayOptions, setShowDisplayOptions] = useState(false)
   const [slideshowMode, setSlideshowMode] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -74,8 +85,8 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('galleryDisplaySettings', JSON.stringify(displaySettings))
-  }, [displaySettings])
+    localStorage.setItem(displaySettingsStorageKey, JSON.stringify(displaySettings))
+  }, [displaySettings, displaySettingsStorageKey])
 
   const totalPages = Math.ceil(state.totalCount / state.pageSize)
 
@@ -112,35 +123,47 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
   const handleSaveItem = async () => {
     state.setSaving(true)
     try {
+      const mediaType = state.formMediaType === 'video' ? 'video' : 'image'
       let imageUrl = state.formImageUrl || null
+      let videoUrl = state.formVideoUrl || null
       if (state.formImageDataUrl) {
         const saved = await window.electronAPI.gallery.saveImage({
           dataUrl: state.formImageDataUrl,
           fileName: state.formImageFileName || undefined,
         })
         if (saved.error || !saved.data?.fileUrl) {
-          notifications.show({ message: saved.error || 'Failed to save image', color: 'red' })
+          notifications.show({ message: saved.error || 'Failed to save media', color: 'red' })
           return
         }
         imageUrl = saved.data.fileUrl
+        videoUrl = null
       }
 
-      if (!imageUrl) {
+      if (mediaType === 'image' && !imageUrl) {
         notifications.show({ message: 'Upload an image first.', color: 'yellow' })
         return
       }
 
-      const metadata: Record<string, unknown> = {}
+      if (mediaType === 'video' && !videoUrl) {
+        notifications.show({ message: 'Video URL is missing for this item.', color: 'yellow' })
+        return
+      }
+
+      const metadata: Record<string, unknown> =
+        state.editingItem && typeof state.editingItem.metadata === 'object' && state.editingItem.metadata !== null
+          ? { ...state.editingItem.metadata }
+          : {}
+
       if (typeof state.formConnectedPromptId === 'number') {
         metadata.connectedPromptId = state.formConnectedPromptId
       }
 
       const payload = {
         title: state.formTitle || null,
-        imageUrl,
-        videoUrl: null,
-        thumbnailUrl: null,
-        mediaType: 'image',
+        imageUrl: mediaType === 'image' ? imageUrl : (state.formThumbnailUrl || null),
+        videoUrl: mediaType === 'video' ? videoUrl : null,
+        thumbnailUrl: state.formThumbnailUrl || null,
+        mediaType,
         promptUsed: state.formPromptUsed || null,
         model: state.formModel || null,
         rating: state.formRating,
@@ -179,7 +202,7 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
   const handleSelectUploadImage = async (file: File) => {
     const reader = new FileReader()
     const result = await new Promise<string>((resolve, reject) => {
-      reader.onerror = () => reject(new Error('Failed to read image file.'))
+      reader.onerror = () => reject(new Error('Failed to read media file.'))
       reader.onload = () => resolve(String(reader.result || ''))
       reader.readAsDataURL(file)
     })
@@ -240,7 +263,7 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
     <div className="h-full flex flex-col overflow-hidden">
       {!embedded && (
         <div className="px-6 pt-6 pb-2">
-          <h1 className="text-2xl font-bold text-white">{t('gallery.title')}</h1>
+          <h1 className="text-2xl font-bold text-white">{t(titleKey)}</h1>
           <p className="text-night-400 text-sm mt-1">
             {state.totalCount} item{state.totalCount !== 1 ? 's' : ''}
           </p>
@@ -283,14 +306,16 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
           Display
         </button>
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={() => state.openItemEditor(null)}
-          className="btn btn-primary text-sm flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" />
-          Add Image
-        </button>
+        {!promptOnly && (
+          <button
+            type="button"
+            onClick={() => state.openItemEditor(null)}
+            className="btn btn-primary text-sm flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Add Image
+          </button>
+        )}
       </div>
 
       {/* Display options panel */}
@@ -337,7 +362,7 @@ export default function Gallery({ initialImageId, embedded = false }: GalleryPro
           }}
           size={16}
         />
-        <GridDensitySelector storageKey="galleryGridDensity" defaultValue={3} />
+        <GridDensitySelector storageKey={gridStorageKey} defaultValue={3} />
       </div>
 
       {/* Collection pills */}

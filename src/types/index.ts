@@ -13,6 +13,10 @@ export type PromptImageMutationInput = {
   createdAt?: string
   promptSource?: 'generated' | 'improved' | 'custom'
   customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
 }
 
 export type PromptMutationInput = Omit<import('../lib/schema').NewPrompt, 'createdAt' | 'updatedAt'> & {
@@ -28,6 +32,7 @@ export type Screen =
   | 'dashboard'
   | 'ai-config'
   | 'library'
+  | 'media'
   | 'characters'
   | 'style-profiles'
   | 'generator'

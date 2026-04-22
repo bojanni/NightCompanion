@@ -35,6 +35,13 @@ function getNavItems(t: (key: TranslationKey) => string): NavItem[] {
       description: t('sidebar.nav.library.description'),
     },
     {
+      id: 'media',
+      label: t('sidebar.nav.media.label'),
+      icon: '▣',
+      iconColorClass: 'text-glow-blue',
+      description: t('sidebar.nav.media.description'),
+    },
+    {
       id: 'characters',
       label: t('sidebar.nav.characters.label'),
       icon: '◉',

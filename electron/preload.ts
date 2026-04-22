@@ -9,7 +9,14 @@ type PromptImageMutationInput = {
   note?: string
   model?: string
   seed?: string
+  stylePreset?: string
   createdAt?: string
+  promptSource?: 'generated' | 'improved' | 'custom'
+  customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
 }
 
 type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
@@ -113,6 +120,15 @@ export type DatabaseBackupSummary = {
   tables: Record<string, number>
 }
 
+export type PromptMediaBackfillSummary = {
+  promptsScanned: number
+  promptsWithMedia: number
+  mediaEntries: number
+  inserted: number
+  updated: number
+  removed: number
+}
+
 export type NightcafeModelOption = {
   modelName: string
   modelType: string
@@ -211,6 +227,7 @@ export type GalleryFilters = {
   collectionId?: string | null
   minRating?: number
   page?: number
+  promptOnly?: boolean
 }
 
 export type CharacterImage = {
@@ -376,6 +393,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       invokeWithFallback('settings:exportPromptsAndImages', input),
     backupDatabase: (): Promise<IpcResult<DatabaseBackupSummary | null>> =>
       invokeWithFallback('settings:backupDatabase'),
+    backfillPromptMediaToGallery: (): Promise<IpcResult<PromptMediaBackfillSummary>> =>
+      invokeWithFallback('settings:backfillPromptMediaToGallery'),
     getLocalEndpoints: (): Promise<IpcResult<LocalEndpointStore[]>> =>
       invokeWithFallback('settings:getLocalEndpoints'),
     saveLocalEndpoints: (input: LocalEndpointStore[]): Promise<IpcResult<LocalEndpointStore[]>> =>

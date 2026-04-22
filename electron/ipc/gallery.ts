@@ -16,6 +16,7 @@ type GalleryFilters = {
   collectionId?: string | null
   minRating?: number
   page?: number
+  promptOnly?: boolean
 }
 
 function getGalleryImageDir() {
@@ -114,6 +115,10 @@ export function registerGalleryIpc({ db }: { db: Database }) {
 
       if (filters?.minRating && filters.minRating > 0) {
         conditions.push(gte(galleryItems.rating, filters.minRating))
+      }
+
+      if (filters?.promptOnly) {
+        conditions.push(sql`coalesce(${galleryItems.metadata}->>'source', '') = 'prompt-library'`)
       }
 
       const where = conditions.length > 0 ? and(...conditions) : undefined

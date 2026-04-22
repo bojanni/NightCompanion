@@ -14,6 +14,10 @@ type PromptImageMutationInput = {
   createdAt?: string
   promptSource?: 'generated' | 'improved' | 'custom'
   customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
 }
 type PromptMutationInput = Omit<NewPrompt, 'createdAt' | 'updatedAt'> & {
   imageDataUrl?: string | null
@@ -92,6 +96,14 @@ type DatabaseBackupSummary = {
   backupFilePath: string
   tables: Record<string, number>
 }
+type PromptMediaBackfillSummary = {
+  promptsScanned: number
+  promptsWithMedia: number
+  mediaEntries: number
+  inserted: number
+  updated: number
+  removed: number
+}
 type NightcafeModelOption = {
   modelName: string
   modelType: string
@@ -137,7 +149,7 @@ type ModelAdvisorResult = {
   balancedPick: BudgetPick
   premiumPick: BudgetPick
 }
-type GalleryFilters = { search?: string; collectionId?: string | null; minRating?: number; page?: number }
+type GalleryFilters = { search?: string; collectionId?: string | null; minRating?: number; page?: number; promptOnly?: boolean }
 type CharacterImage = { id: string; url: string; isMain: boolean; createdAt: string }
 type CharacterDetail = { id: string; detail: string; category: string; worksWell: boolean }
 type CharacterRecord = {
@@ -271,6 +283,7 @@ declare global {
         selectNightCompanionFolderPath(): Promise<IpcResult<string | null>>
         exportPromptsAndImages(input?: { includePrompts?: boolean; includeImages?: boolean }): Promise<IpcResult<LibraryExportSummary | null>>
         backupDatabase(): Promise<IpcResult<DatabaseBackupSummary | null>>
+        backfillPromptMediaToGallery(): Promise<IpcResult<PromptMediaBackfillSummary>>
         getLocalEndpoints(): Promise<IpcResult<LocalEndpointStore[]>>
         saveLocalEndpoints(input: LocalEndpointStore[]): Promise<IpcResult<LocalEndpointStore[]>>
         saveOpenRouter(input: Partial<OpenRouterSettings>): Promise<IpcResult<OpenRouterSettings>>

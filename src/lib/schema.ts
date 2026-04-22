@@ -31,6 +31,10 @@ export const prompts = pgTable(
       createdAt: string
       promptSource?: 'generated' | 'improved' | 'custom'
       customPrompt?: string
+      mediaType?: 'image' | 'video'
+      thumbnailUrl?: string
+      durationSeconds?: number
+      collectionId?: string | null
     }>>().default([]).notNull(),
     promptText: text('prompt_text').notNull(),
     originalPrompt: text('original_prompt'),
@@ -74,6 +78,10 @@ export const promptVersions = pgTable(
       createdAt: string
       promptSource?: 'generated' | 'improved' | 'custom'
       customPrompt?: string
+      mediaType?: 'image' | 'video'
+      thumbnailUrl?: string
+      durationSeconds?: number
+      collectionId?: string | null
     }>>().default([]).notNull(),
     promptText: text('prompt_text').notNull(),
     originalPrompt: text('original_prompt'),

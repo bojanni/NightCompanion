@@ -3,7 +3,7 @@ import path from 'path'
 import { copyFile, mkdir, readFile, rename, rm, stat, writeFile } from 'fs/promises'
 import { fileURLToPath } from 'url'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import { desc } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import * as schema from '../../src/lib/schema'
 import {
   aiConfigurationSettings,
@@ -131,7 +131,23 @@ type PromptImageJsonItem = {
   note?: string
   model?: string
   seed?: string
+  stylePreset?: string
   createdAt?: string
+  promptSource?: 'generated' | 'improved' | 'custom'
+  customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
+}
+
+type PromptMediaBackfillSummary = {
+  promptsScanned: number
+  promptsWithMedia: number
+  mediaEntries: number
+  inserted: number
+  updated: number
+  removed: number
 }
 
 type LibraryExportSummary = {
@@ -911,6 +927,122 @@ function normalizePromptImageUrls(imageUrl: string, imagesJson: unknown): string
   return urls
 }
 
+function detectMediaTypeFromUrl(url: string): 'image' | 'video' {
+  const lower = url.toLowerCase()
+  if (
+    lower.endsWith('.mp4') ||
+    lower.endsWith('.webm') ||
+    lower.endsWith('.mov') ||
+    lower.endsWith('.m4v') ||
+    lower.endsWith('.avi')
+  ) {
+    return 'video'
+  }
+
+  return 'image'
+}
+
+function normalizePromptMediaEntries(input: {
+  promptId: number
+  promptTitle: string
+  promptText: string
+  promptModel: string
+  promptRating: number | null
+  promptNotes: string | null
+  promptImageUrl: string
+  promptImagesJson: unknown
+}) {
+  const entries: Array<{
+    promptMediaId: string
+    mediaUrl: string
+    mediaType: 'image' | 'video'
+    title: string | null
+    promptUsed: string | null
+    model: string | null
+    rating: number
+    notes: string | null
+    collectionId: string | null
+    durationSeconds: number | undefined
+    thumbnailUrl: string | null
+    promptSource: 'generated' | 'improved' | 'custom'
+    stylePreset: string
+    seed: string
+    mediaCreatedAt: string
+  }> = []
+
+  const promptRating = typeof input.promptRating === 'number' && Number.isFinite(input.promptRating)
+    ? Math.max(0, Math.min(5, Math.round(input.promptRating)))
+    : 0
+
+  const sourceEntries = Array.isArray(input.promptImagesJson)
+    ? input.promptImagesJson
+    : []
+
+  for (let index = 0; index < sourceEntries.length; index += 1) {
+    const raw = sourceEntries[index] as PromptImageJsonItem
+    if (!raw || typeof raw !== 'object') continue
+
+    const mediaUrl = typeof raw.url === 'string' ? raw.url.trim() : ''
+    if (!mediaUrl) continue
+
+    const mediaType = raw.mediaType === 'video' || raw.mediaType === 'image'
+      ? raw.mediaType
+      : detectMediaTypeFromUrl(mediaUrl)
+    const promptMediaId = typeof raw.id === 'string' && raw.id.trim()
+      ? raw.id.trim()
+      : `prompt-${input.promptId}-${index}`
+    const customPrompt = typeof raw.customPrompt === 'string' ? raw.customPrompt.trim() : ''
+    const promptSource = customPrompt
+      ? 'custom'
+      : (raw.promptSource === 'improved' ? 'improved' : 'generated')
+
+    entries.push({
+      promptMediaId,
+      mediaUrl,
+      mediaType,
+      title: input.promptTitle || null,
+      promptUsed: customPrompt || input.promptText || null,
+      model: (typeof raw.model === 'string' && raw.model.trim()) ? raw.model.trim() : (input.promptModel || null),
+      rating: promptRating,
+      notes: (typeof raw.note === 'string' && raw.note.trim()) ? raw.note.trim() : (input.promptNotes || null),
+      collectionId: typeof raw.collectionId === 'string' ? raw.collectionId : null,
+      durationSeconds: typeof raw.durationSeconds === 'number' ? raw.durationSeconds : undefined,
+      thumbnailUrl: (typeof raw.thumbnailUrl === 'string' && raw.thumbnailUrl.trim()) ? raw.thumbnailUrl.trim() : null,
+      promptSource,
+      stylePreset: typeof raw.stylePreset === 'string' ? raw.stylePreset.trim() : '',
+      seed: typeof raw.seed === 'string' ? raw.seed.trim() : '',
+      mediaCreatedAt: typeof raw.createdAt === 'string' && raw.createdAt.trim()
+        ? raw.createdAt.trim()
+        : new Date().toISOString(),
+    })
+  }
+
+  if (entries.length === 0) {
+    const legacyImageUrl = typeof input.promptImageUrl === 'string' ? input.promptImageUrl.trim() : ''
+    if (legacyImageUrl) {
+      entries.push({
+        promptMediaId: `prompt-${input.promptId}-legacy-cover`,
+        mediaUrl: legacyImageUrl,
+        mediaType: detectMediaTypeFromUrl(legacyImageUrl),
+        title: input.promptTitle || null,
+        promptUsed: input.promptText || null,
+        model: input.promptModel || null,
+        rating: promptRating,
+        notes: input.promptNotes || null,
+        collectionId: null,
+        durationSeconds: undefined,
+        thumbnailUrl: null,
+        promptSource: 'generated',
+        stylePreset: '',
+        seed: '',
+        mediaCreatedAt: new Date().toISOString(),
+      })
+    }
+  }
+
+  return entries
+}
+
 function buildExportTimestamp() {
   const now = new Date()
   const pad = (value: number) => String(value).padStart(2, '0')
@@ -1490,6 +1622,126 @@ export function registerSettingsIpc({
           tables: payload.summary,
         } satisfies DatabaseBackupSummary,
       }
+    } catch (error) {
+      return { error: String(error) }
+    }
+  })
+
+  ipcMain.handle('settings:backfillPromptMediaToGallery', async () => {
+    try {
+      const promptRows = await db
+        .select({
+          id: prompts.id,
+          title: prompts.title,
+          imageUrl: prompts.imageUrl,
+          imagesJson: prompts.imagesJson,
+          promptText: prompts.promptText,
+          model: prompts.model,
+          rating: prompts.rating,
+          notes: prompts.notes,
+        })
+        .from(prompts)
+
+      const summary: PromptMediaBackfillSummary = {
+        promptsScanned: promptRows.length,
+        promptsWithMedia: 0,
+        mediaEntries: 0,
+        inserted: 0,
+        updated: 0,
+        removed: 0,
+      }
+
+      for (const promptRow of promptRows) {
+        const promptIdString = String(promptRow.id)
+        const normalizedMedia = normalizePromptMediaEntries({
+          promptId: promptRow.id,
+          promptTitle: promptRow.title,
+          promptText: promptRow.promptText,
+          promptModel: promptRow.model,
+          promptRating: promptRow.rating,
+          promptNotes: promptRow.notes,
+          promptImageUrl: promptRow.imageUrl,
+          promptImagesJson: promptRow.imagesJson,
+        })
+
+        if (normalizedMedia.length > 0) {
+          summary.promptsWithMedia += 1
+          summary.mediaEntries += normalizedMedia.length
+        }
+
+        const existingRows = await db
+          .select()
+          .from(galleryItems)
+          .where(sql`coalesce(${galleryItems.metadata}->>'source', '') = 'prompt-library' and coalesce(${galleryItems.metadata}->>'connectedPromptId', '') = ${promptIdString}`)
+
+        const existingByPromptMediaId = new Map<string, typeof existingRows[number]>()
+        for (const row of existingRows) {
+          const key = typeof row.metadata?.promptMediaId === 'string'
+            ? row.metadata.promptMediaId
+            : ''
+          if (key) {
+            existingByPromptMediaId.set(key, row)
+          }
+        }
+
+        const nextIds = new Set<string>()
+
+        for (const media of normalizedMedia) {
+          nextIds.add(media.promptMediaId)
+
+          const existing = existingByPromptMediaId.get(media.promptMediaId)
+          const payload = {
+            title: media.title,
+            imageUrl: media.mediaType === 'image' ? media.mediaUrl : (media.thumbnailUrl || null),
+            videoUrl: media.mediaType === 'video' ? media.mediaUrl : null,
+            thumbnailUrl: media.thumbnailUrl,
+            mediaType: media.mediaType,
+            promptUsed: media.promptUsed,
+            model: media.model,
+            rating: media.rating,
+            notes: media.notes,
+            collectionId: media.collectionId ?? existing?.collectionId ?? null,
+            durationSeconds: media.durationSeconds,
+            metadata: {
+              source: 'prompt-library',
+              connectedPromptId: promptRow.id,
+              promptMediaId: media.promptMediaId,
+              promptSource: media.promptSource,
+              stylePreset: media.stylePreset,
+              seed: media.seed,
+              mediaCreatedAt: media.mediaCreatedAt,
+            },
+            updatedAt: new Date(),
+          }
+
+          if (existing) {
+            await db
+              .update(galleryItems)
+              .set(payload)
+              .where(eq(galleryItems.id, existing.id))
+            summary.updated += 1
+          } else {
+            await db
+              .insert(galleryItems)
+              .values(payload)
+            summary.inserted += 1
+          }
+        }
+
+        for (const row of existingRows) {
+          const promptMediaId = typeof row.metadata?.promptMediaId === 'string'
+            ? row.metadata.promptMediaId
+            : ''
+          if (!promptMediaId || nextIds.has(promptMediaId)) continue
+
+          await db
+            .delete(galleryItems)
+            .where(eq(galleryItems.id, row.id))
+          summary.removed += 1
+        }
+      }
+
+      return { data: summary }
     } catch (error) {
       return { error: String(error) }
     }

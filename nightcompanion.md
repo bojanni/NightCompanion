@@ -98,3 +98,12 @@
 - Gallery lightbox now maximises image display area while preserving aspect ratio, shows title + used model + used style preset in metadata, and uses a dedicated prompt toggle panel instead of the previous inline prompt section.
 - Gallery lightbox now reads `Used model` strictly from the shown image item metadata (not connected-prompt fallbacks).
 - Gallery lightbox info is now rendered in a centered overlay card (Prompt Library style), while media keeps full-fit `object-contain` behavior so nothing is cropped and the prompt controls sit directly below the title.
+
+## 2026-04-22
+
+- Added a dedicated `Media` tab in the left sidebar to browse prompt-uploaded media in a gallery view.
+- Prompt Library edit form now supports uploading both images and videos in the prompt media section.
+- Prompt-uploaded media is synchronised into the Media gallery as prompt-linked items, so lightbox metadata reflects prompt form values (title, used model, and prompt text).
+- Media tab supports the existing gallery grid-density options and independent media collections for organising images/videos.
+- Prompt-linked media now keeps collection assignment when prompt data is resynchronised.
+- Settings now includes a one-time `Backfill prompt media to gallery` action to sync existing prompt `imagesJson` entries into Media gallery items without manually re-saving each prompt.

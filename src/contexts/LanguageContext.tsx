@@ -10,6 +10,8 @@ export type TranslationKey =
   | 'sidebar.nav.generator.description'
   | 'sidebar.nav.library.label'
   | 'sidebar.nav.library.description'
+  | 'sidebar.nav.media.label'
+  | 'sidebar.nav.media.description'
   | 'sidebar.nav.characters.label'
   | 'sidebar.nav.characters.description'
   | 'sidebar.nav.styleProfiles.label'
@@ -96,6 +98,8 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'sidebar.nav.generator.description': 'Magic random (AI)',
     'sidebar.nav.library.label': 'Prompt Library',
     'sidebar.nav.library.description': 'Browse & manage prompts',
+    'sidebar.nav.media.label': 'Media',
+    'sidebar.nav.media.description': 'Prompt images and videos',
     'sidebar.nav.characters.label': 'Characters',
     'sidebar.nav.characters.description': 'Reference cast sheets',
     'sidebar.nav.styleProfiles.label': 'Style Profiles',
@@ -179,6 +183,8 @@ const translations: Record<AppLanguage, TranslationMap> = {
     'sidebar.nav.generator.description': 'Magic random (AI)',
     'sidebar.nav.library.label': 'Promptbibliotheek',
     'sidebar.nav.library.description': 'Prompts bekijken en beheren',
+    'sidebar.nav.media.label': 'Media',
+    'sidebar.nav.media.description': 'Promptafbeeldingen en videos',
     'sidebar.nav.characters.label': 'Karakters',
     'sidebar.nav.characters.description': 'Referentiekarakters',
     'sidebar.nav.styleProfiles.label': 'Stijlprofielen',

@@ -10,18 +10,25 @@ type GalleryFilters = {
   collectionId?: string | null
   minRating?: number
   page?: number
+  promptOnly?: boolean
 }
 
 type PromptBackedGalleryMetadata = {
-  source: 'prompt'
-  promptId: number
+  source?: string
+  promptId?: number
+  connectedPromptId?: number
 }
 
 type ConnectedPromptGalleryMetadata = {
   connectedPromptId: number
 }
 
-export default function useGalleryState() {
+type UseGalleryStateOptions = {
+  promptOnly?: boolean
+}
+
+export default function useGalleryState(options: UseGalleryStateOptions = {}) {
+  const promptOnly = options.promptOnly === true
   // Data
   const [items, setItems] = useState<GalleryItem[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
@@ -73,66 +80,19 @@ export default function useGalleryState() {
         collectionId: filterCollection,
         minRating: filterRating > 0 ? filterRating : undefined,
         page: currentPage,
+        promptOnly: promptOnly || undefined,
       }
 
-      const [itemsResult, collectionsResult, promptsResult] = await Promise.all([
+      const [itemsResult, collectionsResult] = await Promise.all([
         window.electronAPI.gallery.list(filters),
         window.electronAPI.gallery.listCollections(),
-        currentPage === 0
-          ? window.electronAPI.prompts.list({ search: search || undefined })
-          : Promise.resolve({ data: [] }),
       ])
 
       if (itemsResult.error) {
         notifications.show({ message: itemsResult.error, color: 'red' })
       } else if (itemsResult.data) {
-        const promptItems: GalleryItem[] = []
-        if (!('error' in promptsResult) && Array.isArray(promptsResult.data)) {
-          const minRatingValue = filterRating > 0 ? filterRating : 0
-          const promptImageRows = promptsResult.data
-            .filter((prompt) => Boolean(String(prompt.imageUrl || '').trim()))
-            .filter((prompt) => {
-              if (minRatingValue <= 0) return true
-              const raw = typeof prompt.rating === 'number' ? prompt.rating : 0
-              return raw >= minRatingValue
-            })
-
-          promptItems.push(
-            ...promptImageRows.map((prompt) => {
-              const metadata: PromptBackedGalleryMetadata = { source: 'prompt', promptId: prompt.id }
-              const roundedRating = typeof prompt.rating === 'number' && Number.isFinite(prompt.rating)
-                ? Math.max(0, Math.min(5, Math.round(prompt.rating)))
-                : 0
-
-              return {
-                id: `prompt-${prompt.id}`,
-                title: prompt.title || null,
-                imageUrl: prompt.imageUrl || null,
-                videoUrl: null,
-                thumbnailUrl: null,
-                mediaType: 'image',
-                promptUsed: prompt.promptText || null,
-                promptId: String(prompt.id),
-                model: prompt.model || null,
-                aspectRatio: null,
-                rating: roundedRating,
-                notes: prompt.notes || null,
-                collectionId: null,
-                storageMode: 'file',
-                durationSeconds: null,
-                metadata,
-                createdAt: prompt.createdAt,
-                updatedAt: prompt.updatedAt,
-              }
-            })
-          )
-        }
-
-        const combinedItems = [...promptItems, ...itemsResult.data.items]
-        combinedItems.sort((a, b) => new Date(String(b.createdAt)).getTime() - new Date(String(a.createdAt)).getTime())
-
-        setItems(combinedItems)
-        setTotalCount(itemsResult.data.totalCount + promptItems.length)
+        setItems(itemsResult.data.items)
+        setTotalCount(itemsResult.data.totalCount)
       }
 
       if (collectionsResult.error) {
@@ -145,7 +105,7 @@ export default function useGalleryState() {
     } finally {
       setLoading(false)
     }
-  }, [search, filterCollection, filterRating, currentPage])
+  }, [search, filterCollection, filterRating, currentPage, promptOnly])
 
   useEffect(() => {
     void loadData()
@@ -164,11 +124,16 @@ export default function useGalleryState() {
 
   const handleUpdateRating = useCallback(async (item: GalleryItem, rating: number) => {
     const metadata = item.metadata as Partial<PromptBackedGalleryMetadata> | undefined
-    if (metadata?.source === 'prompt' && typeof metadata.promptId === 'number') {
-      const result = await window.electronAPI.prompts.updateRating(metadata.promptId, rating || null)
+    const linkedPromptId = typeof metadata?.connectedPromptId === 'number'
+      ? metadata.connectedPromptId
+      : (typeof metadata?.promptId === 'number' ? metadata.promptId : null)
+
+    if (linkedPromptId !== null) {
+      const result = await window.electronAPI.prompts.updateRating(linkedPromptId, rating || null)
       if (result.error) {
         notifications.show({ message: result.error, color: 'red' })
       } else {
+        void window.electronAPI.gallery.updateItem(item.id, { rating })
         setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, rating } : i)))
       }
       return

@@ -22,6 +22,10 @@ type ImageDraft = {
   createdAt: string
   promptSource?: 'generated' | 'improved' | 'custom'
   customPrompt: string
+  mediaType: 'image' | 'video'
+  thumbnailUrl: string
+  durationSeconds: number | null
+  collectionId: string | null
 }
 
 const MAX_TAG_COUNT = 15
@@ -40,6 +44,21 @@ function getStarFill(rating: number, starIndex: number) {
 
 function isSameRating(left: number, right: number) {
   return Math.abs(left - right) < 0.001
+}
+
+function detectMediaTypeFromUrl(url: string): 'image' | 'video' {
+  const lowerUrl = url.toLowerCase()
+  if (
+    lowerUrl.endsWith('.mp4') ||
+    lowerUrl.endsWith('.webm') ||
+    lowerUrl.endsWith('.mov') ||
+    lowerUrl.endsWith('.m4v') ||
+    lowerUrl.endsWith('.avi')
+  ) {
+    return 'video'
+  }
+
+  return 'image'
 }
 
 export default function PromptForm({ initial, onSubmit, onClose }: Props) {
@@ -86,6 +105,20 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         customPrompt: typeof (image as unknown as { customPrompt?: unknown }).customPrompt === 'string'
           ? String((image as unknown as { customPrompt: string }).customPrompt)
           : '',
+        mediaType: (() => {
+          const candidate = (image as unknown as { mediaType?: unknown }).mediaType
+          if (candidate === 'video' || candidate === 'image') return candidate
+          return detectMediaTypeFromUrl(image.url)
+        })(),
+        thumbnailUrl: typeof (image as unknown as { thumbnailUrl?: unknown }).thumbnailUrl === 'string'
+          ? String((image as unknown as { thumbnailUrl: string }).thumbnailUrl)
+          : '',
+        durationSeconds: typeof (image as unknown as { durationSeconds?: unknown }).durationSeconds === 'number'
+          ? (image as unknown as { durationSeconds: number }).durationSeconds
+          : null,
+        collectionId: typeof (image as unknown as { collectionId?: unknown }).collectionId === 'string'
+          ? String((image as unknown as { collectionId: string }).collectionId)
+          : null,
       }))
     }
     if (initial?.imageUrl) {
@@ -106,6 +139,10 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
         createdAt: now,
         promptSource: 'generated',
         customPrompt: '',
+        mediaType: 'image',
+        thumbnailUrl: '',
+        durationSeconds: null,
+        collectionId: null,
       }]
     }
 
@@ -247,6 +284,20 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           customPrompt: typeof (image as unknown as { customPrompt?: unknown }).customPrompt === 'string'
             ? String((image as unknown as { customPrompt: string }).customPrompt)
             : '',
+          mediaType: (() => {
+            const candidate = (image as unknown as { mediaType?: unknown }).mediaType
+            if (candidate === 'video' || candidate === 'image') return candidate
+            return detectMediaTypeFromUrl(image.url)
+          })(),
+          thumbnailUrl: typeof (image as unknown as { thumbnailUrl?: unknown }).thumbnailUrl === 'string'
+            ? String((image as unknown as { thumbnailUrl: string }).thumbnailUrl)
+            : '',
+          durationSeconds: typeof (image as unknown as { durationSeconds?: unknown }).durationSeconds === 'number'
+            ? (image as unknown as { durationSeconds: number }).durationSeconds
+            : null,
+          collectionId: typeof (image as unknown as { collectionId?: unknown }).collectionId === 'string'
+            ? String((image as unknown as { collectionId: string }).collectionId)
+            : null,
         }))
       }
 
@@ -268,6 +319,10 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           createdAt: now,
           promptSource: 'generated',
           customPrompt: '',
+          mediaType: 'image',
+          thumbnailUrl: '',
+          durationSeconds: null,
+          collectionId: null,
         }]
       }
 
@@ -361,9 +416,13 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
           createdAt: now,
           promptSource: 'generated',
           customPrompt: '',
+          mediaType: file.type.startsWith('video/') ? 'video' : 'image',
+          thumbnailUrl: '',
+          durationSeconds: null,
+          collectionId: null,
         })
       } catch {
-        setError('Could not read one of the selected images.')
+        setError('Could not read one of the selected media files.')
       }
     }
 
@@ -443,6 +502,10 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
             ? 'generated'
             : (image.promptSource ?? 'generated'),
         customPrompt: image.customPrompt.trim(),
+        mediaType: image.mediaType,
+        thumbnailUrl: image.thumbnailUrl.trim(),
+        durationSeconds: image.durationSeconds ?? undefined,
+        collectionId: image.collectionId,
       })),
     })
 
@@ -495,7 +558,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="label !mb-0">Prompt Images</label>
+                <label className="label !mb-0">Prompt Media</label>
                 <span className="text-[10px] text-slate-500">optional</span>
               </div>
 
@@ -503,23 +566,32 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                 <div className="space-y-3">
                   {images.map((image, index) => {
                     const previewUrl = image.dataUrl || image.url
+                    const isCustomPromptActive = (image.promptSource ?? 'generated') === 'custom' || image.customPrompt.trim().length > 0
 
                     return (
                       <div key={image.id} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
                         <div className="aspect-[16/9] bg-slate-950/60">
-                          <img
-                            src={previewUrl}
-                            alt="Prompt preview"
-                            className="object-cover w-full h-full"
-                            onError={(event) => {
-                              ;(event.currentTarget.parentElement as HTMLDivElement | null)?.classList.add('hidden')
-                            }}
-                          />
+                          {image.mediaType === 'video' ? (
+                            <video
+                              src={previewUrl}
+                              className="object-cover w-full h-full"
+                              controls
+                            />
+                          ) : (
+                            <img
+                              src={previewUrl}
+                              alt="Prompt preview"
+                              className="object-cover w-full h-full"
+                              onError={(event) => {
+                                ;(event.currentTarget.parentElement as HTMLDivElement | null)?.classList.add('hidden')
+                              }}
+                            />
+                          )}
                         </div>
                         <div className="px-3 py-3 space-y-3 border-t border-slate-800/60">
                           <div className="flex gap-3 justify-between items-center">
                             <p className="text-[11px] text-slate-500 truncate">
-                              {image.fileName || (index === 0 ? 'Cover image' : 'Stored prompt image')}
+                              {image.fileName || (index === 0 ? 'Cover media' : 'Stored prompt media')}
                             </p>
                             <div className="flex gap-2 items-center">
                               {index !== 0 && (
@@ -544,7 +616,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                           </div>
 
                           <div>
-                            <label className="label">Image Note</label>
+                            <label className="label">Media Note</label>
                             <textarea
                               value={image.note}
                               onChange={(e) => updateImage(image.id, { note: e.target.value })}
@@ -572,7 +644,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                               </select>
                             </div>
                             <div>
-                              <label className="label">Image Seed</label>
+                              <label className="label">Media Seed</label>
                               <input
                                 type="text"
                                 value={image.seed}
@@ -584,12 +656,12 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                           </div>
 
                           <div>
-                            <label className="label">Image Style Preset</label>
+                            <label className="label">Media Style Preset</label>
                             <div className="flex gap-2">
                               <select
                                 value={presetOptions.some((p) => p.presetName === image.stylePreset) ? image.stylePreset : ''}
                                 onChange={(e) => updateImage(image.id, { stylePreset: e.target.value })}
-                                aria-label="Select image style preset"
+                                aria-label="Select media style preset"
                                 className="w-1/2 input"
                               >
                                 <option value="">- kies preset -</option>
@@ -625,20 +697,17 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                                   customPrompt: image.promptSource === 'custom' || image.customPrompt.trim() ? '' : promptText,
                                 })
                               }}
-                              className={(image.promptSource ?? 'generated') === 'custom' || image.customPrompt.trim()
-                                ? 'btn-compact-primary'
-                                : 'btn-compact-ghost'}
-                              aria-pressed={((image.promptSource ?? 'generated') === 'custom' || image.customPrompt.trim()) ? 'true' : 'false'}
+                              className={isCustomPromptActive ? 'btn-compact-primary' : 'btn-compact-ghost'}
                             >
                               <span className="inline-flex items-center gap-2">
-                                <span className={((image.promptSource ?? 'generated') === 'custom' || image.customPrompt.trim()) ? 'text-white' : 'text-slate-400'}>
-                                  {((image.promptSource ?? 'generated') === 'custom' || image.customPrompt.trim()) ? <Check size={14} /> : <span className="w-[14px]" />}
+                                <span className={isCustomPromptActive ? 'text-white' : 'text-slate-400'}>
+                                  {isCustomPromptActive ? <Check size={14} /> : <span className="w-[14px]" />}
                                 </span>
-                                Use custom prompt for this image
+                                Use custom prompt for this media item
                               </span>
                             </button>
 
-                            {((image.promptSource ?? 'generated') === 'custom' || image.customPrompt.trim()) && (
+                            {isCustomPromptActive && (
                               <div className="mt-3">
                                 <div className="flex items-center justify-between mb-1.5">
                                   <label className="label !mb-0">Custom Prompt</label>
@@ -676,7 +745,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                     disabled={readingImages}
                   >
                     <p className="text-sm font-medium text-slate-300">
-                      {readingImages ? 'Reading images…' : 'Add images'}
+                      {readingImages ? 'Reading media…' : 'Add media'}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       Saved locally under your user profile in NightCompanion/images.
@@ -691,7 +760,7 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                   disabled={readingImages}
                 >
                   <p className="text-sm font-medium text-slate-300">
-                    {readingImages ? 'Reading images…' : 'Upload prompt images'}
+                    {readingImages ? 'Reading media…' : 'Upload prompt media'}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     Saved locally under your user profile in NightCompanion/images.
@@ -703,9 +772,9 @@ export default function PromptForm({ initial, onSubmit, onClose }: Props) {
                 ref={imagesInputRef}
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/*,video/*"
                 onChange={handleImagesSelect}
-                aria-label="Upload prompt images"
+                aria-label="Upload prompt media"
                 className="hidden"
               />
             </div>

@@ -32,6 +32,8 @@ export default function Settings() {
   const [exportLibraryMessage, setExportLibraryMessage] = useState<string | null>(null)
   const [backingUpDatabase, setBackingUpDatabase] = useState(false)
   const [backupDatabaseMessage, setBackupDatabaseMessage] = useState<string | null>(null)
+  const [backfillingPromptMedia, setBackfillingPromptMedia] = useState(false)
+  const [backfillPromptMediaMessage, setBackfillPromptMediaMessage] = useState<string | null>(null)
   const [isRefreshingHf, setIsRefreshingHf] = useState(false)
   const [hfSyncMessage, setHfSyncMessage] = useState<string | null>(null)
   const [hfSyncInfo, setHfSyncInfo] = useState<HfSyncInfo | null>(null)
@@ -375,6 +377,29 @@ export default function Settings() {
     setBackingUpDatabase(false)
   }
 
+  async function handleBackfillPromptMediaToGallery() {
+    const confirmed = window.confirm('Run one-time backfill to sync existing prompt media into Media gallery items? This can take a while for large libraries.')
+    if (!confirmed) return
+
+    setBackfillingPromptMedia(true)
+    setBackfillPromptMediaMessage(null)
+
+    const result = await window.electronAPI.settings.backfillPromptMediaToGallery()
+
+    if (result.error || !result.data) {
+      const message = result.error || 'Backfill failed.'
+      setBackfillPromptMediaMessage(message)
+      notifications.show({ message, color: 'red' })
+      setBackfillingPromptMedia(false)
+      return
+    }
+
+    const message = `Backfill complete: scanned ${result.data.promptsScanned} prompts, ${result.data.promptsWithMedia} with media, ${result.data.mediaEntries} media entries, inserted ${result.data.inserted}, updated ${result.data.updated}, removed ${result.data.removed}.`
+    setBackfillPromptMediaMessage(message)
+    notifications.show({ message: 'Prompt media backfill complete.', color: 'green' })
+    setBackfillingPromptMedia(false)
+  }
+
   const formattedLastSyncedAt = (() => {
     if (!hfSyncInfo?.lastSyncedAt) return t('settings.notYetSynced')
     const parsed = new Date(hfSyncInfo.lastSyncedAt)
@@ -654,6 +679,27 @@ export default function Settings() {
                 </button>
                 {backupDatabaseMessage && (
                   <p className="text-xs text-slate-400 break-words">{backupDatabaseMessage}</p>
+                )}
+              </section>
+
+              <section className="p-6 card space-y-3">
+                <div>
+                  <p className="settings-section-title">Prompt media backfill (one-time)</p>
+                  <p className="text-xs text-slate-500">Sync existing prompt imagesJson media into Media gallery items without opening/saving each prompt manually.</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={loading || backfillingPromptMedia}
+                  onClick={() => {
+                    if (!loading && !backfillingPromptMedia) void handleBackfillPromptMediaToGallery()
+                  }}
+                  className="inline-flex gap-2 items-center px-3 py-2 text-xs font-semibold rounded-xl border border-slate-700 bg-slate-800 text-slate-100 hover:border-slate-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${backfillingPromptMedia ? 'animate-spin' : ''}`} />
+                  {backfillingPromptMedia ? 'Backfilling...' : 'Backfill prompt media to gallery'}
+                </button>
+                {backfillPromptMediaMessage && (
+                  <p className="text-xs text-slate-400 break-words">{backfillPromptMediaMessage}</p>
                 )}
               </section>
 

@@ -6,7 +6,7 @@ import { eq, desc, and, or, ilike, sql } from 'drizzle-orm'
 import path from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import * as schema from '../../src/lib/schema'
-import { prompts, promptVersions } from '../../src/lib/schema'
+import { galleryItems, prompts, promptVersions } from '../../src/lib/schema'
 import type { NewPrompt } from '../../src/lib/schema'
 import { getManagedNightCompanionRoots, isPathWithin, resolveNightCompanionSubdir } from '../services/storagePaths'
 
@@ -24,6 +24,10 @@ type PromptImageMutationInput = {
   createdAt?: string
   promptSource?: 'generated' | 'improved' | 'custom'
   customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
 }
 
 type PromptImageRow = {
@@ -36,6 +40,10 @@ type PromptImageRow = {
   createdAt: string
   promptSource?: 'generated' | 'improved' | 'custom'
   customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
 }
 
 type PromptMutationInput = Partial<NewPrompt> & {
@@ -49,28 +57,47 @@ function getPromptImageDir() {
   return resolveNightCompanionSubdir('images')
 }
 
-function getImageExtension(mimeType: string) {
+function getMediaExtension(mimeType: string) {
   const map: Record<string, string> = {
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
     'image/bmp': 'bmp',
+    'video/mp4': 'mp4',
+    'video/webm': 'webm',
+    'video/quicktime': 'mov',
+    'video/x-msvideo': 'avi',
   }
 
   return map[mimeType] || 'png'
 }
 
-async function savePromptImageDataUrl(dataUrl: string, originalName?: string) {
-  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/)
+function detectMediaTypeFromUrl(url: string): 'image' | 'video' {
+  const lowerUrl = url.toLowerCase()
+  if (
+    lowerUrl.endsWith('.mp4') ||
+    lowerUrl.endsWith('.webm') ||
+    lowerUrl.endsWith('.mov') ||
+    lowerUrl.endsWith('.m4v') ||
+    lowerUrl.endsWith('.avi')
+  ) {
+    return 'video'
+  }
+
+  return 'image'
+}
+
+async function savePromptMediaDataUrl(dataUrl: string, originalName?: string) {
+  const match = dataUrl.match(/^data:((?:image|video)\/[a-zA-Z0-9.+-]+);base64,(.+)$/)
   if (!match) {
-    throw new Error('Invalid image payload. Expected a base64 data URL.')
+    throw new Error('Invalid media payload. Expected a base64 data URL.')
   }
 
   const mimeType = match[1]
   const base64Data = match[2]
   const imageBuffer = Buffer.from(base64Data, 'base64')
-  const extension = getImageExtension(mimeType)
+  const extension = getMediaExtension(mimeType)
   const safeBaseName = (originalName || 'prompt-image')
     .replace(/\.[^/.]+$/, '')
     .replace(/[^a-zA-Z0-9-_]/g, '_')
@@ -115,7 +142,7 @@ async function deletePromptImageFile(fileUrl: string) {
 
 async function resolvePromptImage(currentImageUrl: string, data: PromptMutationInput) {
   if (data.imageDataUrl?.trim()) {
-    return savePromptImageDataUrl(data.imageDataUrl, data.imageFileName || undefined)
+    return savePromptMediaDataUrl(data.imageDataUrl, data.imageFileName || undefined)
   }
 
   if (data.removeImage) return ''
@@ -133,6 +160,10 @@ function normalisePromptImageRow(input: {
   createdAt?: string
   promptSource?: 'generated' | 'improved' | 'custom'
   customPrompt?: string
+  mediaType?: 'image' | 'video'
+  thumbnailUrl?: string
+  durationSeconds?: number
+  collectionId?: string | null
 }): PromptImageRow {
   const customPrompt = (input.customPrompt ?? '').trim()
   const normalizedPromptSource = customPrompt
@@ -151,6 +182,10 @@ function normalisePromptImageRow(input: {
     createdAt: input.createdAt?.trim() || new Date().toISOString(),
     promptSource: normalizedPromptSource,
     customPrompt,
+    mediaType: input.mediaType === 'video' ? 'video' : 'image',
+    thumbnailUrl: (input.thumbnailUrl ?? '').trim(),
+    durationSeconds: typeof input.durationSeconds === 'number' ? input.durationSeconds : undefined,
+    collectionId: input.collectionId ?? null,
   }
 }
 
@@ -178,10 +213,14 @@ async function resolvePromptImages(
       const rawUrl = typeof image.url === 'string' ? image.url.trim() : ''
 
       const url = rawDataUrl
-        ? await savePromptImageDataUrl(rawDataUrl, image.fileName ?? undefined)
+        ? await savePromptMediaDataUrl(rawDataUrl, image.fileName ?? undefined)
         : rawUrl
 
       if (!url) continue
+
+      const mediaType = image.mediaType === 'video' || image.mediaType === 'image'
+        ? image.mediaType
+        : detectMediaTypeFromUrl(url)
 
       next.push(
         normalisePromptImageRow({
@@ -194,6 +233,10 @@ async function resolvePromptImages(
           createdAt: image.createdAt,
           promptSource: image.promptSource,
           customPrompt: image.customPrompt,
+          mediaType,
+          thumbnailUrl: image.thumbnailUrl,
+          durationSeconds: image.durationSeconds,
+          collectionId: image.collectionId,
         })
       )
     }
@@ -211,8 +254,88 @@ async function resolvePromptImages(
       url: legacyUrl,
       model: typeof data.model === 'string' ? data.model : '',
       seed: typeof data.seed === 'string' ? data.seed : '',
+      mediaType: detectMediaTypeFromUrl(legacyUrl),
     }),
   ]
+}
+
+async function syncPromptMediaGallery(
+  database: Database,
+  prompt: { id: number; title: string; promptText: string; model: string; rating: number | null; notes: string | null },
+  images: PromptImageRow[]
+) {
+  const promptIdString = String(prompt.id)
+
+  const existingRows = await database
+    .select()
+    .from(galleryItems)
+    .where(sql`coalesce(${galleryItems.metadata}->>'source', '') = 'prompt-library' and coalesce(${galleryItems.metadata}->>'connectedPromptId', '') = ${promptIdString}`)
+
+  const existingByPromptMediaId = new Map<string, typeof existingRows[number]>()
+  for (const row of existingRows) {
+    const rowMediaId = typeof row.metadata?.promptMediaId === 'string' ? row.metadata.promptMediaId : ''
+    if (rowMediaId) {
+      existingByPromptMediaId.set(rowMediaId, row)
+    }
+  }
+
+  const nextMediaIds = new Set(images.map((image) => image.id))
+  const promptRating = typeof prompt.rating === 'number' && Number.isFinite(prompt.rating)
+    ? Math.max(0, Math.min(5, Math.round(prompt.rating)))
+    : 0
+
+  for (const image of images) {
+    const mediaType = image.mediaType === 'video' ? 'video' : 'image'
+    const existing = existingByPromptMediaId.get(image.id)
+    const payload = {
+      title: prompt.title || null,
+      imageUrl: mediaType === 'image' ? image.url : (image.thumbnailUrl || null),
+      videoUrl: mediaType === 'video' ? image.url : null,
+      thumbnailUrl: image.thumbnailUrl || null,
+      mediaType,
+      promptUsed: image.customPrompt || prompt.promptText || null,
+      model: image.model || prompt.model || null,
+      rating: promptRating,
+      notes: image.note || prompt.notes || null,
+      collectionId: image.collectionId ?? existing?.collectionId ?? null,
+      durationSeconds: image.durationSeconds,
+      metadata: {
+        source: 'prompt-library',
+        connectedPromptId: prompt.id,
+        promptMediaId: image.id,
+        promptSource: image.promptSource ?? 'generated',
+        stylePreset: image.stylePreset ?? '',
+        seed: image.seed ?? '',
+        mediaCreatedAt: image.createdAt,
+      },
+      updatedAt: new Date(),
+    }
+
+    if (existing) {
+      await database
+        .update(galleryItems)
+        .set(payload)
+        .where(eq(galleryItems.id, existing.id))
+      continue
+    }
+
+    await database
+      .insert(galleryItems)
+      .values(payload)
+  }
+
+  const toDeleteIds = existingRows
+    .filter((row) => {
+      const rowMediaId = typeof row.metadata?.promptMediaId === 'string' ? row.metadata.promptMediaId : ''
+      return rowMediaId && !nextMediaIds.has(rowMediaId)
+    })
+    .map((row) => row.id)
+
+  if (toDeleteIds.length > 0) {
+    for (const galleryId of toDeleteIds) {
+      await database.delete(galleryItems).where(eq(galleryItems.id, galleryId))
+    }
+  }
 }
 
 export function registerPromptsIpc({ db }: { db: Database }) {
@@ -321,6 +444,16 @@ export function registerPromptsIpc({ db }: { db: Database }) {
           updatedAt: new Date(),
         })
         .returning()
+
+      await syncPromptMediaGallery(db, {
+        id: created.id,
+        title: created.title,
+        promptText: created.promptText,
+        model: created.model,
+        rating: created.rating,
+        notes: created.notes,
+      }, images)
+
       return { data: created }
     } catch (error) {
       return { error: String(error) }
@@ -407,6 +540,15 @@ export function registerPromptsIpc({ db }: { db: Database }) {
         return next
       })
 
+      await syncPromptMediaGallery(db, {
+        id: updated.id,
+        title: updated.title,
+        promptText: updated.promptText,
+        model: updated.model,
+        rating: updated.rating,
+        notes: updated.notes,
+      }, images)
+
       return { data: updated }
     } catch (error) {
       return { error: String(error) }
@@ -422,6 +564,9 @@ export function registerPromptsIpc({ db }: { db: Database }) {
         .where(eq(promptVersions.promptId, id))
 
       await db.delete(prompts).where(eq(prompts.id, id))
+      await db
+        .delete(galleryItems)
+        .where(sql`coalesce(${galleryItems.metadata}->>'source', '') = 'prompt-library' and coalesce(${galleryItems.metadata}->>'connectedPromptId', '') = ${String(id)}`)
 
       const localImageUrls = [...new Set([
         current?.imageUrl,
