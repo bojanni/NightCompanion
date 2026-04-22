@@ -110,3 +110,4 @@
 - Generator `Auto-title` now runs automatically only once after the first prompt generation, then turns off so later title generation is manual.
 - Prompt Library media items now support a per-item `Start Image` upload, and these start images are stored as media metadata only (they do not appear as separate items in Prompt/Media gallery lightboxes).
 - Prompt Library lightbox now shows that per-item start image as a compact `Start image reference` preview in the info panel.
+- AI Configuration role cards now show an inline info tooltip next to `Model` with three recommended models per role.

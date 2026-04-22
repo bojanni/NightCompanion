@@ -1002,3 +1002,9 @@
 - Findings: Start images were stored correctly as prompt-media metadata, but there was no visual way to inspect that reference image while reviewing an item in the Prompt Library lightbox.
 - Conclusions: Show start images as a compact reference preview inside the lightbox metadata card, while keeping them excluded from Prompt/Media gallery item lists.
 - Actions: Updated `src/screens/Library.tsx` to carry `startImageUrl` through lightbox image mapping and render a `Start image reference` preview panel in the lightbox overlay when available; validated with `npm run build`.
+
+## 2026-04-22 (AI Config: recommended models tooltip per role)
+
+- Findings: Users had no guidance on which models to pick per role.
+- Conclusions: A small hover tooltip next to the MODEL label in each role card shows three curated recommendations with short notes, without cluttering the layout.
+- Actions: Added ROLE_RECOMMENDATIONS constant and RecommendationsTooltip component in src/screens/Settings/Dashboard.tsx; placed tooltip next to MODEL label in each role card; added Info icon to lucide-react import; validated with npm run build.

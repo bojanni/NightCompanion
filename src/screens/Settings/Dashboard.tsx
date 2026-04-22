@@ -1,11 +1,34 @@
 import { useState, type Dispatch, type SetStateAction } from 'react'
-import { BookOpen, Eye, Loader2, Settings, Sparkles, Wand2 } from 'lucide-react'
+import { BookOpen, Eye, Info, Loader2, Settings, Sparkles, Wand2 } from 'lucide-react'
 import { notifications } from '@mantine/notifications'
 import ModelSelector from '../../components/ModelSelector'
 import type { ApiKeyInfo, LocalEndpoint, ModelOption } from './types'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 type DashboardRole = 'generation' | 'improvement' | 'vision' | 'general'
+
+const ROLE_RECOMMENDATIONS: Record<DashboardRole, Array<{ name: string; id: string; note: string }>> = {
+  generation: [
+    { name: 'Claude 3 Haiku', id: 'anthropic/claude-3-haiku', note: 'Fast, creative, low bias' },
+    { name: 'Llama 3.3 70B Instruct', id: 'meta-llama/llama-3.3-70b-instruct', note: 'Open, diverse output, cheap' },
+    { name: 'Gemini Flash 1.5', id: 'google/gemini-flash-1.5', note: 'Fast and surprisingly varied' },
+  ],
+  improvement: [
+    { name: 'Claude 3.5 Haiku', id: 'anthropic/claude-3-5-haiku', note: 'Best instruction-following for rewriting' },
+    { name: 'Qwen3 30B A3B', id: 'qwen/qwen3-30b-a3b', note: 'Cheap, strong at reformulation' },
+    { name: 'Gemini Flash 2.0', id: 'google/gemini-flash-2.0', note: 'Fast, creative rewriting' },
+  ],
+  vision: [
+    { name: 'Llama 4 Maverick', id: 'meta-llama/llama-4-maverick', note: 'Strong vision, good value' },
+    { name: 'Gemini Pro 1.5', id: 'google/gemini-pro-1.5', note: 'Excellent for detail analysis' },
+    { name: 'Claude 3.5 Sonnet', id: 'anthropic/claude-3-5-sonnet', note: 'Best overall vision quality' },
+  ],
+  general: [
+    { name: 'Qwen3 30B A3B', id: 'qwen/qwen3-30b-a3b', note: 'Strong reasoning, cheap' },
+    { name: 'DeepSeek R1', id: 'deepseek/deepseek-r1', note: 'Specialised in reasoning tasks' },
+    { name: 'Claude 3.5 Sonnet', id: 'anthropic/claude-3-5-sonnet', note: 'Best all-round, higher cost' },
+  ],
+}
 
 interface RoleRouteSelection {
   enabled: boolean
@@ -90,6 +113,41 @@ function matchesRoleCapability(role: DashboardRole, model: ModelOption): boolean
     return capabilities.includes('reasoning') || capabilities.includes('web_search')
   }
   return true
+}
+
+function RecommendationsTooltip({ role }: { role: DashboardRole }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const recommendations = ROLE_RECOMMENDATIONS[role]
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button
+        type="button"
+        className="inline-flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
+        aria-label="Show recommended models"
+      >
+        <Info size={14} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute bottom-full right-0 mb-2 w-64 z-50 rounded-xl bg-slate-900 border border-slate-700/60 p-3 shadow-xl">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-2">Recommended models</p>
+          <div className="space-y-2">
+            {recommendations.map((item) => (
+              <div key={item.id}>
+                <p className="text-xs text-white">{item.name}</p>
+                <p className="text-[11px] text-slate-400">{item.note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function Dashboard({
@@ -299,7 +357,10 @@ export function Dashboard({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-medium tracking-widest uppercase text-night-400 mb-1.5">Model</label>
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <label className="block text-[11px] font-medium tracking-widest uppercase text-night-400">Model</label>
+                      <RecommendationsTooltip role={role} />
+                    </div>
                     <ModelSelector
                       value={routing.modelId}
                       onChange={(modelId) => {
